@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "id": "3e8499da-2f6d-40f3-8941-0fc2999061a8",
+  "name": "First light experiment",
+  "components": [
+    {
+      "id": "99715858-37c9-4487-baf8-afb65c51bfa5",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 70,
+      "y": 150,
+      "rotation": 0,
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 20
+      }
+    },
+    {
+      "id": "27754aec-27b7-4ea6-8c60-668f00f19ff3",
+      "kind": "switch",
+      "name": "S-01",
+      "x": 330,
+      "y": 80,
+      "rotation": 0,
+      "props": {
+        "closed": true,
+        "resistance": 0.01,
+        "ratedPower": 20,
+        "heatCapacity": 20,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "76fe8152-5d35-4941-a50e-d3a3e01ac25d",
+      "kind": "lamp",
+      "name": "L-01",
+      "x": 600,
+      "y": 150,
+      "rotation": 0,
+      "props": {
+        "resistance": 6,
+        "ratedPower": 30,
+        "heatCapacity": 20,
+        "loss": 1,
+        "maxTemperature": 120
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "23e9af20-0725-4a37-8b60-6c5a2f814850",
+      "domain": "electrical",
+      "from": {
+        "component": "99715858-37c9-4487-baf8-afb65c51bfa5",
+        "port": "a"
+      },
+      "to": {
+        "component": "27754aec-27b7-4ea6-8c60-668f00f19ff3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "4f3e27a5-4c71-4d45-b646-fd55ba67984d",
+      "domain": "electrical",
+      "from": {
+        "component": "27754aec-27b7-4ea6-8c60-668f00f19ff3",
+        "port": "b"
+      },
+      "to": {
+        "component": "76fe8152-5d35-4941-a50e-d3a3e01ac25d",
+        "port": "a"
+      }
+    },
+    {
+      "id": "615da7a6-9596-40b5-9275-c94e7b8163ea",
+      "domain": "electrical",
+      "from": {
+        "component": "76fe8152-5d35-4941-a50e-d3a3e01ac25d",
+        "port": "b"
+      },
+      "to": {
+        "component": "99715858-37c9-4487-baf8-afb65c51bfa5",
+        "port": "b"
+      }
+    }
+  ]
+}
