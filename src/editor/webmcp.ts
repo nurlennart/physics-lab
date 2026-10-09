@@ -54,7 +54,7 @@ export function registerLabTools() {
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false },
-      execute: (input) => {
+      execute: async (input) => {
         if (
           !input ||
           typeof input !== "object" ||
@@ -78,7 +78,7 @@ export function registerLabTools() {
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false },
-      execute: (input) => {
+      execute: async (input) => {
         const seconds = (input as { seconds?: unknown })?.seconds;
         if (
           typeof seconds !== "number" ||
@@ -88,7 +88,7 @@ export function registerLabTools() {
         )
           throw Error("seconds must be an integer from 1 to 600.");
         if (getState().running) throw Error("Pause the experiment first.");
-        actions.advance(seconds);
+        await actions.advance(seconds);
         return {
           time: simulation.time,
           energyJ: simulation.energy,

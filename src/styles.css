@@ -2720,3 +2720,254 @@ select option {
   letter-spacing: 0.3px;
   color: #d9a08f;
 }
+/* Phase 2: compact instrumentation and control hardware. */
+.control,
+.terminal.control {
+  color: #a58ae3;
+}
+.connection.control .wire-line {
+  stroke: #a58ae3;
+}
+.connection.control .flow-line {
+  stroke: #d0b8fa;
+}
+.node-reading {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  fill: #e9bd6a;
+  paint-order: stroke;
+  stroke: #101418;
+  stroke-width: 3px;
+}
+.bend-handle {
+  fill: #18232b;
+  stroke: #e9bd6a;
+  stroke-width: 2;
+  cursor: move;
+}
+.wide-select {
+  width: 100%;
+  padding: 7px;
+  background: #151b21;
+  color: #d9e3e9;
+  border: 1px solid #303b45;
+  border-radius: 3px;
+  font-size: 11px;
+}
+.property-row select {
+  max-width: 145px;
+  background: #141b21;
+  color: #dce5eb;
+  border: 1px solid #303b45;
+  font-size: 10px;
+  padding: 5px;
+}
+.number-field input:disabled {
+  color: #7e909d;
+  cursor: not-allowed;
+}
+.fault-button {
+  padding: 7px 10px;
+  border: 1px solid #665443;
+  background: #24201c;
+  color: #e9bd6a;
+  font-size: 11px;
+  border-radius: 3px;
+}
+.assembly-tools {
+  border-top: 1px solid #303b45;
+  padding: 10px;
+  display: grid;
+  gap: 7px;
+}
+.assembly-tools button,
+.assembly-tools input {
+  font-size: 10px;
+  padding: 6px;
+  background: #172028;
+  color: #afbdc7;
+  border: 1px solid #303b45;
+  border-radius: 3px;
+}
+.assembly-tools form {
+  display: grid;
+  gap: 5px;
+}
+.inspector-section summary {
+  cursor: pointer;
+}
+.inspector-scroll .measurement-list {
+  max-height: 155px;
+  overflow: auto;
+}
+.probe-manager {
+  padding: 8px 20px;
+  border-bottom: 1px solid #303b45;
+  max-height: 155px;
+  overflow: auto;
+}
+.probe-add,
+.probe-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 4px 0;
+}
+.probe-manager select,
+.probe-manager input,
+.probe-manager button,
+.chart-heading select {
+  background: #141c22;
+  color: #c7d5dd;
+  border: 1px solid #303b45;
+  border-radius: 3px;
+  padding: 4px;
+  font-size: 10px;
+}
+.probe-row input[type="color"] {
+  width: 23px;
+  height: 23px;
+  padding: 0;
+}
+.probe-row input[type="text"] {
+  min-width: 80px;
+}
+.probe-row span {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  color: #879ca9;
+}
+.trace-readouts {
+  display: flex;
+  gap: 22px;
+  padding: 10px 20px;
+  flex-wrap: wrap;
+}
+.trace-readouts label {
+  font-size: 10px;
+  color: #8c9eac;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.trace-readouts i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+.trace-readouts strong {
+  color: #e1e9ed;
+  font:
+    12px "IBM Plex Mono",
+    monospace;
+  margin-left: 6px;
+}
+.trace-readouts small {
+  font-size: 9px;
+  color: #8c9eac;
+}
+.multi-chart {
+  overflow: auto;
+  max-height: 160px;
+  padding: 0 14px 8px;
+}
+.trace-plot {
+  min-height: 88px;
+  margin-bottom: 7px;
+}
+.trace-plot svg {
+  display: block;
+  width: 100%;
+  height: 78px;
+}
+.trace-plot text {
+  font:
+    9px "IBM Plex Mono",
+    monospace;
+  fill: #8296a3;
+}
+.trace-unit {
+  font:
+    10px "IBM Plex Mono",
+    monospace;
+  color: #a7b8c3;
+  padding: 0 12px;
+}
+.trace-unit span {
+  margin-left: 15px;
+  color: #c7d5dd;
+}
+.energy-panel {
+  flex-wrap: wrap;
+  gap: 18px !important;
+  overflow: auto;
+  max-height: 210px;
+}
+.energy-panel > div {
+  min-width: 90px;
+}
+.energy-error {
+  flex: 1;
+  min-width: 220px !important;
+}
+.chart-heading label {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  font-size: 10px;
+}
+.chart-heading button {
+  display: flex;
+  gap: 5px;
+  font-size: 10px;
+  color: #a58ae3;
+}
+.chart-heading input[type="range"] {
+  width: 95px;
+  accent-color: #a58ae3;
+}
+.challenge-dialog {
+  max-height: 90vh;
+  overflow: auto;
+}
+.challenge-cards {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+.challenge-card {
+  min-width: 0;
+}
+.challenge-card.runaway .challenge-illustration {
+  color: #a58ae3;
+}
+.telemetry {
+  overflow: auto;
+}
+.component-domain {
+  font-size: 8px !important;
+}
+
+@media (max-width: 700px) {
+  .challenge-cards {
+    grid-template-columns: 1fr !important;
+  }
+  .chart-heading {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .trace-readouts {
+    gap: 10px;
+  }
+  .runaway-details {
+    font-size: 11px;
+  }
+}
+.runaway-details {
+  font-size: 12px;
+  color: #8c9eac;
+  padding: 12px 0;
+}
+.runaway-details p {
+  margin: 5px 0;
+}

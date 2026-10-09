@@ -79,6 +79,50 @@ export default function Models() {
             There is no boiling, fluid flow, pressure solver, or wall thermal
             mass in this milestone.
           </p>
+          <h3>Automation and independent protection</h3>
+          <p>
+            Purple connections carry typed numeric or Boolean signals and no
+            electrical power. Each fixed step reads sensors, evaluates the
+            acyclic control graph in dependency order, applies relay contacts,
+            solves DC power, integrates coupled thermal state, checks ratings,
+            and records results. Temperature lag uses an exact first-order
+            update; optional noise uses a repeatable seeded generator.
+            Hysteresis turns on below its lower threshold and off at the upper
+            threshold. Timers use simulation seconds.
+          </p>
+          <p>
+            The thermostat combines the same sensor and hysteresis models. The
+            safety cutoff independently measures its assigned thermal mass,
+            latches open at its threshold or on invalid sensing when configured,
+            and requires a manual reset below its reset margin. Relay and cutoff
+            contacts have finite resistance and thermal capacity. Arcing,
+            bounce, coil energy, and real safety certification are outside this
+            model. A welded contact ignores its command.
+          </p>
+          <p>
+            A cooling jacket adds UA(T − Tcoolant) to the attached mass. Its
+            coolant is an ideal infinite reservoir, with signed heat included in
+            external energy exchange. There is no circulating fluid, pump,
+            refrigeration power, or phase-change model.
+          </p>
+          <h3>Measurement and construction</h3>
+          <p>
+            Each trace targets a component or an explicit node/reference pair.
+            Floating islands cannot be compared electrically; the result is
+            invalid. Mixed units use separate labeled plots. Hover a chart to
+            read exact recorded values; time-window and history controls also
+            select the energy-balance interval. CSV exports all configured
+            probes with blank cells for unavailable measurements. Stored energy
+            is shown separately for water, elements, and other electrical
+            masses; internal immersion heat is not double-counted.
+          </p>
+          <p>
+            Selected wires expose draggable orthogonal bend points. Electrical
+            crossings never connect; branching requires shared terminals or
+            explicit junctions. Connected duplication and saved assemblies remap
+            internal wiring and sensor targets; external connections and targets
+            are omitted.
+          </p>
           <h3>Reference calculation</h3>
           <div className="formula">
             12 V / 6 Ω = 2 A &nbsp; · &nbsp; 12 V × 2 A = 24 W<br />
@@ -95,20 +139,20 @@ export default function Models() {
             rendering. Speeds range from 0.25× to 4×. Advance 60 s executes
             3,600 ordinary steps while paused. Long background frames are
             bounded to 0.25 s of wall time, so the clock slows safely when a tab
-            is suspended. Telemetry records at 4 Hz, retaining the latest 2,400
+            is suspended. Telemetry records at 4 Hz, retaining the latest 14,400
             samples. Events use simulation timestamps. The Event log offers
             deterministic replay from the last reset and recorded editor inputs,
-            up to one simulation hour. Replay reconstructs the final state; it
+            up to two simulation hours. Replay reconstructs the final state; it
             does not provide timeline scrubbing.
           </p>
           <p>
-            Save downloads a version 1 JSON project and stores a recovery copy
+            Save downloads a version 2 JSON project and stores a recovery copy
             on this device. Import opens a validated project file. Project files
             contain construction and initial conditions; loading starts a
-            reproducible fresh experiment. CSV exports measured telemetry.
-            Changing physical properties during a run performs an external
-            intervention: reset before evaluating conservation of a revised
-            experiment.
+            reproducible fresh experiment. CSV exports measured telemetry. Mass,
+            inventory, model variants, and other physical configuration changes
+            require Reset once time has advanced. Operating controls remain
+            live. Version 1 files migrate through validated defaults.
           </p>
           <h3>Challenge scoring</h3>
           <p>
@@ -116,7 +160,17 @@ export default function Models() {
             Score = 60 + 20η + 10(1 − cost / budget) + 10τ. For heating, η =
             min(1, 2,508,000 / consumed joules), τ = min(1, 1,254 / elapsed
             seconds). For First Light, η = 1 and τ = min(1, 3 / elapsed
-            seconds). One star for completion, two at 80, three at 90.
+            seconds). Thermal Runaway requires 240 seconds of regulation with at
+            least 97% in-band time, 2–80 relay transitions, actual independent
+            interruption below 95°C, a manual safety reset, and 120 seconds of
+            stable recovery. Its score is 50 + 15 stability × overshoot factor +
+            10 energy efficiency + 10 economy + 10 time efficiency + 5 switching
+            economy, with the factors clamped to 0–1. Coolant capacity halves
+            after 120 regulation seconds; after at least 240 seconds and a full
+            automatic switching cycle, control relay contacts weld and cooling
+            fails. Following 30 seconds of verified isolation these faults are
+            repaired, while the safety latch remains tripped. One star for
+            completion, two at 80, three at 90.
           </p>
         </div>
       </section>

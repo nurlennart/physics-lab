@@ -27,47 +27,16 @@ import {
   prop,
   type Component,
   type Terminal,
-  type Connection,
 } from "../simulation/model";
-export function dimensions(c: Component) {
-  return {
-    w: c.kind === "tank" ? 202 : c.kind === "switch" ? 154 : 174,
-    h: c.kind === "tank" ? 170 : c.kind === "switch" ? 100 : 132,
-  };
-}
-export function portPoint(c: Component, port: string) {
-  const { w, h } = dimensions(c);
-  let x = port === "a" ? -12 : port === "b" ? w + 12 : w / 2,
-    y = port === "heat" ? (c.kind === "tank" ? -12 : h + 12) : h / 2;
-  const r = (c.rotation * Math.PI) / 180,
-    dx = x - w / 2,
-    dy = y - h / 2;
-  return {
-    x: c.x + w / 2 + dx * Math.cos(r) - dy * Math.sin(r),
-    y: c.y + h / 2 + dx * Math.sin(r) + dy * Math.cos(r),
-  };
-}
-function wirePath(w: Connection, cs: Component[]) {
-  const c = cs.find((c) => c.id === w.from.component),
-    d = cs.find((c) => c.id === w.to.component);
-  if (!c || !d) return "";
-  const a = portPoint(c, w.from.port),
-    b = portPoint(d, w.to.port);
-  if (w.domain === "thermal") {
-    const y = (a.y + b.y) / 2;
-    return `M${a.x},${a.y}V${y}H${b.x}V${b.y}`;
-  }
-  if (w.from.port === "a" && w.to.port === "a") {
-    const y = Math.min(c.y, d.y) - 45;
-    return `M${a.x},${a.y}H${a.x - 25}V${y}H${b.x - 25}V${b.y}H${b.x}`;
-  }
-  if (a.x > b.x + 80) {
-    const y = Math.max(c.y + dimensions(c).h, d.y + dimensions(d).h) + 45;
-    return `M${a.x},${a.y}H${a.x + 30}V${y}H${b.x + 30}V${b.y}H${b.x}`;
-  }
-  const x = (a.x + b.x) / 2;
-  return `M${a.x},${a.y}H${x}V${b.y}H${b.x}`;
-}
+import {
+  dimensions,
+  portPoint,
+  portLocal,
+  wirePath,
+  routePoints,
+} from "../editor/geometry";
+import { nodeVoltage } from "../simulation/electrical";
+export { dimensions, portPoint } from "../editor/geometry";
 function CircuitSymbol({ c }: { c: Component }) {
   const w = dimensions(c).w,
     r = simulation.electrical.readings[c.id],
@@ -216,6 +185,98 @@ function CircuitSymbol({ c }: { c: Component }) {
         </text>
       </g>
     );
+  if (["relay", "safety"].includes(c.kind)) {
+    const on = simulation.automation.contacts[c.id],
+      trip = simulation.automation.memory[c.id]?.tripped;
+    return (
+      <g>
+        <path d="M0 66H47M125 66H174" stroke="#b6a482" />
+        <circle cx="47" cy="66" r="4" fill="#a58ae3" />
+        <path
+          d={on ? "M47 66H125" : "M47 66L118 42"}
+          stroke={trip ? "#e26d72" : "#a6b9b0"}
+          strokeWidth="3"
+        />
+        {c.kind === "relay" && (
+          <path
+            d="M125 107H174M125 66V107"
+            fill="none"
+            stroke="#6d7d88"
+            strokeDasharray="3 3"
+          />
+        )}
+        <text
+          x="87"
+          y="113"
+          textAnchor="middle"
+          className="component-state"
+          fill={trip ? "#e26d72" : "#a58ae3"}
+        >
+          {trip ? "TRIPPED / LATCHED" : on ? "CONTACT CLOSED" : "CONTACT OPEN"}
+        </text>
+      </g>
+    );
+  }
+  if (c.kind === "junction")
+    return (
+      <g>
+        <path d="M0 66H87" stroke="#e9bd6a" />
+        <circle cx="87" cy="66" r="7" fill="#e9bd6a" />
+        <text x="87" y="108" textAnchor="middle" className="component-state">
+          EXPLICIT NODE
+        </text>
+      </g>
+    );
+  if (c.kind === "cooler")
+    return (
+      <g stroke="#3ba6d8">
+        <path d="M40 50V94H134V50M50 57H124M50 68H124M50 79H124" fill="none" />
+        <text x="87" y="114" textAnchor="middle" className="component-state">
+          {simulation.faults[c.id] === "coolingFailed"
+            ? "COOLANT LOST"
+            : `${prop(c, "conductance")} W/K`}
+        </text>
+      </g>
+    );
+  if (definitions[c.kind].ports.some((p) => p.domain === "control")) {
+    const v = simulation.automation.signals[c.id],
+      sensor = simulation.automation.sensors[c.id];
+    return (
+      <g>
+        <rect
+          x="20"
+          y="44"
+          width="134"
+          height="49"
+          rx="3"
+          fill="#141d25"
+          stroke="#65557e"
+        />
+        <text
+          x="87"
+          y="75"
+          textAnchor="middle"
+          className="meter-number"
+          fill="#bba3e2"
+        >
+          {!v?.valid
+            ? "INVALID"
+            : typeof v.value === "boolean"
+              ? v.value
+                ? "ON"
+                : "OFF"
+              : Number(v.value).toFixed(2)}
+        </text>
+        <text x="87" y="114" textAnchor="middle" className="component-state">
+          {sensor?.valid
+            ? Number(sensor.value).toFixed(2) + " °C"
+            : c.kind === "timer"
+              ? `${simulation.automation.memory[c.id]?.elapsed.toFixed(2) ?? "0"} s`
+              : definitions[c.kind].spec}
+        </text>
+      </g>
+    );
+  }
   const heater = c.kind === "heater";
   return (
     <g>
@@ -285,6 +346,11 @@ export default function Workspace() {
     camera: typeof camera;
     positions: Record<string, { x: number; y: number }>;
   } | null>(null);
+  const bend = useRef<{
+    id: string;
+    index: number;
+    route: { x: number; y: number }[];
+  } | null>(null);
   const space = useRef(false);
   function fit() {
     const el = wrapper.current;
@@ -293,12 +359,29 @@ export default function Workspace() {
       setCamera({ x: 60, y: 60, z: 1 });
       return;
     }
-    const minX = Math.min(...project.components.map((c) => c.x)) - 65,
-      minY = Math.min(...project.components.map((c) => c.y)) - 80,
+    const routes = project.connections.flatMap((w) =>
+      routePoints(w, project.components),
+    );
+    const minX =
+        Math.min(
+          ...project.components.map((c) => c.x),
+          ...routes.map((p) => p.x),
+        ) - 65,
+      minY =
+        Math.min(
+          ...project.components.map((c) => c.y),
+          ...routes.map((p) => p.y),
+        ) - 80,
       maxX =
-        Math.max(...project.components.map((c) => c.x + dimensions(c).w)) + 70,
+        Math.max(
+          ...project.components.map((c) => c.x + dimensions(c).w),
+          ...routes.map((p) => p.x),
+        ) + 70,
       maxY =
-        Math.max(...project.components.map((c) => c.y + dimensions(c).h)) + 45;
+        Math.max(
+          ...project.components.map((c) => c.y + dimensions(c).h),
+          ...routes.map((p) => p.y),
+        ) + 45;
     const z = Math.min(
       1.25,
       (el.clientWidth - 50) / (maxX - minX),
@@ -393,6 +476,16 @@ export default function Workspace() {
   function move(e: ReactPointerEvent) {
     const p = local(e.clientX, e.clientY);
     setCursor(p);
+    if (bend.current) {
+      const b = bend.current;
+      const route = b.route.map((v, i) =>
+        i === b.index
+          ? { x: Math.round(p.x / 20) * 20, y: Math.round(p.y / 20) * 20 }
+          : v,
+      );
+      actions.route(b.id, route);
+      return;
+    }
     const g = gesture.current;
     if (!g) return;
     const dx = (e.clientX - g.sx) / g.camera.z,
@@ -419,6 +512,7 @@ export default function Workspace() {
       setMarquee((m) => (m ? { ...m, x2: p.x, y2: p.y } : null));
   }
   function up() {
+    bend.current = null;
     if (gesture.current?.type === "box" && marquee) {
       const m = marquee;
       const found = project.components.filter(
@@ -443,6 +537,21 @@ export default function Workspace() {
     });
   }
   function portClick(t: Terminal) {
+    if (state.nodeMode) {
+      const c = project.components.find((c) => c.id === t.component)!;
+      if (
+        definitions[c.kind].ports.find((p) => p.id === t.port)?.domain !==
+        "electrical"
+      )
+        return;
+      if (!state.reference) {
+        actions.set({ reference: t });
+        return;
+      }
+      actions.addProbe(t.component, "nodeVoltage", t.port, state.reference);
+      return;
+    }
+
     if (pending) {
       if (actions.wire(pending, t)) setPending(null);
     } else {
@@ -471,6 +580,16 @@ export default function Workspace() {
       }}
     >
       <div className="canvas-toolbar">
+        <button
+          className={state.nodeMode ? "active" : ""}
+          title="Node measurement: click reference, then measured terminals"
+          aria-label="Node measurement mode"
+          onClick={() =>
+            actions.set({ nodeMode: !state.nodeMode, reference: null })
+          }
+        >
+          <Scan size={16} />
+        </button>
         <div className="tool-group">
           {[
             { id: "select", icon: MousePointer2, label: "Select (V)" },
@@ -606,7 +725,37 @@ export default function Workspace() {
                     actions.select([], w.id);
                   }}
                 />
-                <path d={path} className="wire-line" pointerEvents="none" />
+                <path
+                  d={path}
+                  className="wire-line"
+                  pointerEvents="none"
+                  opacity={simulation.disconnected.has(w.id) ? 0.25 : 1}
+                />
+                {state.selectedWire === w.id &&
+                  routePoints(w, project.components)
+                    .slice(1, -1)
+                    .map((pt, i) => (
+                      <circle
+                        key={i}
+                        cx={pt.x}
+                        cy={pt.y}
+                        r="6"
+                        className="bend-handle"
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                          actions.beginMove();
+                          bend.current = {
+                            id: w.id,
+                            index: i,
+                            route: routePoints(w, project.components).slice(
+                              1,
+                              -1,
+                            ),
+                          };
+                          e.currentTarget.setPointerCapture(e.pointerId);
+                        }}
+                      />
+                    ))}
                 {live && (
                   <path d={path} className="flow-line" pointerEvents="none" />
                 )}
@@ -665,14 +814,23 @@ export default function Workspace() {
                   </text>
                   <CircuitSymbol c={c} />
                   {definitions[c.kind].ports.map((p) => {
-                    const x =
-                        p.id === "a" ? -12 : p.id === "b" ? w + 12 : w / 2,
-                      y =
-                        p.id === "heat"
-                          ? c.kind === "tank"
-                            ? -12
-                            : h + 12
-                          : h / 2;
+                    const { x, y } = portLocal(c, p.id);
+                    const branches = project.connections.filter(
+                      (w) =>
+                        w.domain === "electrical" &&
+                        ((w.from.component === c.id && w.from.port === p.id) ||
+                          (w.to.component === c.id && w.to.port === p.id)),
+                    ).length;
+                    const potential =
+                      state.nodeMode && p.domain === "electrical"
+                        ? nodeVoltage(
+                            simulation.electrical,
+                            `${c.id}:${p.id}`,
+                            state.reference
+                              ? `${state.reference.component}:${state.reference.port}`
+                              : undefined,
+                          )
+                        : null;
                     const isPending =
                       pending?.component === c.id && pending.port === p.id;
                     return (
@@ -695,11 +853,30 @@ export default function Workspace() {
                           }
                         }}
                       >
+                        <title>{p.label}</title>
+                        {branches > 1 && (
+                          <circle cx={x} cy={y} r="8" fill="#e9bd6a" />
+                        )}
+                        {state.nodeMode && p.domain === "electrical" && (
+                          <text
+                            x={x}
+                            y={y - 17}
+                            className="node-reading"
+                            textAnchor="middle"
+                          >
+                            {potential === null
+                              ? "undefined"
+                              : potential.toFixed(2) + " V"}
+                          </text>
+                        )}
                         <path
                           d={
-                            p.id === "heat"
-                              ? `M${x} ${y}V${c.kind === "tank" ? 0 : h}`
-                              : `M${x} ${y}H${p.id === "a" ? 0 : w}`
+                            p.domain === "control" &&
+                            ["relay", "safety", "cooler"].includes(c.kind)
+                              ? `M${x} ${y}V${h}`
+                              : p.id === "heat"
+                                ? `M${x} ${y}V${c.kind === "tank" ? 0 : h}`
+                                : `M${x} ${y}H${x < 0 ? 0 : w}`
                           }
                           stroke="currentColor"
                         />
@@ -733,7 +910,12 @@ export default function Workspace() {
                         ? `${Math.abs(r?.current ?? 0).toFixed(2)} A  ·  ${Math.abs(r?.power ?? 0).toFixed(1)} W`
                         : c.kind === "switch"
                           ? "Double-click to toggle"
-                          : `${(r?.voltage ?? 0).toFixed(2)} V  ·  ${(r?.power ?? 0).toFixed(1)} W`}
+                          : simulation.automation.status[c.id] &&
+                              definitions[c.kind].ports.some(
+                                (p) => p.domain === "control",
+                              )
+                            ? simulation.automation.status[c.id].toUpperCase()
+                            : `${(r?.voltage ?? 0).toFixed(2)} V  ·  ${(r?.power ?? 0).toFixed(1)} W`}
                   </text>
                 )}
               </g>
@@ -772,13 +954,17 @@ export default function Workspace() {
         <span>SI UNITS</span>
       </div>
       <div className="canvas-hint">
-        {pending
-          ? "Select a matching terminal · Esc to cancel"
-          : tool === "wire"
-            ? "Click two terminals to connect"
-            : tool === "pan"
-              ? "Drag to pan · Scroll to zoom"
-              : "Drag to move · Click terminals to connect · Space to pan"}
+        {state.nodeMode
+          ? state.reference
+            ? "Click terminals to add differential voltage traces; toggle mode to exit."
+            : "Click an electrical terminal to choose the voltage reference."
+          : pending
+            ? "Select a matching terminal · Esc to cancel"
+            : tool === "wire"
+              ? "Click two terminals to connect"
+              : tool === "pan"
+                ? "Drag to pan · Scroll to zoom"
+                : "Drag to move · Click terminals to connect · Space to pan"}
       </div>
       <div className="zoom-controls">
         <button aria-label="Zoom out" onClick={() => zoom(1 / 1.15)}>

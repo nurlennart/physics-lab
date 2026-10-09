@@ -256,8 +256,7 @@ describe("challenges and project validation", () => {
     const p = starter("heat");
     p.challenge = "heat";
     p.components.find((c) => c.kind === "tank")!.props.initialTemperature = 80;
-    const s = new Simulation(p);
-    expect(evaluateChallenge(p, s)!.complete).toBe(false);
+    expect(() => new Simulation(p)).toThrow(/locked/);
   });
   it("completes the heating challenge from measured temperature", () => {
     const p = starter("heat");
@@ -292,7 +291,7 @@ describe("challenges and project validation", () => {
     expect(
       connectionError(p, p.connections[0].from, p.connections[0].to),
     ).toMatch(/already connected/);
-    expect(() => parseProject({ ...p, version: 2 })).toThrow(/version/);
+    expect(() => parseProject({ ...p, version: 99 })).toThrow(/version/);
     const bad = structuredClone(p);
     bad.components[0].props.voltage = NaN;
     expect(() => parseProject(bad)).toThrow(/out of range/);

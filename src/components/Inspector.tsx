@@ -2,52 +2,130 @@ import { useState, useEffect } from "react";
 import {
   SlidersHorizontal,
   ChevronDown,
-  Link2,
   Info,
-  Flame,
   Trash2,
-  AlertTriangle,
   MousePointer2,
+  TriangleAlert,
+  Activity,
 } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
-import { definitions, prop, type Component } from "../simulation/model";
+import {
+  definitions,
+  catalog,
+  prop,
+  isThermalMass,
+  type Component,
+  type Measurement,
+} from "../simulation/model";
+import {
+  liveProperties,
+  configurableProperties,
+  propertyError,
+} from "../simulation/integrity";
+import { allowedFaults, type FaultType } from "../simulation/automation";
+import {
+  measurements,
+  readProbe,
+  units,
+  probeUnit,
+} from "../simulation/measurements";
 import { ComponentIcon } from "./Icons";
+const labels: Record<string, string> = {
+  voltage: "Supply voltage",
+  volume: "Water volume",
+  initialTemperature: "Initial temperature",
+  ambient: "Ambient temperature",
+  capacity: "Tank capacity",
+  maxCurrent: "Current limit",
+  loss: "Ambient loss (UA)",
+  resistance: "Resistance",
+  ratedPower: "Power rating",
+  heatCapacity: "Thermal capacity",
+  conductance: "Conductance (UA)",
+  maxTemperature: "Temperature limit",
+  target: "Thermal target",
+  low: "ON below",
+  high: "OFF at or above",
+  setpoint: "Setpoint",
+  hysteresis: "Hysteresis band",
+  threshold: "Safety cutoff",
+  resetMargin: "Reset margin",
+  minRange: "Minimum reading",
+  maxRange: "Maximum reading",
+  resolution: "Resolution",
+  lag: "Measurement lag",
+  noise: "Noise amplitude",
+  failOnSensor: "Trip on sensor fault",
+  initialOn: "Initial output",
+  ratedVoltage: "Rated voltage",
+  ratedCurrent: "Rated current",
+  reference: "Reference",
+  delay: "Delay",
+  enabled: "Enabled",
+  value: "Value",
+  closed: "Switch state",
+  mode: "Mode",
+};
+const fieldUnits: Record<string, string> = {
+  voltage: "V",
+  ratedVoltage: "V",
+  volume: "L",
+  capacity: "L",
+  initialTemperature: "°C",
+  ambient: "°C",
+  resistance: "Ω",
+  ratedPower: "W",
+  maxCurrent: "A",
+  ratedCurrent: "A",
+  loss: "W/K",
+  conductance: "W/K",
+  heatCapacity: "J/K",
+  maxTemperature: "°C",
+  low: "°C",
+  high: "°C",
+  setpoint: "°C",
+  hysteresis: "K",
+  threshold: "°C",
+  resetMargin: "K",
+  resolution: "°C",
+  lag: "s",
+  delay: "s",
+  noise: "°C",
+};
 function NumberInput({
   c,
   field,
-  label,
-  unit,
-  step = 1,
+  disabled,
 }: {
   c: Component;
   field: string;
-  label: string;
-  unit: string;
-  step?: number;
+  disabled: boolean;
 }) {
-  const value = prop(c, field);
-  const [draft, setDraft] = useState(String(value));
+  const value = prop(c, field),
+    [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value, c.id]);
   return (
     <label className="property-row">
-      <span>{label}</span>
+      <span>{labels[field] ?? field}</span>
       <span className="number-field">
         <input
-          aria-label={label}
+          aria-label={labels[field] ?? field}
           type="number"
-          step={step}
+          disabled={disabled}
+          step="any"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={() => {
-            if (draft.trim() === "" || !Number.isFinite(Number(draft)))
-              setDraft(String(value));
-            else actions.property(c.id, field, Number(draft));
+            if (draft.trim() && Number.isFinite(Number(draft))) {
+              actions.property(c.id, field, Number(draft));
+              setDraft(String(prop(c, field)));
+            } else setDraft(String(value));
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
           }}
         />
-        <span>{unit}</span>
+        <span>{fieldUnits[field]}</span>
       </span>
     </label>
   );
@@ -55,9 +133,8 @@ function NumberInput({
 export default function Inspector() {
   const s = useLab(),
     c = s.project.components.find((c) => c.id === s.selected[0]);
-  const r = c && simulation.electrical.readings[c.id],
-    temp = c ? (simulation.temperatures[c.id] ?? 20) : 20;
-  const [tab, setTab] = useState("properties");
+  const [tab, setTab] = useState("properties"),
+    [metric, setMetric] = useState<Measurement>("temperature");
   if (!c)
     return (
       <aside className="inspector">
@@ -72,19 +149,43 @@ export default function Inspector() {
           </h3>
           <p>
             {s.selectedWire
-              ? "Press Delete to remove this connection."
-              : "Select a component to edit its properties and inspect calculated measurements."}
+              ? "Drag highlighted bend points to route the wire. Press Delete to remove it."
+              : "Select a component to inspect calculated measurements and configure its model."}
           </p>
+          {s.selectedWire && !s.project.challenge && (
+            <button className="text-link" onClick={actions.disconnect}>
+              Inject disconnected-wire fault
+            </button>
+          )}
         </div>
       </aside>
     );
   const d = definitions[c.kind],
-    isTank = c.kind === "tank";
-  const thermalConnected = s.project.connections.some(
-    (w) =>
-      w.domain === "thermal" &&
-      (w.from.component === c.id || w.to.component === c.id),
-  );
+    model = catalog(c),
+    options = measurements(c),
+    status = simulation.failed[c.id]
+      ? "failedOpen"
+      : (simulation.automation.status[c.id] ?? "healthy");
+  const sensor = simulation.automation.sensors[c.id],
+    temp = sensor?.valid ? Number(sensor.value) : simulation.temperatures[c.id],
+    r = simulation.electrical.readings[c.id],
+    v = simulation.automation.signals[c.id];
+  const primary =
+    isThermalMass(c) || sensor
+      ? temp === undefined
+        ? "—"
+        : temp.toFixed(2)
+      : v
+        ? v.valid
+          ? typeof v.value === "boolean"
+            ? v.value
+              ? "ON"
+              : "OFF"
+            : Number(v.value).toFixed(2)
+          : "INVALID"
+        : r?.voltageValid === false
+          ? "—"
+          : (r?.voltage.toFixed(2) ?? "—");
   return (
     <aside className="inspector">
       <div className="panel-heading">
@@ -92,7 +193,7 @@ export default function Inspector() {
         <SlidersHorizontal size={15} />
       </div>
       <div
-        className={`inspector-component ${isTank || c.kind === "heater" ? "thermal" : ""}`}
+        className={`inspector-component ${isThermalMass(c) ? "thermal" : ""}`}
       >
         <span className="inspector-icon">
           <ComponentIcon kind={c.kind} size={23} />
@@ -126,11 +227,11 @@ export default function Inspector() {
             <h3>{d.label}</h3>
             <p>{d.description}.</p>
             <p>
-              {isTank
-                ? "The tank is a single, well-mixed thermal volume. Water density is 1 kg/L and specific heat is 4,180 J/(kg·K). Wall heat capacity and internal temperature gradients are omitted."
-                : c.kind === "heater"
-                  ? "A constant resistance dissipates I²R into the element thermal mass. A thermal connection transfers heat into one tank using Q̇ = UA(Th − Tw). The coupled energy balances use backward Euler."
-                  : "Circuit voltages and currents are solved by modified nodal analysis. Wires are ideal conductors. Every disconnected circuit receives its own local 0 V reference unless connected to ground."}
+              Controllers use the simulation clock. Relay contact resistance
+              dissipates I²R into its thermal mass. Sensors read the selected
+              thermal state. Cooling uses UA(T − Tcoolant) to an ideal
+              reservoir. The independent cutoff has its own sensor and latching
+              series contact. Switching arcs and coil power are omitted.
             </p>
             <button
               className="text-link"
@@ -146,249 +247,290 @@ export default function Inspector() {
                 <span>LIVE MEASUREMENTS</span>
                 <span
                   className={
-                    simulation.error
-                      ? "invalid-badge"
-                      : s.running
-                        ? "live-badge"
-                        : "paused-badge"
+                    status === "healthy" ? "live-badge" : "invalid-badge"
                   }
                 >
-                  {simulation.error
-                    ? "LAST VALID STATE"
-                    : s.running
-                      ? "LIVE"
-                      : "PAUSED"}
+                  {status.toUpperCase()}
                 </span>
               </div>
               <div
-                className={`primary-reading ${isTank || c.kind === "heater" ? "thermal-text" : "electrical-text"}`}
+                className={`primary-reading ${isThermalMass(c) || sensor ? "thermal-text" : "electrical-text"}`}
               >
-                <span>
-                  {isTank || c.kind === "heater"
-                    ? temp.toFixed(2)
-                    : (r?.voltage ?? 0).toFixed(2)}
-                </span>
-                <small>{isTank || c.kind === "heater" ? "°C" : "V"}</small>
+                <span>{primary}</span>
+                <small>
+                  {isThermalMass(c) || sensor ? "°C" : v ? "" : "V"}
+                </small>
               </div>
               <div className="reading-caption">
-                {isTank
-                  ? "Water temperature"
-                  : c.kind === "heater"
-                    ? "Element temperature"
-                    : "Terminal voltage"}
+                {sensor
+                  ? "Measured temperature"
+                  : isThermalMass(c)
+                    ? "Thermal state"
+                    : v
+                      ? "Control output"
+                      : "Terminal voltage"}
               </div>
               <div className="measurement-list">
-                {isTank ? (
-                  <>
-                    <div>
-                      <span>Fluid mass</span>
-                      <strong>
-                        {prop(c, "volume").toFixed(2)} <small>kg</small>
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Heat capacity</span>
-                      <strong>
-                        {((prop(c, "volume") * 4180) / 1000).toFixed(2)}{" "}
-                        <small>kJ/K</small>
-                      </strong>
-                    </div>
-                    <div>
-                      <span>Heat loss</span>
-                      <strong>
-                        {(
-                          prop(c, "loss") *
-                          (temp - prop(c, "ambient", 20))
-                        ).toFixed(2)}{" "}
-                        <small>W</small>
-                      </strong>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div>
-                      <span>Current</span>
-                      <strong>
-                        {simulation.error
-                          ? "—"
-                          : Math.abs(r?.current ?? 0).toFixed(3)}{" "}
-                        <small>A</small>
-                      </strong>
-                    </div>
-                    <div>
-                      <span>
-                        {c.kind === "source"
-                          ? "Supplied power"
-                          : "Dissipated power"}
-                      </span>
-                      <strong>
-                        {simulation.error
-                          ? "—"
-                          : Math.abs(r?.power ?? 0).toFixed(2)}{" "}
-                        <small>W</small>
-                      </strong>
-                    </div>
-                    {c.kind !== "source" && (
-                      <div>
-                        <span>Temperature</span>
+                {options
+                  .filter((x) => x !== "nodeVoltage")
+                  .map((m) => {
+                    const value = readProbe(
+                      {
+                        id: "",
+                        name: "",
+                        component: c.id,
+                        measurement: m,
+                        color: "#ffffff",
+                        visible: true,
+                      },
+                      simulation,
+                    );
+                    return (
+                      <div key={m}>
+                        <span>
+                          {m === "current" ? "NO / branch current" : m}
+                        </span>
                         <strong>
-                          {temp.toFixed(2)} <small>°C</small>
+                          {value === null
+                            ? "—"
+                            : value.toFixed(
+                                m === "state" || m === "signal" ? 2 : 3,
+                              )}{" "}
+                          <small>
+                            {probeUnit(
+                              { component: c.id, measurement: m },
+                              s.project,
+                            )}
+                          </small>
                         </strong>
                       </div>
-                    )}
-                  </>
-                )}
+                    );
+                  })}
               </div>
+              {v && !v.valid && <p className="field-hint">{v.reason}</p>}
+            </div>
+            <div className="inspector-section">
+              <div className="section-label">CATALOG MODEL</div>
+              <select
+                className="wide-select"
+                aria-label="Component variant"
+                value={c.variant ?? "standard"}
+                disabled={simulation.time > 0 || s.busy}
+                onChange={(e) => actions.variant(c.id, e.target.value)}
+              >
+                <option value="standard">Standard · €{d.cost}</option>
+                {d.variants?.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.label} · €{x.cost}
+                  </option>
+                ))}
+              </select>
+              <p className="field-hint">
+                {model.spec}. Ratings are purchased with the model. Reset before
+                changing physical configuration.
+              </p>
             </div>
             <div className="inspector-section">
               <div className="section-label">
                 CONFIGURATION <ChevronDown size={13} />
               </div>
-              {isTank ? (
-                <>
-                  <NumberInput
-                    c={c}
-                    field="volume"
-                    label="Water volume"
-                    unit="L"
-                    step={0.1}
-                  />
-                  <NumberInput
-                    c={c}
-                    field="capacity"
-                    label="Tank capacity"
-                    unit="L"
-                  />
-                  <NumberInput
-                    c={c}
-                    field="initialTemperature"
-                    label="Initial temperature"
-                    unit="°C"
-                  />
-                  <NumberInput
-                    c={c}
-                    field="ambient"
-                    label="Ambient temperature"
-                    unit="°C"
-                  />
-                  <NumberInput
-                    c={c}
-                    field="loss"
-                    label="Ambient loss (UA)"
-                    unit="W/K"
-                    step={0.1}
-                  />
-                  <p className="field-hint">
-                    Initial temperature applies on Reset.
-                  </p>
-                </>
-              ) : c.kind === "source" ? (
-                <>
-                  <NumberInput
-                    c={c}
-                    field="voltage"
-                    label="Supply voltage"
-                    unit="V"
-                    step={1}
-                  />
-                  <NumberInput
-                    c={c}
-                    field="maxCurrent"
-                    label="Current limit"
-                    unit="A"
-                    step={0.1}
-                  />
-                </>
-              ) : c.kind === "ground" ? (
-                <p className="field-hint">
-                  This terminal defines a 0 V reference.
-                </p>
-              ) : (
-                <>
-                  {c.kind === "switch" && (
-                    <div className="property-row">
-                      <span>Switch state</span>
+              {Object.entries(c.props).map(([field, value]) => {
+                const editable =
+                    liveProperties.has(field) ||
+                    configurableProperties.has(field),
+                  environmentLocked =
+                    !!s.project.challenge &&
+                    ((c.kind === "tank" &&
+                      ["volume", "initialTemperature", "ambient"].includes(
+                        field,
+                      )) ||
+                      (c.kind === "cooler" && field === "ambient") ||
+                      (c.kind === "safety" && field === "failOnSensor")),
+                  disabled =
+                    s.busy ||
+                    environmentLocked ||
+                    !editable ||
+                    !!propertyError(
+                      s.project,
+                      c,
+                      field,
+                      value,
+                      simulation.time,
+                    ) ||
+                    (simulation.time > 0 && !liveProperties.has(field));
+                if (field === "target")
+                  return (
+                    <label className="property-row" key={field}>
+                      <span>Thermal target</span>
+                      <select
+                        aria-label="Thermal target"
+                        disabled={disabled}
+                        value={String(value)}
+                        onChange={(e) =>
+                          actions.property(c.id, field, e.target.value)
+                        }
+                      >
+                        <option value="">Unassigned</option>
+                        {s.project.components.filter(isThermalMass).map((x) => (
+                          <option key={x.id} value={x.id}>
+                            {x.name} · {definitions[x.kind].label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                if (field === "mode")
+                  return (
+                    <label className="property-row" key={field}>
+                      <span>Mode</span>
+                      <select
+                        aria-label="Controller mode"
+                        disabled={disabled}
+                        value={String(value)}
+                        onChange={(e) =>
+                          actions.property(c.id, field, e.target.value)
+                        }
+                      >
+                        {(c.kind === "timer"
+                          ? ["onDelay", "offDelay", "pulse"]
+                          : ["lt", "lte", "gt", "gte"]
+                        ).map((x) => (
+                          <option key={x}>{x}</option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                if (typeof value === "boolean")
+                  return (
+                    <label className="property-row" key={field}>
+                      <span>{labels[field] ?? field}</span>
                       <button
-                        className={`switch-control ${c.props.closed ? "on" : ""}`}
-                        aria-label="Toggle switch"
-                        aria-pressed={Boolean(c.props.closed)}
-                        onClick={() => actions.toggle(c.id)}
+                        disabled={disabled}
+                        className={`switch-control ${value ? "on" : ""}`}
+                        aria-label={
+                          c.kind === "switch"
+                            ? "Toggle switch"
+                            : (labels[field] ?? field)
+                        }
+                        aria-pressed={value}
+                        onClick={() => actions.property(c.id, field, !value)}
                       >
                         <i />
-                        {c.props.closed ? "Closed" : "Open"}
+                        {value ? "On" : "Off"}
                       </button>
-                    </div>
-                  )}
-                  <NumberInput
-                    c={c}
-                    field="resistance"
-                    label="Resistance"
-                    unit="Ω"
-                    step={0.1}
-                  />
-                  {c.kind === "fuse" && (
+                    </label>
+                  );
+                if (typeof value === "number")
+                  return (
                     <NumberInput
                       c={c}
-                      field="ratedCurrent"
-                      label="Rated current"
-                      unit="A"
+                      field={field}
+                      disabled={disabled}
+                      key={field}
                     />
-                  )}
-                  <NumberInput
-                    c={c}
-                    field="ratedPower"
-                    label="Power rating"
-                    unit="W"
-                  />
-                  {c.kind === "heater" && (
-                    <>
-                      <NumberInput
-                        c={c}
-                        field="conductance"
-                        label="Immersion (UA)"
-                        unit="W/K"
-                      />
-                      <NumberInput
-                        c={c}
-                        field="heatCapacity"
-                        label="Thermal capacity"
-                        unit="J/K"
-                      />
-                      <NumberInput
-                        c={c}
-                        field="maxTemperature"
-                        label="Temperature limit"
-                        unit="°C"
-                      />
-                    </>
-                  )}
-                </>
-              )}
+                  );
+                return null;
+              })}
             </div>
-            {(isTank || c.kind === "heater") && (
+            {c.kind === "safety" && (
               <div className="inspector-section">
-                <div className="section-label">THERMAL INTERFACE</div>
-                <div
-                  className={`interface-status ${thermalConnected ? "connected" : ""}`}
-                >
-                  <Link2 size={15} />
-                  <span>
-                    {thermalConnected
-                      ? "Immersion interface connected"
-                      : "No thermal connection"}
-                  </span>
-                </div>
+                <div className="section-label">INDEPENDENT PROTECTION</div>
                 <p className="field-hint">
-                  {thermalConnected
-                    ? "Heat transfers through the orange thermal connection."
-                    : "Connect the orange ports of a heater and a tank."}
+                  Own sensing path. Trip is latched. Reset below{" "}
+                  {(prop(c, "threshold") - prop(c, "resetMargin")).toFixed(1)}
+                  °C. Welded contacts ignore the latch; no certification is
+                  implied.
                 </p>
+                <button
+                  className="fault-button"
+                  disabled={
+                    !simulation.automation.memory[c.id]?.tripped || s.busy
+                  }
+                  onClick={() => actions.resetSafety(c.id)}
+                >
+                  Manually reset safety latch
+                </button>
               </div>
+            )}
+            {c.kind === "reset" && (
+              <button
+                className="fault-button"
+                onClick={() => actions.pulse(c.id)}
+              >
+                Send one-step reset pulse
+              </button>
+            )}
+            <div className="inspector-section">
+              <div className="section-label">
+                <Activity size={13} /> MEASUREMENT PROBES
+              </div>
+              <select
+                className="wide-select"
+                aria-label="Probe measurement"
+                value={options.includes(metric) ? metric : options[0]}
+                onChange={(e) => setMetric(e.target.value as Measurement)}
+              >
+                {options
+                  .filter((x) => x !== "nodeVoltage")
+                  .map((x) => (
+                    <option key={x} value={x}>
+                      {x} [{units[x]}]
+                    </option>
+                  ))}
+              </select>
+              <button
+                className="text-link"
+                onClick={() =>
+                  actions.addProbe(
+                    c.id,
+                    options.includes(metric) && metric !== "nodeVoltage"
+                      ? metric
+                      : options.find((x) => x !== "nodeVoltage")!,
+                  )
+                }
+              >
+                Add trace for {c.name}
+              </button>
+              <p className="field-hint">
+                Differential node probes: choose Node measurement mode in the
+                canvas toolbar, then reference and measured terminals.
+              </p>
+            </div>
+            {allowedFaults(c).length > 0 && (
+              <details className="inspector-section">
+                <summary className="section-label">EXPERIMENT FAULTS</summary>
+                <p className="field-hint">
+                  Faults change actual behavior and are recorded for replay.
+                  Reset removes faults.
+                </p>
+                <select
+                  className="wide-select"
+                  aria-label="Inject component fault"
+                  disabled={!!s.project.challenge || s.busy}
+                  value={simulation.faults[c.id] ?? ""}
+                  onChange={(e) =>
+                    actions.fault(
+                      c.id,
+                      (e.target.value || null) as FaultType | null,
+                    )
+                  }
+                >
+                  <option value="">Healthy / clear injected fault</option>
+                  {allowedFaults(c).map((f) => (
+                    <option key={f}>{f}</option>
+                  ))}
+                </select>
+                {s.project.challenge && (
+                  <p className="field-hint">
+                    Fault schedule belongs to this scored scenario.
+                  </p>
+                )}
+              </details>
             )}
             {simulation.failed[c.id] && (
               <div className="component-warning">
-                <AlertTriangle size={15} />
-                Component failed open. Reset to replace it.
+                <TriangleAlert size={15} />
+                Permanent failure. Reset to replace.
               </div>
             )}
           </>
@@ -396,7 +538,7 @@ export default function Inspector() {
       </div>
       <div className="inspector-footer">
         <span>Component cost</span>
-        <strong>€{d.cost.toFixed(2)}</strong>
+        <strong>€{model.cost.toFixed(2)}</strong>
       </div>
     </aside>
   );

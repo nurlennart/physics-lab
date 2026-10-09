@@ -14,19 +14,20 @@ import { definitions, type Kind } from "../simulation/model";
 import { actions, useLab } from "../editor/store";
 import { ComponentIcon } from "./Icons";
 export default function Library() {
-  useLab();
+  const s = useLab();
   const [query, setQuery] = useState(""),
     [collapsed, setCollapsed] = useState<string[]>([]);
   const categories = [
     { name: "Electrical", icon: Zap, color: "electrical" },
     { name: "Thermal", icon: Flame, color: "thermal" },
     { name: "Sensors", icon: Activity, color: "sensors" },
+    { name: "Automation", icon: Activity, color: "control" },
   ];
   return (
     <aside className="library">
       <div className="panel-heading">
         <h2>Component library</h2>
-        <span className="count">09</span>
+        <span className="count">{Object.keys(definitions).length}</span>
       </div>
       <label className="search-field">
         <Search size={15} />
@@ -104,6 +105,36 @@ export default function Library() {
             .includes(query.toLowerCase()),
         ) && <p className="no-results">No matching components.</p>}
       </div>
+      <div className="assembly-tools">
+        <button onClick={() => actions.newProject("automated")}>
+          Open closed-loop starter
+        </button>
+        {s.selected.length > 0 && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = e.currentTarget.elements.namedItem(
+                "assembly",
+              ) as HTMLInputElement;
+              actions.saveAssembly(input.value);
+              input.value = "";
+            }}
+          >
+            <input
+              name="assembly"
+              placeholder="Assembly name"
+              required
+              maxLength={80}
+            />
+            <button>Save selection</button>
+          </form>
+        )}
+        {(s.project.assemblies ?? []).map((a) => (
+          <button key={a.id} onClick={() => actions.insertAssembly(a.id)}>
+            Insert {a.name}
+          </button>
+        ))}
+      </div>
       <div className="library-note">
         <Box size={16} />
         <span>
@@ -121,7 +152,7 @@ export default function Library() {
       </button>
       <div className="library-version">
         <span>LAB ENGINE</span>
-        <span>v1.0.0</span>
+        <span>v2.0.0</span>
       </div>
     </aside>
   );

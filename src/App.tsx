@@ -279,7 +279,7 @@ export default function App() {
             onClick={() => actions.set({ view: "challenges" })}
           >
             <Trophy size={15} />
-            Challenges<span className="tab-count">2</span>
+            Challenges<span className="tab-count">3</span>
           </button>
           <button
             className="add-experiment"
@@ -333,16 +333,19 @@ export default function App() {
         <div className="simulation-caption">
           <span className={s.running ? "status-dot running" : "status-dot"} />
           <strong>
-            {s.running
-              ? "Simulation running"
-              : result?.complete
-                ? "Challenge complete"
-                : "Simulation paused"}
+            {s.busy
+              ? "Advancing fixed steps"
+              : s.running
+                ? "Simulation running"
+                : result?.complete
+                  ? "Challenge complete"
+                  : "Simulation paused"}
           </strong>
         </div>
         <div className="transport">
           <button
             className={`run-button ${s.running ? "is-running" : ""}`}
+            disabled={s.busy}
             onClick={actions.run}
           >
             {s.running ? (
@@ -355,6 +358,7 @@ export default function App() {
           <button
             title="Reset simulation"
             aria-label="Reset simulation"
+            disabled={s.busy}
             onClick={actions.reset}
           >
             <RotateCcw size={16} />
@@ -362,7 +366,7 @@ export default function App() {
           <button
             title="Single step (1/60 s)"
             aria-label="Single simulation step"
-            disabled={s.running}
+            disabled={s.running || s.busy}
             onClick={actions.step}
           >
             <StepForward size={16} />
@@ -386,7 +390,7 @@ export default function App() {
           <button
             className="advance-button"
             title="Execute 3,600 fixed steps while paused"
-            disabled={s.running}
+            disabled={s.running || s.busy}
             onClick={() => actions.advance(60)}
           >
             <ChevronsRight size={16} />

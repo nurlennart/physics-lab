@@ -52,3 +52,9 @@ Water is well mixed, fixed density, fixed heat capacity, and bounded to 1–95°
 - 30, 60 and 144 render frames/s produce identical fixed-step state over five seconds.
 
 Specific heat and density are deliberate constant engineering approximations over the supported liquid range; they are not exact water property tables. The heating experiment naturally consumes more than the water-only sensible heat because the heater and switch store heat and ambient conductance removes energy.
+
+## Phase 2A integration
+
+The electrical and thermal equations above are retained. See [the Phase 2 audit](PHASE2-AUDIT.md) for sensor lag, simulation-clock control scheduling, finite-resistance SPDT contacts, independent latched protection, signed coolant energy, engineering edit rules and declared numerical limits. Temperature differences in degrees Celsius equal kelvin differences; volumes configured in liters convert to water mass using 1 kg/L (1,000 kg/m³). Power, energy, thermal capacity and conductance use W, J, J/K and W/K consistently.
+
+Source and contact ratings are catalog specifications. Normal source voltage and controller setpoints are operating settings. Stored mass/capacity and physical-model changes require Reset after time advances; no hidden refill, heat source or arbitrary mass adjustment occurs. Control output traces carry declared units (°C for temperature sensors, Boolean for logic, dimensionless for numeric constants) and use separate plot groups.

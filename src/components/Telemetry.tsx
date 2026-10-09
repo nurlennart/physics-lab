@@ -1,113 +1,208 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  Activity,
-  Download,
   ChartNoAxesCombined,
   List,
   Scale,
-  ChevronDown,
-  Flame,
-  Zap,
-  Timer,
-  TriangleAlert,
+  Download,
   RotateCcw,
+  Plus,
+  X,
 } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
-import type { Sample } from "../simulation/engine";
+import {
+  units,
+  measurements,
+  readProbe,
+  probeUnit,
+} from "../simulation/measurements";
+import { type Measurement, type Probe } from "../simulation/model";
 export function formatTime(t: number) {
   const ticks = Math.round(t * 100);
   return `${String(Math.floor(ticks / 360000)).padStart(2, "0")}:${String(Math.floor(ticks / 6000) % 60).padStart(2, "0")}:${((ticks % 6000) / 100).toFixed(2).padStart(5, "0")}`;
 }
-const channels: {
-  key: keyof Sample;
-  label: string;
-  unit: string;
-  color: string;
-}[] = [
-  {
-    key: "temperature",
-    label: "Water temperature",
-    unit: "°C",
-    color: "#eb9d72",
-  },
-  {
-    key: "heaterTemperature",
-    label: "Element temperature",
-    unit: "°C",
-    color: "#d8b67e",
-  },
-  { key: "power", label: "Electrical power", unit: "W", color: "#e1b667" },
-  { key: "voltage", label: "Supply voltage", unit: "V", color: "#e1b667" },
-  { key: "current", label: "Load current", unit: "A", color: "#91bda9" },
-  { key: "energy", label: "Energy consumed", unit: "J", color: "#a293c7" },
-];
+function Plot({
+  probes,
+  start,
+  end,
+}: {
+  probes: Probe[];
+  start: number;
+  end: number;
+}) {
+  const [hover, setHover] = useState<number | null>(null);
+  const samples = simulation.samples.filter(
+      (s) => s.time >= start && s.time <= end,
+    ),
+    points = samples.filter(
+      (_, i) => i % Math.max(1, Math.floor(samples.length / 600)) === 0,
+    ),
+    values = points.flatMap((s) =>
+      probes
+        .map((p) => s.values[p.id])
+        .filter((v): v is number => typeof v === "number"),
+    );
+  const min = Math.min(0, ...values),
+    max = Math.max(min + 1, ...values),
+    pad = (max - min) * 0.08,
+    lo = min - pad,
+    hi = max + pad;
+  const sample =
+    hover === null
+      ? undefined
+      : samples.reduce<(typeof samples)[number] | undefined>(
+          (best, s) =>
+            !best || Math.abs(s.time - hover) < Math.abs(best.time - hover)
+              ? s
+              : best,
+          undefined,
+        );
+  return (
+    <div className="trace-plot">
+      <div className="trace-unit">
+        {probeUnit(probes[0], simulation.project)}{" "}
+        {sample && (
+          <span>
+            {sample.time.toFixed(3)} s ·{" "}
+            {probes
+              .map(
+                (p) =>
+                  `${p.name}: ${sample.values[p.id] === null || sample.values[p.id] === undefined ? "invalid" : sample.values[p.id]!.toFixed(4)}`,
+              )
+              .join(" · ")}
+          </span>
+        )}
+      </div>
+      <svg
+        viewBox="0 0 900 94"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`${probeUnit(probes[0], simulation.project)} measurement traces`}
+        onPointerMove={(e) => {
+          const r = e.currentTarget.getBoundingClientRect();
+          setHover(
+            start +
+              Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) *
+                (end - start),
+          );
+        }}
+        onPointerLeave={() => setHover(null)}
+      >
+        {[0, 1, 2].map((i) => (
+          <g key={i}>
+            <line
+              x1="52"
+              x2="890"
+              y1={10 + i * 30}
+              y2={10 + i * 30}
+              stroke="#303b45"
+              strokeDasharray="3 4"
+            />
+            <text x="45" y={14 + i * 30} textAnchor="end">
+              {(hi - ((hi - lo) * i) / 2).toPrecision(3)}
+            </text>
+          </g>
+        ))}
+        {probes.map((p) => {
+          let pen = false;
+          const d = points
+            .map((s) => {
+              const v = s.values[p.id];
+              if (typeof v !== "number") {
+                pen = false;
+                return "";
+              }
+              const command = pen ? "L" : "M";
+              pen = true;
+              return `${command}${52 + ((s.time - start) / Math.max(0.001, end - start)) * 838},${70 - ((v - lo) / (hi - lo)) * 60}`;
+            })
+            .join(" ");
+          return (
+            <path
+              key={p.id}
+              d={d}
+              fill="none"
+              stroke={p.color}
+              strokeWidth="1.6"
+              vectorEffect="non-scaling-stroke"
+            />
+          );
+        })}
+        <text x="52" y="91">
+          {start.toFixed(1)} s
+        </text>
+        <text x="890" y="91" textAnchor="end">
+          {end.toFixed(1)} s
+        </text>
+        {points.length < 2 && (
+          <text x="470" y="45" textAnchor="middle">
+            Run the simulation to record measurements
+          </text>
+        )}
+      </svg>
+    </div>
+  );
+}
 export default function Telemetry() {
   const s = useLab(),
-    [channel, setChannel] = useState<keyof Sample>("temperature");
-  useEffect(() => {
-    setChannel(
-      s.project.components.some((c) => c.kind === "tank")
-        ? "temperature"
-        : "power",
-    );
-  }, [s.project.id]);
-  const ch = channels.find((c) => c.key === channel)!;
-  const samples = simulation.samples,
-    points = samples.filter(
-      (_, i) => i % Math.max(1, Math.floor(samples.length / 500)) === 0,
-    );
-  const values = points.map((p) => p[channel]),
-    minValue = Math.min(...values, channel === "temperature" ? 20 : 0),
-    maxValue = Math.max(...values, minValue + 1);
-  const pad = (maxValue - minValue) * 0.15;
-  const lo =
-      channel === "temperature"
-        ? Math.floor(minValue - pad)
-        : Math.max(0, minValue - pad),
-    hi = maxValue + pad;
-  const end = Math.max(10, simulation.time),
-    start = samples[0]?.time ?? 0;
-  const W = 900,
-    H = 120;
-  const path = points
-    .map(
-      (p, i) =>
-        `${i ? "L" : "M"}${48 + ((p.time - start) / (end - start)) * 830},${H - 15 - ((p[channel] - lo) / (hi - lo)) * 90}`,
-    )
-    .join(" ");
-  const tank = s.project.components.find((c) => c.kind === "tank");
-  const temperature = tank ? simulation.temperatures[tank.id] : undefined;
-  const balance =
-    simulation.energy - simulation.storedEnergy - simulation.ambientEnergy;
+    [target, setTarget] = useState(""),
+    [metric, setMetric] = useState<Measurement>("temperature"),
+    [window, setWindow] = useState(600),
+    [offset, setOffset] = useState(0),
+    [manage, setManage] = useState(false);
+  const probes = s.project.probes ?? [],
+    c =
+      s.project.components.find((c) => c.id === target) ??
+      s.project.components[0],
+    options = c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
+    validMetric = options.some((x) => x === metric) ? metric : options[0];
+  const end = Math.max(0.25, simulation.time - offset),
+    start = Math.max(simulation.samples[0]?.time ?? 0, end - window),
+    visible = probes.filter((p) => p.visible),
+    groups = [...new Set(visible.map((p) => probeUnit(p, s.project)))];
+  const a = simulation.samples.find((x) => x.time >= start),
+    b = [...simulation.samples].reverse().find((x) => x.time <= end),
+    delta = (
+      key:
+        | "supplied"
+        | "energy"
+        | "waterStored"
+        | "heaterStored"
+        | "stored"
+        | "ambient",
+    ) => (b?.[key] ?? 0) - (a?.[key] ?? 0);
+  const balance = delta("supplied") - delta("stored") - delta("ambient");
   return (
     <section className="telemetry">
       <div className="telemetry-top">
         <div className="telemetry-tabs">
-          <button
-            className={s.panel === "telemetry" ? "active" : ""}
-            onClick={() => actions.set({ panel: "telemetry" })}
-          >
-            <ChartNoAxesCombined size={14} />
-            Live telemetry
-          </button>
-          <button
-            className={s.panel === "events" ? "active" : ""}
-            onClick={() => actions.set({ panel: "events" })}
-          >
-            <List size={14} />
-            Event log <span className="count">{simulation.events.length}</span>
-          </button>
-          <button
-            className={s.panel === "energy" ? "active" : ""}
-            onClick={() => actions.set({ panel: "energy" })}
-          >
-            <Scale size={14} />
-            Energy balance
-          </button>
+          {(
+            [
+              {
+                id: "telemetry",
+                label: "Live telemetry",
+                Icon: ChartNoAxesCombined,
+              },
+              { id: "events", label: "Event log", Icon: List },
+              { id: "energy", label: "Energy balance", Icon: Scale },
+            ] as const
+          ).map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              className={s.panel === id ? "active" : ""}
+              onClick={() => actions.set({ panel: id })}
+            >
+              <Icon size={14} />
+              {label}
+            </button>
+          ))}
         </div>
         <div className="telemetry-actions">
           {s.panel === "events" && (
-            <button className="csv-button" onClick={actions.replay}>
+            <button
+              className="csv-button"
+              disabled={s.busy}
+              onClick={actions.replay}
+            >
               <RotateCcw size={13} />
               Replay experiment
             </button>
@@ -118,150 +213,10 @@ export default function Telemetry() {
           </button>
         </div>
       </div>
-      {s.panel === "telemetry" ? (
-        <>
-          <div className="telemetry-metrics">
-            <div>
-              <span>
-                <Flame size={12} />
-                WATER TEMPERATURE
-              </span>
-              <strong className="thermal-text">
-                {temperature === undefined ? "—" : temperature.toFixed(2)}
-                <small>°C</small>
-              </strong>
-            </div>
-            <div>
-              <span>
-                <Zap size={12} />
-                ELECTRICAL POWER
-              </span>
-              <strong>
-                {simulation.error
-                  ? "—"
-                  : simulation.electrical.sourcePower.toFixed(1)}
-                <small>W</small>
-              </strong>
-            </div>
-            <div>
-              <span>
-                <Activity size={12} />
-                ENERGY CONSUMED
-              </span>
-              <strong>
-                {(simulation.energy / 1000).toFixed(2)}
-                <small>kJ</small>
-              </strong>
-            </div>
-            <div>
-              <span>
-                <Timer size={12} />
-                SIMULATION TIME
-              </span>
-              <strong>
-                {formatTime(simulation.time)}
-                <small>s</small>
-              </strong>
-            </div>
-          </div>
-          <div className="chart-heading">
-            <label>
-              <i style={{ background: ch.color }} />
-              <select
-                value={channel}
-                onChange={(e) => setChannel(e.target.value as keyof Sample)}
-                aria-label="Chart measurement"
-              >
-                {channels.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={12} />
-            </label>
-            <span>
-              {s.running ? "Recording" : "Paused"} · 4 samples/s · {ch.unit}
-            </span>
-          </div>
-          <div className="chart">
-            <svg
-              viewBox={`0 0 ${W} ${H}`}
-              preserveAspectRatio="none"
-              aria-label={`${ch.label} over simulation time`}
-              role="img"
-            >
-              <defs>
-                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={ch.color} stopOpacity=".13" />
-                  <stop offset="100%" stopColor={ch.color} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {[0, 1, 2].map((i) => {
-                const y = 15 + i * 45,
-                  v = hi - ((hi - lo) * i) / 2;
-                return (
-                  <g key={i}>
-                    <line
-                      x1="48"
-                      x2="880"
-                      y1={y}
-                      y2={y}
-                      stroke="#2d373d"
-                      strokeDasharray="3 4"
-                    />
-                    <text x="35" y={y + 4} textAnchor="end">
-                      {v.toFixed(channel === "energy" ? 0 : 1)}
-                    </text>
-                  </g>
-                );
-              })}
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <g key={i}>
-                  <line
-                    x1={48 + i * 166}
-                    x2={48 + i * 166}
-                    y1="15"
-                    y2="105"
-                    stroke="#263138"
-                  />
-                  <text x={48 + i * 166} y="119" textAnchor="middle">
-                    {(start + ((end - start) * i) / 5).toFixed(0)} s
-                  </text>
-                </g>
-              ))}
-              {points.length > 1 && (
-                <>
-                  <path
-                    d={`${path}L${48 + ((points[points.length - 1].time - start) / (end - start)) * 830},105H48Z`}
-                    fill="url(#chartFill)"
-                  />
-                  <path
-                    d={path}
-                    stroke={ch.color}
-                    strokeWidth="1.7"
-                    vectorEffect="non-scaling-stroke"
-                    fill="none"
-                  />
-                </>
-              )}
-              {points.length <= 1 && (
-                <text
-                  x="470"
-                  y="65"
-                  textAnchor="middle"
-                  className="chart-empty"
-                >
-                  Run the simulation to record measurements
-                </text>
-              )}
-            </svg>
-          </div>
-        </>
-      ) : s.panel === "events" ? (
+      {s.panel === "events" ? (
         <div className="event-log">
           {[...simulation.events].reverse().map((e, i) => (
-            <div className={`log-row ${e.level}`} key={`${e.time}-${i}`}>
+            <div className={`log-row ${e.level}`} key={i}>
               <time>{formatTime(e.time)}</time>
               <span className="event-level">{e.level.toUpperCase()}</span>
               <span>{e.message}</span>
@@ -269,39 +224,202 @@ export default function Telemetry() {
           ))}
         </div>
       ) : (
-        <div className="energy-panel">
-          <div>
-            <span>Electrical input</span>
-            <strong>
-              {(simulation.energy / 1000).toFixed(4)} <small>kJ</small>
-            </strong>
-          </div>
-          <span className="energy-equals">=</span>
-          <div>
-            <span>Stored thermal energy</span>
-            <strong>
-              {(simulation.storedEnergy / 1000).toFixed(4)} <small>kJ</small>
-            </strong>
-          </div>
-          <span className="energy-equals">+</span>
-          <div>
-            <span>Heat to ambient</span>
-            <strong>
-              {(simulation.ambientEnergy / 1000).toFixed(4)} <small>kJ</small>
-            </strong>
-          </div>
-          <div className="energy-error">
-            <Scale size={16} />
+        <>
+          <div className="chart-heading">
+            <label>
+              Time window{" "}
+              <select
+                aria-label="Chart time window"
+                value={window}
+                onChange={(e) => setWindow(Number(e.target.value))}
+              >
+                {[30, 60, 300, 600, 1800, 3600].map((x) => (
+                  <option key={x} value={x}>
+                    {x} s
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              History{" "}
+              <input
+                aria-label="Chart history offset"
+                type="range"
+                min={0}
+                max={Math.max(0, simulation.time - 1)}
+                step={0.25}
+                value={offset}
+                onChange={(e) => setOffset(Number(e.target.value))}
+              />
+            </label>
             <span>
-              Conservation residual{" "}
-              <strong>{Math.abs(balance).toExponential(2)} J</strong>
+              {formatTime(simulation.time)} · 4 samples/s ·{" "}
+              {s.busy ? "Advancing" : s.running ? "Recording" : "Paused"}
             </span>
-            <p>
-              Electrical input equals the change in thermal storage plus ambient
-              losses. Positive ambient heat denotes energy leaving the system.
-            </p>
+            {s.panel === "telemetry" && (
+              <button onClick={() => setManage(!manage)}>
+                <Plus size={13} />
+                Manage traces
+              </button>
+            )}
           </div>
-        </div>
+          {s.panel === "energy" ? (
+            <div className="energy-panel">
+              <div>
+                <span>Selected interval</span>
+                <strong>
+                  {(a?.time ?? 0).toFixed(2)}–{(b?.time ?? 0).toFixed(2)} s
+                </strong>
+              </div>
+              {[
+                { name: "Electrical supplied", value: delta("supplied") },
+                { name: "Electrical dissipated", value: delta("energy") },
+                { name: "Water storage Δ", value: delta("waterStored") },
+                { name: "Element storage Δ", value: delta("heaterStored") },
+                {
+                  name: "Other storage Δ",
+                  value:
+                    delta("stored") -
+                    delta("waterStored") -
+                    delta("heaterStored"),
+                },
+                { name: "Ambient + coolant heat", value: delta("ambient") },
+              ].map((x) => (
+                <div key={x.name}>
+                  <span>{x.name}</span>
+                  <strong>
+                    {(x.value / 1000).toFixed(4)} <small>kJ</small>
+                  </strong>
+                </div>
+              ))}
+              <div className="energy-error">
+                <Scale size={16} />
+                <span>
+                  Conservation residual{" "}
+                  <strong>{balance.toExponential(3)} J</strong>
+                </span>
+                <p>
+                  Supplied = total storage change + external heat. Electrical
+                  dissipation is an internal conversion, not an additional
+                  output. Signed ambient heat includes the ideal coolant
+                  reservoir. Interval endpoints use recorded samples.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {manage && (
+                <div className="probe-manager">
+                  <div className="probe-add">
+                    <select
+                      aria-label="Trace component"
+                      value={c?.id ?? ""}
+                      onChange={(e) => setTarget(e.target.value)}
+                    >
+                      {s.project.components.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Chart measurement"
+                      value={validMetric ?? ""}
+                      onChange={(e) => setMetric(e.target.value as Measurement)}
+                    >
+                      {options.map((m) => (
+                        <option key={m} value={m}>
+                          {m} [{units[m]}]
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => c && actions.addProbe(c.id, validMetric)}
+                    >
+                      Add trace
+                    </button>
+                  </div>
+                  {probes.map((p) => (
+                    <div className="probe-row" key={p.id}>
+                      <input
+                        aria-label={`Show ${p.name}`}
+                        type="checkbox"
+                        checked={p.visible}
+                        onChange={(e) =>
+                          actions.probe(p.id, { visible: e.target.checked })
+                        }
+                      />
+                      <input
+                        aria-label={`Color ${p.name}`}
+                        type="color"
+                        value={p.color}
+                        onChange={(e) =>
+                          actions.probe(p.id, { color: e.target.value })
+                        }
+                      />
+                      <input
+                        aria-label={`Trace name ${p.name}`}
+                        value={p.name}
+                        onChange={(e) =>
+                          actions.probe(p.id, {
+                            name: e.target.value.slice(0, 80),
+                          })
+                        }
+                      />
+                      <span>
+                        {p.measurement} ·{" "}
+                        {p.reference
+                          ? "differential"
+                          : p.measurement === "nodeVoltage"
+                            ? "local reference"
+                            : p.component.slice(0, 5)}
+                      </span>
+                      <button
+                        aria-label={`Remove ${p.name}`}
+                        onClick={() => actions.probe(p.id, null)}
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="trace-readouts">
+                {visible.map((p) => {
+                  const v = readProbe(p, simulation);
+                  return (
+                    <label key={p.id}>
+                      <i style={{ background: p.color }} />
+                      {p.name}
+                      <strong>
+                        {v === null ? "invalid" : v.toFixed(3)}{" "}
+                        <small>{probeUnit(p, s.project)}</small>
+                      </strong>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="multi-chart">
+                {groups.map((unit) => (
+                  <Plot
+                    key={unit}
+                    probes={visible.filter(
+                      (p) => probeUnit(p, s.project) === unit,
+                    )}
+                    start={start}
+                    end={end}
+                  />
+                ))}
+                {!visible.length && (
+                  <p className="field-hint">
+                    Add a targeted measurement in the inspector or Manage
+                    traces.
+                  </p>
+                )}
+              </div>
+            </>
+          )}
+        </>
       )}
     </section>
   );

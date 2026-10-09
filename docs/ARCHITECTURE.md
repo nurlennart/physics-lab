@@ -2,19 +2,19 @@
 
 ## Modules
 
-| Module                     | Responsibility                                                                                                   |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `simulation/model.ts`      | Component definitions, SI properties, explicit electrical/thermal ports, connection validation                   |
-| `simulation/electrical.ts` | Wire union-find, circuit islands, modified nodal analysis, pivoted matrix solve, calculated readings             |
-| `simulation/engine.ts`     | Deterministic simulation state, coupled thermal solve, protection, energy integration, telemetry and diagnostics |
-| `simulation/challenges.ts` | Assignment data, declarative metric rules, transparent scoring                                                   |
-| `simulation/projects.ts`   | Starters, version 1 schema validation, JSON and CSV file delivery                                                |
-| `simulation/replay.ts`     | Reproducible reset and timestamped editor-input playback                                                         |
-| `editor/store.ts`          | External React store, project edits, selection, history, clock transport and input recording                     |
-| `editor/webmcp.ts`         | Optional browser-native structured access to existing laboratory actions                                         |
-| `components/Workspace.tsx` | SVG schematic rendering, pan/zoom, placement, selection, terminal interaction and routing                        |
-| `components/Inspector.tsx` | Editable model properties and calculated component instrumentation                                               |
-| `components/Telemetry.tsx` | Actual recorded measurements, events, chart channels and energy balance                                          |
+| Module                     | Responsibility                                                                                                         |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `simulation/model.ts`      | Component definitions, SI properties, typed electrical/thermal/control ports, connection validation                    |
+| `simulation/electrical.ts` | Wire union-find, circuit islands, modified nodal analysis, pivoted matrix solve, calculated readings                   |
+| `simulation/engine.ts`     | Deterministic simulation state, coupled thermal solve, protection, energy integration, telemetry and diagnostics       |
+| `simulation/challenges.ts` | Assignment data, scenario callbacks/configuration, measured-feedback/causal-protection evaluation, transparent scoring |
+| `simulation/projects.ts`   | Starters, v1→v2 migration and validated project schema, JSON and CSV file delivery                                     |
+| `simulation/replay.ts`     | Reproducible reset and timestamped editor-input playback                                                               |
+| `editor/store.ts`          | External React store, project edits, selection, history, clock transport and input recording                           |
+| `editor/webmcp.ts`         | Optional browser-native structured access to existing laboratory actions                                               |
+| `components/Workspace.tsx` | SVG schematic rendering, pan/zoom, placement, selection, terminal interaction and routing                              |
+| `components/Inspector.tsx` | Editable model properties and calculated component instrumentation                                                     |
+| `components/Telemetry.tsx` | Actual recorded measurements, events, chart channels and energy balance                                                |
 
 ## State and clock
 
@@ -22,7 +22,7 @@ Project construction and initial conditions are separate from the mutable `Simul
 
 The simulation advances at 1/60 s with an independent render loop. Instrument updates are throttled to 20 Hz; SVG dragging updates on input, and flow indicators use CSS. Slow frames have bounded catch-up: at most 0.25 wall-clock seconds are accumulated per frame. Speed multiplication changes the number of steps, never timestep size. Pause clears the accumulator. Reset restores the current project's initial conditions, clears faults and measurements, and creates a new replay origin.
 
-Per step: solve the electrical network; construct and solve the coupled thermal matrix; integrate energy; evaluate physical limits and failure timers; update challenge metrics; record telemetry. Component failures take effect as open branches on the next electrical solve. The editor runs challenge rules after steps and pauses at completion.
+Per step: read temperature sensors; evaluate the typed acyclic control graph on simulation time; apply relay and safety contacts; solve/cache DC MNA; solve the coupled thermal matrix; integrate energy; evaluate ratings and limits; immediately re-solve failed branches; update challenge state; record targeted probes. The editor runs challenge rules after steps and pauses at completion.
 
 ## Ports and coupling
 
@@ -32,14 +32,22 @@ Thermal connections explicitly link one immersion heater to one water tank. Mult
 
 ## Editing and persistence
 
-History stores at most 60 immutable project snapshots. Duplicate/copy/paste creates independent components; wires are deliberately not copied. Routing is orthogonal, selected connections can be deleted, and connections validate both endpoint domains and immersion compatibility.
+History stores at most 60 immutable project snapshots. Duplicate/copy/paste remaps independent component IDs, internal connections, routes and sensor targets. External wires and thermal targets are omitted; saved reusable assemblies follow the same rule. Routing is orthogonal, selected connections can be deleted, and connections validate both endpoint domains and immersion compatibility.
 
-Version 1 projects include identity, name, components, connections, initial properties, and optional challenge ID. Imports enforce component counts, wire counts, finite bounded properties, unique IDs, valid ports, duplicate-wire rules, tank capacity and immersion compatibility. Future schemas must add explicit migrations before accepting a different version. Projects download as JSON. A labeled device recovery copy uses browser storage; it is not cloud persistence. Telemetry exports as CSV.
+Version 2 projects include routes, probes, reusable assemblies, model variants, identity, name, components, connections, initial properties, and optional challenge ID. Imports enforce component counts, wire counts, finite bounded properties, unique IDs, valid ports, duplicate-wire rules, tank capacity and immersion compatibility. Version 1 files migrate with validated catalog defaults. Projects download as JSON. A labeled device recovery copy uses browser storage; it is not cloud persistence. Telemetry exports as CSV.
 
-Replay stores editor project snapshots with simulation timestamps and reconstructs the final state by resetting the origin and executing identical fixed steps and inputs. Same-timestamp edits coalesce. Replay supports up to one simulation hour. It does not promise arbitrary timeline scrubbing or persistent recorded runs across reloads.
+Replay stores editor project snapshots with simulation timestamps and reconstructs the final state by resetting the origin and executing identical fixed steps and inputs. Adjacent same-timestamp project edits coalesce without discarding fault/reset inputs. Replay includes fault injections, wire faults, manual latch resets, controller states and pulse commands, and supports up to two simulation hours. It does not promise arbitrary timeline scrubbing or persistent recorded runs across reloads.
 
 ## Limits and tradeoffs
 
-100 components, 300 connections, 250 electrical unknowns per island; newest 2,400 measurements and 300 log events retained. Dense matrix solves are appropriate at this scene size. Typed arrays, sparse solvers, workers, WASM, and GPU rendering should be introduced only after profiling demonstrates a bottleneck.
+100 components, 300 connections, 250 electrical unknowns per island; newest 14,400 measurements and 500 log events retained. Dense matrix solves are appropriate at this scene size. Typed arrays, sparse solvers, workers, WASM, and GPU rendering should be introduced only after profiling demonstrates a bottleneck.
 
 No Rust, WebGPU, or mechanical engine is introduced for the initial electrical/thermal slice. A future hydraulic solver can introduce pressure/flow ports and conserved fluid volumes; a mechanical solver should use an established rigid-body engine. These are architectural extension points, not claimed capabilities of this build.
+
+## Phase 2 modules and extension interfaces
+
+`automation.ts` owns typed valid/invalid signals, sensor filtering, controller/timer/latch memory, contact commands and fault state. `integrity.ts` centralizes live controls, Reset-only physical configuration, challenge environment and paid model rules. `measurements.ts` resolves explicit branch or node/reference probes into values with invalid-state propagation. `editor/assemblies.ts` and `editor/geometry.ts` implement independently testable construction operations. `validation.ts` runs complete engine experiments and generates quantitative results via `scripts/validate-physics.mjs`.
+
+Engine project state is deeply frozen and detached from editor state. Project replacements and editor/history/import boundaries enforce integrity; physics steps operate on that validated immutable construction. Real time and rendering cannot advance controllers during pause. Fast-forward yields between 12 ms batches without skipping fixed steps. Relay contacts have resistance/thermal mass, independent cutoff sensing never uses the ordinary controller's output, and a cooling jacket couples an ideal reservoir through thermal conductance.
+
+New conserved hydraulic quantities can use the same simulation-clock sensor/control/measurement interfaces. A future hydraulic solver should add mass and advected enthalpy accounting to the scheduler explicitly; current cooling is only a thermal boundary and must not be advertised as fluid dynamics. See PHASE2-AUDIT.md for the full equations, response quantization and limitations.

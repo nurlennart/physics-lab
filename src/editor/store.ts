@@ -8,6 +8,10 @@ import {
   type Project,
   type Terminal,
   type Component,
+  type Property,
+  type Assembly,
+  type Probe,
+  catalog,
 } from "../simulation/model";
 import {
   starter,
@@ -16,6 +20,10 @@ import {
   download,
   ranges,
 } from "../simulation/projects";
+import { captureAssembly, insertAssembly } from "./assemblies";
+import type { FaultType } from "../simulation/automation";
+import { probeColors, probeUnit } from "../simulation/measurements";
+import { propertyError, transitionError } from "../simulation/integrity";
 import { Simulation, FixedClock, DT } from "../simulation/engine";
 import { evaluateChallenge } from "../simulation/challenges";
 import { replayExperiment, type RecordedInput } from "../simulation/replay";
@@ -33,6 +41,9 @@ interface EditorState {
   revision: number;
   toast: string | null;
   fps: number;
+  busy: boolean;
+  nodeMode: boolean;
+  reference: Terminal | null;
   panel: "telemetry" | "events" | "energy";
   view: "workspace" | "challenges" | "models";
 }
@@ -46,7 +57,7 @@ let previous = performance.now(),
   frameStart = previous;
 let history: Project[] = [],
   future: Project[] = [],
-  clipboard: Component[] = [];
+  clipboard: Assembly | null = null;
 let hasWon = false;
 let replayOrigin = structuredClone(initial);
 let recordedInputs: RecordedInput[] = [];
@@ -63,6 +74,9 @@ let state: EditorState = {
   revision: 0,
   toast: null,
   fps: 0,
+  busy: false,
+  nodeMode: false,
+  reference: null,
   panel: "telemetry",
   view: "workspace",
 };
@@ -86,15 +100,26 @@ function checkpoint() {
 }
 function recordInput(p: Project) {
   const input = { at: sim.time, project: structuredClone(p) };
-  if (recordedInputs.at(-1)?.at === sim.time)
+  if (recordedInputs.at(-1)?.at === sim.time && recordedInputs.at(-1)?.project)
     recordedInputs[recordedInputs.length - 1] = input;
   else recordedInputs.push(input);
 }
 function edit(p: Project, record = true) {
+  const invalid = transitionError(
+    state.project,
+    p,
+    sim.time,
+    state.project.challenge,
+  );
+  if (invalid) {
+    toast(invalid);
+    return false;
+  }
   if (record) checkpoint();
   recordInput(p);
   sim.refresh(p);
   emit({ project: p, dirty: true });
+  return true;
 }
 export function toast(message: string) {
   emit({ toast: message });
@@ -120,8 +145,10 @@ export const actions = {
     );
     c.x = Math.round(c.x / 20) * 20;
     c.y = Math.round(c.y / 20) * 20;
-    edit({ ...state.project, components: [...state.project.components, c] });
-    emit({ selected: [c.id], view: "workspace" });
+    if (
+      edit({ ...state.project, components: [...state.project.components, c] })
+    )
+      emit({ selected: [c.id], view: "workspace" });
   },
   beginMove() {
     checkpoint();
@@ -137,7 +164,7 @@ export const actions = {
       false,
     );
   },
-  property(id: string, key: string, value: number | boolean) {
+  property(id: string, key: string, value: Property) {
     if (
       state.project.challenge &&
       sim.time > 0 &&
@@ -158,6 +185,11 @@ export const actions = {
     }
     const c = state.project.components.find((c) => c.id === id);
     if (!c) return;
+    const invalid = propertyError(state.project, c, key, value, sim.time);
+    if (invalid) {
+      toast(invalid);
+      return;
+    }
     if (
       c.kind === "tank" &&
       ((key === "volume" && Number(value) > Number(c.props.capacity)) ||
@@ -184,7 +216,7 @@ export const actions = {
   },
   wire(from: Terminal, to: Terminal) {
     try {
-      edit(connect(state.project, from, to));
+      if (!edit(connect(state.project, from, to))) return false;
       sim.log("Connection added.");
       return true;
     } catch (e) {
@@ -196,8 +228,17 @@ export const actions = {
     if (!state.selected.length && !state.selectedWire) return;
     edit({
       ...state.project,
-      components: state.project.components.filter(
-        (c) => !state.selected.includes(c.id),
+      components: state.project.components
+        .filter((c) => !state.selected.includes(c.id))
+        .map((c) =>
+          state.selected.includes(String(c.props.target))
+            ? { ...c, props: { ...c.props, target: "" } }
+            : c,
+        ),
+      probes: (state.project.probes ?? []).filter(
+        (p) =>
+          !state.selected.includes(p.component) &&
+          (!p.reference || !state.selected.includes(p.reference.component)),
       ),
       connections: state.project.connections.filter(
         (w) =>
@@ -219,48 +260,211 @@ export const actions = {
     });
   },
   copy() {
-    clipboard = structuredClone(
-      state.project.components.filter((c) => state.selected.includes(c.id)),
+    clipboard = captureAssembly(state.project, state.selected);
+    toast(
+      `${clipboard.components.length} components and ${clipboard.connections.length} internal connections copied. External connections are omitted.`,
     );
-    toast(`${clipboard.length} component(s) copied.`);
   },
   paste() {
-    const copies: Component[] = [];
-    for (const c of clipboard) {
-      const n = makeComponent(c.kind, c.x + 40, c.y + 40, [
-        ...state.project.components,
-        ...copies,
-      ]);
-      copies.push({ ...n, rotation: c.rotation, props: { ...c.props } });
-    }
-    if (state.project.components.length + copies.length > 100) return;
-    edit({
-      ...state.project,
-      components: [...state.project.components, ...copies],
-    });
-    emit({ selected: copies.map((c) => c.id) });
+    if (!clipboard) return;
+    const next = insertAssembly(state.project, clipboard);
+    if (next.components.length > 100) return;
+    if (edit(next))
+      emit({
+        selected: next.components
+          .slice(state.project.components.length - clipboard.components.length)
+          .map((c) => c.id),
+      });
   },
   duplicate() {
     actions.copy();
     actions.paste();
   },
+  saveAssembly(name: string) {
+    if (!name.trim() || !state.selected.length) return;
+    const a = captureAssembly(
+      state.project,
+      state.selected,
+      name.trim().slice(0, 80),
+    );
+    edit({
+      ...state.project,
+      assemblies: [...(state.project.assemblies ?? []), a],
+    });
+    toast(
+      "Assembly saved in this project. External wires and sensor targets are omitted.",
+    );
+  },
+  insertAssembly(id: string) {
+    const a = state.project.assemblies?.find((x) => x.id === id);
+    if (a) {
+      const next = insertAssembly(state.project, a, 100, 100);
+      if (next.components.length <= 100 && edit(next))
+        emit({
+          selected: next.components
+            .slice(-a.components.length)
+            .map((c) => c.id),
+          selectedWire: null,
+        });
+    }
+  },
+  route(id: string, route: { x: number; y: number }[]) {
+    edit(
+      {
+        ...state.project,
+        connections: state.project.connections.map((w) =>
+          w.id === id ? { ...w, route } : w,
+        ),
+      },
+      false,
+    );
+  },
+  variant(id: string, variant: string) {
+    const c = state.project.components.find((c) => c.id === id);
+    if (!c) return;
+    try {
+      const model = catalog({ ...c, variant });
+      edit({
+        ...state.project,
+        components: state.project.components.map((x) =>
+          x.id === id
+            ? {
+                ...x,
+                variant,
+                props: {
+                  ...model.props,
+                  ...Object.fromEntries(
+                    [
+                      "target",
+                      "setpoint",
+                      "hysteresis",
+                      "voltage",
+                      "volume",
+                      "ambient",
+                      "initialTemperature",
+                      "closed",
+                    ]
+                      .filter((k) => k in x.props)
+                      .map((k) => [k, x.props[k]]),
+                  ),
+                },
+              }
+            : x,
+        ),
+      });
+    } catch (e) {
+      toast((e as Error).message);
+    }
+  },
+  addProbe(
+    component: string,
+    measurement: Probe["measurement"],
+    terminal?: string,
+    reference?: Terminal,
+  ) {
+    if ((state.project.probes?.length ?? 0) >= 24) {
+      toast("Maximum 24 traces.");
+      return;
+    }
+    const c = state.project.components.find((c) => c.id === component);
+    if (!c) return;
+    const probe: Probe = {
+      id: uid(),
+      name: `${c.name} ${measurement}`,
+      component,
+      measurement,
+      terminal,
+      reference,
+      color:
+        probeColors[(state.project.probes?.length ?? 0) % probeColors.length],
+      visible: true,
+    };
+    edit({
+      ...state.project,
+      probes: [...(state.project.probes ?? []), probe],
+    });
+  },
+  probe(id: string, patch: Partial<Probe> | null) {
+    edit({
+      ...state.project,
+      probes: patch
+        ? (state.project.probes ?? []).map((p) =>
+            p.id === id ? { ...p, ...patch } : p,
+          )
+        : (state.project.probes ?? []).filter((p) => p.id !== id),
+    });
+  },
+  fault(id: string, type: FaultType | null) {
+    const error = sim.injectFault(id, type);
+    if (error) {
+      toast(error);
+      return;
+    }
+    recordedInputs.push({ at: sim.time, fault: { id, type } });
+    emit();
+  },
+  disconnect() {
+    if (!state.selectedWire) return;
+    const error = sim.disconnect(state.selectedWire);
+    if (error) toast(error);
+    else {
+      recordedInputs.push({ at: sim.time, disconnect: state.selectedWire });
+      emit();
+    }
+  },
+  resetSafety(id: string) {
+    const error = sim.resetSafety(id);
+    if (error) toast(error);
+    else {
+      recordedInputs.push({ at: sim.time, resetSafety: id });
+      emit();
+    }
+  },
+  pulse(id: string) {
+    sim.pulse(id);
+    recordedInputs.push({ at: sim.time, pulse: id });
+    emit();
+  },
   undo() {
-    const p = history.pop();
+    const p = history.at(-1);
     if (!p) return;
+    const invalid = transitionError(
+      state.project,
+      p,
+      sim.time,
+      state.project.challenge,
+    );
+    if (invalid) {
+      toast(invalid);
+      return;
+    }
+    history.pop();
     future.push(structuredClone(state.project));
     recordInput(p);
     sim.refresh(p);
     emit({ project: p, dirty: true, selected: [], selectedWire: null });
   },
   redo() {
-    const p = future.pop();
+    const p = future.at(-1);
     if (!p) return;
+    const invalid = transitionError(
+      state.project,
+      p,
+      sim.time,
+      state.project.challenge,
+    );
+    if (invalid) {
+      toast(invalid);
+      return;
+    }
+    future.pop();
     history.push(structuredClone(state.project));
     recordInput(p);
     sim.refresh(p);
     emit({ project: p, dirty: true, selected: [], selectedWire: null });
   },
   run() {
+    if (state.busy) return;
     if (state.running) {
       sim.log("Simulation paused.");
       emit({ running: false });
@@ -275,6 +479,7 @@ export const actions = {
     emit({ running: true });
   },
   reset() {
+    if (state.busy) return;
     replayOrigin = structuredClone(state.project);
     recordedInputs = [];
     sim.reset(state.project);
@@ -295,24 +500,39 @@ export const actions = {
     }
   },
   step() {
+    if (state.busy) return;
     sim.step(DT);
     checkChallenge();
     emit();
   },
-  advance(seconds = 60) {
-    if (state.running) return;
-    for (let i = 0; i < Math.round(seconds / DT); i++) {
-      if (!sim.step(DT)) break;
-      const result = evaluateChallenge(state.project, sim);
-      if (result?.complete) {
-        checkChallenge();
-        break;
+  async advance(seconds = 60) {
+    if (state.running || state.busy) return;
+    emit({ busy: true });
+    let count = 0;
+    const total = Math.round(Math.min(seconds, 7200) / DT);
+    try {
+      while (count < total && state.busy) {
+        const start = performance.now();
+        while (count < total && performance.now() - start < 12) {
+          count++;
+          if (
+            !sim.step(DT) ||
+            evaluateChallenge(state.project, sim)?.complete
+          ) {
+            count = total;
+            break;
+          }
+        }
+        emit();
+        await new Promise((r) => setTimeout(r, 0));
       }
+      checkChallenge();
+    } finally {
+      emit({ busy: false });
     }
-    checkChallenge();
-    emit();
   },
   load(p: Project) {
+    if (state.busy) return;
     try {
       const valid = parseProject(p);
       history = [];
@@ -334,7 +554,10 @@ export const actions = {
       toast((e as Error).message);
     }
   },
-  newProject(mode: "heat" | "light" | "blank" = "blank", challenge = false) {
+  newProject(
+    mode: "heat" | "light" | "blank" | "runaway" | "automated" = "blank",
+    challenge = false,
+  ) {
     actions.load(starter(mode, challenge));
   },
   save() {
@@ -369,20 +592,17 @@ export const actions = {
     }
   },
   exportCSV() {
+    const probes = state.project.probes ?? [];
+    const quote = (v: string) => '"' + v.replaceAll('"', '""') + '"';
     const rows = [
-      "time_s,water_temperature_C,heater_temperature_C,voltage_V,current_A,power_W,energy_J",
+      [
+        "time_s",
+        ...probes.map((p) => `${p.name} [${probeUnit(p, state.project)}]`),
+      ]
+        .map(quote)
+        .join(","),
       ...sim.samples.map((s) =>
-        [
-          s.time,
-          s.temperature,
-          s.heaterTemperature,
-          s.voltage,
-          s.current,
-          s.power,
-          s.energy,
-        ]
-          .map((v) => v.toFixed(6))
-          .join(","),
+        [s.time, ...probes.map((p) => s.values[p.id] ?? "")].join(","),
       ),
     ];
     download("physics-lab-measurements.csv", rows.join("\n"), "text/csv");

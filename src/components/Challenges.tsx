@@ -33,7 +33,7 @@ export function ChallengeStrip() {
           ? `${r.stars} stars · ${r.score}/100`
           : r.failed
             ? "Safety constraint violated — reset"
-            : `${Math.round(r.progress * 100)}%`}
+            : `${s.project.challenge === "runaway" ? simulation.runaway.phase + " · " : ""}${Math.round(r.progress * 100)}%`}
       </span>
       <button
         title="Challenge details"
@@ -71,57 +71,79 @@ export default function Challenges() {
           actual simulation.
         </p>
         <div className="challenge-cards">
-          {Object.values(challenges).map((d) => {
-            const Icon = d.id === "light" ? Lightbulb : Flame;
-            return (
-              <article className={`challenge-card ${d.id}`} key={d.id}>
-                <div className="challenge-card-top">
-                  <span className="assignment-id">CHALLENGE {d.number}</span>
-                  <span className="difficulty">{d.difficulty}</span>
-                </div>
-                <div className="challenge-illustration">
-                  <Icon size={45} strokeWidth={1} />
-                  <span>{d.id === "light" ? "V = IR" : "Q = mcΔT"}</span>
-                </div>
-                <h3>{d.title}</h3>
-                <p>{d.description}</p>
-                <ul>
-                  {d.objectives.map((o) => (
-                    <li key={o}>
-                      <Check size={14} />
-                      {o}
-                    </li>
-                  ))}
-                </ul>
-                <div className="challenge-meta">
-                  <span>
-                    <Coins size={14} />€{d.budget} budget
-                  </span>
-                  <span>
-                    <Star size={14} />
-                    3-star rating
-                  </span>
-                </div>
-                <button
-                  className="primary-button"
-                  onClick={() => actions.newProject(d.id, true)}
-                >
-                  <Play size={14} />
-                  Start assignment
-                </button>
-              </article>
-            );
-          })}
+          {Object.values(challenges)
+            .sort((a, b) => a.number.localeCompare(b.number))
+            .map((d) => {
+              const Icon = d.id === "light" ? Lightbulb : Flame;
+              return (
+                <article className={`challenge-card ${d.id}`} key={d.id}>
+                  <div className="challenge-card-top">
+                    <span className="assignment-id">CHALLENGE {d.number}</span>
+                    <span className="difficulty">{d.difficulty}</span>
+                  </div>
+                  <div className="challenge-illustration">
+                    <Icon size={45} strokeWidth={1} />
+                    <span>{d.id === "light" ? "V = IR" : "Q = mcΔT"}</span>
+                  </div>
+                  <h3>{d.title}</h3>
+                  <p>{d.description}</p>
+                  <ul>
+                    {d.objectives.map((o) => (
+                      <li key={o}>
+                        <Check size={14} />
+                        {o}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="challenge-meta">
+                    <span>
+                      <Coins size={14} />€{d.budget} budget
+                    </span>
+                    <span>
+                      <Star size={14} />
+                      3-star rating
+                    </span>
+                  </div>
+                  <button
+                    className="primary-button"
+                    onClick={() => actions.newProject(d.id, true)}
+                  >
+                    <Play size={14} />
+                    Start assignment
+                  </button>
+                </article>
+              );
+            })}
         </div>
         <div className="challenge-footnote">
           <ShieldCheck size={17} />
           <p>
             <strong>Performance determines your score.</strong> Completion is
-            worth 60 points, efficiency 20, economy 10, and time 10. Earn 2
-            stars at 80 points and 3 at 90. Safety and budget constraints must
-            pass.
+            worth 60 points for First Light and Heating, with efficiency 20,
+            economy 10, and time 10. Thermal Runaway uses completion 50,
+            stability/overshoot 15, efficiency 10, economy 10, time 10, and
+            switching economy 5. Earn 2 stars at 80 points and 3 at 90. Safety
+            and budget constraints must pass.
           </p>
         </div>
+        {s.project.challenge === "runaway" && (
+          <div className="runaway-details">
+            <p>
+              State: <strong>{simulation.runaway.phase}</strong> · Regulation{" "}
+              {simulation.runaway.normalTime.toFixed(1)}/≥240 s · Recovery{" "}
+              {simulation.runaway.recoveryTime.toFixed(1)}/≥120 s. Feedback
+              transitions: {simulation.runaway.automaticSwitches}, recovery
+              transitions: {simulation.runaway.recoverySwitches}. After the
+              fault, select ST-01 and manually reset its safety latch once the
+              vessel is below its reset margin.
+            </p>
+            {evaluateChallenge(s.project, simulation)?.checks.map((c) => (
+              <p key={c.label}>
+                {c.ok ? "✓" : "○"} {c.label}
+              </p>
+            ))}
+          </div>
+        )}
         {s.project.challenge && (
           <button
             className="text-link"
