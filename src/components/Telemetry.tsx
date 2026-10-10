@@ -1,3 +1,4 @@
+import { T } from "../theme/tokens";
 import { measurementLabel } from "../simulation/capabilities";
 import { useState } from "react";
 import {
@@ -96,7 +97,7 @@ function Plot({
               x2="890"
               y1={10 + i * 30}
               y2={10 + i * 30}
-              stroke="#303b45"
+              stroke={T.n9}
               strokeDasharray="3 4"
             />
             <text x="45" y={14 + i * 30} textAnchor="end">

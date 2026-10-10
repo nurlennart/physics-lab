@@ -1,3 +1,4 @@
+import { T } from "../theme/tokens";
 import { inspectorMeasurements, measurementLabel } from "../simulation/capabilities";
 import { useState } from "react";
 import {
@@ -185,7 +186,7 @@ export default function Inspector() {
                         name: "",
                         component: c.id,
                         measurement: m,
-                        color: "#ffffff",
+                        color: T.n16,
                         visible: true,
                       },
                       simulation,
@@ -220,7 +221,7 @@ export default function Inspector() {
               const omega = rpm * Math.PI / 30, ratio = omega / prop(c, "ratedSpeed"), qMax = prop(c, "ratedFlow") * Math.max(0.01, ratio) * Math.SQRT2;
               const headMax = Math.max(0.1, prop(c, "shutoffHead") * ratio * ratio);
               const points = Array.from({ length: 25 }, (_, i) => { const q = qMax * i / 24; return `${20 + 215 * q / qMax},${115 - 95 * pumpCurve(c, omega, q).head / headMax}`; }).join(" ");
-              return <div className="inspector-section"><div className="section-label">PUMP OPERATING CURVE</div><svg viewBox="0 0 260 145" role="img" aria-label="Pump head versus flow with calculated operating point"><path d="M20 15V115H240" fill="none" stroke="#506570"/><polyline points={points} fill="none" stroke="#78b8d1" strokeWidth="2"/><circle cx={20 + 215 * Math.max(0, h?.flow ?? 0) / qMax} cy={115 - 95 * pumpCurve(c, omega, h?.flow ?? 0).head / headMax} r="4" fill="#e9bd6a"/><text x="20" y="137" fill="#9aabb5" fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text></svg><p className="field-hint">Curve at actual {rpm.toFixed(0)} RPM. Dot shows solved flow and gross impeller head; internal loss reduces net outlet rise.</p></div>;
+              return <div className="inspector-section"><div className="section-label">PUMP OPERATING CURVE</div><svg viewBox="0 0 260 145" role="img" aria-label="Pump head versus flow with calculated operating point"><path d="M20 15V115H240" fill="none" stroke={T.n11}/><polyline points={points} fill="none" stroke={T.hydraulicText} strokeWidth="2"/><circle cx={20 + 215 * Math.max(0, h?.flow ?? 0) / qMax} cy={115 - 95 * pumpCurve(c, omega, h?.flow ?? 0).head / headMax} r="4" fill={T.electricalText}/><text x="20" y="137" fill={T.n13} fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text></svg><p className="field-hint">Curve at actual {rpm.toFixed(0)} RPM. Dot shows solved flow and gross impeller head; internal loss reduces net outlet rise.</p></div>;
             })()}
             <RatingIndicators c={c} />
             <ModelAndPresets c={c} />

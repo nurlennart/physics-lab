@@ -1,3 +1,4 @@
+import { T } from "../theme/tokens";
 import {
   useState,
   useRef,
@@ -53,22 +54,22 @@ function CircuitSymbol({ c }: { c: Component }) {
           width="160"
           height="98"
           rx="5"
-          fill="#121b22"
-          stroke="#476471"
+          fill={T.n3}
+          stroke={T.n11}
         />
         <path
           d={`M22 ${144 - 90 * fill}H180V140Q180 144 176 144H26Q22 144 22 140Z`}
-          fill="#224b5b"
+          fill={T.hydraulicDim}
         />
         <path
           d={`M22 ${144 - 90 * fill}H180`}
-          stroke="#61b4cf"
+          stroke={T.hydraulic}
           strokeWidth="1.5"
         />
-        <path d="M101 0V47" stroke="#ee9e70" strokeWidth="2" />
+        <path d="M101 0V47" stroke={T.thermalText} strokeWidth="2" />
         <path
           d="M83 49v35q0 9 9 9h20q9 0 9-9V49"
-          stroke="#d69769"
+          stroke={T.thermalText}
           strokeWidth="3"
           fill="none"
         />
@@ -78,7 +79,7 @@ function CircuitSymbol({ c }: { c: Component }) {
         </text>
         {[0, 1, 2, 3, 4].map((i) => (
           <g key={i}>
-            <path d={`M167 ${56 + i * 19}h10`} stroke="#628693" />
+            <path d={`M167 ${56 + i * 19}h10`} stroke={T.n11} />
             <text
               x="159"
               y={59 + i * 19}
@@ -94,16 +95,16 @@ function CircuitSymbol({ c }: { c: Component }) {
   }
   if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
     const speed = c.kind === "motor" || c.kind === "inductionMotor" ? simulation.multiphysics.motors[c.id]?.omega ?? 0 : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && (w.from.component === c.id || w.to.component === c.id)); return wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component]?.omega ?? 0 : 0; })();
-    return <g><path d="M0 66H52M122 66H174M87 0V32" stroke="#75a7b5" strokeWidth="2"/><circle cx="87" cy="66" r="34" fill="#15242c" stroke="#75a7b5" strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke="#75a7b5" transform={`rotate(${speed * simulation.time * 180 / Math.PI},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{(speed * 30 / Math.PI).toFixed(0)} RPM</text></g>;
+    return <g><path d="M0 66H52M122 66H174M87 0V32" stroke={T.hydraulic} strokeWidth="2"/><circle cx="87" cy="66" r="34" fill={T.n5} stroke={T.hydraulic} strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke={T.hydraulic} transform={`rotate(${speed * simulation.time * 180 / Math.PI},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{(speed * 30 / Math.PI).toFixed(0)} RPM</text></g>;
   }
   if (c.kind === "heatExchanger") {
     const hot = simulation.multiphysics.hydraulic.readings[`${c.id}#hot`], cold = simulation.multiphysics.hydraulic.readings[`${c.id}#cold`];
     return (
       <g>
-        <rect x="18" y="30" width="138" height="72" rx="4" fill="#15242c" stroke="#75a7b5" />
-        <path d="M0 40H174" stroke="#d98b6b" strokeWidth="2" />
-        <path d="M174 99H0" stroke="#5aa6d1" strokeWidth="2" />
-        <path d="M30 48V91M50 48V91M70 48V91M90 48V91M110 48V91M130 48V91M150 48V91" stroke="#4a6875" />
+        <rect x="18" y="30" width="138" height="72" rx="4" fill={T.n5} stroke={T.hydraulic} />
+        <path d="M0 40H174" stroke={T.thermalText} strokeWidth="2" />
+        <path d="M174 99H0" stroke={T.hydraulic} strokeWidth="2" />
+        <path d="M30 48V91M50 48V91M70 48V91M90 48V91M110 48V91M130 48V91M150 48V91" stroke={T.n11} />
         <text x="87" y="73" textAnchor="middle" className="component-state">{((hot?.duty ?? 0) / 1000).toFixed(2)} kW · UA {prop(c, "ua")} W/K</text>
         <text x="87" y="123" textAnchor="middle" className="scale-label">A {((hot?.flow ?? 0) * 60000).toFixed(1)} · B {((cold?.flow ?? 0) * 60000).toFixed(1)} L/min</text>
       </g>
@@ -111,19 +112,19 @@ function CircuitSymbol({ c }: { c: Component }) {
   }
   if (["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction", "pressureReducingValve"].includes(c.kind)) {
     const r = simulation.multiphysics.hydraulic.readings[c.id], opening = simulation.faults[c.id] === "stuckClosed" ? 0 : simulation.faults[c.id] === "stuckOpen" ? 100 : c.kind === "checkValve" ? (Math.abs(r?.flow ?? 0) > 1e-12 ? 100 : 0) : simulation.multiphysics.positions[c.id] ?? prop(c, "opening", 100);
-    return <g><path d="M0 66H174" stroke="#6199b1" strokeWidth={c.kind === "pipe" ? 8 : 2}/>{c.kind.includes("alve") && <path d="M61 49L111 83V49L61 83Z" fill="#203b4a" stroke="#84b8ca"/>}<text x="87" y="107" textAnchor="middle" className="scale-label">{c.kind.includes("alve") ? `${opening.toFixed(0)}% · ` : ""}{((r?.flow ?? 0) * 60000).toFixed(2)} L/min</text><text x="87" y="123" textAnchor="middle" className="scale-label">{((r?.pressure ?? 0) / 100000).toFixed(3)} bar {Math.abs(r?.flow ?? 0) < 1e-12 ? "" : r!.flow > 0 ? "→" : "←"}</text></g>;
+    return <g><path d="M0 66H174" stroke={T.hydraulic} strokeWidth={c.kind === "pipe" ? 8 : 2}/>{c.kind.includes("alve") && <path d="M61 49L111 83V49L61 83Z" fill={T.n8} stroke={T.hydraulicText}/>}<text x="87" y="107" textAnchor="middle" className="scale-label">{c.kind.includes("alve") ? `${opening.toFixed(0)}% · ` : ""}{((r?.flow ?? 0) * 60000).toFixed(2)} L/min</text><text x="87" y="123" textAnchor="middle" className="scale-label">{((r?.pressure ?? 0) / 100000).toFixed(3)} bar {Math.abs(r?.flow ?? 0) < 1e-12 ? "" : r!.flow > 0 ? "→" : "←"}</text></g>;
   }
   if (c.kind === "source3")
     return (
       <g>
-        <rect x="17" y="43" width="140" height="61" rx="3" fill="#111a20" stroke="#3e4a52" />
+        <rect x="17" y="43" width="140" height="61" rx="3" fill={T.n3} stroke={T.n10} />
         <text x="87" y="80" textAnchor="middle" className="supply-number">
           {prop(c, "lineVoltage").toFixed(0)}
           <tspan className="unit"> V 3~</tspan>
         </text>
-        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? "#e26d72" : "#79bca5"} />
+        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? T.faultText : T.ok} />
         <text x="39" y="95" className="scale-label">{c.props.enabled === false ? "OUTPUT OFF" : failed ? "TRIPPED" : `${prop(c, "frequency")} Hz · PER-PHASE MODEL`}</text>
-        <path d="M0 66H17M157 66H174" stroke="#bdad8c" />
+        <path d="M0 66H17M157 66H174" stroke={T.n13} />
         <text x="5" y="57" className="polarity">L</text>
         <text x="161" y="57" className="polarity">N</text>
       </g>
@@ -137,18 +138,18 @@ function CircuitSymbol({ c }: { c: Component }) {
           width="140"
           height="61"
           rx="3"
-          fill="#111a20"
-          stroke="#3e4a52"
+          fill={T.n3}
+          stroke={T.n10}
         />
         <text x="87" y="80" textAnchor="middle" className="supply-number">
           {prop(c, "voltage").toFixed(1)}
           <tspan className="unit"> V</tspan>
         </text>
-        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? "#e26d72" : r?.regulation === "cc" ? "#e9bd6a" : "#79bca5"} />
+        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? T.faultText : r?.regulation === "cc" ? T.electricalText : T.ok} />
         <text x="39" y="95" className="scale-label">
           {c.props.enabled === false ? "OUTPUT OFF" : failed ? "TRIPPED" : r?.regulation === "cc" ? "CC LIMIT" : c.props.mode === "cvcc" ? "DC OUT · CV/CC" : c.props.mode === "cc" ? "DC OUT · CC" : "DC OUTPUT"}
         </text>
-        <path d="M0 66H17M157 66H174" stroke="#bdad8c" />
+        <path d="M0 66H17M157 66H174" stroke={T.n13} />
         <text x="7" y="57" className="polarity">
           +
         </text>
@@ -160,12 +161,12 @@ function CircuitSymbol({ c }: { c: Component }) {
   if (c.kind === "switch")
     return (
       <g>
-        <path d="M0 51H49M106 51H154" stroke="#a0b1b8" strokeWidth="2" />
-        <circle cx="49" cy="51" r="4" fill="#1b252d" stroke="#c4d0d7" />
-        <circle cx="106" cy="51" r="4" fill="#1b252d" stroke="#c4d0d7" />
+        <path d="M0 51H49M106 51H154" stroke={T.n13} strokeWidth="2" />
+        <circle cx="49" cy="51" r="4" fill={T.n6} stroke={T.n14} />
+        <circle cx="106" cy="51" r="4" fill={T.n6} stroke={T.n14} />
         <path
           d={c.props.closed ? "M49 51L106 51" : "M49 51L101 28"}
-          stroke={c.props.closed ? "#a1c9b2" : "#b2bdc5"}
+          stroke={c.props.closed ? T.n13 : T.n14}
           strokeWidth="3"
         />
         <text x="77" y="82" className="component-state" textAnchor="middle">
@@ -176,13 +177,13 @@ function CircuitSymbol({ c }: { c: Component }) {
   if (c.kind === "lamp")
     return (
       <g>
-        <path d="M0 66H62M112 66H174" stroke="#b1a489" strokeWidth="2" />
+        <path d="M0 66H62M112 66H174" stroke={T.n12} strokeWidth="2" />
         {power > 1 && !failed && (
           <circle
             cx="87"
             cy="66"
             r="35"
-            fill="#f2bd5b"
+            fill={T.electricalText}
             opacity={Math.min(0.25, power / 120)}
             filter="url(#lampGlow)"
           />
@@ -191,13 +192,13 @@ function CircuitSymbol({ c }: { c: Component }) {
           cx="87"
           cy="66"
           r="25"
-          fill={power > 1 && !failed ? "#403322" : "#172027"}
-          stroke={power > 1 && !failed ? "#edc47a" : "#9ba9b3"}
+          fill={power > 1 && !failed ? T.n8 : T.n5}
+          stroke={power > 1 && !failed ? T.electricalText : T.n13}
           strokeWidth="2"
         />
         <path
           d="M70 49L104 83M70 83L104 49"
-          stroke={power > 1 && !failed ? "#edc47a" : "#9ba9b3"}
+          stroke={power > 1 && !failed ? T.electricalText : T.n13}
           strokeWidth="2"
         />
         <text x="87" y="111" textAnchor="middle" className="component-state">
@@ -207,15 +208,15 @@ function CircuitSymbol({ c }: { c: Component }) {
     );
   if (c.kind === "ground")
     return (
-      <g stroke="#9ba9b3" fill="none">
+      <g stroke={T.n13} fill="none">
         <path d="M0 66H87V81M65 81H109M72 89H102M80 97H94" />
       </g>
     );
   if (c.kind === "meter")
     return (
       <g>
-        <path d="M0 66H57M117 66H174" stroke="#b1a489" />
-        <circle cx="87" cy="66" r="29" fill="#131d24" stroke="#8ba7b5" />
+        <path d="M0 66H57M117 66H174" stroke={T.n12} />
+        <circle cx="87" cy="66" r="29" fill={T.n4} stroke={T.n13} />
         <text x="87" y="73" textAnchor="middle" className="meter-number">
           {(r?.voltage ?? 0).toFixed(1)} V
         </text>
@@ -226,18 +227,18 @@ function CircuitSymbol({ c }: { c: Component }) {
       trip = simulation.automation.memory[c.id]?.tripped;
     return (
       <g>
-        <path d="M0 66H47M125 66H174" stroke="#b6a482" />
-        <circle cx="47" cy="66" r="4" fill="#a58ae3" />
+        <path d="M0 66H47M125 66H174" stroke={T.n12} />
+        <circle cx="47" cy="66" r="4" fill={T.mechanicalText} />
         <path
           d={on ? "M47 66H125" : "M47 66L118 42"}
-          stroke={trip ? "#e26d72" : "#a6b9b0"}
+          stroke={trip ? T.faultText : T.n13}
           strokeWidth="3"
         />
         {c.kind === "relay" && (
           <path
             d="M125 107H174M125 66V107"
             fill="none"
-            stroke="#6d7d88"
+            stroke={T.n11}
             strokeDasharray="3 3"
           />
         )}
@@ -246,7 +247,7 @@ function CircuitSymbol({ c }: { c: Component }) {
           y="113"
           textAnchor="middle"
           className="component-state"
-          fill={trip ? "#e26d72" : "#a58ae3"}
+          fill={trip ? T.faultText : T.mechanicalText}
         >
           {trip ? "TRIPPED / LATCHED" : on ? "CONTACT CLOSED" : "CONTACT OPEN"}
         </text>
@@ -256,8 +257,8 @@ function CircuitSymbol({ c }: { c: Component }) {
   if (c.kind === "junction")
     return (
       <g>
-        <path d="M0 66H87" stroke="#e9bd6a" />
-        <circle cx="87" cy="66" r="7" fill="#e9bd6a" />
+        <path d="M0 66H87" stroke={T.electricalText} />
+        <circle cx="87" cy="66" r="7" fill={T.electricalText} />
         <text x="87" y="108" textAnchor="middle" className="component-state">
           EXPLICIT NODE
         </text>
@@ -265,7 +266,7 @@ function CircuitSymbol({ c }: { c: Component }) {
     );
   if (c.kind === "cooler")
     return (
-      <g stroke="#3ba6d8">
+      <g stroke={T.hydraulic}>
         <path d="M40 50V94H134V50M50 57H124M50 68H124M50 79H124" fill="none" />
         <text x="87" y="114" textAnchor="middle" className="component-state">
           {simulation.faults[c.id] === "coolingFailed"
@@ -277,9 +278,9 @@ function CircuitSymbol({ c }: { c: Component }) {
   if (c.kind === "thermalMass")
     return (
       <g>
-        <rect x="37" y="44" width="100" height="52" rx="4" fill="#241d1a" stroke="#b98b6f" />
-        <path d="M47 44V34M62 44V34M77 44V34M92 44V34M107 44V34M122 44V34" stroke="#8d6d5a" />
-        <text x="87" y="76" textAnchor="middle" className="component-state" fill="#eaa17b">
+        <rect x="37" y="44" width="100" height="52" rx="4" fill={T.n5} stroke={T.thermal} />
+        <path d="M47 44V34M62 44V34M77 44V34M92 44V34M107 44V34M122 44V34" stroke={T.n11} />
+        <text x="87" y="76" textAnchor="middle" className="component-state" fill={T.thermalText}>
           {(simulation.temperatures[c.id] ?? prop(c, "initialTemperature")).toFixed(1)} °C
         </text>
         <text x="87" y="114" textAnchor="middle" className="component-state">
@@ -291,9 +292,9 @@ function CircuitSymbol({ c }: { c: Component }) {
     const tripped = simulation.breakers[c.id]?.tripped, open = tripped || c.props.closed === false;
     return (
       <g>
-        <path d="M0 66H55M119 66H174" stroke="#a1b2bc" strokeWidth="2" />
-        <path d={open ? "M55 66L112 44" : "M55 66L119 66"} stroke={tripped ? "#e26d72" : "#bec8ce"} strokeWidth="2" />
-        <rect x="70" y="76" width="34" height="16" rx="2" fill="none" stroke="#7f8f99" />
+        <path d="M0 66H55M119 66H174" stroke={T.n13} strokeWidth="2" />
+        <path d={open ? "M55 66L112 44" : "M55 66L119 66"} stroke={tripped ? T.faultText : T.n14} strokeWidth="2" />
+        <rect x="70" y="76" width="34" height="16" rx="2" fill="none" stroke={T.n12} />
         <text x="87" y="110" textAnchor="middle" className="component-state">
           {prop(c, "ratedCurrent")} A · {tripped ? "TRIPPED" : open ? "OPEN" : "CLOSED"}
         </text>
@@ -311,15 +312,15 @@ function CircuitSymbol({ c }: { c: Component }) {
           width="134"
           height="49"
           rx="3"
-          fill="#141d25"
-          stroke="#65557e"
+          fill={T.n4}
+          stroke={T.n11}
         />
         <text
           x="87"
           y="75"
           textAnchor="middle"
           className="meter-number"
-          fill="#bba3e2"
+          fill={T.mechanicalText}
         >
           {!v?.valid
             ? "INVALID"
@@ -344,24 +345,24 @@ function CircuitSymbol({ c }: { c: Component }) {
     <g>
       <path
         d="M0 66H34M140 66H174"
-        stroke={heater ? "#d89870" : "#a1b2bc"}
+        stroke={heater ? T.thermalText : T.n13}
         strokeWidth="2"
       />
       <path
         d="M34 66h9l7-14 12 28 12-28 12 28 12-28 12 28 12-28 7 14h11"
         fill="none"
-        stroke={failed ? "#e26d72" : heater ? "#ed9b72" : "#bec8ce"}
+        stroke={failed ? T.faultText : heater ? T.thermalText : T.n14}
         strokeWidth="2"
       />
       {heater && (
         <>
-          <path d="M87 82V132" stroke="#d89870" strokeDasharray="4 3" />
+          <path d="M87 82V132" stroke={T.thermalText} strokeDasharray="4 3" />
           <text
             x="87"
             y="107"
             textAnchor="middle"
             className="component-state"
-            fill="#d89870"
+            fill={T.thermalText}
           >
             {(simulation.temperatures[c.id] ?? 20).toFixed(1)} °C
           </text>
@@ -374,7 +375,7 @@ function CircuitSymbol({ c }: { c: Component }) {
           width="95"
           height="42"
           fill="none"
-          stroke="#9ba9b3"
+          stroke={T.n13}
           rx="3"
         />
       )}
@@ -761,7 +762,7 @@ export default function Workspace() {
             x={camera.x}
             y={camera.y}
           >
-            <circle cx="1" cy="1" r=".75" fill="#38464c" />
+            <circle cx="1" cy="1" r=".75" fill={T.n10} />
           </pattern>
           <filter id="lampGlow">
             <feGaussianBlur stdDeviation="10" />
@@ -837,7 +838,7 @@ export default function Workspace() {
           {pending && (
             <path
               d={`M${portPoint(project.components.find((c) => c.id === pending.component)!, pending.port).x},${portPoint(project.components.find((c) => c.id === pending.component)!, pending.port).y}H${cursor.x}V${cursor.y}`}
-              stroke="#b8c8d3"
+              stroke={T.n14}
               strokeDasharray="5 5"
               fill="none"
               pointerEvents="none"
@@ -866,7 +867,7 @@ export default function Workspace() {
                     rx="5"
                     className={`component-body ${sel ? "component-selected" : ""} ${simulation.failed[c.id] ? "component-failed" : ""}`}
                   />
-                  <path d={`M0 31H${w}`} stroke="#344047" />
+                  <path d={`M0 31H${w}`} stroke={T.n9} />
                   <text x="13" y="20" className="component-id">
                     {c.name}
                   </text>
@@ -927,7 +928,7 @@ export default function Workspace() {
                       >
                         <title>{p.label}</title>
                         {branches > 1 && (
-                          <circle cx={x} cy={y} r="8" fill="#e9bd6a" />
+                          <circle cx={x} cy={y} r="8" fill={T.electricalText} />
                         )}
                         {state.nodeMode && p.domain === "electrical" && (
                           <text
@@ -1014,7 +1015,7 @@ export default function Workspace() {
               width={Math.abs(marquee.x - marquee.x2)}
               height={Math.abs(marquee.y - marquee.y2)}
               fill="#6ab49720"
-              stroke="#8dd0b3"
+              stroke={T.okText}
               strokeDasharray="4 3"
             />
           )}
