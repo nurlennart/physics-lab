@@ -1,45 +1,76 @@
 {
-  "version": 1,
-  "id": "37c8de63-2e87-4e3c-950b-265a7819097c",
+  "version": 3,
+  "probes": [
+    {
+      "id": "heat-probe-1",
+      "name": "H-01 power",
+      "component": "heat-component-3",
+      "measurement": "power",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "heat-probe-2",
+      "name": "TK-01 water",
+      "component": "heat-component-4",
+      "measurement": "temperature",
+      "color": "#ef9975",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "id": "example-heat",
   "name": "Water heating experiment",
   "components": [
     {
-      "id": "8d7bff98-bc5e-47ab-b4b4-5bf764b91423",
+      "id": "heat-component-1",
       "kind": "source",
       "name": "PS-01",
       "x": 70,
       "y": 150,
       "rotation": 0,
+      "variant": "standard",
       "props": {
         "voltage": 240,
-        "maxCurrent": 20
+        "maxCurrent": 20,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 4800,
+        "enabled": true
       }
     },
     {
-      "id": "28b519ea-9cb2-4de2-a8e3-a87718654842",
+      "id": "heat-component-2",
       "kind": "switch",
       "name": "S-01",
       "x": 330,
       "y": 80,
       "rotation": 0,
+      "variant": "standard",
       "props": {
-        "closed": true,
         "resistance": 0.01,
         "ratedPower": 20,
         "heatCapacity": 20,
         "loss": 1,
-        "maxTemperature": 150
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "closed": true
       }
     },
     {
-      "id": "e7aed298-cd08-4fdc-98b4-aa27ed5d1f59",
+      "id": "heat-component-3",
       "kind": "heater",
       "name": "H-01",
       "x": 600,
       "y": 150,
       "rotation": 0,
+      "variant": "standard",
       "props": {
         "resistance": 28.8,
+        "ratedVoltage": 240,
         "ratedPower": 2000,
         "heatCapacity": 300,
         "loss": 0.5,
@@ -48,67 +79,77 @@
       }
     },
     {
-      "id": "739df766-97fc-4103-af1e-765c4132d446",
+      "id": "heat-component-4",
       "kind": "tank",
       "name": "TK-01",
       "x": 355,
       "y": 355,
       "rotation": 0,
+      "variant": "standard",
       "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
         "volume": 10,
         "capacity": 20,
         "initialTemperature": 20,
         "loss": 2.2,
-        "ambient": 20
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
       }
     }
   ],
   "connections": [
     {
-      "id": "ffcb42ba-a670-4f2e-8a0e-457e1870785a",
+      "id": "heat-connection-1",
       "domain": "electrical",
       "from": {
-        "component": "8d7bff98-bc5e-47ab-b4b4-5bf764b91423",
+        "component": "heat-component-1",
         "port": "a"
       },
       "to": {
-        "component": "28b519ea-9cb2-4de2-a8e3-a87718654842",
-        "port": "a"
-      }
-    },
-    {
-      "id": "96a2f4b2-8a86-43b5-9d2d-0159cc3cdad4",
-      "domain": "electrical",
-      "from": {
-        "component": "28b519ea-9cb2-4de2-a8e3-a87718654842",
-        "port": "b"
-      },
-      "to": {
-        "component": "e7aed298-cd08-4fdc-98b4-aa27ed5d1f59",
+        "component": "heat-component-2",
         "port": "a"
       }
     },
     {
-      "id": "f457d5e0-4179-4aa2-a345-2524a56e7ce7",
+      "id": "heat-connection-2",
       "domain": "electrical",
       "from": {
-        "component": "e7aed298-cd08-4fdc-98b4-aa27ed5d1f59",
+        "component": "heat-component-2",
         "port": "b"
       },
       "to": {
-        "component": "8d7bff98-bc5e-47ab-b4b4-5bf764b91423",
+        "component": "heat-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "heat-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "heat-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "heat-component-1",
         "port": "b"
       }
     },
     {
-      "id": "d4a95654-e940-43c4-938f-17fffaf20fa6",
+      "id": "heat-connection-4",
       "domain": "thermal",
       "from": {
-        "component": "e7aed298-cd08-4fdc-98b4-aa27ed5d1f59",
+        "component": "heat-component-3",
         "port": "heat"
       },
       "to": {
-        "component": "739df766-97fc-4103-af1e-765c4132d446",
+        "component": "heat-component-4",
         "port": "heat"
       }
     }

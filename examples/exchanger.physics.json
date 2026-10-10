@@ -1,0 +1,289 @@
+{
+  "version": 3,
+  "id": "example-exchanger",
+  "name": "Heat exchanger · waste heat recovery",
+  "components": [
+    {
+      "id": "exchanger-component-1",
+      "kind": "tank",
+      "name": "Hot feed · 80 °C",
+      "x": 30,
+      "y": 40,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 5,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 1500,
+        "capacity": 2000,
+        "initialTemperature": 80,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "exchanger-component-2",
+      "kind": "tank",
+      "name": "Cold feed · 10 °C",
+      "x": 1050,
+      "y": 440,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 5,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 1500,
+        "capacity": 2000,
+        "initialTemperature": 10,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "exchanger-component-3",
+      "kind": "tank",
+      "name": "Cooled hot water",
+      "x": 1050,
+      "y": 40,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 2000,
+        "initialTemperature": 80,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "exchanger-component-4",
+      "kind": "tank",
+      "name": "Warmed cold water",
+      "x": 30,
+      "y": 440,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 2000,
+        "initialTemperature": 10,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "exchanger-component-5",
+      "kind": "pipe",
+      "name": "Hot feed pipe",
+      "x": 310,
+      "y": 120,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.05,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": false,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "exchanger-component-6",
+      "kind": "pipe",
+      "name": "Cold feed pipe",
+      "x": 790,
+      "y": 480,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.05,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": false,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "exchanger-component-7",
+      "kind": "heatExchanger",
+      "name": "HX-01",
+      "x": 570,
+      "y": 250,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ua": 5000,
+        "arrangement": "counterflow",
+        "diameter": 0.05,
+        "lossCoefficient": 2,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "exchanger-connection-1",
+      "domain": "hydraulic",
+      "from": {
+        "component": "exchanger-component-1",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "exchanger-component-5",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "exchanger-connection-2",
+      "domain": "hydraulic",
+      "from": {
+        "component": "exchanger-component-5",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "exchanger-component-7",
+        "port": "hotIn"
+      }
+    },
+    {
+      "id": "exchanger-connection-3",
+      "domain": "hydraulic",
+      "from": {
+        "component": "exchanger-component-7",
+        "port": "hotOut"
+      },
+      "to": {
+        "component": "exchanger-component-3",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "exchanger-connection-4",
+      "domain": "hydraulic",
+      "from": {
+        "component": "exchanger-component-2",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "exchanger-component-6",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "exchanger-connection-5",
+      "domain": "hydraulic",
+      "from": {
+        "component": "exchanger-component-6",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "exchanger-component-7",
+        "port": "coldIn"
+      }
+    },
+    {
+      "id": "exchanger-connection-6",
+      "domain": "hydraulic",
+      "from": {
+        "component": "exchanger-component-7",
+        "port": "coldOut"
+      },
+      "to": {
+        "component": "exchanger-component-4",
+        "port": "fluid"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "exchanger-probe-1",
+      "name": "Cooled hot water",
+      "component": "exchanger-component-3",
+      "measurement": "fluidTemperature",
+      "color": "#ef9975",
+      "visible": true
+    },
+    {
+      "id": "exchanger-probe-2",
+      "name": "Warmed cold water",
+      "component": "exchanger-component-4",
+      "measurement": "fluidTemperature",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "exchanger-probe-3",
+      "name": "Recovered heat",
+      "component": "exchanger-component-7",
+      "measurement": "heatDuty",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "exchanger-probe-4",
+      "name": "Hot stream flow",
+      "component": "exchanger-component-5",
+      "measurement": "flow",
+      "color": "#c5aaec",
+      "visible": true
+    },
+    {
+      "id": "exchanger-probe-5",
+      "name": "Cold stream flow",
+      "component": "exchanger-component-6",
+      "measurement": "flow",
+      "color": "#3ba6d8",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

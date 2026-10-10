@@ -1,0 +1,313 @@
+{
+  "version": 4,
+  "id": "example-rotor",
+  "name": "Electrically driven rotor",
+  "components": [
+    {
+      "id": "rotor-component-1",
+      "kind": "rigidBody",
+      "name": "Foundation",
+      "x": 40,
+      "y": 380,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "forceX": 0,
+        "forceY": 0,
+        "appliedTorque": 0,
+        "brakeDamping": 0
+      },
+      "spatial": {
+        "type": "static",
+        "shape": "floor",
+        "x": 5,
+        "y": -0.25,
+        "angle": 0,
+        "width": 16,
+        "height": 0.5,
+        "depth": 0.05,
+        "material": "concrete",
+        "mass": 0,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": true,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "rotor-component-2",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 30,
+      "y": 70,
+      "rotation": 0,
+      "variant": "motorSupply",
+      "props": {
+        "voltage": 48,
+        "maxCurrent": 80,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 19200,
+        "enabled": true
+      },
+      "spatial": {
+        "type": "static",
+        "shape": "rectangle",
+        "x": 1,
+        "y": 1,
+        "angle": 0,
+        "width": 1,
+        "height": 0.7,
+        "depth": 0.05,
+        "material": "aluminum",
+        "mass": 15,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "rotor-component-3",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 280,
+      "y": 70,
+      "rotation": 0,
+      "variant": "traction48",
+      "props": {
+        "conductance": 20,
+        "resistance": 1.2,
+        "torqueConstant": 0.15,
+        "emfConstant": 0.15,
+        "inertia": 0.025,
+        "friction": 0.001,
+        "loadTorque": 0,
+        "ratedVoltage": 48,
+        "ratedCurrent": 40,
+        "ratedTorque": 6,
+        "ratedPower": 2000,
+        "maxSpeed": 400,
+        "heatCapacity": 1800,
+        "loss": 5,
+        "maxTemperature": 120,
+        "enabled": true,
+        "speedControl": true,
+        "speedCommand": 1200
+      },
+      "spatial": {
+        "type": "static",
+        "shape": "rectangle",
+        "x": 3,
+        "y": 1,
+        "angle": 0,
+        "width": 0.9,
+        "height": 0.6,
+        "depth": 0.05,
+        "material": "aluminum",
+        "mass": 20,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": false,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "rotor-component-4",
+      "kind": "rigidBody",
+      "name": "Driven rotor",
+      "x": 700,
+      "y": 380,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "forceX": 0,
+        "forceY": 0,
+        "appliedTorque": 0,
+        "brakeDamping": 0
+      },
+      "spatial": {
+        "type": "dynamic",
+        "shape": "wheel",
+        "x": 3,
+        "y": 3,
+        "angle": 0,
+        "width": 0.4,
+        "height": 0.4,
+        "depth": 0.02,
+        "material": "aluminum",
+        "mass": 0,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "rotor-component-5",
+      "kind": "speedSensor",
+      "name": "WS-01",
+      "x": 540,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "rotor-component-4",
+        "minRange": -1000000,
+        "maxRange": 1000000,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "rotor-component-6",
+      "kind": "forceActuator",
+      "name": "Rotor brake",
+      "x": 780,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "rotor-component-4",
+        "axis": "torque",
+        "value": 0,
+        "damping": 0.005,
+        "maxForce": 10000,
+        "enabled": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "rotor-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "rotor-component-2",
+        "port": "a"
+      },
+      "to": {
+        "component": "rotor-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "rotor-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "rotor-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "rotor-component-2",
+        "port": "b"
+      }
+    },
+    {
+      "id": "rotor-connection-3",
+      "domain": "mechanical",
+      "from": {
+        "component": "rotor-component-3",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "rotor-component-4",
+        "port": "shaft"
+      }
+    }
+  ],
+  "world": {
+    "gravity": {
+      "x": 0,
+      "y": -9.80665
+    },
+    "joints": [
+      {
+        "id": "rotor-joint-1",
+        "name": "revolute 1",
+        "kind": "revolute",
+        "a": "rotor-component-1",
+        "b": "rotor-component-4",
+        "anchorA": {
+          "x": -2,
+          "y": 3.25
+        },
+        "anchorB": {
+          "x": 0,
+          "y": 0
+        },
+        "axis": {
+          "x": 0,
+          "y": 1
+        },
+        "referenceAngle": 0,
+        "limits": false,
+        "lower": -3.141592653589793,
+        "upper": 3.141592653589793,
+        "length": 0.05,
+        "stiffness": 100,
+        "damping": 2,
+        "ratio": 1,
+        "collideConnected": false
+      }
+    ]
+  },
+  "probes": [
+    {
+      "id": "rotor-probe-1",
+      "name": "Rotor speed",
+      "component": "rotor-component-4",
+      "measurement": "angularVelocity",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "rotor-probe-2",
+      "name": "Motor current",
+      "component": "rotor-component-3",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "rotor-probe-3",
+      "name": "Mechanical energy",
+      "component": "rotor-component-4",
+      "measurement": "kineticEnergy",
+      "color": "#c9d3dc",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

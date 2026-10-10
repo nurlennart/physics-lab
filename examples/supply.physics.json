@@ -1,0 +1,544 @@
+{
+  "version": 3,
+  "id": "example-supply",
+  "name": "Automatic water supply",
+  "components": [
+    {
+      "id": "supply-component-1",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 40,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 24,
+        "maxCurrent": 20,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 4800,
+        "enabled": true
+      }
+    },
+    {
+      "id": "supply-component-2",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 300,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "conductance": 20,
+        "resistance": 1.2,
+        "torqueConstant": 0.08,
+        "emfConstant": 0.08,
+        "inertia": 0.006,
+        "friction": 0.0005,
+        "loadTorque": 0,
+        "ratedVoltage": 24,
+        "ratedCurrent": 20,
+        "ratedTorque": 1.6,
+        "ratedPower": 500,
+        "maxSpeed": 400,
+        "heatCapacity": 500,
+        "loss": 2,
+        "maxTemperature": 120,
+        "enabled": true,
+        "speedControl": false,
+        "speedCommand": 2500
+      }
+    },
+    {
+      "id": "supply-component-3",
+      "kind": "pump",
+      "name": "P-01",
+      "x": 300,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedSpeed": 300,
+        "ratedFlow": 0.001,
+        "shutoffHead": 8,
+        "efficiency": 0.7,
+        "mechanicalDrag": 0.000003,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "curvePoints": "",
+        "npshRequired": 2
+      }
+    },
+    {
+      "id": "supply-component-4",
+      "kind": "tank",
+      "name": "Source reservoir",
+      "x": 30,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 150,
+        "capacity": 150,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "supply-component-5",
+      "kind": "tank",
+      "name": "Destination tank",
+      "x": 1010,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 2,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 120,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "supply-component-6",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 550,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 5,
+        "diameter": 0.025,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "supply-component-7",
+      "kind": "valve",
+      "name": "Delivery valve",
+      "x": 780,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.025,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "supply-component-8",
+      "kind": "levelSensor",
+      "name": "Primary level sensor",
+      "x": 30,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "supply-component-5",
+        "minRange": 0,
+        "maxRange": 100,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "supply-component-9",
+      "kind": "hysteresis",
+      "name": "HC-01",
+      "x": 280,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "low": 30,
+        "high": 90,
+        "initialOn": false
+      }
+    },
+    {
+      "id": "supply-component-10",
+      "kind": "levelSensor",
+      "name": "LS-01",
+      "x": 30,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "supply-component-4",
+        "minRange": 0,
+        "maxRange": 100,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "supply-component-11",
+      "kind": "comparator",
+      "name": "CMP-01",
+      "x": 280,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "reference": 5,
+        "mode": "gt"
+      }
+    },
+    {
+      "id": "supply-component-12",
+      "kind": "levelSensor",
+      "name": "LS-02",
+      "x": 530,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "supply-component-5",
+        "minRange": 0,
+        "maxRange": 100,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "supply-component-13",
+      "kind": "comparator",
+      "name": "CMP-02",
+      "x": 780,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "reference": 95,
+        "mode": "lt"
+      }
+    },
+    {
+      "id": "supply-component-14",
+      "kind": "and",
+      "name": "AND-01",
+      "x": 540,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "supply-component-15",
+      "kind": "and",
+      "name": "AND-02",
+      "x": 790,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "supply-component-16",
+      "kind": "valve",
+      "name": "Consumer demand",
+      "x": 1010,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 35,
+        "diameter": 0.012,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "supply-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "supply-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "supply-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "supply-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "supply-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "supply-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "supply-connection-3",
+      "domain": "mechanical",
+      "from": {
+        "component": "supply-component-2",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "supply-component-3",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "supply-connection-4",
+      "domain": "hydraulic",
+      "from": {
+        "component": "supply-component-4",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "supply-component-3",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "supply-connection-5",
+      "domain": "hydraulic",
+      "from": {
+        "component": "supply-component-3",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "supply-component-6",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "supply-connection-6",
+      "domain": "hydraulic",
+      "from": {
+        "component": "supply-component-6",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "supply-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "supply-connection-7",
+      "domain": "hydraulic",
+      "from": {
+        "component": "supply-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "supply-component-5",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "supply-connection-8",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-8",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-9",
+        "port": "in"
+      }
+    },
+    {
+      "id": "supply-connection-9",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-10",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-11",
+        "port": "in"
+      }
+    },
+    {
+      "id": "supply-connection-10",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-12",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-13",
+        "port": "in"
+      }
+    },
+    {
+      "id": "supply-connection-11",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-9",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-14",
+        "port": "in"
+      }
+    },
+    {
+      "id": "supply-connection-12",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-11",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-14",
+        "port": "in2"
+      }
+    },
+    {
+      "id": "supply-connection-13",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-14",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-15",
+        "port": "in"
+      }
+    },
+    {
+      "id": "supply-connection-14",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-13",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-15",
+        "port": "in2"
+      }
+    },
+    {
+      "id": "supply-connection-15",
+      "domain": "control",
+      "from": {
+        "component": "supply-component-15",
+        "port": "out"
+      },
+      "to": {
+        "component": "supply-component-2",
+        "port": "enable"
+      }
+    },
+    {
+      "id": "supply-connection-16",
+      "domain": "hydraulic",
+      "from": {
+        "component": "supply-component-5",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "supply-component-16",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "supply-connection-17",
+      "domain": "hydraulic",
+      "from": {
+        "component": "supply-component-16",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "supply-component-4",
+        "port": "fluid"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "supply-probe-1",
+      "name": "Destination level",
+      "component": "supply-component-5",
+      "measurement": "level",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "supply-probe-2",
+      "name": "Delivery flow",
+      "component": "supply-component-6",
+      "measurement": "flow",
+      "color": "#3ba6d8",
+      "visible": true
+    },
+    {
+      "id": "supply-probe-3",
+      "name": "Motor current",
+      "component": "supply-component-2",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "supply-probe-4",
+      "name": "Delivery pressure",
+      "component": "supply-component-6",
+      "measurement": "pressure",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "supply-probe-5",
+      "name": "Destination water",
+      "component": "supply-component-5",
+      "measurement": "fluidTemperature",
+      "color": "#ef9975",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

@@ -1,0 +1,403 @@
+{
+  "version": 3,
+  "id": "example-pressure",
+  "name": "Pressure regulation laboratory",
+  "components": [
+    {
+      "id": "pressure-component-1",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 40,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 24,
+        "maxCurrent": 20,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 4800,
+        "enabled": true
+      }
+    },
+    {
+      "id": "pressure-component-2",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 300,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "conductance": 20,
+        "resistance": 1.2,
+        "torqueConstant": 0.08,
+        "emfConstant": 0.08,
+        "inertia": 0.006,
+        "friction": 0.0005,
+        "loadTorque": 0,
+        "ratedVoltage": 24,
+        "ratedCurrent": 20,
+        "ratedTorque": 1.6,
+        "ratedPower": 500,
+        "maxSpeed": 400,
+        "heatCapacity": 500,
+        "loss": 2,
+        "maxTemperature": 120,
+        "enabled": true,
+        "speedControl": false,
+        "speedCommand": 2500
+      }
+    },
+    {
+      "id": "pressure-component-3",
+      "kind": "pump",
+      "name": "P-01",
+      "x": 300,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedSpeed": 300,
+        "ratedFlow": 0.001,
+        "shutoffHead": 8,
+        "efficiency": 0.7,
+        "mechanicalDrag": 0.000003,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "curvePoints": "",
+        "npshRequired": 2
+      }
+    },
+    {
+      "id": "pressure-component-4",
+      "kind": "tank",
+      "name": "Source reservoir",
+      "x": 30,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 150,
+        "capacity": 150,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "pressure-component-5",
+      "kind": "tank",
+      "name": "Destination tank",
+      "x": 1010,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 120,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "pressure-component-6",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 550,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 5,
+        "diameter": 0.025,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "pressure-component-7",
+      "kind": "valve",
+      "name": "Consumer demand",
+      "x": 780,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 40,
+        "diameter": 0.018,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "pressure-component-8",
+      "kind": "pressureSensor",
+      "name": "PSN-01",
+      "x": 540,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "pressure-component-6",
+        "minRange": -1000000,
+        "maxRange": 1000000,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "pressure-component-9",
+      "kind": "pid",
+      "name": "PI-01",
+      "x": 790,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "reference": 35000,
+        "feedforward": 0,
+        "kp": 0.06,
+        "ki": 0.08,
+        "kd": 0,
+        "derivativeFilter": 1,
+        "minOutput": 0,
+        "maxOutput": 3500
+      }
+    },
+    {
+      "id": "pressure-component-10",
+      "kind": "pipe",
+      "name": "Return line",
+      "x": 1010,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 1,
+        "diameter": 0.04,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "pressure-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "pressure-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "pressure-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "pressure-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "pressure-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "pressure-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "pressure-connection-3",
+      "domain": "mechanical",
+      "from": {
+        "component": "pressure-component-2",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "pressure-component-3",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "pressure-connection-4",
+      "domain": "hydraulic",
+      "from": {
+        "component": "pressure-component-4",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "pressure-component-3",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "pressure-connection-5",
+      "domain": "hydraulic",
+      "from": {
+        "component": "pressure-component-3",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "pressure-component-6",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "pressure-connection-6",
+      "domain": "hydraulic",
+      "from": {
+        "component": "pressure-component-6",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "pressure-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "pressure-connection-7",
+      "domain": "hydraulic",
+      "from": {
+        "component": "pressure-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "pressure-component-5",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "pressure-connection-8",
+      "domain": "control",
+      "from": {
+        "component": "pressure-component-8",
+        "port": "out"
+      },
+      "to": {
+        "component": "pressure-component-9",
+        "port": "in"
+      }
+    },
+    {
+      "id": "pressure-connection-9",
+      "domain": "control",
+      "from": {
+        "component": "pressure-component-9",
+        "port": "out"
+      },
+      "to": {
+        "component": "pressure-component-2",
+        "port": "speed"
+      }
+    },
+    {
+      "id": "pressure-connection-10",
+      "domain": "hydraulic",
+      "from": {
+        "component": "pressure-component-5",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "pressure-component-10",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "pressure-connection-11",
+      "domain": "hydraulic",
+      "from": {
+        "component": "pressure-component-10",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "pressure-component-4",
+        "port": "fluid"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "pressure-probe-1",
+      "name": "Destination level",
+      "component": "pressure-component-5",
+      "measurement": "level",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "pressure-probe-2",
+      "name": "Delivery flow",
+      "component": "pressure-component-6",
+      "measurement": "flow",
+      "color": "#3ba6d8",
+      "visible": true
+    },
+    {
+      "id": "pressure-probe-3",
+      "name": "Motor current",
+      "component": "pressure-component-2",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "pressure-probe-4",
+      "name": "Delivery pressure",
+      "component": "pressure-component-6",
+      "measurement": "pressure",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "pressure-probe-5",
+      "name": "Destination water",
+      "component": "pressure-component-5",
+      "measurement": "fluidTemperature",
+      "color": "#ef9975",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

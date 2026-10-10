@@ -1,0 +1,86 @@
+import { describe, expect, it } from 'vitest';
+import { challengeProject, examples, fieldNotes } from './learning';
+import { starter, parseProject, serializeProject } from './projects';
+import { challenges, updateScenario } from './challenges';
+import { challengeError } from './integrity';
+import { Simulation } from './engine';
+import type { ChallengeId } from './model';
+
+describe('mission starting environments', () => {
+  for (const id of Object.keys(challenges) as ChallengeId[]) it(`${id} starts with only valid fixed fixtures and usable probes`, () => {
+    const p = challengeProject(id);
+    expect(challengeError(p)).toBeNull();
+    expect(() => parseProject(JSON.parse(serializeProject(p)))).not.toThrow();
+    expect(p.connections).toHaveLength(0);
+    expect(p.components.every(c => ['tank', 'rigidBody'].includes(c.kind) || ['Consumer demand', 'Variable shaft load'].includes(c.name))).toBe(true);
+    expect(p.probes?.every(probe => p.components.some(c => c.id === probe.component))).toBe(true);
+    expect(p.world?.joints.every(j => p.components.some(c => c.id === j.a) && p.components.some(c => c.id === j.b)) ?? true).toBe(true);
+    expect(fieldNotes[id].hints).toHaveLength(3);
+  });
+  it('injects the primary supply fault by circuit role, regardless of sensor name', () => {
+    const p = starter('supply'); p.challenge = 'supply';
+    const primary = p.components.find(c => c.name === 'Primary level sensor')!;
+    primary.name = 'My own destination sensor';
+    const s = new Simulation(p);
+    s.time = 300;
+    updateScenario(s, 1 / 60);
+    expect(s.hydraulicChallenge.faultInjected).toBe(true);
+    expect(s.faults[primary.id]).toBe('sensorFault');
+  });
+});
+
+describe('example shelf', () => {
+  it('keeps the heated loop circulating after five minutes without filling its receiver', () => {
+    const p = starter('circulation'), s = new Simulation(p);
+    s.advanceAdaptive(300);
+    const pipe = p.components.find(c => c.kind === 'pipe')!;
+    const destination = p.components.find(c => c.name === 'Destination tank')!;
+    expect(s.error).toBeNull();
+    expect(s.multiphysics.hydraulic.readings[pipe.id].flow * 60000).toBeGreaterThan(30);
+    expect(s.multiphysics.tanks[destination.id].volume * 1000).toBeLessThan(Number(destination.props.capacity) * 0.9);
+    expect(Math.abs(s.multiphysics.massResidual)).toBeLessThan(1e-6);
+  });
+  for (const example of examples) it(`${example.mode} has connected equipment and meaningful live measurements`, () => {
+    const p = parseProject(JSON.parse(serializeProject(starter(example.mode))));
+    const s = new Simulation(p);
+    for (let i = 0; i < 60; i++) expect(s.step()).toBe(true);
+    expect(s.error).toBeNull();
+    expect(s.violations).toEqual([]);
+    expect(Object.keys(s.failed)).toEqual([]);
+    expect(p.probes?.length).toBeGreaterThan(0);
+    if (example.mode !== 'mechanism' && example.mode !== 'descent' && example.mode !== 'exchanger') expect(s.suppliedEnergy).toBeGreaterThan(0);
+  });
+});
+
+describe('heat exchanger example', () => {
+  function experiment(ua = 5000) {
+    const p = parseProject(JSON.parse(serializeProject(starter('exchanger'))));
+    const hx = p.components.find(c => c.kind === 'heatExchanger')!;
+    hx.props.ua = ua;
+    const s = new Simulation(p);
+    s.advanceAdaptive(60);
+    return { p, s, hx, hot: s.multiphysics.hydraulic.readings[`${hx.id}#hot`], cold: s.multiphysics.hydraulic.readings[`${hx.id}#cold`] };
+  }
+  it('recovers heat between separate finite streams and conserves mass and energy', () => {
+    const { p, s, hot, cold } = experiment();
+    expect(s.error).toBeNull();
+    expect(s.violations).toEqual([]);
+    expect(hot.flow).toBeGreaterThan(0.001);
+    expect(cold.flow).toBeGreaterThan(0.001);
+    expect(hot.duty).toBeGreaterThan(100000);
+    expect(hot.temperature - 273.15).toBeLessThan(75);
+    expect(cold.temperature - 273.15).toBeGreaterThan(15);
+    for (const names of [['Hot feed · 80 °C', 'Cooled hot water'], ['Cold feed · 10 °C', 'Warmed cold water']]) {
+      const mass = names.reduce((total, name) => total + s.multiphysics.tanks[p.components.find(c => c.name === name)!.id].mass, 0);
+      expect(mass).toBeCloseTo(1500, 6);
+    }
+    expect(Math.abs(s.energyResidual)).toBeLessThan(0.5);
+    expect(s.suppliedEnergy).toBe(0);
+  });
+  it('reducing UA decreases recovered heat and leaves the hot outlet warmer', () => {
+    const strong = experiment(), weak = experiment(1000);
+    expect(weak.hot.duty).toBeLessThan(Number(strong.hot.duty) * 0.3);
+    expect(weak.hot.temperature).toBeGreaterThan(strong.hot.temperature);
+    expect(weak.cold.temperature).toBeLessThan(strong.cold.temperature);
+  });
+});

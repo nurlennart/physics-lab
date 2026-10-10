@@ -1,0 +1,286 @@
+{
+  "version": 3,
+  "probes": [
+    {
+      "id": "automated-probe-1",
+      "name": "TK-01 water",
+      "component": "automated-component-5",
+      "measurement": "temperature",
+      "color": "#ef9975",
+      "visible": true
+    },
+    {
+      "id": "automated-probe-2",
+      "name": "H-01 power",
+      "component": "automated-component-4",
+      "measurement": "power",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "automated-probe-3",
+      "name": "HC-01 demand",
+      "component": "automated-component-7",
+      "measurement": "signal",
+      "color": "#a58ae3",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "id": "example-automated",
+  "name": "Closed-loop heating laboratory",
+  "components": [
+    {
+      "id": "automated-component-1",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 40,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 240,
+        "maxCurrent": 20,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 4800,
+        "enabled": true
+      }
+    },
+    {
+      "id": "automated-component-2",
+      "kind": "relay",
+      "name": "RY-01",
+      "x": 300,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 0.02,
+        "ratedPower": 14,
+        "heatCapacity": 40,
+        "loss": 1,
+        "maxTemperature": 150,
+        "ratedCurrent": 12,
+        "ratedVoltage": 250
+      }
+    },
+    {
+      "id": "automated-component-3",
+      "kind": "safety",
+      "name": "ST-01",
+      "x": 560,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "automated-component-5",
+        "threshold": 90,
+        "resetMargin": 5,
+        "minRange": 0,
+        "maxRange": 120,
+        "resolution": 0.01,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0,
+        "failOnSensor": true,
+        "resistance": 0.01,
+        "ratedPower": 10,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150,
+        "ratedCurrent": 16,
+        "ratedVoltage": 250
+      }
+    },
+    {
+      "id": "automated-component-4",
+      "kind": "heater",
+      "name": "H-01",
+      "x": 820,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 28.8,
+        "ratedVoltage": 240,
+        "ratedPower": 2000,
+        "heatCapacity": 300,
+        "loss": 0.5,
+        "conductance": 180,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "automated-component-5",
+      "kind": "tank",
+      "name": "TK-01",
+      "x": 800,
+      "y": 390,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 10,
+        "capacity": 20,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "automated-component-6",
+      "kind": "sensor",
+      "name": "TS-01",
+      "x": 40,
+      "y": 390,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "automated-component-5",
+        "minRange": 0,
+        "maxRange": 120,
+        "resolution": 0.01,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "automated-component-7",
+      "kind": "hysteresis",
+      "name": "HC-01",
+      "x": 300,
+      "y": 390,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "low": 78,
+        "high": 80,
+        "initialOn": false
+      }
+    },
+    {
+      "id": "automated-component-8",
+      "kind": "cooler",
+      "name": "CJ-01",
+      "x": 560,
+      "y": 390,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "conductance": 8,
+        "ambient": 20,
+        "enabled": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "automated-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "automated-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "automated-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "automated-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "automated-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "automated-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "automated-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "automated-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "automated-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "automated-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "automated-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "automated-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "automated-connection-5",
+      "domain": "thermal",
+      "from": {
+        "component": "automated-component-4",
+        "port": "heat"
+      },
+      "to": {
+        "component": "automated-component-5",
+        "port": "heat"
+      }
+    },
+    {
+      "id": "automated-connection-6",
+      "domain": "control",
+      "from": {
+        "component": "automated-component-6",
+        "port": "out"
+      },
+      "to": {
+        "component": "automated-component-7",
+        "port": "in"
+      }
+    },
+    {
+      "id": "automated-connection-7",
+      "domain": "control",
+      "from": {
+        "component": "automated-component-7",
+        "port": "out"
+      },
+      "to": {
+        "component": "automated-component-2",
+        "port": "in"
+      }
+    },
+    {
+      "id": "automated-connection-8",
+      "domain": "thermal",
+      "from": {
+        "component": "automated-component-8",
+        "port": "heat"
+      },
+      "to": {
+        "component": "automated-component-5",
+        "port": "heat"
+      }
+    }
+  ]
+}
