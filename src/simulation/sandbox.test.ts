@@ -176,7 +176,8 @@ describe("thermal scale and multiple heaters", () => {
       const ideal = 2000 * WATER_CP * 60 / power;
       s.advanceAdaptive(ideal);
       // The element's own thermal mass Cₑ shares the energy and runs P/UA above the water.
-      const ce = heater.props.heatCapacity as number, cw = 2000 * WATER_CP;
+      // 2,000 L at 20 °C holds 2 × 998.207 kg (published density).
+      const ce = heater.props.heatCapacity as number, cw = 2 * 998.207 * WATER_CP;
       const expected = 20 + (power * ideal - ce * power / (heater.props.conductance as number)) / (cw + ce);
       expect(s.temperatures[tank.id]).toBeCloseTo(expected, 2);
       expect(80 - s.temperatures[tank.id]).toBeLessThan(0.15);

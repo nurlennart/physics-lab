@@ -9,6 +9,7 @@ import {
   type ElectricalResult,
 } from "./electrical";
 import { warnOnlyTemperature, thermalTau, thermalThreshold } from "./parameters";
+import { inventoryVolume } from "./water";
 import { transitionError } from "./integrity";
 import { Automation, allowedFaults, type FaultType } from "./automation";
 import { readProbe } from "./measurements";
@@ -409,7 +410,9 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind));
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind)
+      // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
+      || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
   get energyResidual() {
     return this.suppliedEnergy + this.spatial.externalWork - this.storedEnergy - this.ambientEnergy
@@ -443,7 +446,8 @@ export class Simulation {
     if (metric === "pressure") {
       if (r) return r.pressure;
       const c = this.project.components.find(c => c.id === id);
-      return c?.kind === "tank" && t ? WATER_RHO * 9.80665 * t.volume / prop(c, "surfaceArea") : undefined;
+      // Bottom gauge pressure g·m/A (exact for any water density).
+      return c?.kind === "tank" && t ? 9.80665 * t.mass / prop(c, "surfaceArea") : undefined;
     }
     return undefined;
   }
@@ -474,7 +478,8 @@ export class Simulation {
       this.multiphysics.removedMass += tank.mass;
       // Explicit draining operation: exported enthalpy uses the same CP*T datum as transport;
       // its potential energy leaves the system too.
-      const potential = WATER_RHO * 9.80665 * (prop(c, "elevation") * tank.volume + tank.volume ** 2 / (2 * prop(c, "surfaceArea")));
+      const referenceVolume = tank.mass / WATER_RHO;
+      const potential = WATER_RHO * 9.80665 * (prop(c, "elevation") * referenceVolume + referenceVolume ** 2 / (2 * prop(c, "surfaceArea")));
       const removedHeat = tank.mass * WATER_CP * tank.temperature;
       this.multiphysics.removedEnergy += removedHeat + potential;
       this.storedEnergy -= removedHeat;
@@ -642,7 +647,12 @@ export class Simulation {
     this.thermalRate = n ? Math.max(0, ...thermal.map((_, i) => Math.abs(temperatures[i] - old[i]) / dt)) : 0;
     thermal.forEach((c, i) => {
       this.temperatures[c.id] = temperatures[i];
-      if (c.kind === "tank" && this.multiphysics.tanks[c.id]) this.multiphysics.tanks[c.id].temperature = U.celsiusToK(temperatures[i]);
+      if (c.kind === "tank" && this.multiphysics.tanks[c.id]) {
+        const tank = this.multiphysics.tanks[c.id];
+        tank.temperature = U.celsiusToK(temperatures[i]);
+        // Thermal expansion: the inventory's volume (and level) follows the water density.
+        tank.volume = inventoryVolume(tank.mass, tank.temperature);
+      }
       const stored = caps[i] * (temperatures[i] - old[i]);
       this.storedEnergy += stored;
       if (c.kind === "tank") this.waterStored += stored;

@@ -44,7 +44,9 @@ describe('larger DC motors and industrial pumping', () => {
     expect(h.hydraulicPower).toBeGreaterThan(500);
     expect(h.hydraulicPower).toBeLessThanOrEqual(h.shaftPower);
     expect(s.multiphysics.tanks[dest.id].mass).toBeGreaterThan(20);
-    expect(s.multiphysics.tanks[source.id].mass + s.multiphysics.tanks[dest.id].mass).toBeCloseTo(2000, 6);
+    // 2,000 L at 20 °C (998.207 kg/m³, published); mass is conserved exactly.
+    expect(s.multiphysics.tanks[source.id].mass + s.multiphysics.tanks[dest.id].mass).toBeCloseTo(s.multiphysics.initialMass, 6);
+    expect(Math.abs(s.multiphysics.initialMass / (2 * 998.207) - 1)).toBeLessThan(2e-5);
     expect(Math.abs(s.energyResidual)).toBeLessThan(5);
     const restricted = industrialStarter(); restricted.components.find(c => c.kind === 'valve')!.props.opening = 10;
     const closed = run(restricted, 15), cm = restricted.components.find(c => c.kind === 'motor')!, cp = restricted.components.find(c => c.kind === 'pump')!;

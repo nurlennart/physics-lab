@@ -68,9 +68,11 @@ describe("pipe friction with temperature-dependent viscosity", () => {
       flows.push(p);
     }
     const s = new Simulation(b.p);
-    // Driving head 0.45 m + 0.05 m level = 0.5 m; laminar Q = ρgΔH·πd⁴/(128 μ L).
-    for (const [pipeC, mu] of [[flows[0], 0.35404e-3], [flows[1], 1.3059e-3]] as const) {
-      const expected = 1000 * 9.80665 * 0.5 * Math.PI * 0.002 ** 4 / (128 * mu * 20);
+    // Driving pressure ρ_ref·g·0.45 m + g·m/A, m = 50 L × published density (971.80 / 999.70 kg/m³);
+    // laminar Q = Δp·πd⁴/(128 μ L).
+    for (const [pipeC, mu, density] of [[flows[0], 0.35404e-3, 971.8], [flows[1], 1.3059e-3, 999.7]] as const) {
+      const dp = 1000 * 9.80665 * 0.45 + 9.80665 * 0.05 * density;
+      const expected = dp * Math.PI * 0.002 ** 4 / (128 * mu * 20);
       expect(s.multiphysics.hydraulic.readings[pipeC.id].reynolds).toBeLessThan(2300);
       expect(rel(s.multiphysics.hydraulic.readings[pipeC.id].flow, expected)).toBeLessThan(2e-3);
     }
@@ -111,7 +113,9 @@ describe("explicit tank overflow", () => {
     const v = (id: string) => s.multiphysics.tanks[id].volume;
     expect(v(source.id)).toBeGreaterThanOrEqual(0);
     expect(v(source.id)).toBeLessThan(1e-9);
-    expect(v(dest.id) + s.multiphysics.overflowed[dest.id]).toBeCloseTo(0.15, 9);
+    // Mass closes exactly; volumes to the thermal expansion from viscous heating (~1e-6).
+    expect(s.multiphysics.tanks[dest.id].mass + s.multiphysics.removedMass).toBeCloseTo(s.multiphysics.initialMass, 9);
+    expect(Math.abs((v(dest.id) + s.multiphysics.overflowed[dest.id]) / 0.15 - 1)).toBeLessThan(1e-5);
     // After the inflow stops the surcharge drains back towards the rim.
     expect(v(dest.id) - 0.12).toBeLessThan(2e-4);
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-5);
@@ -140,7 +144,8 @@ describe("explicit tank overflow", () => {
     expect(s.multiphysics.hydraulic.readings[p.id].flow).toBeLessThan(0);
     expect(reversals).toBeLessThanOrEqual(1);
     expect(s.multiphysics.tanks[high.id].volume).toBeGreaterThanOrEqual(0);
-    expect(s.multiphysics.tanks[low.id].volume + s.multiphysics.tanks[high.id].volume + s.multiphysics.overflowed[low.id]).toBeCloseTo(0.1995, 9);
+    expect(s.multiphysics.tanks[low.id].mass + s.multiphysics.tanks[high.id].mass + s.multiphysics.removedMass).toBeCloseTo(s.multiphysics.initialMass, 9);
+    expect(Math.abs((s.multiphysics.tanks[low.id].volume + s.multiphysics.tanks[high.id].volume + s.multiphysics.overflowed[low.id]) / 0.1995 - 1)).toBeLessThan(1e-5);
   });
   it("overflow volume is insensitive to the timestep and to adaptive stepping", () => {
     const results = [1 / 60, 0.05, 0.1].map((dt) => {

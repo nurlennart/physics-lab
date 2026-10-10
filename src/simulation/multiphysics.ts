@@ -2,6 +2,7 @@ import { prop, type Project } from './model';
 import { solveElectrical, solveLinear, type ElectricalResult } from './electrical';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
+import { kellDensity, inventoryVolume } from './water';
 import type { Simulation } from './engine';
 import { shaftBody } from './spatial-model';
 export interface MotorState { omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number }
@@ -34,9 +35,11 @@ export class Multiphysics {
   initialize(p: Project) {
     for (const c of p.components) {
       if (c.kind === 'tank') {
-        const volume = U.litersToM3(prop(c, 'volume'));
-        this.tanks[c.id] = { volume, mass: volume * RHO, temperature: U.celsiusToK(prop(c, 'initialTemperature', 20)), vessel: prop(c, 'vesselHeatCapacity') };
-        this.initialMass += volume * RHO;
+        // The configured initial volume is measured at the initial temperature (Kell density).
+        const volume = U.litersToM3(prop(c, 'volume')), temperature = U.celsiusToK(prop(c, 'initialTemperature', 20));
+        const mass = volume * kellDensity(prop(c, 'initialTemperature', 20));
+        this.tanks[c.id] = { volume, mass, temperature, vessel: prop(c, 'vesselHeatCapacity') };
+        this.initialMass += mass;
       }
       if (c.kind === 'motor') this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0 };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
@@ -49,7 +52,8 @@ export class Multiphysics {
   get kinetic() { return this.kineticEnergy(this.lastProject); }
   private lastProject?: Project;
   kineticEnergy(p?: Project) { return p ? p.components.filter(c => c.kind === 'motor' && !shaftBody(p, c.id)).reduce((s, c) => s + 0.5 * prop(c, 'inertia') * (this.motors[c.id]?.omega ?? 0) ** 2, 0) : 0; }
-  potential(p: Project) { return p.components.filter(c => c.kind === 'tank').reduce((s, c) => { const v = this.tanks[c.id]?.volume ?? 0; return s + RHO * G * (prop(c, 'elevation') * v + v * v / (2 * prop(c, 'surfaceArea'))); }, 0); }
+  /** Tank gravitational energy Φ = g(z·m + m²/(2ρ_ref·A)), consistent with the network flow work (Boussinesq). */
+  potential(p: Project) { return p.components.filter(c => c.kind === 'tank').reduce((s, c) => { const v = (this.tanks[c.id]?.mass ?? 0) / RHO; return s + RHO * G * (prop(c, 'elevation') * v + v * v / (2 * prop(c, 'surfaceArea'))); }, 0); }
   private controls(s: Simulation) {
     return Object.fromEntries(s.project.components.filter(c => c.kind === 'motor').map(c => {
       const has = (port: string) => s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);
@@ -85,8 +89,8 @@ export class Multiphysics {
       const c = s.project.components.find((c) => c.id === id);
       // Tanks may surcharge above their rim (weir overflow), so only emptiness bounds the estimate.
       void c;
-      const volume = Math.max(0, t.volume + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0));
-      return [id, { ...t, volume, mass: volume * RHO }];
+      const mass = Math.max(0, t.mass + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0) * RHO);
+      return [id, { ...t, mass, volume: inventoryVolume(mass, t.temperature) }];
     }));
   }
   refresh(s: Simulation) {
@@ -216,9 +220,11 @@ export class Multiphysics {
         thermalGain -= spill.enthalpy;
       }
       // Overflow volume counts routed and spilled water alike; only spilled water leaves the system.
+      // Reported as actual water volume at the tank temperature (network flows are reference volumes).
       for (const [id, w] of Object.entries(r.hydraulic.weir)) if (w.flow > 0) {
-        this.overflowed[id] = (this.overflowed[id] ?? 0) + w.flow * h;
-        spilledThisStep[id] = (spilledThisStep[id] ?? 0) + w.flow * h;
+        const t = this.tanks[id], actual = w.flow * h * RHO / kellDensity(Math.min(100, Math.max(0, U.kToCelsius(t?.temperature ?? 293.15))));
+        this.overflowed[id] = (this.overflowed[id] ?? 0) + actual;
+        spilledThisStep[id] = (spilledThisStep[id] ?? 0) + actual;
       }
       for (const c of s.project.components.filter(c => c.kind === 'pressureReducingValve')) {
         // Pilot-operated regulator: integral action on outlet gauge pressure, stroke-rate limited.

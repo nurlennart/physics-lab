@@ -70,9 +70,10 @@ describe('heat exchanger example', () => {
     expect(hot.duty).toBeGreaterThan(100000);
     expect(hot.temperature - 273.15).toBeLessThan(75);
     expect(cold.temperature - 273.15).toBeGreaterThan(15);
-    for (const names of [['Hot feed · 80 °C', 'Cooled hot water'], ['Cold feed · 10 °C', 'Warmed cold water']]) {
+    // 1.5 m³ per stream at its feed temperature (published densities 971.80 and 999.70 kg/m³).
+    for (const [names, density] of [[['Hot feed · 80 °C', 'Cooled hot water'], 971.8], [['Cold feed · 10 °C', 'Warmed cold water'], 999.7]] as const) {
       const mass = names.reduce((total, name) => total + s.multiphysics.tanks[p.components.find(c => c.name === name)!.id].mass, 0);
-      expect(mass).toBeCloseTo(1500, 6);
+      expect(Math.abs(mass / (1.5 * density) - 1)).toBeLessThan(2e-5);
     }
     expect(Math.abs(s.energyResidual)).toBeLessThan(0.5);
     expect(s.suppliedEnergy).toBe(0);

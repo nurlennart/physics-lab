@@ -1,7 +1,7 @@
 import { definitions, prop, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
-import { viscosityK } from './water';
+import { viscosityK, inventoryVolume } from './water';
 
 /** vessel: wall heat capacity (J/K) lumped at the water temperature; it does not flow. */
 export interface TankState { volume: number; mass: number; temperature: number; vessel?: number }
@@ -226,7 +226,8 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   for (const c of topology.tanks) {
     const n = node(c, 'fluid'), t = tanks[c.id];
     if (!t) throw Error(`${c.name}: missing fluid state.`);
-    const pressure = RHO * G * (prop(c, 'elevation') + t.volume / prop(c, 'surfaceArea'));
+    // Bottom pressure g·m/A is exact for any density; the elevation term uses the reference density.
+    const pressure = RHO * G * prop(c, 'elevation') + G * t.mass / prop(c, 'surfaceArea');
     if (boundaries[n] !== undefined) throw Error('Two finite tanks cannot share an ideal fluid node. Insert a physical pipe.');
     boundaries[n] = pressure / 1000;
     boundaryTanks[n] = [c]; result.tankNodes[c.id] = n;
@@ -250,7 +251,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   for (const n of unknown) p[n] = (previous?.potentials[n] ?? 0) / 1000;
   // An empty tank cannot supply outflow. A full vented tank does NOT block inflow: it spills over
   // its rim (transport removes the excess), so no implicit shut-off valve exists.
-  const blocked = (n: string, out: boolean) => out && (boundaryTanks[n] ?? []).some(c => tanks[c.id].volume <= 1e-12);
+  const blocked = (n: string, out: boolean) => out && (boundaryTanks[n] ?? []).some(c => tanks[c.id].mass <= 1e-9);
   // Local water temperature for viscosity: pipe inventory cells, else the upstream node of the
   // previous transport (one-substep lag; avoids a nested temperature–flow iteration).
   const tankAt = new Map(Object.entries(boundaryTanks).map(([n, [c]]) => [n, tanks[c.id].temperature]));
@@ -564,7 +565,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   const spills: Record<string, { mass: number; enthalpy: number; potential: number }> = {};
   for (const [id, w] of Object.entries(result.weir)) {
     if (w.routed || w.flow <= 0 || !tanks[id]) continue;
-    const c = byId.get(id)!, t = tanks[id], mass = w.flow * RHO * dt, surface = prop(c, 'elevation') + t.volume / prop(c, 'surfaceArea');
+    const c = byId.get(id)!, t = tanks[id], mass = w.flow * RHO * dt, surface = prop(c, 'elevation') + t.mass / RHO / prop(c, 'surfaceArea'); // dΦ/dm
     massRate[id] = (massRate[id] ?? 0) - w.flow * RHO;
     energyRate[id] = (energyRate[id] ?? 0) - w.flow * RHO * CP * t.temperature;
     spills[id] = { mass, enthalpy: mass * CP * t.temperature, potential: mass * G * surface };
@@ -576,7 +577,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const enthalpy = (t.mass * CP + vessel) * t.temperature + (energyRate[id] ?? 0) * dt;
     t.mass = Math.abs(mass) < 1e-10 ? 0 : mass;
     if (t.mass > 1e-10) t.temperature = enthalpy / (t.mass * CP + vessel);
-    t.volume = t.mass / RHO;
+    t.volume = inventoryVolume(t.mass, t.temperature);
   }
   nodes.forEach((n, i) => (result.nodeTemperatures[n] = temperatures[i]));
   return { ambient, heat, spills };
@@ -591,11 +592,14 @@ export function boundaryTime(project: Project, tanks: Record<string, TankState>,
     for (const b of result.branches) { if (b.to === n) q += b.flow; if (b.from === n) q -= b.flow; }
     const t = tanks[c.id], w = result.weir[c.id], capacity = U.litersToM3(prop(c, 'capacity'));
     if (w && !w.routed) q -= w.flow;
-    if (q < -1e-14 && t.volume > 1e-12) step = Math.min(step, t.volume / -q);
+    // Network flows are reference-density volumes (mass/ρ_ref): emptiness is a mass event; rim events
+    // use the inventory's actual volume rate q·ρ_ref/ρ(T) (thermal expansion).
+    const massRate = q * RHO, volumeRate = t.mass > 1e-12 ? q * RHO * t.volume / t.mass : q;
+    if (massRate < -1e-11 && t.mass > 1e-9) step = Math.min(step, t.mass / -massRate);
     // Events at the rim: overflow onset (weir flow starts from zero) and the surface falling back to
     // the rim (weir flow must not drain the tank below its crest within one interval).
-    if (q > 1e-14 && t.volume < capacity - 1e-12) step = Math.min(step, (capacity - t.volume) / q);
-    if (q < -1e-14 && t.volume > capacity + 1e-12) step = Math.min(step, (t.volume - capacity) / -q);
+    if (volumeRate > 1e-14 && t.volume < capacity - 1e-12) step = Math.min(step, (capacity - t.volume) / volumeRate);
+    if (volumeRate < -1e-14 && t.volume > capacity + 1e-12) step = Math.min(step, (t.volume - capacity) / -volumeRate);
   }
   return step;
 }

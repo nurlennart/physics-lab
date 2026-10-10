@@ -42,7 +42,8 @@ describe('hydraulic reference mechanics', () => {
     const wide = solveHydraulic(p, state.tanks); pipe.props.diameter = 0.012;
     const narrow = solveHydraulic(p, state.tanks);
     expect(wide.readings[pipe.id].flow).toBeGreaterThan(narrow.readings[pipe.id].flow);
-    expect(wide.readings[a.id].pressure).toBeCloseTo(1000 * G * 0.1, 8);
+    // 10 L of 20 °C water (998.207 kg/m³, published) over 0.1 m²: p = ρ·g·h.
+    expect(wide.readings[a.id].pressure).toBeCloseTo(998.207 * G * 0.1, 2);
     expect(wide.readings[b.id].pressure).toBe(0);
     pipe.x = 10000; expect(solveHydraulic(p, state.tanks).readings[pipe.id].flow).toBe(narrow.readings[pipe.id].flow);
     expect(wide.residual).toBeLessThan(1e-12);
@@ -74,12 +75,13 @@ describe('hydraulic reference mechanics', () => {
       const s = run(new Simulation(p), 1, dt);
       expect(s.multiphysics.tanks[a.id].volume).toBeCloseTo(0, 12);
       expect(s.multiphysics.tanks[b.id].volume).toBeGreaterThanOrEqual(0.001);
-      expect(s.multiphysics.tanks[b.id].volume + s.multiphysics.overflowed[b.id]).toBeCloseTo(0.00109, 12);
+      expect(s.multiphysics.tanks[b.id].volume + s.multiphysics.overflowed[b.id]).toBeCloseTo(0.00109, 9);
       expect(s.multiphysics.massResidual).toBeCloseTo(0, 8);
       const empty = gravity({ volume: 0.01 }, { volume: 0, capacity: 1 });
       const e = run(new Simulation(empty.p), 1, dt);
       expect(e.multiphysics.tanks[empty.a.id].mass).toBeCloseTo(0, 10);
-      expect(e.multiphysics.tanks[empty.b.id].mass).toBeCloseTo(0.01, 8);
+      // 0.01 L at 20 °C: 0.01 L × 0.998207 kg/L (published density).
+      expect(Math.abs(e.multiphysics.tanks[empty.b.id].mass / (0.01 * 0.998207) - 1)).toBeLessThan(5e-6);
       expect(e.multiphysics.hydraulic.readings[empty.pipe.id].flow).toBe(0);
     });
   }
@@ -87,11 +89,15 @@ describe('hydraulic reference mechanics', () => {
     const { p, a, b, pipe } = gravity({ volume: 0.1, initialTemperature: 60, loss: 0 }, { volume: 0.2, capacity: 1, initialTemperature: 20, loss: 0 });
     // Ideal-mixing reference: a zero-volume pipe (a 2.45 L pipe would retain the 0.1 L slug).
     pipe.props.inventory = false;
-    const initialEnthalpy = 0.1 * CP * U.celsiusToK(60) + 0.2 * CP * U.celsiusToK(20);
+    // Initial masses from the initial volumes and temperatures (densities 983.20 and 998.207 kg/m³).
+    const initial = structuredClone(new Simulation(p).multiphysics.tanks);
+    const initialEnthalpy = initial[a.id].mass * CP * U.celsiusToK(60) + initial[b.id].mass * CP * U.celsiusToK(20);
+    expect(Math.abs(initial[a.id].mass / (1e-4 * 983.2) - 1)).toBeLessThan(2e-5);
     const s = run(new Simulation(p), 5);
     expect(s.multiphysics.tanks[a.id].mass).toBeCloseTo(0, 9);
     const destination = s.multiphysics.tanks[b.id];
-    expect(U.kToCelsius(destination.temperature)).toBeCloseTo((0.1 * 60 + 0.2 * 20) / 0.3, 1);
+    // Mass-weighted mixing with published densities: 0.1 L at 60 °C (983.20 kg/m³), 0.2 L at 20 °C (998.207 kg/m³).
+    expect(U.kToCelsius(destination.temperature)).toBeCloseTo((0.1 * 983.2 * 60 + 0.2 * 998.207 * 20) / (0.1 * 983.2 + 0.2 * 998.207), 1);
     expect(destination.mass * CP * destination.temperature + s.ambientEnergy - initialEnthalpy).toBeCloseTo(s.multiphysics.dissipation, 5);
     expect(Math.abs(s.energyResidual)).toBeLessThan(0.02);
   });
@@ -250,7 +256,7 @@ describe('hydraulic instrumentation validity and elevation', () => {
     const temperature = (id: string) => readProbe({ id: 'temp', name: 'Fluid', component: id, measurement: 'fluidTemperature', color: '#ffffff', visible: true }, s);
     expect(temperature(tank.id)).toBeNull(); expect(temperature(pipe.id)).toBeNull();
     const staticProject = blank(), staticTank = add(staticProject, 'tank'), staticSimulation = new Simulation(staticProject);
-    expect(readProbe({ id: 'p', name: 'Pressure', component: staticTank.id, measurement: 'pressure', color: '#ffffff', visible: true }, staticSimulation)).toBeCloseTo(1000 * G * 0.01 / 0.1 / 100000, 10);
+    expect(readProbe({ id: 'p', name: 'Pressure', component: staticTank.id, measurement: 'pressure', color: '#ffffff', visible: true }, staticSimulation)).toBeCloseTo(998.207 * G * 0.01 / 0.1 / 100000, 7);
     run(s, 2); expect(temperature(tank.id)).toBeGreaterThan(19); expect(temperature(pipe.id)).toBeGreaterThan(19);
     const overpressure = blank(); add(overpressure, 'tank', { volume: 200, capacity: 200, surfaceArea: 0.001 });
     const rated = new Simulation(overpressure); rated.step(); expect(rated.violations.some(v => v.includes('pressure rating'))).toBe(true);

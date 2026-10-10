@@ -63,3 +63,16 @@ export function viscosityK(kelvin: number) {
   }
   return mu;
 }
+
+/**
+ * Thermal expansion of tank inventories (Boussinesq treatment). Tanks track mass; their volume and
+ * level follow the Kell density at the water temperature, so heating raises the level and can make
+ * a nearly full tank overflow. Bottom pressure is g·m/A, exact for any density. Network flows,
+ * friction and the gravitational energy ledger use the reference density: the tank potential is
+ * Φ = g(z·m + m²/(2·ρ_ref·A)), which matches the flow work P/ρ_ref exactly. The gravitational work
+ * done by the expansion itself (≈1e-6 of the heat input) is thereby counted as internal energy.
+ */
+export function inventoryVolume(mass: number, kelvin: number) {
+  const celsius = Math.min(150, Math.max(0, kelvin - 273.15));
+  return mass / kellDensity(celsius);
+}
