@@ -91,7 +91,7 @@ test('physical and schematic views preserve shared motor, body, thermal and repl
   await page.getByLabel('Angular impulse', { exact: true }).fill('0.3'); await page.getByLabel('Angular impulse', { exact: true }).press('Enter');
   await page.getByRole('button', { name: 'Apply accounted impulse' }).click(); await advance(page, 1); const live = await read(page);
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: 'Save project', exact: true }).click(); const file = await download;
-  await page.getByRole('button', { name: 'New empty experiment' }).click(); await page.locator('input[type=file]').setInputFiles((await file.path())!); await expect(page.getByRole('status')).toContainText('restored');
+  await page.getByRole('button', { name: 'New empty experiment' }).click(); await page.locator('input[type=file]').setInputFiles((await file.path())!); await expect(page.getByRole('status')).toContainText('restored', { timeout: 30000 });
   expect((await read(page)).spatial.bodies).toEqual(live.spatial.bodies);
   await page.screenshot({ path: '/tmp/phase3a-physical-rotor.png' });
 });

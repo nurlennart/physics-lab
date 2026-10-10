@@ -1,0 +1,179 @@
+{
+  "version": 3,
+  "probes": [
+    {
+      "id": "acRlc-probe-1",
+      "component": "acRlc-component-1",
+      "measurement": "current",
+      "name": "AC-01 current",
+      "color": "#ef9975",
+      "visible": true
+    },
+    {
+      "id": "acRlc-probe-2",
+      "component": "acRlc-component-1",
+      "measurement": "voltage",
+      "name": "AC-01 voltage",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "acRlc-probe-3",
+      "component": "acRlc-component-1",
+      "measurement": "power",
+      "name": "AC-01 power",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "acRlc-probe-4",
+      "component": "acRlc-component-1",
+      "measurement": "reactivePower",
+      "name": "AC-01 reactivePower",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "acRlc-probe-5",
+      "component": "acRlc-component-1",
+      "measurement": "powerFactor",
+      "name": "AC-01 powerFactor",
+      "color": "#3ba6d8",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "id": "example-acRlc",
+  "name": "AC RLC measurement laboratory",
+  "components": [
+    {
+      "id": "acRlc-component-1",
+      "kind": "sourceAC",
+      "name": "AC-01",
+      "x": 50,
+      "y": 140,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true
+      }
+    },
+    {
+      "id": "acRlc-component-2",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 300,
+      "y": 140,
+      "rotation": 0,
+      "variant": "power",
+      "props": {
+        "resistance": 500,
+        "ratedPower": 250,
+        "heatCapacity": 200,
+        "loss": 1,
+        "maxTemperature": 200,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2
+      }
+    },
+    {
+      "id": "acRlc-component-3",
+      "kind": "inductor",
+      "name": "L-01",
+      "x": 550,
+      "y": 140,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "inductance": 0.5,
+        "resistance": 0.1,
+        "ratedCurrent": 10,
+        "heatCapacity": 200,
+        "loss": 1,
+        "conductance": 5,
+        "maxTemperature": 150,
+        "tempCoefficient": 0.00393,
+        "tolerance": 0
+      }
+    },
+    {
+      "id": "acRlc-component-4",
+      "kind": "capacitor",
+      "name": "C-01",
+      "x": 800,
+      "y": 140,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "capacitance": 0.0001,
+        "resistance": 0.05,
+        "ratedVoltage": 450,
+        "ratedCurrent": 20,
+        "heatCapacity": 50,
+        "loss": 0.5,
+        "maxTemperature": 85,
+        "tempCoefficient": 0,
+        "tolerance": 0
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "acRlc-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "acRlc-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "acRlc-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "acRlc-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "acRlc-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "acRlc-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "acRlc-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "acRlc-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "acRlc-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "acRlc-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "acRlc-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "acRlc-component-1",
+        "port": "b"
+      }
+    }
+  ]
+}

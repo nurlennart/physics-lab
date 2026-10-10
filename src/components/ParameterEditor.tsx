@@ -1,7 +1,8 @@
+import { compatibleTarget, temperatureLabel } from "../simulation/capabilities";
 import { useEffect, useState } from "react";
 import { Lock, RotateCcw, Save, Info, Gauge } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
-import { catalog, componentCost, definitions, isThermalMass, projectAmbient, prop, type Component, type Kind, type Project, type Property } from "../simulation/model";
+import { catalog, componentCost, definitions, isMotor, projectAmbient, prop, type Component, type Kind, type Project, type Property } from "../simulation/model";
 import { editPolicy } from "../simulation/integrity";
 import { derivedReadouts, paramSpec, type ParamGroup, type ParamSpec } from "../simulation/parameters";
 import { builtinPresets } from "../simulation/presets";
@@ -107,8 +108,8 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
     control = (
       <select aria-label={physical ? "Physical target" : "Thermal target"} disabled={disabled} value={String(value)} onChange={(e) => actions.property(c.id, field, e.target.value)}>
         <option value="">Unassigned</option>
-        {s.project.components.filter((x) => c.kind === "positionSensor" || c.kind === "forceActuator" ? !!x.spatial && (c.kind !== "forceActuator" || x.spatial.type === "dynamic") : c.kind === "speedSensor" ? !!x.spatial || x.kind === "motor" || x.kind === "inductionMotor" : c.kind === "levelSensor" ? x.kind === "tank" : ["pressureSensor", "flowSensor"].includes(c.kind) ? definitions[x.kind].ports.some((p) => p.domain === "hydraulic") && (c.kind !== "flowSensor" || ["pipe", "pump", "valve", "checkValve", "actuatedValve"].includes(x.kind)) : isThermalMass(x)).map((x) => (
-          <option key={x.id} value={x.id}>{x.name} · {definitions[x.kind].label}</option>
+        {s.project.components.filter((x) => compatibleTarget(c, x)).map((x) => (
+          <option key={x.id} value={x.id}>{x.name} · {definitions[x.kind].label}{["sensor", "thermostat", "safety"].includes(c.kind) ? ` · ${c.props.quantity === "fluidTemperature" ? "fluid temperature" : temperatureLabel(x)}` : ""}</option>
         ))}
       </select>
     );
@@ -138,6 +139,7 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
         {reason && policy !== "derived" && <Lock size={10} aria-label={reason} />}
       </span>
       {control}
+      {field === "target" && <span className="field-hint">Only targets with a modeled quantity are selectable. Unassigned targets and unavailable states produce invalid signals. Pumps and valves expose fluid temperature; their body temperature is not modeled.</span>}
       {reason && policy !== "derived" && policy !== "fixed" && !s.busy && <span className="lock-reason">{reason}</span>}
       {typical && !reason && <span className="lock-reason hint">Outside the typical {formatEngineering(displayed(spec, spec!.typical![0]))}–{formatEngineering(displayed(spec, spec!.typical![1]))} {spec!.display?.unit ?? spec!.unit} range — allowed.</span>}
     </div>
@@ -194,16 +196,16 @@ export function RatingIndicators({ c }: { c: Component }) {
   useLab();
   const r = simulation.electrical.readings[c.id], h = simulation.multiphysics.hydraulic.readings[c.id], t = simulation.temperatures[c.id];
   const bars = [];
-  if (c.kind === "source3" && r) {
+  if ((c.kind === "source3" || c.kind === "sourceAC") && r) {
     bars.push(<Bar key="i" label="Line current" actual={r.current} rated={prop(c, "maxCurrent")} unit="A" />);
-    bars.push(<Bar key="p" label="Three-phase power" actual={r.power} rated={prop(c, "maxPower", Infinity)} unit="W" />);
+    bars.push(<Bar key="p" label="Apparent power" actual={Math.hypot(r.power, r.reactivePower ?? 0)} rated={prop(c, "maxPower", Infinity)} unit="VA" />);
   } else if (c.kind === "source" && r) {
     bars.push(<Bar key="i" label="Output current" actual={r.current} rated={sourceMode(c) === "cc" ? prop(c, "current") : prop(c, "maxCurrent")} unit="A" />);
     bars.push(<Bar key="p" label="Output power" actual={r.power} rated={prop(c, "maxPower", Infinity)} unit="W" />);
   } else if (r) {
-    if ("ratedPower" in c.props) bars.push(<Bar key="p" label={c.kind === "heater" ? "Power vs nominal" : "Power"} actual={r.power} rated={prop(c, "ratedPower")} unit="W" />);
+    if ("ratedPower" in c.props) bars.push(<Bar key="p" label={isMotor(c) ? "Shaft power" : c.kind === "heater" ? "Power vs nominal" : "Power"} actual={isMotor(c) ? simulation.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power} rated={prop(c, "ratedPower")} unit="W" />);
     if ("ratedCurrent" in c.props) bars.push(<Bar key="i" label="Current" actual={r.contactCurrent ?? r.current} rated={prop(c, "ratedCurrent")} unit="A" />);
-    if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label="Voltage" actual={r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
+    if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : "Voltage"} actual={c.kind === "inductionMotor" && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
   }
   if (t !== undefined && "maxTemperature" in c.props)
     bars.push(<Bar key="t" label="Temperature rise" actual={t - projectAmbient(simulation.project)} rated={prop(c, "maxTemperature") - projectAmbient(simulation.project)} unit="K" />);

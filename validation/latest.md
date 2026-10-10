@@ -1,6 +1,6 @@
 # Executed physics validation
 
-Executed: 2026-10-10T17:20:19.571Z. 81/87 checks passed.
+Executed: 2026-10-10T19:32:06.942Z. 87/87 checks passed.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -9,19 +9,19 @@ Executed: 2026-10-10T17:20:19.571Z. 81/87 checks passed.
 | 24 W × 10 s energy | electrical | 240 | 240.00000000000233 | 2.331e-12 | 9.711e-15 | 1e-8 | PASS | Fixed-step rectangular integration; power constant |
 | Net electrical power residual | electrical | 0 | 0 | 0.000e+0 | — | 1e-9 | PASS | Independent sum of ideal-source and branch powers |
 | Disconnected load current | electrical | 0 | 0 | 0.000e+0 | — | 1e-10 | PASS | Open circuit, no leakage model |
-| 10 kg water heated 20→80°C | thermal | 2508000 | 2503505.708998064 | 4.494e+3 | 1.792e-3 | 33.33433333333333 | FAIL | Step crossing bounded by one interval of ≤2 kW input; heater storage accounted separately |
+| 10 L water heated 20→80°C (9.982071 kg) | thermal | 2503503.4068 | 2503505.708998064 | 2.302e+0 | 9.196e-7 | 33.33433333333333 | PASS | Step crossing bounded by one interval of ≤2 kW input; heater storage accounted separately |
 | Isolated coupled heating conservation | coupling | 0 | -0.000020655803382396698 | 2.066e-5 | — | 0.001 | PASS | Backward Euler symmetric immersion transfer; tolerance 1 mJ over ~2.5 MJ |
 | OFF removes new electrical energy | coupling | 2525689.691076456 | 2525689.691076456 | 0.000e+0 | 0.000e+0 | 1e-8 | PASS | Stored thermal energy remains, heater electrical branch failed open |
 | Thermal inertia still warms water | coupling | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Hot element retains sensible energy after power removal |
-| Ambient cooling convergence dt=0.100000 s | thermal | 78.13486761123998 | 78.08161989115646 | 5.325e-2 | 6.815e-4 | 0.000005001135734072023 | FAIL | Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2 |
+| Ambient cooling convergence dt=0.100000 s | thermal | 78.08161478024645 | 78.08161989115646 | 5.111e-6 | 6.546e-8 | 0.0000052950314135524786 | PASS | Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2 |
 | Cooling conservation dt=0.100000 s | thermal | 0 | 5.55693986825645e-7 | 5.557e-7 | — | 0.001 | PASS | Signed external heat and stored thermal change; no power source |
-| Ambient cooling convergence dt=0.050000 s | thermal | 78.13486761123998 | 78.08161733576587 | 5.325e-2 | 6.815e-4 | 0.0000025055678670360114 | FAIL | Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2 |
+| Ambient cooling convergence dt=0.050000 s | thermal | 78.08161478024645 | 78.08161733576587 | 2.556e-6 | 3.273e-8 | 0.0000026525157067762392 | PASS | Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2 |
 | Cooling conservation dt=0.050000 s | thermal | 0 | -0.000002192638930864632 | 2.193e-6 | — | 0.001 | PASS | Signed external heat and stored thermal change; no power source |
-| Ambient cooling convergence dt=0.025000 s | thermal | 78.13486761123998 | 78.08161605803498 | 5.325e-2 | 6.815e-4 | 0.0000012577839335180056 | FAIL | Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2 |
+| Ambient cooling convergence dt=0.025000 s | thermal | 78.08161478024645 | 78.08161605803498 | 1.278e-6 | 1.636e-8 | 0.0000013312578533881196 | PASS | Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2 |
 | Cooling conservation dt=0.025000 s | thermal | 0 | -0.0000022391031961888075 | 2.239e-6 | — | 0.001 | PASS | Signed external heat and stored thermal change; no power source |
-| Ambient cooling convergence dt=0.016667 s | thermal | 78.13486761123998 | 78.0816156318544 | 5.325e-2 | 6.815e-4 | 8.418559556786704e-7 | FAIL | Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2 |
+| Ambient cooling convergence dt=0.016667 s | thermal | 78.08161478024645 | 78.0816156318544 | 8.516e-7 | 1.091e-8 | 8.90838568925413e-7 | PASS | Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2 |
 | Cooling conservation dt=0.016667 s | thermal | 0 | 0.000008883638656698167 | 8.884e-6 | — | 0.001 | PASS | Signed external heat and stored thermal change; no power source |
-| Halving timestep approximately halves error | numerical | 2 | 0.9999520116924938 | 1.000e+0 | 5.000e-1 | 0.001 | FAIL | Backward Euler first-order convergence for smooth single-mass cooling |
+| Halving timestep approximately halves error | numerical | 2 | 1.9999495909140017 | 5.041e-5 | 2.520e-5 | 0.001 | PASS | Backward Euler first-order convergence for smooth single-mass cooling |
 | Closed relay and safety current | electrical | 8.324661810613943 | 8.324661810613941 | 1.776e-15 | 2.134e-16 | 1e-9 | PASS | Finite series contact resistances 0.02 Ω and 0.01 Ω |
 | Closed-loop regulation inside plausible bounds | automation | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | 78/80°C hysteresis; finite element inertia and 8 W/K cooling |
 | Long run energy conservation | coupling | 0 | 0.000028385315090417862 | 2.839e-5 | — | 0.001 | PASS | All contact/element heat storage and ambient/coolant exchange included |

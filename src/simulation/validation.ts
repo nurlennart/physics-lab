@@ -106,9 +106,10 @@ export function runValidation() {
   while (isolated.temperatures[tank.id] < 80) {
     if (!isolated.step()) throw Error(isolated.error ?? "Heating failed");
   }
-  const sensible = 10 * 4180 * 60;
+  // Inventory is specified in litres, not kilograms. Independent Kell density at 20 °C.
+  const sensible = 0.01 * 998.2071 * 4180 * 60;
   add(
-    "10 kg water heated 20→80°C",
+    "10 L water heated 20→80°C (9.982071 kg)",
     "thermal",
     sensible,
     isolated.waterStored,
@@ -147,22 +148,26 @@ export function runValidation() {
     vessel = makeComponent("tank", 0, 0);
   vessel.props.initialTemperature = 80;
   cool.components = [vessel];
+  // Isolate BE cooling from the density model: capacity uses the initialized conserved mass,
+  // whose independent density/inventory checks live in water-pump-overflow.test.ts.
+  const initialMass = new Simulation(cool).multiphysics.tanks[vessel.id].mass;
+  const capacity = initialMass * 4180 + Number(vessel.props.vesselHeatCapacity);
   const duration = 600,
-    exact = 20 + 60 * Math.exp((-2.2 * duration) / 41800),
+    exact = 20 + 60 * Math.exp((-2.2 * duration) / capacity),
     errors: number[] = [];
   for (const dt of [0.1, 0.05, 0.025, DT]) {
     const s = new Simulation(cool);
     advance(s, duration, dt);
     const error = Math.abs(s.temperatures[vessel.id] - exact);
     errors.push(error);
-    const upperBound = (60 * (2.2 / 41800) ** 2 * duration * dt) / 2;
+    const upperBound = (60 * (2.2 / capacity) ** 2 * duration * dt) / 2;
     add(
       `Ambient cooling convergence dt=${dt.toFixed(6)} s`,
       "thermal",
       exact,
       s.temperatures[vessel.id],
       upperBound * 1.001 + 1e-8,
-      "Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2",
+      "Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2",
     );
     add(
       `Cooling conservation dt=${dt.toFixed(6)} s`,

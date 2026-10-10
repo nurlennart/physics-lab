@@ -252,7 +252,10 @@ describe('multiphysics run integrity', () => {
 describe('hydraulic instrumentation validity and elevation', () => {
   it('does not invent fluid temperatures for empty tanks or non-advecting zero-volume pipes', async () => {
     const { readProbe } = await import('./measurements');
-    const p = hydraulicStarter('transfer'), s = new Simulation(p), tank = p.components.find(c => c.name === 'Destination tank')!, pipe = p.components.find(c => c.kind === 'pipe')!;
+    const p = hydraulicStarter('transfer'), tank = p.components.find(c => c.name === 'Destination tank')!, pipe = p.components.find(c => c.kind === 'pipe')!;
+    // This case promises zero-volume behavior; inventory pipes have real initialized water.
+    pipe.props.inventory = false;
+    const s = new Simulation(p);
     const temperature = (id: string) => readProbe({ id: 'temp', name: 'Fluid', component: id, measurement: 'fluidTemperature', color: '#ffffff', visible: true }, s);
     expect(temperature(tank.id)).toBeNull(); expect(temperature(pipe.id)).toBeNull();
     const staticProject = blank(), staticTank = add(staticProject, 'tank'), staticSimulation = new Simulation(staticProject);

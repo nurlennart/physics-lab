@@ -1,3 +1,4 @@
+import { measurementLabel } from "../simulation/capabilities";
 import { useState } from "react";
 import {
   ChartNoAxesCombined,
@@ -11,6 +12,7 @@ import {
 import { actions, simulation, useLab } from "../editor/store";
 import {
   units,
+  formatReading,
   measurements,
   readProbe,
   probeUnit,
@@ -379,8 +381,9 @@ export default function Telemetry() {
                           })
                         }
                       />
+                      {s.project.components.find(c => c.id === p.component)?.kind === "heatExchanger" && <select aria-label={`Stream for ${p.name}`} value={p.port ?? "hot"} onChange={e => actions.probe(p.id, { port: e.target.value })}><option value="hot">A / hot stream</option><option value="cold">B / cold stream</option></select>}
                       <span>
-                        {p.measurement} ·{" "}
+                        {s.project.components.find(c => c.id === p.component) && !measurements(s.project.components.find(c => c.id === p.component)!).includes(p.measurement) ? "Unavailable: target does not model this quantity" : p.measurement} ·{" "}
                         {p.reference
                           ? "differential"
                           : p.measurement === "nodeVoltage"
@@ -405,7 +408,7 @@ export default function Telemetry() {
                       <i style={{ background: p.color }} />
                       {p.name}
                       <strong>
-                        {v === null ? "invalid" : v.toFixed(3)}{" "}
+                        {v === null ? "invalid" : formatReading(v)}{" "}
                         <small>{probeUnit(p, s.project)}</small>
                       </strong>
                     </label>

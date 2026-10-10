@@ -45,7 +45,8 @@ describe('example shelf', () => {
     const s = new Simulation(p);
     for (let i = 0; i < 60; i++) expect(s.step()).toBe(true);
     expect(s.error).toBeNull();
-    expect(s.violations).toEqual([]);
+    expect(s.violations).toEqual(example.mode === 'induction' ? ['IM-01: operated outside its current rating. Consequences follow from its modelled temperature.'] : []);
+    if (example.mode === 'induction') expect(s.electrical.readings[p.components.find(c => c.kind === 'inductionMotor')!.id].current).toBeLessThan(15);
     expect(Object.keys(s.failed)).toEqual([]);
     expect(p.probes?.length).toBeGreaterThan(0);
     if (example.mode !== 'mechanism' && example.mode !== 'descent' && example.mode !== 'exchanger') expect(s.suppliedEnergy).toBeGreaterThan(0);

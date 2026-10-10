@@ -1,3 +1,4 @@
+import { compatibleTarget } from "./capabilities";
 import {
   connectionError,
   catalog,
@@ -33,7 +34,7 @@ export const liveProperties = new Set([
   "enabled",
 ]);
 export const configurableProperties = new Set([
-  'axis', 'damping', 'feedforward',
+  'axis', 'quantity', 'stream', 'damping', 'feedforward',
   "capacity", "elevation", "surfaceArea", "length", "diameter", "roughness", "material", "conductivity", "insulation", "thermalUA", "loadTorque", "responseTime", "failOpen", "kp", "ki", "minOutput", "maxOutput",
   "resistance",
   "volume",
@@ -295,7 +296,10 @@ export function transitionError(
   for (const c of next.components) {
     if (ids.has(c.id)) return "Duplicate component ID.";
     ids.add(c.id);
-    if (typeof c.props.target === "string" && c.props.target && !next.components.some(x => x.id === c.props.target)) return "Sensor target does not exist.";
+    if (typeof c.props.target === "string" && c.props.target) {
+      const target = next.components.find(x => x.id === c.props.target);
+      if (!target || !compatibleTarget(c, target)) return `${c.name}: target has no compatible modeled quantity. Clear or reassign the target first.`;
+    }
   }
   const checked: Project = { ...next, connections: [] };
   for (const w of next.connections) {

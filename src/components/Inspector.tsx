@@ -1,3 +1,4 @@
+import { measurementLabel } from "../simulation/capabilities";
 import { useState } from "react";
 import {
   SlidersHorizontal,
@@ -22,6 +23,7 @@ import { ParameterSections, DerivedValues, RatingIndicators, ModelAndPresets, En
 import { allowedFaults, type FaultType } from "../simulation/automation";
 import {
   measurements,
+  formatReading,
   readProbe,
   units,
   probeUnit,
@@ -66,7 +68,7 @@ export default function Inspector() {
       ? "failedOpen"
       : (simulation.automation.status[c.id] ?? "healthy");
   const sensor = simulation.automation.sensors[c.id],
-    temp = sensor?.valid ? Number(sensor.value) : simulation.temperatures[c.id],
+    temp = sensor ? sensor.valid ? Number(sensor.value) : undefined : simulation.temperatures[c.id],
     h = simulation.multiphysics.hydraulic.readings[c.id],
     r = simulation.electrical.readings[c.id],
     v = simulation.automation.signals[c.id];
@@ -74,7 +76,7 @@ export default function Inspector() {
     c.kind === 'rigidBody' ? simulation.spatial.readings[c.id]?.y.toFixed(3) ?? '—' : c.kind === 'forceActuator' ? (readProbe({ component: c.id, measurement: c.props.axis === 'torque' ? 'appliedTorque' : 'appliedForce' } as Parameters<typeof readProbe>[0], simulation)?.toFixed(3) ?? '—') : isThermalMass(c) || sensor
       ? temp === undefined
         ? "—"
-        : temp.toFixed(2)
+        : formatReading(temp, 2)
       : h ? (h.flow * 60000).toFixed(3) : v
         ? v.valid
           ? typeof v.value === "boolean"
@@ -160,7 +162,7 @@ export default function Inspector() {
               >
                 <span>{primary}</span>
                 <small>
-                  {c.kind === 'rigidBody' ? 'm' : c.kind === 'forceActuator' ? c.props.axis === 'torque' ? 'N·m' : 'N' : sensor ? definitions[c.kind].ports.find(p => p.id === "out")?.unit ?? "°C" : isThermalMass(c) ? "°C" : h ? "L/min" : v ? "" : "V"}
+                  {c.kind === 'rigidBody' ? 'm' : c.kind === 'forceActuator' ? c.props.axis === 'torque' ? 'N·m' : 'N' : sensor ? ["sensor", "thermostat", "safety"].includes(c.kind) ? "°C" : definitions[c.kind].ports.find(p => p.id === "out")?.unit ?? "°C" : isThermalMass(c) ? "°C" : h ? "L/min" : v ? "" : "V"}
                 </small>
               </div>
               <div className="reading-caption">
@@ -192,12 +194,12 @@ export default function Inspector() {
                     return (
                       <div key={m}>
                         <span>
-                          {m === "current" ? "NO / branch current" : m}
+                          {measurementLabel(c, m)}
                         </span>
                         <strong>
                           {value === null
                             ? "—"
-                            : value.toFixed(
+                            : formatReading(value,
                                 m === "state" || m === "signal" ? 2 : 3,
                               )}{" "}
                           <small>
@@ -211,6 +213,7 @@ export default function Inspector() {
                     );
                   })}
               </div>
+              {sensor && !sensor.valid && <p className="field-hint">{sensor.reason}</p>}
               {v && !v.valid && <p className="field-hint">{v.reason}</p>}
             </div>
             {c.kind === "pump" && (() => {
@@ -283,7 +286,7 @@ export default function Inspector() {
                   .filter((x) => x !== "nodeVoltage")
                   .map((x) => (
                     <option key={x} value={x}>
-                      {x} [{units[x]}]
+                      {measurementLabel(c, x)} [{units[x]}]
                     </option>
                   ))}
               </select>

@@ -1,3 +1,4 @@
+import { compatibleTarget, legacyUnavailableMeasurement } from "./capabilities";
 import { hydraulicStarter, industrialStarter, heatExchangerStarter, type HydraulicMode } from "./hydraulic-projects";
 import { mechanicalStarter, type MechanicalMode } from './spatial-projects';
 import {
@@ -7,14 +8,13 @@ import {
   uid,
   connectionError,
   catalog,
-  isThermalMass,
   LEGACY_PUMP_DRAG,
   type Kind,
   type Project,
   type Component,
 } from "./model";
 export function starter(
-  mode: "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode = "heat",
+  mode: "induction" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode = "heat",
   challenge = false,
 ): Project {
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
@@ -50,6 +50,26 @@ export function starter(
     p.components.push(c);
     return c;
   };
+  if (mode === "induction" || mode === "acRlc") {
+    p.name = mode === "induction" ? "Loaded induction motor — compatible 250 A supply" : "AC RLC measurement laboratory";
+    const source = add(mode === "induction" ? "source3" : "sourceAC", 50, 140);
+    const loads: Component[] = [];
+    if (mode === "induction") {
+      source.variant = "industrial250";
+      source.props = { ...catalog(source).props };
+      loads.push(add("inductionMotor", 400, 140, { loadTorque: 35 }));
+    } else {
+      const resistor = add("resistor", 300, 140);
+      resistor.variant = "power";
+      resistor.props = { ...catalog(resistor).props, resistance: 500 };
+      loads.push(resistor, add("inductor", 550, 140, { inductance: 0.5 }), add("capacitor", 800, 140));
+    }
+    const loop = [source, ...loads, source];
+    for (let i = 0; i < loop.length - 1; i++) p = connect(p, { component: loop[i].id, port: i === 0 ? "a" : "b" }, { component: loop[i + 1].id, port: i === loop.length - 2 ? "b" : "a" });
+    const metrics = mode === "induction" ? ["rpm", "current", "shaftPower", "temperature"] as const : ["current", "voltage", "power", "reactivePower", "powerFactor"] as const;
+    p.probes = metrics.map((measurement, i) => ({ id: uid(), component: mode === "acRlc" ? source.id : loads[0].id, measurement, name: `${mode === "acRlc" ? source.name : loads[0].name} ${measurement}`, color: ["#ef9975", "#e9bd6a", "#a58ae3", "#59b99b", "#3ba6d8"][i], visible: true }));
+    return p;
+  }
   if (mode === "runaway" || mode === "automated") {
     p.name =
       mode === "runaway"
@@ -251,12 +271,7 @@ export function parseProject(input: unknown): Project {
     if (["sensor", "thermostat", "safety"].includes(c.kind)) {
       if (Number(c.props.minRange) >= Number(c.props.maxRange))
         throw Error("Invalid sensor range.");
-      const target = c.props.target;
-      if (
-        target !== "" &&
-        !p.components.some((x) => x.id === target && isThermalMass(x))
-      )
-        throw Error("Sensor target must be a thermal mass.");
+
     }
     if (
       c.kind === "comparator" &&
@@ -273,6 +288,12 @@ export function parseProject(input: unknown): Project {
   }
   let validated: Project = { ...p, connections: [] };
   const wireIds = new Set();
+  for (const c of p.components) {
+    if (typeof c.props.target === "string" && c.props.target) {
+      const target = p.components.find(x => x.id === c.props.target);
+      if (!target || !compatibleTarget(c, target)) throw Error(`${c.name}: target has no compatible modeled quantity. Reassign the sensor target.`);
+    }
+  }
   for (const w of p.connections) {
     if (!w || typeof w.id !== "string" || wireIds.has(w.id) || !w.from || !w.to)
       throw Error("Invalid connection.");
@@ -363,13 +384,13 @@ export function validateProbes(p: Project) {
     ids.add(probe.id);
     if (
       ![
-        "pressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
+        "pressure", "inletPressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
         'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',
         "voltage",
         "current",
         "currentNC",
         "power",
-        "temperature",
+        "bodyTemperature", "temperature",
         "energy",
         "state",
         "signal",
@@ -379,8 +400,9 @@ export function validateProbes(p: Project) {
       throw Error("Unknown probe measurement.");
     const c = p.components.find((c) => c.id === probe.component);
     if (!c) throw Error("Probe target is missing.");
-    if (!measurements(c).includes(probe.measurement))
+    if (!measurements(c).includes(probe.measurement) && !legacyUnavailableMeasurement(c, probe.measurement))
       throw Error("Measurement is incompatible with probe target.");
+    if (c.kind === "heatExchanger" && probe.port !== undefined && !["hot", "cold"].includes(probe.port)) throw Error("Exchanger probe stream must be hot or cold.");
     if (
       probe.reference &&
       !p.components.some(

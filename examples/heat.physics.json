@@ -98,6 +98,7 @@
         "loss": 2.2,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04

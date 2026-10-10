@@ -1,7 +1,7 @@
 {
-  "executedAt": "2026-10-10T17:20:19.571Z",
+  "executedAt": "2026-10-10T19:32:06.942Z",
   "timestepSeconds": 0.016666666666666666,
-  "passed": 81,
+  "passed": 87,
   "total": 87,
   "results": [
     {
@@ -60,14 +60,14 @@
       "assumptions": "Open circuit, no leakage model"
     },
     {
-      "name": "10 kg water heated 20→80°C",
+      "name": "10 L water heated 20→80°C (9.982071 kg)",
       "domain": "thermal",
-      "expected": 2508000,
+      "expected": 2503503.4068,
       "measured": 2503505.708998064,
-      "absoluteError": 4494.291001935955,
-      "relativeError": 0.0017919820581881799,
+      "absoluteError": 2.302198064047843,
+      "relativeError": 9.195905457107139e-7,
       "tolerance": 33.33433333333333,
-      "pass": false,
+      "pass": true,
       "assumptions": "Step crossing bounded by one interval of ≤2 kW input; heater storage accounted separately"
     },
     {
@@ -106,13 +106,13 @@
     {
       "name": "Ambient cooling convergence dt=0.100000 s",
       "domain": "thermal",
-      "expected": 78.13486761123998,
+      "expected": 78.08161478024645,
       "measured": 78.08161989115646,
-      "absoluteError": 0.05324772008351886,
-      "relativeError": 0.0006814847418498599,
-      "tolerance": 0.000005001135734072023,
-      "pass": false,
-      "assumptions": "Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2"
+      "absoluteError": 0.000005110910009875624,
+      "relativeError": 6.545599785890458e-8,
+      "tolerance": 0.0000052950314135524786,
+      "pass": true,
+      "assumptions": "Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2"
     },
     {
       "name": "Cooling conservation dt=0.100000 s",
@@ -128,13 +128,13 @@
     {
       "name": "Ambient cooling convergence dt=0.050000 s",
       "domain": "thermal",
-      "expected": 78.13486761123998,
+      "expected": 78.08161478024645,
       "measured": 78.08161733576587,
-      "absoluteError": 0.053250275474113096,
-      "relativeError": 0.0006815174467186638,
-      "tolerance": 0.0000025055678670360114,
-      "pass": false,
-      "assumptions": "Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2"
+      "absoluteError": 0.000002555519415636809,
+      "relativeError": 3.2728823844500194e-8,
+      "tolerance": 0.0000026525157067762392,
+      "pass": true,
+      "assumptions": "Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2"
     },
     {
       "name": "Cooling conservation dt=0.050000 s",
@@ -150,13 +150,13 @@
     {
       "name": "Ambient cooling convergence dt=0.025000 s",
       "domain": "thermal",
-      "expected": 78.13486761123998,
+      "expected": 78.08161478024645,
       "measured": 78.08161605803498,
-      "absoluteError": 0.0532515532050013,
-      "relativeError": 0.0006815337996085741,
-      "tolerance": 0.0000012577839335180056,
-      "pass": false,
-      "assumptions": "Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2"
+      "absoluteError": 0.0000012777885274317669,
+      "relativeError": 1.636478101827153e-8,
+      "tolerance": 0.0000013312578533881196,
+      "pass": true,
+      "assumptions": "Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2"
     },
     {
       "name": "Cooling conservation dt=0.025000 s",
@@ -172,13 +172,13 @@
     {
       "name": "Ambient cooling convergence dt=0.016667 s",
       "domain": "thermal",
-      "expected": 78.13486761123998,
+      "expected": 78.08161478024645,
       "measured": 78.0816156318544,
-      "absoluteError": 0.05325197938557835,
-      "relativeError": 0.0006815392540310373,
-      "tolerance": 8.418559556786704e-7,
-      "pass": false,
-      "assumptions": "Analytic exponential cooling; first-order BE error bound ΔT λ² t dt / 2"
+      "absoluteError": 8.516079503806395e-7,
+      "relativeError": 1.0906638557327637e-8,
+      "tolerance": 8.90838568925413e-7,
+      "pass": true,
+      "assumptions": "Analytic exponential cooling with conserved initial water mass; first-order BE error bound ΔT λ² t dt / 2"
     },
     {
       "name": "Cooling conservation dt=0.016667 s",
@@ -195,11 +195,11 @@
       "name": "Halving timestep approximately halves error",
       "domain": "numerical",
       "expected": 2,
-      "measured": 0.9999520116924938,
-      "absoluteError": 1.0000479883075062,
-      "relativeError": 0.5000239941537531,
+      "measured": 1.9999495909140017,
+      "absoluteError": 0.00005040908599829308,
+      "relativeError": 0.00002520454299914654,
       "tolerance": 0.001,
-      "pass": false,
+      "pass": true,
       "assumptions": "Backward Euler first-order convergence for smooth single-mass cooling"
     },
     {

@@ -12,7 +12,7 @@ import { warnOnlyTemperature, thermalTau, thermalThreshold } from "./parameters"
 import { inventoryVolume } from "./water";
 import { transitionError } from "./integrity";
 import { Automation, allowedFaults, type FaultType } from "./automation";
-import { readProbe } from "./measurements";
+import { readProbe, measurements } from "./measurements";
 import { SpatialDynamics } from './spatial';
 function freeze<T>(value: T): T {
   if (value && typeof value === "object") {
@@ -304,6 +304,9 @@ export class Simulation {
   }
   private solve(control: boolean, dt: number) {
     try {
+      // At initialization and paused edits, establish modeled measurements before sensing.
+      // Advancing controls still sample the start of each physical integration interval.
+      if (control && dt === 0 && this.hasFluidsOrMotors()) this.electrical = this.multiphysics.refresh(this);
       if (control) this.automation.evaluate(this, dt);
       const key = JSON.stringify([
         [...this.openDevices()],
@@ -422,8 +425,18 @@ export class Simulation {
       - this.multiphysics.externalShaftWork - this.multiphysics.removedEnergy;
   }
   mechanicalMeasurement = (id: string, metric: string): number | undefined => {
+    const component = this.project.components.find(c => c.id === id);
+    if (!component) return undefined;
     const b = this.spatial.readings[id];
-    if (metric === 'rpm') return (b?.omega ?? this.multiphysics.motors[id]?.omega) === undefined ? undefined : (b?.omega ?? this.multiphysics.motors[id].omega) * 30 / Math.PI;
+    if (metric === 'rpm' && component.kind === 'pump') {
+      const shaft = this.project.connections.find(w => w.domain === 'mechanical' && (w.from.component === id || w.to.component === id) && !this.disconnected.has(w.id));
+      const driver = shaft && (shaft.from.component === id ? shaft.to.component : shaft.from.component);
+      return driver ? this.mechanicalMeasurement(driver, 'rpm') : undefined;
+    }
+    if (metric === 'rpm') {
+      const omega = isMotor(component) ? this.multiphysics.motors[id]?.omega : b?.omega;
+      return omega === undefined ? undefined : omega * 30 / Math.PI;
+    }
     return metric === 'x' ? b?.x : metric === 'y' ? b?.y : undefined;
   };
   mechanicalDemand(id: string, configured: number) {
@@ -436,6 +449,16 @@ export class Simulation {
     if (!error) { this.log(`External impulse to ${id}: ${impulse.x}, ${impulse.y} N·s; ${angular} N·m·s.`); this.solve(true, 0); }
     return error;
   }
+  fluidTemperatureMeasurement = (id: string): number | undefined => {
+    const t = this.multiphysics.tanks[id], r = this.multiphysics.hydraulic.readings[id], cells = this.multiphysics.pipeCells[id];
+    if (cells?.length) return cells.reduce((sum, temperature) => sum + temperature, 0) / cells.length - 273.15;
+    if (t) return t.mass > 1e-10 ? t.temperature - 273.15 : undefined;
+    const component = this.project.components.find(c => c.id === id || c.kind === "heatExchanger" && (id === `${c.id}#hot` || id === `${c.id}#cold`));
+    // Match the hydraulic solver's stagnant-flow threshold: numerical leakage does not
+    // establish a fluid temperature in a zero-inventory branch.
+    if (component && measurements(component).includes("flow") && (!r || Math.abs(r.flow) < 1e-12)) return undefined;
+    return r?.temperatureValid ? r.temperature - 273.15 : undefined;
+  };
   hydraulicMeasurement(id: string, metric: string): number | undefined {
     const m = this.multiphysics, r = m.hydraulic.readings[id], t = m.tanks[id];
     if (metric === "level") {
@@ -443,6 +466,8 @@ export class Simulation {
       return c?.kind === "tank" && t ? U.m3ToLiters(t.volume) / prop(c, "capacity") * 100 : undefined;
     }
     if (metric === "flow") return r?.flow;
+    if (metric === "inletPressure") return r?.inletPressure;
+    if (metric === "differentialPressure") return r?.differentialPressure;
     if (metric === "pressure") {
       if (r) return r.pressure;
       const c = this.project.components.find(c => c.id === id);
@@ -702,12 +727,12 @@ export class Simulation {
       if (isSource(c) && r && !this.failed[c.id]) {
         const mode = sourceMode(c);
         if ((mode === "ideal" || mode === "internal") && Math.abs(r.current) > prop(c, "maxCurrent", 20) * (1 + 1e-9)) {
-          this.tripped[c.id] = `${c.name}: output current exceeded its ${prop(c, "maxCurrent")} A rating — output protection tripped. Reset the experiment to re-arm.`;
+          this.tripped[c.id] = `${c.name}: ${Math.abs(r.current).toFixed(2)} A ${r.ac ? "RMS line" : "output"} current exceeded its ${prop(c, "maxCurrent")} A rating — output protection tripped. Use a supply whose current capability covers startup and load${c.kind === "source3" ? " (the 400 V 250 A variant supports the standard induction motor)" : ""}; reset to re-arm.`;
           this.fail(c.id, this.tripped[c.id]);
           changed = true;
         }
-        if (Math.abs(r.power) > prop(c, "maxPower", Infinity) * 1.001)
-          this.violation(`${c.name}: output power above its rated ${prop(c, "maxPower")} W (no supply thermal model; reported only).`);
+        if ((r.ac ? Math.hypot(r.power, r.reactivePower ?? 0) : Math.abs(r.power)) > prop(c, "maxPower", Infinity) * 1.001)
+          this.violation(`${c.name}: ${r.ac ? "apparent" : "output"} power above its rated ${prop(c, "maxPower")} ${r.ac ? "VA" : "W"} (no supply thermal model; reported only).`);
       }
       if (c.kind === "tank" && (this.hydraulicMeasurement(c.id, "pressure") ?? 0) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
       if (c.kind === "tank" && (temp > 95 || temp < 1)) {
@@ -717,16 +742,18 @@ export class Simulation {
       if (r && !isSource(c)) {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
-        const overPower = r.power > prop(c, "ratedPower", Infinity) * 1.001,
+        const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
           overCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
-          overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) > prop(c, "ratedVoltage", Infinity);
+          overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * (c.kind === "inductionMotor" && r.phases === 3 ? Math.sqrt(3) : 1) > prop(c, "ratedVoltage", Infinity) * (1 + 1e-9);
         const protective = c.kind === "fuse" || c.kind === "breaker" || c.kind === "motorProtector";
         const over = protective ? overCurrent : overPower || overCurrent || overVoltage;
         this.overload[c.id] = over ? (this.overload[c.id] ?? 0) + dt : 0;
         if (over && !this.failed[c.id])
           this.automation.status[c.id] = "overloaded";
-        if (over && !protective && !this.failed[c.id])
-          this.violation(`${c.name}: operated outside its ${overPower ? "power" : overCurrent ? "current" : "voltage"} rating. Consequences follow from its modelled temperature.`);
+        if (over && !protective && !this.failed[c.id]) {
+          for (const [quantity, exceeded] of [["power", overPower], ["current", overCurrent], ["voltage", overVoltage]] as const)
+            if (exceeded) this.violation(`${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
+        }
         if (c.kind === "fuse" && this.overload[c.id] >= prop(c, "tripTime", 0.1) - 1e-12 && !this.failed[c.id]) {
           this.fail(c.id, `${c.name}: overcurrent — fuse opened.`);
           changed = true;

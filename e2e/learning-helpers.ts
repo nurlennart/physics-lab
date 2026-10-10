@@ -23,7 +23,7 @@ export async function addMissionEquipment(page: Page, mode: 'light' | 'heat' | '
         await page.getByLabel('Voltage setpoint', { exact: true }).press('Enter');
       }
       if (label === 'Independent cutoff' || label === 'Temperature sensor')
-        await page.getByLabel('Thermal target', { exact: true }).selectOption({ label: 'TK-01 · Water tank' });
+        await page.getByLabel('Thermal target', { exact: true }).selectOption({ label: 'TK-01 · Water tank · mixed water + vessel temperature' });
     }
     return;
   }

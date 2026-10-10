@@ -1,9 +1,6 @@
 import {
   definitions,
-  isElectrical,
   isSource,
-  isThermalMass,
-  type Component,
   type Measurement,
   type Probe,
   type Project,
@@ -12,7 +9,7 @@ import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
-  pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
+  inletPressure: "bar", pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
   rpm: "RPM", reactivePower: "var", powerFactor: "1", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
   massResidual: "kg", energyResidual: "J", velocity: "m/s", reynolds: "1", frictionFactor: "1", position: "%",
   voltage: "V",
@@ -20,48 +17,18 @@ export const units: Record<Measurement, string> = {
   current: "A",
   currentNC: "A",
   power: "W",
-  temperature: "°C",
+  bodyTemperature: "°C", temperature: "°C",
   energy: "J",
   state: "bool",
   signal: "signal",
 };
-export function measurements(c: Component): Measurement[] {
-  return [
-    ...(c.spatial ? ['positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce'] as Measurement[] : []),
-    ...(c.kind === 'forceActuator' ? ['appliedForce', 'appliedTorque', 'energy'] as Measurement[] : []),
-    ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic") ? ["pressure", "flow", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
-    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "pressureReducingValve", "heatExchanger"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
-    ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
-    ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
-    ...(c.kind === "pump" ? ["impellerPower", "mechanicalLoss", "hydraulicEfficiency"] as Measurement[] : []),
-    ...(c.kind === "actuatedValve" || c.kind === "pressureReducingValve" ? ["position"] as Measurement[] : []),
-    ...(c.kind === "heatExchanger" ? ["heatDuty"] as Measurement[] : []),
-    ...(c.kind === "pump" ? ["npsh"] as Measurement[] : []),
-    ...(c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? ["rpm", "shaftPower", "hydraulicPower", "efficiency", "energyResidual"] as Measurement[] : []),
-    ...(["sourceAC", "source3", "inductor", "capacitor", "inductionMotor"].includes(c.kind) || isElectrical(c) ? ["reactivePower", "powerFactor"] as Measurement[] : []),
-    ...(isElectrical(c)
-      ? (["voltage", "current", "power", "energy"] as Measurement[])
-      : []),
-    ...(c.kind === "relay" ? ["currentNC" as const] : []),
-    ...(isThermalMass(c) || ["sensor", "thermostat", "safety"].includes(c.kind)
-      ? ["temperature" as const]
-      : []),
-    ...(definitions[c.kind].ports.some((p) => p.domain === "electrical")
-      ? ["nodeVoltage" as const]
-      : []),
-    "state",
-    ...(definitions[c.kind].ports.some(
-      (p) => p.domain === "control" && p.direction === "out",
-    )
-      ? ["signal" as const]
-      : []),
-  ];
-}
+export { measurements } from "./capabilities";
+import { measurements } from "./capabilities";
 export function readProbe(p: Probe, s: Simulation): number | null {
   const c = s.project.components.find((c) => c.id === p.component);
-  if (!c) return null;
+  if (!c || s.error || !measurements(c).includes(p.measurement)) return null;
   const r = s.electrical.readings[c.id];
-  const h = s.multiphysics.hydraulic.readings[c.id], motor = s.multiphysics.motors[c.id];
+  const h = s.multiphysics.hydraulic.readings[c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id], motor = s.multiphysics.motors[c.id];
   switch (p.measurement) {
     case 'positionX': return s.spatial.readings[c.id]?.x ?? null;
     case 'positionY': return s.spatial.readings[c.id]?.y ?? null;
@@ -78,17 +45,13 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case 'mechanicalResidual': return s.spatial.residual;
     case 'contactImpulse': return s.spatial.readings[c.id]?.contactImpulse ?? null;
     case 'jointForce': { const joints = s.project.world?.joints.filter(j => j.a === c.id || j.b === c.id) ?? []; return joints.reduce((sum, j) => { const r = s.spatial.jointReadings[j.id]; return sum + (r ? Math.hypot(r.force.x, r.force.y) : 0); }, 0); }
-    case "pressure": { const pressure = s.hydraulicMeasurement(c.id, "pressure"); return pressure === undefined ? null : pressure / 100000; }
+    case "pressure": { const pressure = c.kind === "heatExchanger" ? h?.pressure : s.hydraulicMeasurement(c.id, "pressure"); return pressure === undefined ? null : pressure / 100000; }
+    case "inletPressure": return h ? h.inletPressure / 100000 : null;
     case "differentialPressure": return h ? h.differentialPressure / 100000 : null;
-    case "flow": return h ? h.flow * 60000 : c.kind === "tank" ? 0 : null;
+    case "flow": return h ? h.flow * 60000 : null;
     case "level": return s.hydraulicMeasurement(c.id, "level") ?? null;
-    case "fluidTemperature": return s.multiphysics.tanks[c.id] ? s.multiphysics.tanks[c.id].mass > 1e-10 ? s.multiphysics.tanks[c.id].temperature - 273.15 : null : h?.temperatureValid ? h.temperature - 273.15 : null;
-    case "rpm": {
-      if (motor) return motor.omega * 30 / Math.PI;
-      const shaft = s.project.connections.find(w => w.domain === "mechanical" && (w.from.component === c.id || w.to.component === c.id));
-      const id = shaft && (shaft.from.component === c.id ? shaft.to.component : shaft.from.component);
-      return id ? (s.multiphysics.motors[id]?.omega ?? 0) * 30 / Math.PI : 0;
-    }
+    case "fluidTemperature": return s.fluidTemperatureMeasurement(c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id) ?? null;
+    case "rpm": return s.mechanicalMeasurement(c.id, "rpm") ?? null;
     case "shaftPower": return motor?.shaftPower ?? h?.shaftPower ?? null;
     // Pump quantities come from the shared pumpCurve() operating point (see hydraulic.ts).
     case "hydraulicPower": return h?.hydraulicPower ?? 0;
@@ -109,6 +72,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "position": return s.multiphysics.positions[c.id] ?? null;
     case "heatDuty": return h?.duty ?? 0;
     case "npsh": return h?.npshAvailable ?? null;
+    case "bodyTemperature": return s.temperatures[c.id] ?? null;
     case "temperature":
       return ["sensor", "thermostat", "safety"].includes(c.kind)
         ? s.automation.sensors[c.id]?.valid
@@ -169,7 +133,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "power":
       return s.error
         ? null
-        : c.kind === "source" || c.kind === "source3"
+        : isSource(c)
           ? -(r?.power ?? 0)
           : (r?.power ?? null);
   }
@@ -192,4 +156,9 @@ export function probeUnit(
   return c
     ? (definitions[c.kind].ports.find((p) => p.id === "out")?.unit ?? "1")
     : "1";
+}
+
+/** Keep small nonzero SI signals visible instead of rounding them into apparent zero. */
+export function formatReading(value: number, decimals = 3): string {
+  return value !== 0 && Math.abs(value) < 10 ** -decimals ? value.toExponential(3) : value.toFixed(decimals);
 }

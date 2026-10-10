@@ -1,3 +1,4 @@
+import { compatibleTarget, sensorMeasurement } from "./capabilities";
 import {
   definitions,
   prop,
@@ -32,6 +33,8 @@ export interface ControlMemory {
   elapsed: number;
   previous: boolean;
   filtered?: number;
+  sampledAt?: number;
+  sampledValue?: number;
   tripped: boolean;
   switches: number;
   lastChange: number;
@@ -43,6 +46,7 @@ export interface ControlMemory {
 }
 export interface ControlWorld {
   mechanicalMeasurement?: (id: string, metric: string) => number | undefined;
+  fluidTemperatureMeasurement?: (id: string) => number | undefined;
   hydraulicMeasurement?: (id: string, metric: string) => number | undefined;
   project: Project;
   time: number;
@@ -90,31 +94,48 @@ export class Automation {
     this.rngState = (Math.imul(1664525, this.rngState) + 1013904223) >>> 0;
     return this.rngState / 4294967296;
   }
+  private unavailableSensor(c: Component, reason: string): Signal {
+    const memory = this.getMemory(c);
+    memory.filtered = memory.sampledValue = memory.sampledAt = undefined;
+    return invalid(reason);
+  }
   sense(c: Component, w: ControlWorld, dt: number): Signal {
-    const id = textProp(c, "target"),
-      actual = c.kind === 'positionSensor' ? w.mechanicalMeasurement?.(id, textProp(c, 'axis')) : c.kind === 'speedSensor' ? w.mechanicalMeasurement?.(id, 'rpm') : ["pressureSensor", "flowSensor", "levelSensor"].includes(c.kind)
-        ? w.hydraulicMeasurement?.(id, c.kind === "pressureSensor" ? "pressure" : c.kind === "flowSensor" ? "flow" : "level")
-        : w.temperatures[id];
+    const id = textProp(c, "target"), target = w.project.components.find(x => x.id === id);
+    if (!target || !compatibleTarget(c, target))
+      return this.unavailableSensor(c, "No compatible modeled quantity at the assigned target.");
+    const metric = sensorMeasurement(c, target);
+    const readingId = target.kind === "heatExchanger" ? `${id}#${c.props.stream ?? "hot"}` : id;
+    const actual = metric === "positionX" || metric === "positionY" ? w.mechanicalMeasurement?.(id, metric === "positionX" ? "x" : "y")
+      : metric === "rpm" ? w.mechanicalMeasurement?.(id, "rpm")
+      : metric === "bodyTemperature" ? w.temperatures[id]
+      : metric === "fluidTemperature" ? w.fluidTemperatureMeasurement?.(readingId)
+      : metric ? w.hydraulicMeasurement?.(readingId, metric) : undefined;
     if (
       w.faults[c.id] === "sensorFault" ||
       w.faults[c.id] === "disabled" ||
       w.faults[c.id] === "controlLost"
     )
-      return invalid("Sensor fault.");
-    if (!id || actual === undefined)
-      return invalid("No compatible physical target assigned.");
+      return this.unavailableSensor(c, "Sensor fault.");
+    if (!id || actual === undefined || !Number.isFinite(actual))
+      return this.unavailableSensor(c, "Target quantity is unavailable (empty fluid inventory or unsolved state).");
     const m = this.getMemory(c);
     const lag = prop(c, "lag");
     if (m.filtered === undefined) m.filtered = actual;
     else if (lag > 0)
       m.filtered += (actual - m.filtered) * -Math.expm1(-dt / lag);
     else m.filtered = actual;
+    const interval = prop(c, "sampleInterval");
+    if (interval > 0 && m.sampledValue !== undefined && m.sampledAt !== undefined && w.time - m.sampledAt < interval - 1e-9) {
+      return m.sampledValue < prop(c, "minRange", 0) || m.sampledValue > prop(c, "maxRange", 120) ? invalid("Measurement outside sensor range.") : signal(m.sampledValue);
+    }
     const noise =
       dt > 0 && prop(c, "noise") > 0
         ? prop(c, "noise") * (2 * this.random() - 1)
         : 0;
     const resolution = prop(c, "resolution", 0.01);
     const measured = Math.round((m.filtered + noise) / resolution) * resolution;
+    m.sampledAt = w.time;
+    m.sampledValue = measured;
     if (
       measured < prop(c, "minRange", 0) ||
       measured > prop(c, "maxRange", 120)

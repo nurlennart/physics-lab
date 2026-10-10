@@ -74,7 +74,7 @@ export interface Connection {
 }
 export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
-  | "pressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
+  | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
@@ -82,7 +82,7 @@ export type Measurement =
   | "current"
   | "currentNC"
   | "power"
-  | "temperature"
+  | "bodyTemperature" | "temperature"
   | "energy"
   | "state"
   | "signal"
@@ -228,8 +228,8 @@ export const definitions: Record<Kind, Definition> = {
   checkValve: { label: "Check valve", category: "Hydraulic", description: "Forward-only hydraulic branch with cracking pressure and reverse isolation", spec: "1 kPa cracking", cost: 18, prefix: "CV", ports: fluid, defaults: { ...valveDefaults, laminarK: 1500, crackingPressure: 1000 } },
   actuatedValve: { label: "Actuated valve", category: "Hydraulic", description: "Rate-limited ideal external actuator; numeric percent command, defined fail position; actuator supply power omitted", spec: "5 s full stroke", cost: 35, prefix: "AV", ports: [...fluid, input("position", "number", true)], defaults: { ...valveDefaults, responseTime: 5, failOpen: false } },
   fluidJunction: { label: "Fluid junction", category: "Hydraulic", description: "Ideal zero-volume mixing junction; pressure and continuity solved from connected branches", spec: "Conservative junction", cost: 2, prefix: "HJ", ports: [{ id: "fluid", domain: "hydraulic", label: "Fluid node" }], defaults: { elevation: 0, maxPressure: 1000000 } },
-  pressureSensor: { label: "Pressure sensor", category: "Sensors", description: "Gauge pressure of the target outlet, measured from the hydraulic solution", spec: "Pa output", cost: 12, prefix: "PSN", ports: [output("number", "Pa")], defaults: sensing },
-  flowSensor: { label: "Flow sensor", category: "Sensors", description: "Signed target branch flow from the hydraulic solution", spec: "m³/s output", cost: 12, prefix: "FS", ports: [output("number", "m³/s")], defaults: { ...sensing, resolution: 0.000000001 } },
+  pressureSensor: { label: "Pressure sensor", category: "Sensors", description: "Gauge pressure of the target outlet, measured from the hydraulic solution", spec: "Pa output", cost: 12, prefix: "PSN", ports: [output("number", "Pa")], defaults: { ...sensing, quantity: "pressure", stream: "hot" } },
+  flowSensor: { label: "Flow sensor", category: "Sensors", description: "Signed target branch flow from the hydraulic solution", spec: "m³/s output", cost: 12, prefix: "FS", ports: [output("number", "m³/s")], defaults: { ...sensing, stream: "hot", resolution: 0.000000001 } },
   levelSensor: { label: "Tank level sensor", category: "Sensors", description: "Actual finite tank inventory as percent of capacity", spec: "% output", cost: 12, prefix: "LS", ports: [output("number", "%")], defaults: { ...sensing, minRange: 0, maxRange: 100 } },
   pid: { label: "PID regulator", category: "Automation", description: "Simulation-clock PID regulator: derivative on measurement with first-order filter, output limits and conditional anti-windup; numeric actuator command", spec: "Numeric feedback", cost: 22, prefix: "PI", ports: [input("in", "number"), output("number")], defaults: { reference: 35000, feedforward: 0, kp: 0.03, ki: 0.01, kd: 0, derivativeFilter: 1, minOutput: 0, maxOutput: 3500 } },
   scale: { label: "Scale / offset", category: "Automation", description: "Linear signal conversion y = gain·x + offset (e.g. 4–20 mA to bar, % to RPM)", spec: "y = k·x + b", cost: 6, prefix: "SC", ports: [input("in", "number"), output("number")], defaults: { gain: 1, offset: 0 } },
@@ -280,7 +280,7 @@ export const definitions: Record<Kind, Definition> = {
   source3: {
     label: "Three-phase supply",
     category: "Electrical",
-    description: "Balanced 3-phase AC supply solved as a per-phase (star-equivalent) network: one wire carries the three phase conductors; resistive loads only, unity power factor",
+    description: "Balanced 3-phase AC supply solved as a per-phase (star-equivalent) network: one wire carries the three phase conductors; RLC loads and induction machines; RMS phase voltage, line current and total three-phase power",
     spec: "400 V 3~ 50 Hz · 63 A",
     cost: 160,
     prefix: "TS3",
@@ -587,6 +587,8 @@ export const definitions: Record<Kind, Definition> = {
     ports: [output("number", "°C")],
     defaults: {
       target: "",
+      quantity: "auto",
+      stream: "hot",
       minRange: 0,
       maxRange: 120,
       resolution: 0.01,
@@ -679,6 +681,8 @@ export const definitions: Record<Kind, Definition> = {
     ports: [input("in", "number", true), output()],
     defaults: {
       target: "",
+      quantity: "auto",
+      stream: "hot",
       setpoint: 80,
       hysteresis: 2,
       minRange: 0,
@@ -770,6 +774,8 @@ export const definitions: Record<Kind, Definition> = {
     ports: [...electric, output()],
     defaults: {
       target: "",
+      quantity: "auto",
+      stream: "hot",
       threshold: 90,
       resetMargin: 5,
       minRange: 0,
@@ -1001,7 +1007,8 @@ export function connectionError(
     )
   )
     return "These terminals are already connected.";
-  if (pa.domain === "hydraulic" && a!.kind === "tank" && b!.kind === "tank") return "Insert a physical pipe between finite tanks; an ideal wire cannot resolve their pressure difference.";
+  if (pa.domain === "hydraulic" && pa.id === "overflow" && pb.id === "overflow") return "Connect an overflow outlet to a receiving fluid inlet, not another overflow outlet.";
+  if (pa.domain === "hydraulic" && a!.kind === "tank" && b!.kind === "tank") return "Insert a physical pipe between finite tanks, including overflow routes; an ideal wire cannot resolve their pressure difference.";
   if (pa.domain === "mechanical") {
     const motor = isMotor(a!) ? a! : isMotor(b!) ? b! : undefined;
     const load = motor?.id === a!.id ? b! : a!;

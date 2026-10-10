@@ -34,4 +34,4 @@ if (process.argv.includes('--write')) {
     await writeFile(`examples/${mode}.physics.json`, JSON.stringify(stable, null, 2) + '\n');
   }
 }
-if (reports.some(r => (r.mode === 'exchanger' && !(r.probes.find(p => p.name === 'Recovered heat')?.value > 0)) || (r.mode === 'circulation' && r.probes.find(p => p.name === 'Delivery flow')?.value < 1) || Math.abs(r.massResidual) > 1e-6 || r.error || r.violations.length || Object.keys(r.failed).length || r.probes.some(p => p.value === null || !Number.isFinite(p.value)))) process.exitCode = 1;
+if (reports.some(r => (r.mode === 'exchanger' && !(r.probes.find(p => p.name === 'Recovered heat')?.value > 0)) || (r.mode === 'circulation' && r.probes.find(p => p.name === 'Delivery flow')?.value < 1) || Math.abs(r.massResidual) > 1e-6 || r.error || (r.violations.length && !(r.mode === "induction" && r.violations.length === 1 && r.violations[0] === "IM-01: operated outside its current rating. Consequences follow from its modelled temperature." && r.probes.find(p => p.name === "IM-01 current")?.value < 15)) || Object.keys(r.failed).length || r.probes.some(p => p.value === null || !Number.isFinite(p.value)))) process.exitCode = 1;

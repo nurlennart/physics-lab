@@ -102,6 +102,16 @@ export class Multiphysics {
       return [id, { ...t, mass, volume: inventoryVolume(mass, t.temperature) }];
     }));
   }
+  private updateNpsh(s: Simulation, hydraulic: ReturnType<typeof emptyHydraulics>) {
+    for (const c of s.project.components.filter(c => c.kind === 'pump' && prop(c, 'npshRequired') > 0)) {
+      const reading = hydraulic.readings[c.id];
+      if (!reading?.temperatureValid) continue;
+      const available = (101325 + reading.inletPressure - vaporPressure(U.kToCelsius(reading.temperature))) / (RHO * G);
+      const required = prop(c, 'npshRequired') * (reading.flow / prop(c, 'ratedFlow')) ** 2;
+      reading.npshAvailable = available;
+      if (reading.flow > 1e-9 && available < required) hydraulic.diagnostics.push(`${c.name}: cavitation risk — NPSH available ${available.toFixed(2)} m < required ${required.toFixed(2)} m (head loss from cavitation is not modelled).`);
+    }
+  }
   refresh(s: Simulation) {
     this.lastProject = s.project;
     const ms = s.project.components.filter(isMotor);
@@ -115,6 +125,10 @@ export class Multiphysics {
       r = this.solve(s, speeds(), this.controls(s));
       this.hydraulic = r.hydraulic;
     }
+    // Re-solving hydraulics rebuilds readings. Resolve current fluid temperatures without
+    // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
+    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells);
+    this.updateNpsh(s, this.hydraulic);
     ms.forEach((c, i) => {
       const m = r.state[i];
       if (shaftBody(s.project, c.id)) {
@@ -212,14 +226,7 @@ export class Multiphysics {
       }
       this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
       const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells);
-      for (const c of s.project.components.filter(c => c.kind === 'pump' && prop(c, 'npshRequired') > 0)) {
-        const reading = r.hydraulic.readings[c.id];
-        if (!reading || reading.flow <= 1e-9) continue;
-        const available = (101325 + reading.inletPressure - vaporPressure(U.kToCelsius(reading.temperature))) / (RHO * G);
-        const required = prop(c, 'npshRequired') * (reading.flow / prop(c, 'ratedFlow')) ** 2;
-        reading.npshAvailable = available;
-        if (available < required) r.hydraulic.diagnostics.push(`${c.name}: cavitation risk — NPSH available ${available.toFixed(2)} m < required ${required.toFixed(2)} m (head loss from cavitation is not modelled).`);
-      }
+      this.updateNpsh(s, r.hydraulic);
       ambient += transported.ambient;
       thermalGain += transported.heat - transported.ambient;
       for (const [id, spill] of Object.entries(transported.spills)) {

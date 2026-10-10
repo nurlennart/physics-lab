@@ -64,7 +64,7 @@
         "ratedFlow": 0.006,
         "shutoffHead": 35,
         "efficiency": 0.78,
-        "mechanicalDrag": 0.000012,
+        "mechanicalDrag": 0.0000015,
         "maxPressure": 1000000,
         "elevation": 0,
         "curvePoints": "",
@@ -91,6 +91,7 @@
         "loss": 2.2,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -116,6 +117,7 @@
         "loss": 2.2,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -157,6 +159,7 @@
         "opening": 100,
         "diameter": 0.05,
         "lossCoefficient": 5,
+        "laminarK": 500,
         "maxPressure": 1000000,
         "elevation": 0
       }

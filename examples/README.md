@@ -2,6 +2,8 @@
 
 Open **File → Starters & examples** in the app for descriptions and suggested experiments. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
 
+- `acRlc`: compatible series RLC circuit with RMS supply measurements and power-factor traces.
+- `induction`: standard motor, existing 250 A supply variant, and 35 N·m direct-on-line load; startup current warning is retained.
 - `light`, `heat`: electrical basics and electrical-to-thermal energy transfer.
 - `automated`: temperature feedback with independent safety isolation.
 - `transfer`, `pressure`, `supply`: powered water transfer, pressure feedback, and autonomous level control.

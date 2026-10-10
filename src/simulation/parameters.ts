@@ -151,6 +151,8 @@ const base: Record<string, Base> = {
   speedControl: { label: "Enable speed command", description: "Ideal PWM drive follows the speed command.", group: "operating", policy: "live" },
   speedCommand: { label: "Motor speed command", description: "Speed command of the ideal PWM drive.", unit: "RPM", group: "operating", policy: "live", domain: [0, 1e6], limitReason: NUMERIC },
   // — Sensors & automation —
+  stream: { label: "Exchanger stream", description: "For heat-exchanger targets: A is the hot stream, B is the cold stream. Other targets ignore this selector.", group: "configuration", policy: "reset", options: [{ value: "hot", label: "A / hot stream" }, { value: "cold", label: "B / cold stream" }] },
+  quantity: { label: "Measured quantity", description: "Choose the modeled state and measurement point; pressure is gauge pressure, differential is inlet minus outlet (negative for a pump pressure rise).", group: "configuration", policy: "reset", options: [{ value: "auto", label: "Modeled temperature (body/winding or fluid)" }, { value: "temperature", label: "Body / winding (tank: mixed water + vessel)" }, { value: "fluidTemperature", label: "Fluid temperature" }] },
   target: { label: "Physical target", description: "Component whose physical state is measured or actuated.", group: "configuration", policy: "reset" },
   minRange: { label: "Minimum reading", description: "Lower measurement range; readings below are invalid.", group: "configuration", policy: "live", domain: [-1e12, 1e12], limitReason: NUMERIC },
   maxRange: { label: "Maximum reading", description: "Upper measurement range; readings above are invalid.", group: "configuration", policy: "live", domain: [-1e12, 1e12], limitReason: NUMERIC },
@@ -202,22 +204,23 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     voltage: { label: "RMS voltage", description: "RMS magnitude of the source phasor." },
     ratedVoltage: { label: "Maximum RMS voltage" },
     maxCurrent: { label: "Current rating", description: "Output protection trips above this RMS current." },
-    maxPower: { label: "Rated apparent power", description: "Reported when the real power exceeds it." },
+    maxPower: { label: "Rated apparent power", unit: "VA", description: "Reported when √(P² + Q²) exceeds it." },
   },
   capacitor: { resistance: { label: "ESR", description: "Equivalent series resistance (dielectric and lead loss)." }, ratedCurrent: { label: "Ripple current rating" } },
   inductor: { resistance: { label: "Winding resistance" } },
   inductionMotor: {
     ratedVoltage: { label: "Rated line voltage", group: "ratings" },
-    ratedPower: { label: "Rated shaft power", description: "Nameplate output (reported when the electrical input far exceeds it)." },
+    ratedPower: { label: "Rated shaft power", description: "Nameplate shaft output; compared with shaft power, not electrical input or starting losses." },
     loadTorque: { description: "Constant opposing torque that exports work from the shaft." },
     heatCapacity: { label: "Winding thermal mass" },
     maxTemperature: { label: "Insulation temperature limit", description: "Class F 155 °C; above it the motor fails open." },
     conductance: { label: "Frame conductance (UA)" },
     enabled: { label: "Contactor closed", description: "Used when the enable input is not wired." },
   },
+  pressureSensor: { quantity: { options: [{ value: "pressure", label: "Outlet / node gauge pressure" }, { value: "inletPressure", label: "Inlet gauge pressure" }, { value: "differentialPressure", label: "Inlet − outlet (pump rise is negative)" }] } },
   source3: {
     maxCurrent: { label: "Line current rating", description: "Output protection trips above this RMS line current." },
-    maxPower: { label: "Rated apparent power", description: "Three-phase rating √3·V_LL·I_L (reported when exceeded)." },
+    maxPower: { label: "Rated apparent power", unit: "VA", description: "Three-phase rating √3·V_LL·I_L (reported when exceeded)." },
     internalResistance: { label: "Source resistance per phase", description: "Per-phase series resistance of the supply (transformer/cable short-circuit resistance)." },
     enabled: { label: "Output enabled" },
   },
@@ -296,6 +299,8 @@ export function paramSpec(kind: Kind, key: string): ParamSpec | undefined {
   const spec: ParamSpec = { key, ...b, ...overrides[kind]?.[key] };
   if (kind === "sensor" || kind === "thermostat" || kind === "safety") {
     if (["minRange", "maxRange", "resolution", "noise"].includes(key)) spec.unit = key === "resolution" || key === "noise" ? "K" : "°C";
+  } else if (["pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor"].includes(kind) && ["minRange", "maxRange", "resolution", "noise"].includes(key)) {
+    spec.unit = ({ pressureSensor: "Pa", flowSensor: "m³/s", levelSensor: "%", positionSensor: "m", speedSensor: "RPM" } as Record<string, string>)[kind];
   } else if (signalUnitKeys.has(key) && !spec.unit) spec.unit = "signal unit";
   return spec;
 }

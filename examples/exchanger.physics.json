@@ -23,6 +23,7 @@
         "loss": 0,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -48,6 +49,7 @@
         "loss": 0,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -73,6 +75,7 @@
         "loss": 0,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -98,6 +101,7 @@
         "loss": 0,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -164,6 +168,7 @@
         "arrangement": "counterflow",
         "diameter": 0.05,
         "lossCoefficient": 2,
+        "laminarK": 1000,
         "maxPressure": 1000000,
         "elevation": 0
       }

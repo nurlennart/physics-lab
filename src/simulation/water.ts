@@ -7,13 +7,10 @@
  * The formulation needs density; at 1 atm it is taken from Kell (1975),
  * J. Chem. Eng. Data 20(1):97–105, valid 0–150 °C (±0.01 kg/m³ below 100 °C).
  *
- * Model decision (documented in docs/PHYSICS.md): density and specific heat stay
- * the constant model values ρ = 1000 kg/m³ and c_p = 4180 J/kg·K for mass,
- * volume, hydrostatics and enthalpy. Over 1–95 °C real density varies by 3.8 %
- * and c_p by 1 %; making them variable would require thermal expansion of tank
- * inventories, a pressure–volume-consistent energy ledger and variable-density
- * hydrostatics, which are not implemented. Only the viscosity, which changes
- * 4-fold over the range and directly sets laminar/transitional friction, varies.
+ * Model decision: tank inventory stores conserved mass, initialized from volume at
+ * the initial Kell density. Its volume and level expand with temperature. Specific
+ * heat remains 4180 J/kg·K; the hydraulic pressure solver uses a 1000 kg/m³ reference
+ * density. Water hammer, compressibility and sealed-vessel pressure are unavailable.
  */
 export const WATER_MODEL_DENSITY = 1000;
 export const WATER_MODEL_CP = 4180;

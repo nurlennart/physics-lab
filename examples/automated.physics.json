@@ -77,6 +77,8 @@
       "variant": "standard",
       "props": {
         "target": "automated-component-5",
+        "quantity": "auto",
+        "stream": "hot",
         "threshold": 90,
         "resetMargin": 5,
         "minRange": 0,
@@ -133,6 +135,7 @@
         "loss": 2.2,
         "ambient": 20,
         "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
         "insulationConductivity": 0.04
@@ -148,6 +151,8 @@
       "variant": "standard",
       "props": {
         "target": "automated-component-5",
+        "quantity": "auto",
+        "stream": "hot",
         "minRange": 0,
         "maxRange": 120,
         "resolution": 0.01,
