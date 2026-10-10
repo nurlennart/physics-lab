@@ -285,7 +285,16 @@ export class Simulation {
     this.project = freeze(structuredClone(project));
     this.ownedProject = this.project;
     this.electricalKey = "";
-    if (this.time === 0) { this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project); this.multiphysics = new Multiphysics(); this.multiphysics.initialize(this.project); }
+    if (this.time === 0) {
+      this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project); this.multiphysics = new Multiphysics(); this.multiphysics.initialize(this.project);
+      // Build-mode edits must not leave latched controller state (e.g. a cutoff that tripped while its
+      // sensor target was still unassigned): at t = 0 the state reflects only the final configuration.
+      // Recorded pulses and injected faults stay; failures and trips cannot occur before time advances.
+      const pulses = this.automation.pulses;
+      this.automation = new Automation();
+      this.automation.pulses = pulses;
+      this.breakers = {};
+    }
     for (const c of project.components)
       if (isThermalMass(c) && (this.time === 0 || this.temperatures[c.id] === undefined))
         this.temperatures[c.id] =

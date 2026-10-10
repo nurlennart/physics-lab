@@ -1,0 +1,86 @@
+{
+  "recordedAt": "2026-10-10T15:58:38.754Z",
+  "results": {
+    "light": {
+      "complete": true,
+      "failed": false,
+      "score": 100,
+      "stars": 3,
+      "time": 3,
+      "error": null,
+      "violations": []
+    },
+    "heat": {
+      "complete": true,
+      "failed": false,
+      "score": 98,
+      "stars": 3,
+      "time": 1323.45,
+      "error": null,
+      "violations": []
+    },
+    "runaway": {
+      "complete": true,
+      "failed": false,
+      "score": 93,
+      "stars": 3,
+      "time": 2888.583,
+      "error": null,
+      "violations": []
+    },
+    "transfer": {
+      "complete": true,
+      "failed": false,
+      "score": 96,
+      "stars": 3,
+      "time": 144.317,
+      "error": null,
+      "violations": []
+    },
+    "pressure": {
+      "complete": true,
+      "failed": false,
+      "score": 95,
+      "stars": 3,
+      "time": 194.983,
+      "error": null,
+      "violations": []
+    },
+    "supply": {
+      "complete": true,
+      "failed": false,
+      "score": 100,
+      "stars": 3,
+      "time": 720,
+      "error": null,
+      "violations": []
+    },
+    "descent": {
+      "complete": true,
+      "failed": false,
+      "score": 100,
+      "stars": 3,
+      "time": 11.167,
+      "error": null,
+      "violations": []
+    },
+    "lift": {
+      "complete": true,
+      "failed": false,
+      "score": 81,
+      "stars": 2,
+      "time": 18.1,
+      "error": null,
+      "violations": []
+    },
+    "rotation": {
+      "complete": true,
+      "failed": false,
+      "score": 88,
+      "stars": 2,
+      "time": 69.983,
+      "error": null,
+      "violations": []
+    }
+  }
+}

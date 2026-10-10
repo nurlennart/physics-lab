@@ -16,7 +16,12 @@
     "validate:scaling": "node scripts/validate-scaling.mjs",
     "audit:parameters": "node scripts/parameter-audit.mjs",
     "benchmark:spatial": "node scripts/benchmark-spatial.mjs",
-    "validate:examples": "node scripts/check-examples.mjs"
+    "validate:examples": "node scripts/check-examples.mjs",
+    "check": "scripts/check.sh",
+    "check:fast": "scripts/check.sh --no-e2e",
+    "check:scores": "node scripts/check-scores.mjs",
+    "test:e2e:prod": "scripts/e2e.sh",
+    "deploy": "scripts/deploy.sh"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

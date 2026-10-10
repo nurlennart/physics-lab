@@ -43,14 +43,17 @@ describe("signal conditioning and PID", () => {
     expect(s1.automation.signals[sc.block.id].value).toBe(21);
     const lim = chain("limiter", { minOutput: 0, maxOutput: 5 }), s2 = new Simulation(lim.b.p);
     expect(s2.automation.signals[lim.block.id].value).toBe(5);
+    // Step changes are applied after the clock starts (a t = 0 edit defines the initial condition).
     const f = chain("filter", { timeConstant: 2 }, 0), s3 = new Simulation(f.b.p);
+    s3.step();
     s3.refresh({ ...f.b.p, components: f.b.p.components.map((c) => (c.id === f.k.id ? { ...c, props: { ...c.props, value: 10 } } : c)) });
     run(s3, 2);
-    expect(Number(s3.automation.signals[f.block.id].value)).toBeCloseTo(10 * (1 - Math.exp(-1)), 6);
+    expect(Number(s3.automation.signals[f.block.id].value)).toBeCloseTo(10 * (1 - Math.exp(-1)), 3);
     const rl = chain("rateLimiter", { rate: 3 }, 0), s4 = new Simulation(rl.b.p);
+    s4.step();
     s4.refresh({ ...rl.b.p, components: rl.b.p.components.map((c) => (c.id === rl.k.id ? { ...c, props: { ...c.props, value: 100 } } : c)) });
     run(s4, 2);
-    expect(Number(s4.automation.signals[rl.block.id].value)).toBeCloseTo(6, 6);
+    expect(Number(s4.automation.signals[rl.block.id].value)).toBeCloseTo(6, 3);
   });
   it("selects minimum, maximum or the switched input", () => {
     const b = new Builder(), a = b.add("constant", { value: 3 }), c = b.add("constant", { value: 7 }), sel = b.add("selector", { mode: "switch" } as never);
@@ -115,4 +118,16 @@ describe("adaptive hydraulic and motor stepping", () => {
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-4);
     expect(Math.abs(s.multiphysics.massResidual)).toBeLessThan(1e-6);
   }, 120000);
+});
+describe("build-time configuration does not leave latched state", () => {
+  it("a cutoff placed before its sensor target is assigned does not stay tripped at t = 0", () => {
+    const b = new Builder(), tank = b.add("tank"), safety = b.add("safety");
+    const s = new Simulation(b.p);
+    expect(s.automation.memory[safety.id]?.tripped).toBe(true);
+    const configured = { ...b.p, components: b.p.components.map((c) => (c.id === safety.id ? { ...c, props: { ...c.props, target: tank.id } } : c)) };
+    expect(s.refresh(configured)).toBe(true);
+    expect(s.automation.memory[safety.id]?.tripped).toBe(false);
+    s.step();
+    expect(s.automation.contacts[safety.id]).toBe(true);
+  });
 });

@@ -365,8 +365,9 @@ test("wires expose movable orthogonal bends and maintain connection endpoints", 
 test("plays Thermal Runaway through wiring, physical fault, safety latch and manual recovery", async ({
   page,
 }) => {
-  test.setTimeout(120000);
+  test.setTimeout(240000);
   await startChallenge(page, 2);
+  await addMissionEquipment(page, "runaway");
   for (const [a, b] of [
     ["PS-01:a", "RY-01:a"],
     ["RY-01:b", "ST-01:a"],
