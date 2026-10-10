@@ -25,7 +25,8 @@ test("sandbox heater scales with derived resistance, presets and adaptive long a
   await page.locator('[data-component="source"]').click();
   await page.getByLabel("Component variant").selectOption("powerBus");
   await commit(page, "Voltage setpoint", "400");
-  await expect(page.locator(".rating-bar").first()).toContainText("A");
+  // Before the first Run there is no operation to compare with ratings.
+  await expect(page.locator(".rating-bar")).toHaveCount(0);
   await page.locator('[data-component="tank"]').click();
   await page.getByLabel("Apply component preset").selectOption({ label: "Process tank 2,000 L" });
   await expect(page.getByLabel("Initial water volume", { exact: true })).toHaveValue("2000");
@@ -37,6 +38,8 @@ test("sandbox heater scales with derived resistance, presets and adaptive long a
   // ≈ 29.7 kW for 1 h into 2,000 L water + 150 kJ/K steel: about +12.5 K.
   expect(temperature).toBeGreaterThan(31.5);
   expect(temperature).toBeLessThan(33.5);
+  await page.locator('[data-component="source"]').click();
+  await expect(page.locator(".rating-bar").first()).toContainText("A");
   expect(errors).toEqual([]);
 });
 test("custom presets are saved and reused; challenges keep catalog ratings locked", async ({ page }) => {

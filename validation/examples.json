@@ -35,9 +35,7 @@
     "mode": "induction",
     "simulatedSeconds": 60,
     "error": null,
-    "violations": [
-      "IM-01: operated outside its current rating. Consequences follow from its modelled temperature."
-    ],
+    "violations": [],
     "failed": {},
     "suppliedEnergy": 348628.16925090784,
     "energyResidual": 3.7759309634566307e-7,

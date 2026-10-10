@@ -194,7 +194,8 @@ function Bar({ label, actual, rated, unit }: { label: string; actual: number; ra
 /** Actual operation relative to ratings. Ratings are limits, not controls. */
 export function RatingIndicators({ c }: { c: Component }) {
   useLab();
-  const r = simulation.electrical.readings[c.id], h = simulation.multiphysics.hydraulic.readings[c.id], t = simulation.temperatures[c.id];
+  // Before the first Run there is no operation to compare with ratings; temperatures and pressures still are.
+  const r = simulation.time > 0 ? simulation.electrical.readings[c.id] : undefined, h = simulation.multiphysics.hydraulic.readings[c.id], t = simulation.temperatures[c.id];
   const bars = [];
   if ((c.kind === "source3" || c.kind === "sourceAC") && r) {
     bars.push(<Bar key="i" label="Line current" actual={r.current} rated={prop(c, "maxCurrent")} unit="A" />);

@@ -1,3 +1,4 @@
+import { operatingMeasurements } from "../simulation/capabilities";
 import { niceRange, formatTick } from "./chart-axis";
 import { T } from "../theme/tokens";
 import { measurementLabel } from "../simulation/capabilities";
@@ -400,13 +401,13 @@ export default function Telemetry() {
               )}
               <div className="trace-readouts">
                 {visible.map((p) => {
-                  const v = readProbe(p, simulation);
+                  const waiting = simulation.time <= 0 && operatingMeasurements.has(p.measurement), v = waiting ? null : readProbe(p, simulation);
                   return (
                     <label key={p.id}>
                       <i style={{ background: p.color }} />
                       {p.name}
                       <strong>
-                        {v === null ? "invalid" : formatReading(v)}{" "}
+                        {waiting ? "—" : v === null ? "invalid" : formatReading(v)}{" "}
                         <small>{probeUnit(p, s.project)}</small>
                       </strong>
                     </label>

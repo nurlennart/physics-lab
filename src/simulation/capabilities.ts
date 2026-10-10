@@ -112,3 +112,15 @@ export function inspectorMeasurements(c: Component, ac: boolean, hydraulicConnec
     && !(m === "temperature" && measurements(c).includes("bodyTemperature"))
     && !(!hydraulicConnected && (m === "transferredVolume" || m === "flow" || m === "inletPressure" || m === "differentialPressure" || m === "overflow" || m === "overflowVolume")));
 }
+
+/**
+ * Operating quantities exist only while the experiment runs (currents, powers, flows, speeds). Before
+ * the first Run the interface shows them as unavailable so the setup does not look already running;
+ * state quantities (temperatures, levels, positions, residuals) stay visible.
+ */
+export const operatingMeasurements = new Set<Measurement>([
+  "voltage", "current", "currentNC", "power", "reactivePower", "powerFactor", "energy", "nodeVoltage",
+  "flow", "velocity", "reynolds", "frictionFactor", "differentialPressure", "inletPressure", "heatDuty", "npsh",
+  "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "hydraulicPower", "shaftPower", "efficiency", "rpm",
+  "overflow", "transferredVolume", "signal",
+]);

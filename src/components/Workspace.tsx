@@ -40,10 +40,15 @@ import {
 } from "../editor/geometry";
 import { nodeVoltage } from "../simulation/electrical";
 export { dimensions, portPoint } from "../editor/geometry";
+/**
+ * Before the first Run the experiment is ready but not running: the canvas shows no operating values
+ * (currents, powers, flows, speeds) and nothing glows. The engine still holds the switch-on solution.
+ */
+export const hasStarted = () => simulation.time > 0;
 function CircuitSymbol({ c }: { c: Component }) {
   const w = dimensions(c).w,
     r = simulation.electrical.readings[c.id],
-    power = r?.power ?? 0;
+    power = hasStarted() ? r?.power ?? 0 : 0;
   const failed = simulation.failed[c.id];
   if (c.kind === "tank") {
     const temp = simulation.temperatures[c.id] ?? 20,
@@ -96,8 +101,11 @@ function CircuitSymbol({ c }: { c: Component }) {
     );
   }
   if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
-    const speed = c.kind === "motor" || c.kind === "inductionMotor" ? simulation.multiphysics.motors[c.id]?.omega ?? 0 : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && (w.from.component === c.id || w.to.component === c.id)); return wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component]?.omega ?? 0 : 0; })();
-    return <g><path d="M0 66H52M122 66H174M87 0V32" stroke={T.hydraulic} strokeWidth="2"/><circle cx="87" cy="66" r="34" fill={T.n5} stroke={T.hydraulic} strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke={T.hydraulic} transform={`rotate(${speed * simulation.time * 180 / Math.PI},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{(speed * 30 / Math.PI).toFixed(0)} RPM</text></g>;
+    // The drawn rotor turns by the accumulated rotation of the driving motor (not speed × elapsed time).
+    // A pump without a driving motor has no modelled shaft speed (hydraulic back-driving is not modelled).
+    const driver = c.kind === "motor" || c.kind === "inductionMotor" ? c.id : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && !simulation.disconnected.has(w.id) && (w.from.component === c.id || w.to.component === c.id)); return wire ? (wire.from.component === c.id ? wire.to.component : wire.from.component) : undefined; })();
+    const motor = driver ? simulation.multiphysics.motors[driver] : undefined;
+    return <g><path d="M0 66H52M122 66H174M87 0V32" stroke={T.hydraulic} strokeWidth="2"/><circle cx="87" cy="66" r="34" fill={T.n5} stroke={T.hydraulic} strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke={T.hydraulic} transform={`rotate(${((motor?.angle ?? 0) * 180 / Math.PI) % 360},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{motor ? `${(motor.omega * 30 / Math.PI).toFixed(0)} RPM` : "free shaft · speed not modelled"}</text></g>;
   }
   if (c.kind === "heatExchanger") {
     const hot = simulation.multiphysics.hydraulic.readings[`${c.id}#hot`], cold = simulation.multiphysics.hydraulic.readings[`${c.id}#cold`];
@@ -220,7 +228,7 @@ function CircuitSymbol({ c }: { c: Component }) {
         <path d="M0 66H57M117 66H174" stroke={T.n12} />
         <circle cx="87" cy="66" r="29" fill={T.n4} stroke={T.n13} />
         <text x="87" y="73" textAnchor="middle" className="meter-number">
-          {(r?.voltage ?? 0).toFixed(1)} V
+          {hasStarted() ? `${(r?.voltage ?? 0).toFixed(1)} V` : "— V"}
         </text>
       </g>
     );
@@ -996,7 +1004,7 @@ export default function Workspace() {
                 >
                   {definitions[c.kind].label}
                 </text>
-                {overlay && (
+                {overlay && (hasStarted() || c.kind === "tank") && (
                   <text
                     x={w / 2}
                     y={h + (c.kind === "heater" ? 64 : 49)}
@@ -1034,7 +1042,7 @@ export default function Workspace() {
               </g>
             );
           })}
-          {camera.z >= 0.5 && project.connections.map((w) => {
+          {camera.z >= 0.5 && hasStarted() && project.connections.map((w) => {
             const value = wireValue(w, project, wireFlow(w)), at = value && chipAnchor(routePoints(w, project.components));
             if (!value || !at) return null;
             // Counter-scale so chips stay about 12 px on screen at any zoom.

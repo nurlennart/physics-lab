@@ -5,7 +5,10 @@ import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './
 import { kellDensity, inventoryVolume } from './water';
 import type { Simulation } from './engine';
 import { shaftBody } from './spatial-model';
-export interface MotorState { omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number }
+/** `angle` is the accumulated rotor rotation (rad) since reset, used for drawing. */
+export interface MotorState { omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number; angle: number }
+/** Below this speed (rad/s) a rotor counts as at rest for the opposing load. */
+const OMEGA_REST = 1e-9;
 export class Multiphysics {
   tanks: Record<string, TankState> = {};
   motors: Record<string, MotorState> = {};
@@ -31,7 +34,7 @@ export class Multiphysics {
   residual = 0;
   couplingIterations = 0;
   /** Last electromechanical Jacobian (chord Newton), valid for one substep length and motor count. */
-  private chord?: { h: number; n: number; jac: number[][] };
+  private chord?: { h: number; n: number; key: string; jac: number[][] };
   initialize(p: Project) {
     for (const c of p.components) {
       if (c.kind === 'tank') {
@@ -41,7 +44,7 @@ export class Multiphysics {
         this.tanks[c.id] = { volume, mass, temperature, vessel: prop(c, 'vesselHeatCapacity') };
         this.initialMass += mass;
       }
-      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0 };
+      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0 };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
@@ -65,7 +68,12 @@ export class Multiphysics {
       return [c.id, { enabled: enabled && (command === null || command > 0), duty }];
     }));
   }
-  solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks) {
+  /**
+   * `loads`: signed external shaft load per motor (N·m, positive opposes positive rotation). The
+   * "External shaft load" property is a magnitude that always resists motion (advance() chooses the
+   * sign from the direction of rotation, or holds the rotor at rest); default: +magnitude.
+   */
+  solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks, loads?: number[]) {
     const motors = s.project.components.filter(isMotor);
     const electrical = solveElectrical(s.project, s.failed, {
       contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(),
@@ -86,10 +94,10 @@ export class Multiphysics {
       // DC: armature current from back EMF. Induction: line current and air-gap torque from the equivalent circuit.
       const current = c.kind === 'inductionMotor' ? (machine ? r.current : 0) : running ? (ctrl.duty * r.voltage - prop(c, 'emfConstant') * omega[i]) / prop(c, 'resistance') : 0;
       const pump = pairs[c.id] ? hydraulic.readings[pairs[c.id]] : undefined;
-      const load = (pump?.torque ?? 0) + prop(c, 'loadTorque');
+      const load = (pump?.torque ?? 0) + (loads?.[i] ?? prop(c, 'loadTorque'));
       const torque = c.kind === 'inductionMotor' ? machine?.torque ?? 0 : prop(c, 'torqueConstant') * current;
       const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper : 0) : current * current * prop(c, 'resistance');
-      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia') };
+      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia'), angle: this.motors[c.id]?.angle ?? 0 };
     });
     return { electrical, hydraulic, state, speeds };
   }
@@ -112,17 +120,39 @@ export class Multiphysics {
       if (reading.flow > 1e-9 && available < required) hydraulic.diagnostics.push(`${c.name}: cavitation risk — NPSH available ${available.toFixed(2)} m < required ${required.toFixed(2)} m (head loss from cavitation is not modelled).`);
     }
   }
+  /**
+   * Opposing load: magnitude T_L resists the current direction of rotation and supplies no energy.
+   * At rest it acts as static friction: it balances any net drive up to T_L (rotor held), and beyond
+   * that resists the breakaway direction. Externally driven reverse rotation stays possible.
+   */
+  private opposingLoads(s: Simulation, old: number[], controls: ReturnType<Multiphysics['controls']>, linked: (string | undefined)[]) {
+    const motors = s.project.components.filter(isMotor);
+    const magnitude = motors.map(c => Math.max(0, prop(c, 'loadTorque')));
+    const loads = motors.map((c, i) => Math.abs(old[i]) > OMEGA_REST ? Math.sign(old[i]) * magnitude[i] : 0);
+    const held = motors.map(() => false);
+    if (motors.some((c, i) => Math.abs(old[i]) <= OMEGA_REST)) {
+      const atRest = this.solve(s, old, controls, this.tanks, loads);
+      motors.forEach((c, i) => {
+        if (Math.abs(old[i]) > OMEGA_REST) return;
+        const drive = atRest.state[i].torque - atRest.state[i].load; // load here is the pump torque only
+        if (Math.abs(drive) <= magnitude[i]) { loads[i] = drive; held[i] = !linked[i]; }
+        else loads[i] = Math.sign(drive) * magnitude[i];
+      });
+    }
+    return { loads, held };
+  }
   refresh(s: Simulation) {
     this.lastProject = s.project;
     const ms = s.project.components.filter(isMotor);
     const speeds = () => ms.map(c => { const body = shaftBody(s.project, c.id); return body ? s.spatial.readings[body]?.omega ?? 0 : this.motors[c.id]?.omega ?? 0; });
-    let r = this.solve(s, speeds(), this.controls(s));
+    const controls = this.controls(s), { loads, held } = this.opposingLoads(s, speeds(), controls, ms.map(c => shaftBody(s.project, c.id)));
+    let r = this.solve(s, speeds(), controls, this.tanks, loads);
     this.hydraulic = r.hydraulic;
     if (!Object.keys(r.hydraulic.nodeTemperatures).length && Object.keys(r.hydraulic.potentials).length) {
       // First solve: no transported temperatures yet. A zero-length transport mixes the current
       // inventories into node temperatures, then the network is re-solved with their viscosities.
       transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells);
-      r = this.solve(s, speeds(), this.controls(s));
+      r = this.solve(s, speeds(), controls, this.tanks, loads);
       this.hydraulic = r.hydraulic;
     }
     // Re-solving hydraulics rebuilds readings. Resolve current fluid temperatures without
@@ -135,7 +165,7 @@ export class Multiphysics {
         // Shaft output excludes acceleration of the motor's own rotor inertia.
         const load = m.torque - prop(c, 'friction') * m.omega - prop(c, 'inertia') * m.acceleration;
         this.motors[c.id] = { ...m, load, shaftPower: load * m.omega };
-      } else this.motors[c.id] = m;
+      } else this.motors[c.id] = held[i] ? { ...m, acceleration: 0 } : m;
     });
     return r.electrical;
   }
@@ -154,6 +184,8 @@ export class Multiphysics {
       let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining);
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
+      const { loads, held } = this.opposingLoads(s, old, controls, linked);
+      const discrete = motors.map((c, i) => `${controls[c.id].enabled ? 1 : 0}${Math.sign(loads[i])}${held[i] ? 'h' : ''}`).join('|');
       const snapshot = linked.some(Boolean) ? s.spatial.checkpoint() : undefined;
       let accepted: ReturnType<Multiphysics['solve']> | undefined;
       let acceptedTrial: ReturnType<typeof s.spatial.trial> | undefined;
@@ -166,15 +198,18 @@ export class Multiphysics {
         // the head/storage coupling); fixed steps keep start-of-step levels.
         const levels = adaptive ? this.midpointTanks(s, h) : this.tanks;
         const residualAt = (x: number[]) => {
-          const r = this.solve(s, x, controls, levels);
+          const r = this.solve(s, x, controls, levels, loads);
           const trial = snapshot ? s.spatial.trial(s, h, torqueMap(r, x), snapshot) : undefined;
-          return { r, trial, f: x.map((v, i) => linked[i] ? 2 * v - old[i] - trial!.bodies[linked[i]!].getAngularVelocity() : 2 * (v - old[i]) - h * r.state[i].acceleration) };
+          return { r, trial, f: x.map((v, i) => linked[i] ? 2 * v - old[i] - trial!.bodies[linked[i]!].getAngularVelocity() : held[i] ? 2 * (v - old[i]) : 2 * (v - old[i]) - h * r.state[i].acceleration) };
         };
         let converged = !motors.length;
         // Chord Newton: the finite-difference Jacobian (one extra coupled solve per motor) is reused
         // across iterations and substeps while it still contracts the residual by 4×, and rebuilt
         // when the step size changes or convergence slows. Same 1e-8 convergence criterion.
-        let jac = this.chord && this.chord.h === h && this.chord.n === motors.length ? this.chord.jac : undefined, lastNorm = Infinity;
+        // The Jacobian is only reused while the discrete state (contactor, load direction, hold) is unchanged:
+        // a stale Jacobian from a running motor contracts slowly after the contactor opens (measured: 8 coupled
+        // solves per step instead of ~1.2).
+        let jac = this.chord && this.chord.h === h && this.chord.n === motors.length && this.chord.key === discrete ? this.chord.jac : undefined, lastNorm = Infinity;
         for (let k = 0; k < 32 && motors.length; k++) {
           const { r, f, trial } = residualAt(midpoint); this.couplingIterations = k + 1;
           const norm = Math.max(...f.map(Math.abs));
@@ -186,16 +221,24 @@ export class Multiphysics {
               const g = residualAt(probe).f;
               for (let i = 0; i < motors.length; i++) jac[i][j] = (g[i] - f[i]) / eps;
             }
-            this.chord = { h, n: motors.length, jac };
+            this.chord = { h, n: motors.length, key: discrete, jac };
           }
           lastNorm = norm;
           const d = solveLinear(jac, f.map(v => -v));
           midpoint = midpoint.map((v, i) => v + d[i]);
         }
         if (!converged) throw Error('Electromechanical midpoint coupling failed to converge.');
-        accepted = accepted ?? this.solve(s, midpoint, controls, levels);
+        accepted = accepted ?? this.solve(s, midpoint, controls, levels, loads);
         const safe = boundaryTime(s.project, this.tanks, accepted.hydraulic, h);
         if (safe < h * (1 - 1e-9)) { h = Math.max(1e-10, safe); accepted = undefined; acceptedTrial = undefined; continue; }
+        // A loaded rotor that would pass through zero speed stops within this step: split the step at
+        // the stopping instant (linear in ω) so the load never drives it backwards.
+        const stop = Math.min(1, ...motors.map((c, i) => {
+          if (linked[i] || held[i] || loads[i] === 0 || Math.abs(old[i]) <= OMEGA_REST) return 1;
+          const next = 2 * midpoint[i] - old[i];
+          return Math.sign(next) === -Math.sign(old[i]) && Math.abs(next) > 1e-9 * Math.max(1, Math.abs(old[i])) ? old[i] / (old[i] - next) : 1;
+        }));
+        if (stop < 1 - 1e-9) { h = Math.max(1e-10, h * stop); accepted = undefined; acceptedTrial = undefined; continue; }
         break;
       }
       if (!accepted) throw Error('Tank boundary event failed to converge.');
@@ -206,15 +249,19 @@ export class Multiphysics {
       }
       this.hydraulic = r.hydraulic;
       motors.forEach((c, i) => {
-        const m = r.state[i], next = linked[i] ? s.spatial.readings[linked[i]!].omega : 2 * midpoint[i] - old[i];
+        const m = r.state[i];
+        let next = linked[i] ? s.spatial.readings[linked[i]!].omega : held[i] ? 0 : 2 * midpoint[i] - old[i];
+        // Arrival at rest after a split stopping step: remove the round-off remainder.
+        if (!linked[i] && loads[i] !== 0 && Math.abs(old[i]) > OMEGA_REST && (Math.sign(next) === -Math.sign(old[i]) || Math.abs(next) <= 1e-9 * Math.max(1, Math.abs(old[i])))) next = 0;
         const acceleration = (next - old[i]) / h;
         const load = linked[i] ? m.torque - prop(c, 'friction') * midpoint[i] - prop(c, 'inertia') * acceleration : m.load;
-        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration };
+        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration, angle: (this.motors[c.id]?.angle ?? 0) + midpoint[i] * h };
         this.copperEnergy += m.copperPower * h;
         const friction = prop(c, 'friction') * midpoint[i] ** 2;
         this.frictionEnergy += friction * h;
         heatEnergy[c.id] = (heatEnergy[c.id] ?? 0) + (m.copperPower + friction) * h;
-        this.externalShaftWork += prop(c, 'loadTorque') * midpoint[i] * h;
+        // Work exported by the opposing load: loads[i]·ω ≥ 0 while moving, zero while held at rest.
+        this.externalShaftWork += loads[i] * midpoint[i] * h;
         if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);
         if (Math.abs(m.torque) > prop(c, 'ratedTorque') * 1.001) s.automation.status[c.id] = 'overloaded';
       });

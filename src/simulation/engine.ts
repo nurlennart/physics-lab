@@ -14,6 +14,8 @@ import { transitionError } from "./integrity";
 import { Automation, allowedFaults, type FaultType } from "./automation";
 import { readProbe, measurements } from "./measurements";
 import { SpatialDynamics } from './spatial';
+/** Time (s) a motor may draw more than rated current before it is reported (locked-rotor withstand, class 10). */
+export const MOTOR_START_ALLOWANCE = 10;
 function freeze<T>(value: T): T {
   if (value && typeof value === "object") {
     for (const v of Object.values(value)) freeze(v);
@@ -160,6 +162,8 @@ export class Simulation {
   sampleInterval = 0.25;
   temperatures: Record<string, number> = {};
   overload: Record<string, number> = {};
+  /** Continuous time above rated current (s), for the motor starting allowance. */
+  overCurrentTime: Record<string, number> = {};
   faults: Record<string, FaultType> = {};
   disconnected = new Set<string>();
   componentEnergy: Record<string, number> = {};
@@ -228,6 +232,7 @@ export class Simulation {
     this.disconnected = new Set();
     this.componentEnergy = {};
     this.overload = {};
+    this.overCurrentTime = {};
     this.temperatures = {};
     this.violations = [];
     this.events = [];
@@ -759,8 +764,13 @@ export class Simulation {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
         const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
-          overCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
+          rawOverCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
           overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * (c.kind === "inductionMotor" && r.phases === 3 ? Math.sqrt(3) : 1) > prop(c, "ratedVoltage", Infinity) * (1 + 1e-9);
+        // Motors draw several times rated current while starting direct-on-line; that is normal operation.
+        // Current above rating is reported only once it persists beyond the starting allowance; winding
+        // temperature still decides failure.
+        this.overCurrentTime[c.id] = rawOverCurrent ? (this.overCurrentTime[c.id] ?? 0) + dt : 0;
+        const overCurrent = isMotor(c) ? this.overCurrentTime[c.id] > MOTOR_START_ALLOWANCE : rawOverCurrent;
         const protective = c.kind === "fuse" || c.kind === "breaker" || c.kind === "motorProtector";
         const over = protective ? overCurrent : overPower || overCurrent || overVoltage;
         this.overload[c.id] = over ? (this.overload[c.id] ?? 0) + dt : 0;
@@ -768,7 +778,7 @@ export class Simulation {
           this.automation.status[c.id] = "overloaded";
         if (over && !protective && !this.failed[c.id]) {
           for (const [quantity, exceeded] of [["power", overPower], ["current", overCurrent], ["voltage", overVoltage]] as const)
-            if (exceeded) this.violation(`${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
+            if (exceeded) this.violation(quantity === "current" && isMotor(c) ? `${c.name}: above its rated current for more than ${MOTOR_START_ALLOWANCE} s (normal starting current is tolerated). Consequences follow from its modelled temperature.` : `${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
         }
         if (c.kind === "fuse" && this.overload[c.id] >= prop(c, "tripTime", 0.1) - 1e-12 && !this.failed[c.id]) {
           this.fail(c.id, `${c.name}: overcurrent — fuse opened.`);

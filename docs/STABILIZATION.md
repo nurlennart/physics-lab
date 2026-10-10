@@ -51,7 +51,7 @@ Final validation on 2026-10-10:
 | Command | Executed result |
 | --- | --- |
 | `npm run check:fast` | Typecheck and production build passed; 254 tests across 19 files, 87 physics checks, 124 scale checks and all nine unchanged challenge reference results passed |
-| `npm run validate:examples -- --write` | All 16 examples completed their configured validation duration; the induction motor's expected startup continuous-current warning remains visible |
+| `npm run validate:examples -- --write` | All 16 examples completed their configured validation duration; the induction motor's startup current warning has since been replaced by a 10 s starting allowance (see PHYSICS.md, motor shutdown revision) |
 | `npm run test:e2e:prod` | All 58 browser tests passed, including every example's meaningful result, reset and save/reload, and the targeted integration workflows above |
 | `git diff --check` | Passed |
 

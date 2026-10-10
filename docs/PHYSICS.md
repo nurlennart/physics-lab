@@ -231,3 +231,49 @@ Measured on the supply challenge reference (720 s simulated): **215 → 59 ms of
 - a chord iteration with midpoint predictor for motor coupling.
 
 At real-time speed the heaviest example now needs about 6 % of the main thread. Moving the solver to a Web Worker would make the UI read results asynchronously (every caption, probe and Inspector field). That refactor was **deferred**, because measured cost no longer justifies it; it remains the next step if large scenes become slow.
+
+## Shaft load, coast-down and stopped pumps (motor shutdown revision)
+
+### Opposing external shaft load
+
+"External shaft load" is a magnitude T_L ≥ 0 that **resists** rotation; it never supplies energy.
+
+- **Moving** (|ω| > 10⁻⁹ rad/s): the load torque is T_L·sign(ω). Exported work T_L·|ω|·Δt ≥ 0 is counted in the external shaft work.
+- **At rest:** the load acts like static friction. If the net drive (motor torque minus pump torque at ω = 0) is at most T_L, the rotor is held at exactly 0 and no work is done. Above T_L the rotor breaks away in the direction of the drive, and the load resists that direction. A reversed DC motor therefore runs backwards against the load, so legitimate reverse rotation is preserved.
+- **Stopping inside a step:** if the integrated speed would pass through zero, the coupled step is split at the stopping instant (linear in ω, refined like the tank boundary events) and the rotor ends exactly at rest.
+- **Validation:** the stopping time of a coasting 7.5 kW motor matches t = (J/b)·ln(1 + b·ω₀/T_L) within one 1/60 s step. Zero-load coasting matches ω₀·e^(−bt/J) to 10⁻⁴. The energy residual stays below 10⁻⁶ of the supplied energy through stop and restart (`motor-load.test.ts`).
+- **Previous defect:** the load was a constant torque in one direction. After the contactor opened it drove the rotor backwards without bound (−59,000 rpm after 10 s).
+
+### Contactor-opening slowdown (cause)
+
+Profiling the loaded induction motor showed that coupled solves rose from about 1.2 to exactly 8 per step after the contactor opened, making each simulated second 2–3× slower.
+
+- **Cause:** the chord-Newton Jacobian. It was cached by step length only, so the Jacobian of the running machine was reused for the disconnected rotor. It still contracted the residual by about ¼ per iteration, just inside the rebuild threshold, so it was never rebuilt.
+- **Fix:** the cache is now also keyed by the discrete state (contactor, load direction, hold). After the fix the coasting and stopped motor needs one coupled solve per step.
+- High speed was not the cause; the reverse spin was a separate defect, fixed above.
+
+### Rotor drawing
+
+The drawn rotor turns by the accumulated rotation ∫ω dt (`MotorState.angle`) instead of current speed × elapsed time. It stops when the rotor stops, freezes while paused, starts at zero on reset, and is reproduced by save/load replay.
+
+### Stopped pumps and hydraulic back-driving
+
+- **Passive flow:** the pump head curve H = H₀·(ω/ω₀)² − k·Q² has no impeller (Euler) momentum term. At standstill the pump is therefore a passive restriction: elevation or pressure can drive **forward** flow through it, and that energy is dissipated in the branch, so the energy ledger closes.
+- **No turbine torque:** hydraulic back-driving (windmilling) is **not modelled**. The shaft receives no hydraulic torque, because any turbine coefficient would have to be invented.
+- **What the interface shows:**
+  - A coupled (restrained) shaft keeps the motor's speed, e.g. 0 rpm while held by its load.
+  - A free shaft has no modelled speed: the measurement is unavailable and the symbol says "free shaft".
+  - The inspector says so whenever flow passes a stopped impeller.
+- **Built-in check:** the pump has an explicit internal reverse check. Reverse flow is always blocked, and the inspector reports the pressure difference the closed check is holding.
+
+### Motor starting current
+
+Direct-on-line starting draws several times rated current, about 74 A for 0.2 s for the 7.5 kW motor. Motor current above rating is only reported after it persists for more than 10 s (`MOTOR_START_ALLOWANCE`, a class-10 locked-rotor withstand time). Winding temperature still decides failure, and a stalled motor is still reported.
+
+### Before the first Run
+
+The engine holds the switch-on solution at t = 0 (needed for inspection and tests), but the interface treats the experiment as **ready, not running**:
+- operating quantities (current, power, flow, speed, efficiencies) show "—" in the inspector and telemetry;
+- wire chips, live captions and lamp/heater glow appear only once time advances;
+- state quantities such as temperature, level and stored inventory stay visible;
+- the status bar says "Ready to run".

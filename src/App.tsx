@@ -413,7 +413,7 @@ export default function App() {
                   ? "Simulation running"
                   : result?.complete
                     ? "Challenge complete"
-                    : "Simulation paused"}
+                    : simulation.time <= 0 ? "Ready to run" : "Simulation paused"}
             </strong>
           </div>
           <span className="engine-status">

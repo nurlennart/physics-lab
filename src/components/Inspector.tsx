@@ -1,5 +1,5 @@
 import { T } from "../theme/tokens";
-import { inspectorMeasurements, measurementLabel } from "../simulation/capabilities";
+import { inspectorMeasurements, measurementLabel, operatingMeasurements } from "../simulation/capabilities";
 import { useState } from "react";
 import {
   SlidersHorizontal,
@@ -73,12 +73,13 @@ export default function Inspector() {
     h = simulation.multiphysics.hydraulic.readings[c.id],
     r = simulation.electrical.readings[c.id],
     v = simulation.automation.signals[c.id];
+  const started = simulation.time > 0;
   const primary =
     c.kind === 'rigidBody' ? simulation.spatial.readings[c.id]?.y.toFixed(3) ?? '—' : c.kind === 'forceActuator' ? (readProbe({ component: c.id, measurement: c.props.axis === 'torque' ? 'appliedTorque' : 'appliedForce' } as Parameters<typeof readProbe>[0], simulation)?.toFixed(3) ?? '—') : isThermalMass(c) || sensor
       ? temp === undefined
         ? "—"
         : formatReading(temp, 2)
-      : h ? (h.flow * 60000).toFixed(3) : v
+      : !started && (h || (!v && r)) ? "—" : h ? (h.flow * 60000).toFixed(3) : v
         ? v.valid
           ? typeof v.value === "boolean"
             ? v.value
@@ -180,7 +181,7 @@ export default function Inspector() {
               <div className="measurement-list">
                 {inspectorMeasurements(c, !!simulation.electrical.readings[c.id]?.ac, s.project.connections.some((w) => w.domain === "hydraulic" && (w.from.component === c.id || w.to.component === c.id)))
                   .map((m) => {
-                    const value = readProbe(
+                    const value = !started && operatingMeasurements.has(m) ? null : readProbe(
                       {
                         id: "",
                         name: "",
@@ -213,15 +214,23 @@ export default function Inspector() {
                     );
                   })}
               </div>
+              {!started && <p className="field-hint" data-testid="not-started-hint">Ready. Operating values (current, power, flow, speed) appear once the experiment runs.</p>}
               {sensor && !sensor.valid && <p className="field-hint">{sensor.reason}</p>}
               {v && !v.valid && <p className="field-hint">{v.reason}</p>}
             </div>
             {c.kind === "pump" && (() => {
-              const rpm = readProbe({ component: c.id, measurement: "rpm" } as Parameters<typeof readProbe>[0], simulation) ?? 0;
+              const rpmReading = readProbe({ component: c.id, measurement: "rpm" } as Parameters<typeof readProbe>[0], simulation), rpm = rpmReading ?? 0;
               const omega = rpm * Math.PI / 30, ratio = omega / prop(c, "ratedSpeed"), qMax = prop(c, "ratedFlow") * Math.max(0.01, ratio) * Math.SQRT2;
               const headMax = Math.max(0.1, prop(c, "shutoffHead") * ratio * ratio);
               const points = Array.from({ length: 25 }, (_, i) => { const q = qMax * i / 24; return `${20 + 215 * q / qMax},${115 - 95 * pumpCurve(c, omega, q).head / headMax}`; }).join(" ");
-              return <div className="inspector-section"><div className="section-label">Pump operating curve</div><svg viewBox="0 0 260 145" role="img" aria-label="Pump head versus flow with calculated operating point"><path d="M20 15V115H240" fill="none" stroke={T.n11}/><polyline points={points} fill="none" stroke={T.hydraulicText} strokeWidth="2"/><circle cx={20 + 215 * Math.max(0, h?.flow ?? 0) / qMax} cy={115 - 95 * pumpCurve(c, omega, h?.flow ?? 0).head / headMax} r="4" fill={T.electricalText}/><text x="20" y="137" fill={T.n13} fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text></svg><p className="field-hint">Curve at actual {rpm.toFixed(0)} RPM. Dot shows solved flow and gross impeller head; internal loss reduces net outlet rise.</p></div>;
+              return <div className="inspector-section"><div className="section-label">Pump operating curve</div><svg viewBox="0 0 260 145" role="img" aria-label="Pump head versus flow with calculated operating point"><path d="M20 15V115H240" fill="none" stroke={T.n11}/><polyline points={points} fill="none" stroke={T.hydraulicText} strokeWidth="2"/><circle cx={20 + 215 * Math.max(0, h?.flow ?? 0) / qMax} cy={115 - 95 * pumpCurve(c, omega, h?.flow ?? 0).head / headMax} r="4" fill={T.electricalText}/><text x="20" y="137" fill={T.n13} fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text></svg><p className="field-hint">Curve at actual {rpm.toFixed(0)} RPM. Dot shows solved flow and gross impeller head; internal loss reduces net outlet rise.</p>{(() => {
+                const flow = h?.flow ?? 0, stopped = Math.abs(omega) < 0.05, shutoffRise = pumpCurve(c, omega, 0).pressureRise;
+                const reverse = h ? -(h.differentialPressure) - shutoffRise : 0; // outlet − inlet beyond what the impeller holds
+                return <>
+                  {stopped && flow > 1e-9 && <p className="field-hint warn" data-testid="pump-backdrive-note">Flow passes the stopped impeller as a passive restriction. Hydraulic back-driving (windmilling) is not modelled: the shaft receives no hydraulic torque. {rpmReading === null ? "Free shaft: its speed is not modelled." : "Coupled shaft: speed follows the motor, which is restrained at rest."}</p>}
+                  <p className="field-hint" data-testid="pump-check-note">Built-in check: reverse flow is blocked.{Math.abs(flow) < 1e-12 && reverse > 50 ? ` Check closed, holding ${(reverse / 100000).toFixed(3)} bar of reverse pressure.` : ""}</p>
+                </>;
+              })()}</div>;
             })()}
             <RatingIndicators c={c} />
             <ModelAndPresets c={c} />
