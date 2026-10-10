@@ -54,6 +54,10 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   rateLimiter: Activity,
   selector: GitBranch,
   source3: BatteryCharging,
+  sourceAC: BatteryCharging,
+  inductor: Activity,
+  capacitor: Activity,
+  inductionMotor: Fan,
 };
 export function ComponentIcon({
   kind,

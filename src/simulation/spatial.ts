@@ -1,5 +1,5 @@
 import { World, Body, Box, Circle, Polygon, Vec2, WeldJoint, RevoluteJoint, PrismaticJoint, DistanceJoint, GearJoint, Serializer, type Joint, type Contact, type ContactImpulse, type MassData } from 'planck';
-import { prop, type Project, type Point } from './model';
+import { isMotor, prop, type Project, type Point } from './model';
 import { configuredMass, materialOf, defaultWorld, shaftBody, type MechanicalJoint } from './spatial-model';
 import type { Simulation } from './engine';
 export interface BodyReading { x: number; y: number; cx: number; cy: number; angle: number; vx: number; vy: number; omega: number; mass: number; inertia: number; ax: number; ay: number; forceX: number; forceY: number; torque: number; kinetic: number; potential: number; awake: boolean; contactImpulse: number }
@@ -57,7 +57,7 @@ export class SpatialDynamics {
     }
     Object.assign(this, index(this.world));
     // Rotor inertia appears exactly once, in the shared rigid body's mass matrix.
-    for (const c of p.components.filter(c => c.kind === 'motor')) {
+    for (const c of p.components.filter(isMotor)) {
       const id = shaftBody(p, c.id), body = id && this.bodies[id];
       if (body) { const md: MassData = { mass: 0, center: Vec2(), I: 0 }; body.getMassData(md); body.setMassData({ ...md, I: md.I + prop(c, 'inertia') }); }
     }

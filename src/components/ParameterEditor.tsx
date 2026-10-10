@@ -107,7 +107,7 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
     control = (
       <select aria-label={physical ? "Physical target" : "Thermal target"} disabled={disabled} value={String(value)} onChange={(e) => actions.property(c.id, field, e.target.value)}>
         <option value="">Unassigned</option>
-        {s.project.components.filter((x) => c.kind === "positionSensor" || c.kind === "forceActuator" ? !!x.spatial && (c.kind !== "forceActuator" || x.spatial.type === "dynamic") : c.kind === "speedSensor" ? !!x.spatial || x.kind === "motor" : c.kind === "levelSensor" ? x.kind === "tank" : ["pressureSensor", "flowSensor"].includes(c.kind) ? definitions[x.kind].ports.some((p) => p.domain === "hydraulic") && (c.kind !== "flowSensor" || ["pipe", "pump", "valve", "checkValve", "actuatedValve"].includes(x.kind)) : isThermalMass(x)).map((x) => (
+        {s.project.components.filter((x) => c.kind === "positionSensor" || c.kind === "forceActuator" ? !!x.spatial && (c.kind !== "forceActuator" || x.spatial.type === "dynamic") : c.kind === "speedSensor" ? !!x.spatial || x.kind === "motor" || x.kind === "inductionMotor" : c.kind === "levelSensor" ? x.kind === "tank" : ["pressureSensor", "flowSensor"].includes(c.kind) ? definitions[x.kind].ports.some((p) => p.domain === "hydraulic") && (c.kind !== "flowSensor" || ["pipe", "pump", "valve", "checkValve", "actuatedValve"].includes(x.kind)) : isThermalMass(x)).map((x) => (
           <option key={x.id} value={x.id}>{x.name} · {definitions[x.kind].label}</option>
         ))}
       </select>

@@ -1,7 +1,7 @@
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
 import { updateScenario, recordFeedbackTransitions } from "./challenges";
-import { prop, isThermalMass, isSource, perPoleKinds, projectAmbient, portConductance, type Component, type Project, type ChallengeId } from "./model";
+import { prop, isThermalMass, isSource, isMotor, perPoleKinds, projectAmbient, portConductance, type Component, type Project, type ChallengeId } from "./model";
 import {
   solveElectrical,
   solveLinear,
@@ -386,7 +386,7 @@ export class Simulation {
         if ((reading?.surcharge ?? 0) > 1e-9 && (reading?.overflow ?? 0) > 0) limit = Math.min(limit, 0.3 * area / (1.5 * reading!.overflow! / reading!.surcharge!));
       }
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
-      const motor = c.kind === "motor" ? this.multiphysics.motors[c.id] : undefined;
+      const motor = isMotor(c) ? this.multiphysics.motors[c.id] : undefined;
       if (motor && Math.abs(motor.acceleration) > 1e-9) limit = Math.min(limit, (0.002 * Math.abs(motor.omega) + 0.5) / Math.abs(motor.acceleration));
     }
     if (Number.isFinite(this.thermalRate) && this.thermalRate > 0) limit = Math.min(limit, tolerance / this.thermalRate);
@@ -410,7 +410,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "inductionMotor", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -618,7 +618,7 @@ export class Simulation {
     thermal.forEach((c, i) => {
       a[i][i] = caps[i] / dt;
       b[i] =
-        (caps[i] / dt) * old[i] + (c.kind === "motor" ? coupled?.heatPower[c.id] ?? 0 : this.electrical.readings[c.id]?.power ?? 0);
+        (caps[i] / dt) * old[i] + (isMotor(c) ? coupled?.heatPower[c.id] ?? 0 : this.electrical.readings[c.id]?.power ?? 0);
       for (const l of losses[i]) {
         a[i][i] += l.ua;
         b[i] += l.ua * l.ambient;

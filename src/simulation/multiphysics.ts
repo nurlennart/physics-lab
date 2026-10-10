@@ -1,4 +1,4 @@
-import { prop, type Project } from './model';
+import { prop, isMotor, type Project } from './model';
 import { solveElectrical, solveLinear, type ElectricalResult } from './electrical';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
@@ -41,7 +41,7 @@ export class Multiphysics {
         this.tanks[c.id] = { volume, mass, temperature, vessel: prop(c, 'vesselHeatCapacity') };
         this.initialMass += mass;
       }
-      if (c.kind === 'motor') this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0 };
+      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0 };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
@@ -51,22 +51,27 @@ export class Multiphysics {
   get massResidual() { return Object.values(this.tanks).reduce((s, t) => s + t.mass, 0) + this.removedMass - this.initialMass; }
   get kinetic() { return this.kineticEnergy(this.lastProject); }
   private lastProject?: Project;
-  kineticEnergy(p?: Project) { return p ? p.components.filter(c => c.kind === 'motor' && !shaftBody(p, c.id)).reduce((s, c) => s + 0.5 * prop(c, 'inertia') * (this.motors[c.id]?.omega ?? 0) ** 2, 0) : 0; }
+  kineticEnergy(p?: Project) { return p ? p.components.filter(c => isMotor(c) && !shaftBody(p, c.id)).reduce((s, c) => s + 0.5 * prop(c, 'inertia') * (this.motors[c.id]?.omega ?? 0) ** 2, 0) : 0; }
   /** Tank gravitational energy Φ = g(z·m + m²/(2ρ_ref·A)), consistent with the network flow work (Boussinesq). */
   potential(p: Project) { return p.components.filter(c => c.kind === 'tank').reduce((s, c) => { const v = (this.tanks[c.id]?.mass ?? 0) / RHO; return s + RHO * G * (prop(c, 'elevation') * v + v * v / (2 * prop(c, 'surfaceArea'))); }, 0); }
   private controls(s: Simulation) {
-    return Object.fromEntries(s.project.components.filter(c => c.kind === 'motor').map(c => {
+    return Object.fromEntries(s.project.components.filter(isMotor).map(c => {
       const has = (port: string) => s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);
       const enable = s.automation.input(c, 'enable', s), speed = s.automation.input(c, 'speed', s);
       const enabled = !s.failed[c.id] && !['failedOpen', 'powerLoss', 'motorFailure', 'controlLost'].includes(s.faults[c.id]) && (has('enable') ? enable.valid && enable.value === true : Boolean(c.props.enabled));
       const command = has('speed') ? (speed.valid && typeof speed.value === 'number' ? Math.max(0, U.rpmToRad(speed.value)) : 0) : c.props.speedControl ? U.rpmToRad(prop(c, 'speedCommand')) : null;
-      const duty = command === null ? 1 : Math.max(0.001, Math.min(1, prop(c, 'emfConstant') * command / prop(c, 'ratedVoltage') + 0.02 * (command - (this.motors[c.id]?.omega ?? 0))));
+      // Induction machines run direct-on-line (no drive); the DC motor's ideal PWM drive follows the speed command.
+      const duty = c.kind === 'inductionMotor' || command === null ? 1 : Math.max(0.001, Math.min(1, prop(c, 'emfConstant') * command / prop(c, 'ratedVoltage') + 0.02 * (command - (this.motors[c.id]?.omega ?? 0))));
       return [c.id, { enabled: enabled && (command === null || command > 0), duty }];
     }));
   }
   solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks) {
-    const motors = s.project.components.filter(c => c.kind === 'motor');
-    const electrical = solveElectrical(s.project, s.failed, { contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(), motors: Object.fromEntries(motors.map((c, i) => [c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }])) });
+    const motors = s.project.components.filter(isMotor);
+    const electrical = solveElectrical(s.project, s.failed, {
+      contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(),
+      motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
+      inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled }]] : [])),
+    });
     const speeds: Record<string, number> = {};
     const pairs: Record<string, string> = {};
     for (const w of s.project.connections.filter(w => w.domain === 'mechanical' && !s.disconnected.has(w.id))) {
@@ -76,11 +81,15 @@ export class Multiphysics {
     const hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells);
     const state = motors.map((c, i) => {
       const ctrl = controls[c.id], r = electrical.readings[c.id];
-      const current = ctrl.enabled && !s.failed[c.id] ? (ctrl.duty * r.voltage - prop(c, 'emfConstant') * omega[i]) / prop(c, 'resistance') : 0;
+      const running = ctrl.enabled && !s.failed[c.id];
+      const machine = c.kind === 'inductionMotor' && running ? r?.machine : undefined;
+      // DC: armature current from back EMF. Induction: line current and air-gap torque from the equivalent circuit.
+      const current = c.kind === 'inductionMotor' ? (machine ? r.current : 0) : running ? (ctrl.duty * r.voltage - prop(c, 'emfConstant') * omega[i]) / prop(c, 'resistance') : 0;
       const pump = pairs[c.id] ? hydraulic.readings[pairs[c.id]] : undefined;
       const load = (pump?.torque ?? 0) + prop(c, 'loadTorque');
-      const torque = prop(c, 'torqueConstant') * current;
-      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower: current * current * prop(c, 'resistance'), duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia') };
+      const torque = c.kind === 'inductionMotor' ? machine?.torque ?? 0 : prop(c, 'torqueConstant') * current;
+      const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper : 0) : current * current * prop(c, 'resistance');
+      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia') };
     });
     return { electrical, hydraulic, state, speeds };
   }
@@ -95,7 +104,7 @@ export class Multiphysics {
   }
   refresh(s: Simulation) {
     this.lastProject = s.project;
-    const ms = s.project.components.filter(c => c.kind === 'motor');
+    const ms = s.project.components.filter(isMotor);
     const speeds = () => ms.map(c => { const body = shaftBody(s.project, c.id); return body ? s.spatial.readings[body]?.omega ?? 0 : this.motors[c.id]?.omega ?? 0; });
     let r = this.solve(s, speeds(), this.controls(s));
     this.hydraulic = r.hydraulic;
@@ -119,7 +128,7 @@ export class Multiphysics {
   advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number } {
     s.spatial.stepMs = 0;
     this.lastProject = s.project;
-    const motors = s.project.components.filter(c => c.kind === 'motor'), controls = this.controls(s), heatEnergy: Record<string, number> = {};
+    const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {};
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.count && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};

@@ -363,7 +363,7 @@ export function validateProbes(p: Project) {
     ids.add(probe.id);
     if (
       ![
-        "pressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
+        "pressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
         'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',
         "voltage",
         "current",

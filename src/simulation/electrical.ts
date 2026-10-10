@@ -1,5 +1,43 @@
 import { definitions, isSource, prop, terminalKey, type Component, type Project } from "./model";
 import { actualResistance } from "./parameters";
+type Cx = [number, number];
+const cadd = (a: Cx, b: Cx): Cx => [a[0] + b[0], a[1] + b[1]];
+const csub = (a: Cx, b: Cx): Cx => [a[0] - b[0], a[1] - b[1]];
+const cmul = (a: Cx, b: Cx): Cx => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+const cdiv = (a: Cx, b: Cx): Cx => { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; };
+const cabs = (a: Cx) => Math.hypot(a[0], a[1]);
+const conj = (a: Cx): Cx => [a[0], -a[1]];
+/** Complex Gaussian elimination with partial pivoting. */
+export function solveComplex(a: Cx[][], b: Cx[]): Cx[] {
+  const n = b.length, m = a.map((row, i) => [...row.map((v) => [...v] as Cx), [...b[i]] as Cx]);
+  for (let k = 0; k < n; k++) {
+    let pivot = k;
+    for (let i = k + 1; i < n; i++) if (cabs(m[i][k]) > cabs(m[pivot][k])) pivot = i;
+    if (cabs(m[pivot][k]) < 1e-14) throw Error("Singular AC circuit: conflicting sources or a floating node.");
+    [m[k], m[pivot]] = [m[pivot], m[k]];
+    for (let i = k + 1; i < n; i++) {
+      const f = cdiv(m[i][k], m[k][k]);
+      for (let j = k; j <= n; j++) m[i][j] = csub(m[i][j], cmul(f, m[k][j]));
+    }
+  }
+  const x: Cx[] = Array.from({ length: n }, () => [0, 0]);
+  for (let i = n - 1; i >= 0; i--) {
+    let sum = m[i][n];
+    for (let j = i + 1; j < n; j++) sum = csub(sum, cmul(m[i][j], x[j]));
+    x[i] = cdiv(sum, m[i][i]);
+  }
+  if (x.some((v) => !v.every(Number.isFinite))) throw Error("AC circuit solver produced a non-finite result.");
+  return x;
+}
+/** Induction machine per-phase equivalent circuit at slip s (rad/s quantities, reactances at supply frequency). */
+export function inductionCircuit(c: Component, frequency: number, omega: number) {
+  const scale = frequency / prop(c, "ratedFrequency", 50), syncSpeed = 2 * Math.PI * frequency / (prop(c, "poles", 4) / 2);
+  const slip = syncSpeed > 0 ? (syncSpeed - omega) / syncSpeed : 1;
+  const z1: Cx = [prop(c, "statorResistance"), prop(c, "statorReactance") * scale], xm: Cx = [0, prop(c, "magnetizingReactance") * scale];
+  const z2: Cx | null = Math.abs(slip) > 1e-9 ? [prop(c, "rotorResistance") / slip, prop(c, "rotorReactance") * scale] : null;
+  const branch = z2 ? cdiv(cmul(xm, z2), cadd(xm, z2)) : xm;
+  return { impedance: cadd(z1, branch), z2, xm, slip, syncSpeed };
+}
 export interface ElectricalReading {
   voltage: number;
   current: number;
@@ -13,6 +51,13 @@ export interface ElectricalReading {
   resistance?: number;
   /** 3 in a balanced three-phase island: voltage is phase-to-neutral, current is line current, power is the 3-phase total. */
   phases?: 1 | 3;
+  /** AC islands: RMS magnitudes; power is active power P, plus reactive power Q (var) and power factor. */
+  ac?: boolean;
+  reactivePower?: number;
+  powerFactor?: number | null;
+  frequency?: number;
+  /** Induction machines: air-gap torque (N·m), copper losses (W) and slip. */
+  machine?: { torque: number; statorCopper: number; rotorCopper: number; slip: number };
 }
 export interface ElectricalResult {
   readings: Record<string, ElectricalReading>;
@@ -25,6 +70,8 @@ export interface ElectricalResult {
   nodeIslands?: Record<string, string>;
   references?: Record<string, string>;
   powerResidual?: number;
+  /** AC islands: complex node voltages (RMS phasors) for differential probes. */
+  phasors?: Record<string, [number, number]>;
 }
 class Union {
   p = new Map<string, string>();
@@ -70,6 +117,8 @@ export interface ElectricalRuntime {
   faults?: Record<string, string>;
   disconnected?: Set<string>;
   motors?: Record<string, { emf: number; duty: number; enabled: boolean }>;
+  /** Induction machines: mechanical speed (rad/s) and contactor state. */
+  inductionMotors?: Record<string, { omega: number; enabled: boolean }>;
   /** Protective devices currently tripped open (breakers, motor protectors). */
   open?: Set<string>;
   /** Element temperatures (°C) for temperature-dependent resistance. */
@@ -149,16 +198,97 @@ export function solveElectrical(
     return (resistances[c.id] = r);
   };
   let residual = 0;
+  const acIslands = new Set<string>(), phasors: Record<string, Cx> = {}, acReadings: Record<string, ElectricalReading> = {};
+  /** Complex MNA for an AC island (single-phase phasors, or the balanced per-phase model of a three-phase supply). */
+  const solveACIsland = (island: string, ns: string[], members: Component[], sources: Component[]) => {
+    if (sources.some((c) => c.kind === "source")) throw Error("A DC supply and an AC supply cannot share one network.");
+    const three = sources.some((c) => c.kind === "source3");
+    if (three && sources.some((c) => c.kind === "sourceAC")) throw Error("A balanced three-phase supply and single-phase AC sources cannot share one network; build an explicit three-phase system from three AC sources instead.");
+    const frequency = prop(sources[0], "frequency", 50);
+    if (sources.some((c) => Math.abs(prop(c, "frequency", 50) - frequency) > 1e-9)) throw Error("AC sources with different frequencies cannot share one network.");
+    const dcMotor = members.find((c) => c.kind === "motor");
+    if (dcMotor) throw Error(`${dcMotor.name}: a DC motor cannot run on an AC network.`);
+    const machine = members.find((c) => c.kind === "inductionMotor");
+    if (machine && !three) throw Error(`${machine.name}: a three-phase induction motor needs a three-phase supply (single-phase machines are not modelled).`);
+    const phases = three ? 3 : 1, w = 2 * Math.PI * frequency;
+    acIslands.add(island);
+    if (three) islandPhases.set(island, 3);
+    const g = grounds.find((c) => ns.includes(node(c.id, "a"))), ref = g ? node(g.id, "a") : node(sources[0].id, "b");
+    references[island] = ref;
+    const unknown = ns.filter((n) => n !== ref), size = unknown.length + sources.length;
+    if (size > 250) throw Error("Circuit matrix exceeds 250 unknowns. Reduce the scene.");
+    const indices = new Map(unknown.map((n, i) => [n, i]));
+    const A: Cx[][] = Array.from({ length: size }, () => Array.from({ length: size }, () => [0, 0] as Cx)), B: Cx[] = Array.from({ length: size }, () => [0, 0] as Cx);
+    const add = (i: number | undefined, j: number | undefined, v: Cx) => { if (i !== undefined && j !== undefined) A[i][j] = cadd(A[i][j], v); };
+    const impedance = new Map<string, Cx>(), circuits = new Map<string, ReturnType<typeof inductionCircuit>>();
+    for (const c of members.filter((c) => !isSource(c))) {
+      let z: Cx;
+      if (c.kind === "inductionMotor") {
+        const state = runtime.inductionMotors?.[c.id];
+        if (state && !state.enabled) continue;
+        const circuit = inductionCircuit(c, frequency, state?.omega ?? 0);
+        circuits.set(c.id, circuit);
+        z = circuit.impedance;
+      } else if (c.kind === "inductor") z = [resistanceOf(c), w * prop(c, "inductance")];
+      else if (c.kind === "capacitor") z = [prop(c, "resistance"), -1 / (w * prop(c, "capacitance"))];
+      else z = [resistanceOf(c), 0];
+      impedance.set(c.id, z);
+      const y = cdiv([1, 0], z), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, end(c)));
+      add(p, p, y); add(q, q, y); add(p, q, [-y[0], -y[1]]); add(q, p, [-y[0], -y[1]]);
+    }
+    sources.forEach((src, i) => {
+      const k = unknown.length + i, p = indices.get(node(src.id, "a")), q = indices.get(node(src.id, "b"));
+      if (p !== undefined) { A[p][k] = cadd(A[p][k], [1, 0]); A[k][p] = cadd(A[k][p], [1, 0]); }
+      if (q !== undefined) { A[q][k] = cadd(A[q][k], [-1, 0]); A[k][q] = cadd(A[k][q], [-1, 0]); }
+      A[k][k] = cadd(A[k][k], [-prop(src, "internalResistance"), -prop(src, "internalReactance")]);
+      const magnitude = src.kind === "source3" ? prop(src, "lineVoltage") / Math.sqrt(3) : prop(src, "voltage"), angle = prop(src, "phase") * Math.PI / 180;
+      B[k] = [magnitude * Math.cos(angle), magnitude * Math.sin(angle)];
+    });
+    const x = size ? solveComplex(A, B) : [];
+    for (let i = 0; i < size; i++) {
+      const lhs = A[i].reduce<Cx>((sum, v, j) => cadd(sum, cmul(v, x[j])), [0, 0]);
+      residual = Math.max(residual, cabs(csub(lhs, B[i])));
+    }
+    const V = (n: string): Cx => (n === ref ? [0, 0] : x[indices.get(n)!] ?? [0, 0]);
+    for (const n of ns) phasors[n] = V(n);
+    const record = (c: Component, voltage: Cx, current: Cx, extra: Partial<ElectricalReading> = {}) => {
+      const S = cmul(voltage, conj(current)), P = phases * S[0], Q = phases * S[1], apparent = Math.hypot(P, Q);
+      acReadings[c.id] = {
+        voltage: cabs(voltage), current: cabs(current), contactCurrent: cabs(current), currentNC: 0, power: P, voltageValid: true,
+        ac: true, reactivePower: Q, powerFactor: apparent > 1e-12 ? Math.abs(P) / apparent : null, frequency, ...(phases === 3 ? { phases: 3 as const } : {}), ...extra,
+      };
+    };
+    sources.forEach((src, i) => {
+      const current = x[unknown.length + i], voltage = csub(V(node(src.id, "a")), V(node(src.id, "b")));
+      record(src, voltage, current, { regulation: "cv" });
+      // Delivered power is negative in the source's own reading (current into terminal a).
+      acReadings[src.id].current = acReadings[src.id].power < 0 ? -acReadings[src.id].current : acReadings[src.id].current;
+    });
+    for (const c of members.filter((c) => !isSource(c))) {
+      const z = impedance.get(c.id);
+      const across = csub(V(node(c.id, "a")), V(node(c.id, end(c)))), terminal = csub(V(node(c.id, "a")), V(node(c.id, "b")));
+      const current = z ? cdiv(across, z) : ([0, 0] as Cx);
+      const circuit = circuits.get(c.id);
+      let machine: ElectricalReading["machine"] | undefined;
+      if (circuit) {
+        const rotor: Cx = circuit.z2 ? cdiv(cmul(current, circuit.xm), cadd(circuit.xm, circuit.z2)) : [0, 0];
+        const r2 = prop(c, "rotorResistance"), rotorSq = rotor[0] ** 2 + rotor[1] ** 2;
+        const airGap = circuit.z2 ? phases * rotorSq * r2 / circuit.slip : 0;
+        machine = { torque: circuit.syncSpeed > 0 ? airGap / circuit.syncSpeed : 0, statorCopper: phases * cabs(current) ** 2 * prop(c, "statorResistance"), rotorCopper: phases * rotorSq * r2, slip: circuit.slip };
+      }
+      record(c, terminal, current, { ...(machine ? { machine } : {}), ...(resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}) });
+      if (c.kind === "relay" && end(c) === "nc") { acReadings[c.id].currentNC = acReadings[c.id].current; acReadings[c.id].current = 0; }
+    }
+  };
   for (const [island, ns] of groups) {
     const members = active.filter((c) => ns.includes(node(c.id, "a"))),
       sources = members.filter(isSource);
-    if (sources.some((c) => c.kind === "source3")) {
-      if (sources.some((c) => c.kind === "source"))
-        throw Error("A DC supply and a three-phase supply cannot share one network.");
-      const motor = members.find((c) => c.kind === "motor");
-      if (motor) throw Error(`${motor.name}: a DC motor cannot run on a three-phase AC network (induction machines are not modelled).`);
-      islandPhases.set(island, 3);
+    if (sources.some((c) => c.kind === "source3" || c.kind === "sourceAC")) {
+      solveACIsland(island, ns, members, sources);
+      continue;
     }
+    const machine = members.find((c) => c.kind === "inductionMotor");
+    if (machine) throw Error(`${machine.name}: an induction motor needs a three-phase AC supply, not a DC network.`);
     const shorted = (s: Component) => node(s.id, "a") === node(s.id, "b");
     for (const s of sources)
       if (shorted(s) && sourceLimit(s) === Infinity && prop(s, "internalResistance") <= 0)
@@ -185,7 +315,8 @@ export function solveElectrical(
       if (i !== undefined && j !== undefined) a[i][j] += v;
     };
     for (const c of members.filter((c) => !isSource(c))) {
-      const resistance = resistanceOf(c);
+      // Steady DC: a capacitor is open apart from its insulation leakage (1 GΩ); an inductor is its winding resistance.
+      const resistance = c.kind === "capacitor" ? 1e9 : resistanceOf(c);
       const motor = c.kind === "motor" ? runtime.motors?.[c.id] : undefined;
       const duty = motor?.duty ?? 1;
       const conductance = (c.kind === "motor" ? duty * duty : 1) / resistance,
@@ -271,6 +402,13 @@ export function solveElectrical(
     const a = node(c.id, "a"),
       b = node(c.id, "b"),
       q = node(c.id, end(c));
+    if (acIslands.has(islands.find(a))) {
+      const reading = acReadings[c.id] ?? { voltage: cabs(csub(phasors[a] ?? [0, 0], phasors[b] ?? [0, 0])), current: 0, currentNC: 0, contactCurrent: 0, power: 0, voltageValid: islands.find(a) === islands.find(b), ac: true };
+      readings[c.id] = reading;
+      if (isSource(c)) sourcePower -= reading.power;
+      else dissipatedPower += reading.power;
+      continue;
+    }
     const valid = islands.find(a) === islands.find(b);
     const voltage = (voltages[a] ?? 0) - (voltages[b] ?? 0);
     const activeVoltage = (voltages[a] ?? 0) - (voltages[q] ?? 0);
@@ -308,7 +446,8 @@ export function solveElectrical(
     nodeIds: Record<string, string> = {},
     nodeIslands: Record<string, string> = {};
   for (const k of uf.p.keys()) {
-    nodes[k] = voltages[uf.find(k)] ?? 0;
+    const phasor = phasors[uf.find(k)];
+    nodes[k] = phasor ? cabs(phasor) : voltages[uf.find(k)] ?? 0;
     nodeIds[k] = uf.find(k);
     nodeIslands[k] = islands.find(uf.find(k));
   }
@@ -323,6 +462,7 @@ export function solveElectrical(
     residual,
     powerResidual: sourcePower - dissipatedPower,
     islands: groups.size,
+    ...(Object.keys(phasors).length ? { phasors: Object.fromEntries([...uf.p.keys()].filter((k) => phasors[uf.find(k)]).map((k) => [k, phasors[uf.find(k)]])) } : {}),
   };
 }
 export function nodeVoltage(
@@ -334,6 +474,9 @@ export function nodeVoltage(
   if (!reference) {
     return result.nodes[terminal];
   }
+  // AC: magnitude of the phasor difference (not the difference of magnitudes).
+  const pa = result.phasors?.[terminal], pb = result.phasors?.[reference];
+  if (pa && pb && result.nodeIslands?.[terminal] === result.nodeIslands?.[reference]) return cabs(csub(pa, pb));
   if (
     !(reference in result.nodes) ||
     result.nodeIslands?.[terminal] !== result.nodeIslands?.[reference]

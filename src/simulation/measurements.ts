@@ -1,6 +1,7 @@
 import {
   definitions,
   isElectrical,
+  isSource,
   isThermalMass,
   type Component,
   type Measurement,
@@ -12,7 +13,7 @@ import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
   pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
-  rpm: "RPM", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
+  rpm: "RPM", reactivePower: "var", powerFactor: "1", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
   massResidual: "kg", energyResidual: "J", velocity: "m/s", reynolds: "1", frictionFactor: "1", position: "%",
   voltage: "V",
   nodeVoltage: "V",
@@ -36,7 +37,8 @@ export function measurements(c: Component): Measurement[] {
     ...(c.kind === "actuatedValve" || c.kind === "pressureReducingValve" ? ["position"] as Measurement[] : []),
     ...(c.kind === "heatExchanger" ? ["heatDuty"] as Measurement[] : []),
     ...(c.kind === "pump" ? ["npsh"] as Measurement[] : []),
-    ...(c.kind === "motor" || c.kind === "pump" ? ["rpm", "shaftPower", "hydraulicPower", "efficiency", "energyResidual"] as Measurement[] : []),
+    ...(c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? ["rpm", "shaftPower", "hydraulicPower", "efficiency", "energyResidual"] as Measurement[] : []),
+    ...(["sourceAC", "source3", "inductor", "capacitor", "inductionMotor"].includes(c.kind) || isElectrical(c) ? ["reactivePower", "powerFactor"] as Measurement[] : []),
     ...(isElectrical(c)
       ? (["voltage", "current", "power", "energy"] as Measurement[])
       : []),
@@ -94,6 +96,8 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "mechanicalLoss": return h?.mechanicalLoss ?? 0;
     case "hydraulicEfficiency": return h?.hydraulicEfficiency === null || h?.hydraulicEfficiency === undefined ? null : h.hydraulicEfficiency * 100;
     case "efficiency": return motor ? r && r.power > 1e-9 ? motor.shaftPower / r.power * 100 : null : h?.efficiency === null || h?.efficiency === undefined ? null : h.efficiency * 100;
+    case "reactivePower": return r?.ac ? (isSource(c) ? -(r.reactivePower ?? 0) : r.reactivePower ?? 0) : r ? 0 : null;
+    case "powerFactor": return r?.ac ? r.powerFactor ?? null : r && Math.abs(r.power) > 1e-12 ? 1 : null;
     case "overflow": return (s.multiphysics.overflowRate[c.id] ?? 0) * 60000;
     case "overflowVolume": return (s.multiphysics.overflowed[c.id] ?? 0) * 1000;
     case "transferredVolume": return (s.multiphysics.transferred[c.id] ?? 0) * 1000;

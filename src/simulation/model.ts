@@ -4,6 +4,10 @@ export type Kind =
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "source"
   | "source3"
+  | "sourceAC"
+  | "inductor"
+  | "capacitor"
+  | "inductionMotor"
   | "resistor"
   | "switch"
   | "lamp"
@@ -71,7 +75,7 @@ export interface Connection {
 export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
-  | "heatDuty" | "npsh" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
+  | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
   | "voltage"
@@ -288,6 +292,52 @@ export const definitions: Record<Kind, Definition> = {
     variants: [
       { id: "industrial250", label: "Industrial 400 V 3~ 250 A", cost: 900, spec: "400 V · 250 A · 173 kVA", overrides: { maxCurrent: 250, maxPower: 173000, internalResistance: 0.005 } },
       { id: "mv690", label: "690 V 3~ 400 A", cost: 1600, spec: "690 V · 400 A · 478 kVA", overrides: { lineVoltage: 690, maxCurrent: 400, maxPower: 478000, internalResistance: 0.003 } },
+    ],
+  },
+  sourceAC: {
+    label: "AC supply (single phase)",
+    category: "Electrical",
+    description: "Sinusoidal voltage source (RMS phasor) with phase angle and internal impedance; three of them at 0°/−120°/+120° on a common neutral form an explicitly wired, possibly unbalanced, three-phase system",
+    spec: "230 V ~ 50 Hz · 16 A",
+    cost: 70,
+    prefix: "AC",
+    ports: [
+      { id: "a", domain: "electrical", label: "Line (phase) terminal" },
+      { id: "b", domain: "electrical", label: "Neutral terminal" },
+    ],
+    defaults: { voltage: 230, frequency: 50, phase: 0, internalResistance: 0, internalReactance: 0, ratedVoltage: 400, maxCurrent: 16, maxPower: 3680, enabled: true },
+  },
+  inductor: {
+    label: "Inductor / reactor",
+    category: "Electrical",
+    description: "Inductance with series winding resistance: Z = R + jωL in AC networks; its winding resistance only in steady DC",
+    spec: "10 mH · 0.1 Ω · 10 A",
+    cost: 20,
+    prefix: "L",
+    ports: [...electric, heat],
+    defaults: { inductance: 0.01, resistance: 0.1, ratedCurrent: 10, heatCapacity: 200, loss: 1, conductance: 5, maxTemperature: 150, tempCoefficient: 0.00393, tolerance: 0 },
+  },
+  capacitor: {
+    label: "Capacitor",
+    category: "Electrical",
+    description: "Capacitance with series ESR: Z = ESR − j/(ωC) in AC networks; open circuit in steady DC (no charging transient is modelled)",
+    spec: "100 µF · 450 V",
+    cost: 12,
+    prefix: "C",
+    ports: electric,
+    defaults: { capacitance: 0.0001, resistance: 0.05, ratedVoltage: 450, ratedCurrent: 20, heatCapacity: 50, loss: 0.5, maxTemperature: 85, tempCoefficient: 0, tolerance: 0 },
+  },
+  inductionMotor: {
+    label: "Three-phase induction motor",
+    category: "Electrical",
+    description: "Squirrel-cage machine, per-phase equivalent circuit (R1, X1, Xm, R2/s, X2) on a balanced three-phase supply; slip-dependent torque, starting current and copper losses; shaft drives pumps and spatial rotors",
+    spec: "400 V 3~ · 7.5 kW · 4-pole",
+    cost: 420,
+    prefix: "IM",
+    ports: [...electric, shaft, heat, input("enable", "boolean", true)],
+    defaults: { ratedVoltage: 400, ratedFrequency: 50, poles: 4, ratedPower: 7500, ratedCurrent: 15, ratedTorque: 50, statorResistance: 0.75, statorReactance: 1.3, magnetizingReactance: 48, rotorResistance: 0.55, rotorReactance: 1.6, inertia: 0.045, friction: 0.002, loadTorque: 0, maxSpeed: 330, heatCapacity: 25000, loss: 18, conductance: 30, maxTemperature: 155, enabled: true },
+    variants: [
+      { id: "im45", label: "Induction motor 45 kW", cost: 2200, spec: "400 V 3~ · 45 kW · 4-pole", overrides: { ratedPower: 45000, ratedCurrent: 82, ratedTorque: 290, statorResistance: 0.07, statorReactance: 0.27, magnetizingReactance: 9, rotorResistance: 0.06, rotorReactance: 0.33, inertia: 0.38, friction: 0.01, heatCapacity: 150000, loss: 90 } },
     ],
   },
   resistor: {
@@ -918,11 +968,13 @@ export const terminalKey = (t: Terminal) => `${t.component}:${t.port}`;
 export const isElectrical = (c: Component) =>
   definitions[c.kind].ports.some((p) => p.domain === "electrical") &&
   !["ground", "junction"].includes(c.kind);
-export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3";
+export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3" || c.kind === "sourceAC";
+/** Machines with a rotating shaft driven by the electrical network. */
+export const isMotor = (c: Component) => c.kind === "motor" || c.kind === "inductionMotor";
 export const isThermalMass = (c: Component) =>
   c.kind === "tank" || c.kind === "thermalMass" || (isElectrical(c) && !isSource(c));
 /** Components whose catalog data describe one pole/conductor; a three-phase island has three. */
-export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter"]);
+export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter", "inductor", "capacitor"]);
 /** Contact conductance of a thermal port (W/K); a well-mixed tank's own side is ideal. */
 export const portConductance = (c: Component) => (c.kind === "tank" ? Infinity : prop(c, "conductance", 180));
 export function connectionError(
@@ -951,7 +1003,7 @@ export function connectionError(
     return "These terminals are already connected.";
   if (pa.domain === "hydraulic" && a!.kind === "tank" && b!.kind === "tank") return "Insert a physical pipe between finite tanks; an ideal wire cannot resolve their pressure difference.";
   if (pa.domain === "mechanical") {
-    const motor = a!.kind === 'motor' ? a! : b!.kind === 'motor' ? b! : undefined;
+    const motor = isMotor(a!) ? a! : isMotor(b!) ? b! : undefined;
     const load = motor?.id === a!.id ? b! : a!;
     if (!motor || !['pump', 'rigidBody'].includes(load.kind)) return 'Connect a motor shaft to a pump or spatial rotor.';
     if (load.kind === 'rigidBody' && (!load.spatial || load.spatial.type !== 'dynamic' || load.spatial.fixedRotation)) return 'A spatial shaft needs a dynamic body with free rotation.';

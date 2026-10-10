@@ -97,7 +97,7 @@ describe("three-phase per-phase network", () => {
     const b = new Builder(), src = b.add("source3"), m = b.add("motor");
     b.series(src, m);
     expect(() => new Simulation(b.p)).not.toThrow();
-    expect(new Simulation(b.p).error).toMatch(/three-phase/);
+    expect(new Simulation(b.p).error).toMatch(/AC network/);
   });
 });
 describe("adaptive hydraulic and motor stepping", () => {

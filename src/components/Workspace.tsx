@@ -92,8 +92,8 @@ function CircuitSymbol({ c }: { c: Component }) {
       </g>
     );
   }
-  if (["motor", "pump"].includes(c.kind)) {
-    const speed = c.kind === "motor" ? simulation.multiphysics.motors[c.id]?.omega ?? 0 : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && (w.from.component === c.id || w.to.component === c.id)); return wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component]?.omega ?? 0 : 0; })();
+  if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
+    const speed = c.kind === "motor" || c.kind === "inductionMotor" ? simulation.multiphysics.motors[c.id]?.omega ?? 0 : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && (w.from.component === c.id || w.to.component === c.id)); return wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component]?.omega ?? 0 : 0; })();
     return <g><path d="M0 66H52M122 66H174M87 0V32" stroke="#75a7b5" strokeWidth="2"/><circle cx="87" cy="66" r="34" fill="#15242c" stroke="#75a7b5" strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke="#75a7b5" transform={`rotate(${speed * simulation.time * 180 / Math.PI},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{(speed * 30 / Math.PI).toFixed(0)} RPM</text></g>;
   }
   if (c.kind === "heatExchanger") {
@@ -988,6 +988,10 @@ export default function Workspace() {
                           ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
                         : c.kind === "motor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A armature · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
+                        : c.kind === "inductionMotor"
+                          ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A line · slip ${((simulation.electrical.readings[c.id]?.machine?.slip ?? 1) * 100).toFixed(1)} % · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(0)} W shaft`
+                        : simulation.electrical.readings[c.id]?.ac
+                          ? `${(simulation.electrical.readings[c.id]?.voltage ?? 0).toFixed(1)} V~ · ${(simulation.electrical.readings[c.id]?.power ?? 0).toFixed(0)} W · ${(simulation.electrical.readings[c.id]?.reactivePower ?? 0).toFixed(0)} var`
                       : c.kind === "source"
                         ? `${Math.abs(r?.current ?? 0).toFixed(2)} A  ·  ${Math.abs(r?.power ?? 0).toFixed(1)} W`
                         : c.kind === "switch"

@@ -168,7 +168,8 @@ export function runScalingValidation(): ScalingRow[] {
   // — Thermal scaling: tank × heater matrix —
   for (const liters of [1, 10, 100, 2000, 10000]) for (const power of [100, 3000, 30000, 100000]) {
     const { p, tank, heater } = heatingRig(liters, power), s = new Simulation(p);
-    const capacity = liters * WATER_CP, ideal = capacity * 30 / power;
+    // Heat capacity of the actual inventory: V·ρ_Kell(20 °C)·c_p plus the vessel.
+    const capacity = tankCapacity(s, tank), ideal = capacity * 30 / power;
     if (ideal < 2) {
       // Far outside the lumped model: a 100 kW element in 1 L boils locally in < 2 s.
       advanceUntil(s, 600, () => false);
@@ -322,6 +323,24 @@ export function runScalingValidation(): ScalingRow[] {
     const s = new Simulation(b.p);
     rows.push(row("Three-phase 30 kW bank at 400 V: total power", "electrical", 30000, s.electrical.readings[heater.id].power, 1e-9, "P = 3·(V_LL/√3)²/R = V_LL²/R"));
     rows.push(row("Three-phase line current", "electrical", 30000 / (Math.sqrt(3) * 400), Math.abs(s.electrical.readings[heater.id].current), 1e-9, "I_L = P/(√3·V_LL)"));
+  }
+  // — AC phasor network: R–L load and 7.5 kW induction motor —
+  {
+    const b = new Builder(), src = b.add("sourceAC", { voltage: 230, frequency: 50 }), r = b.add("resistor", { resistance: 10, ratedPower: 1e5, heatCapacity: 1e9 }), l = b.add("inductor", { inductance: 0.05, resistance: 1e-6, tempCoefficient: 0 });
+    b.series(src, r, l);
+    const s = new Simulation(b.p), x = 2 * Math.PI * 50 * 0.05, z = Math.hypot(10 + 1e-6, x);
+    rows.push(row("AC R–L load: RMS current", "electrical", 230 / z, s.electrical.readings[r.id].current, 1e-9, "I = V/√(R² + (ωL)²), 10 Ω + 50 mH at 50 Hz"));
+    rows.push(row("AC R–L load: power factor", "electrical", (10 + 1e-6) / z, s.electrical.readings[src.id].powerFactor ?? NaN, 1e-9, "cos φ = R/√(R² + (ωL)²)"));
+  }
+  {
+    const b = new Builder(), src = b.add("source3", { lineVoltage: 400, maxCurrent: 1000, maxPower: 1e7 }), motor = b.add("inductionMotor", { loadTorque: 50 });
+    b.series(src, motor);
+    const s = new Simulation(b.p);
+    stepFor(s, 5);
+    const m = s.multiphysics.motors[motor.id], e = s.electrical.readings[motor.id];
+    rows.push(row("Induction motor 50 N·m load: torque balance", "multiphysics", 50 + (motor.props.friction as number) * m.omega, e.machine?.torque ?? NaN, 1e-3, "Air-gap torque = load + viscous friction at steady speed (5 s run-up)"));
+    rows.push(check("Induction motor rated-load speed within 1400–1490 rpm", "multiphysics", m.omega * 30 / Math.PI > 1400 && m.omega * 30 / Math.PI < 1490, m.omega * 30 / Math.PI, "4-pole, 50 Hz; slip from the per-phase equivalent circuit"));
+    rows.push(row("Induction motor run-up: relative energy residual", "multiphysics", 0, s.energyResidual / s.suppliedEnergy, 0, "1", 1e-5));
   }
   // — Pressure-reducing valve —
   {

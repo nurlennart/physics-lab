@@ -1,4 +1,4 @@
-import { definitions, prop, type Component, type Project, type Point } from './model';
+import { definitions, isMotor, prop, type Component, type Project, type Point } from './model';
 export type MaterialId = 'steel' | 'aluminum' | 'copper' | 'wood' | 'glass' | 'plastic' | 'rubber' | 'concrete' | 'custom';
 export interface Material { label: string; density: number; friction: number; restitution: number; conductivity: number; specificHeat: number; color: string }
 /** Representative room-temperature presets; contact coefficients depend on surface pairing.
@@ -94,13 +94,13 @@ export function spatialError(p: Project): string | null {
       if (!first || !second || first.id === second.id || !['revolute', 'prismatic'].includes(first.kind) || !['revolute', 'prismatic'].includes(second.kind) || first.b !== j.a || second.b !== j.b || p.components.find(c => c.id === first.a)?.spatial?.type !== 'static' || p.components.find(c => c.id === second.a)?.spatial?.type !== 'static') return `${j.name}: gear/rack needs two distinct grounded revolute or prismatic joints, with matching driven bodies.`;
     }
   }
-  for (const motor of p.components.filter(c => c.kind === 'motor')) {
+  for (const motor of p.components.filter(isMotor)) {
     const id = shaftBody(p, motor.id); if (!id) continue;
     if (!(p.world?.joints ?? []).some(j => j.kind === 'revolute' && j.b === id && p.components.find(c => c.id === j.a)?.spatial?.type === 'static')) return `${motor.name}: spatial rotor requires a grounded revolute bearing (body B is the rotor).`;
   }
   for (const c of p.components.filter(c => ['positionSensor', 'speedSensor', 'forceActuator'].includes(c.kind))) {
     const target = p.components.find(x => x.id === c.props.target);
-    if (c.props.target && !(target?.spatial || (c.kind === 'speedSensor' && target?.kind === 'motor'))) return `${c.name}: target needs compatible physical state.`;
+    if (c.props.target && !(target?.spatial || (c.kind === 'speedSensor' && (target?.kind === 'motor' || target?.kind === 'inductionMotor')))) return `${c.name}: target needs compatible physical state.`;
     if (c.kind === 'forceActuator' && target?.spatial?.type !== 'dynamic' && c.props.target) return `${c.name}: forces require a dynamic target.`;
     if (c.kind !== 'speedSensor' && !['x', 'y', ...(c.kind === 'forceActuator' ? ['torque'] : [])].includes(String(c.props.axis))) return `${c.name}: invalid measurement or force axis.`;
   }

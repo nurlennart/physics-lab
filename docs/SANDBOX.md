@@ -79,7 +79,7 @@ New parameters: `mode`, `internalResistance`, `current`, `maxPower` (reported on
 - **Actual operation:** P = V²/R of the solved circuit. The heater is never forced to its nominal power. A 240 V / 2 kW element on 200 V delivers 1.39 kW; a 30 kW bank behind a 10 mΩ bus and a 30 m feeder delivers 29.7 kW. Both are shown in the Inspector ("Power vs nominal").
 - **Thermal:** element thermal mass, immersion conductance (UA), loss to ambient and burn-out temperature are all configurable. Scaling presets keep the surface loading constant (UA ≈ 0.09 W/K per W, C ≈ 0.15 J/K per W).
 - **Several heaters on one tank** are supported. Each heater has one thermal port; a tank accepts any number of them. Their powers add through the actual circuit (tested: 1 + 2 + 3 kW = 6 kW).
-- High-power models are labelled "**DC/1-phase equivalent**". Three-phase networks are not solved, and the label says so.
+- High-power models are labelled "**DC/1-phase equivalent**". On an AC or three-phase network they are solved as resistive phasor loads.
 
 ### 3.4 Thermal tanks and bodies
 
@@ -193,8 +193,8 @@ See the executed reports for the numbers. Test counts and pass/fail state are as
 
 ## 9. Known remaining restrictions
 
-- Three-phase is balanced and resistive only (per-phase equivalent). There are no unbalanced loads, inductance, power factor, switching transients or semiconductor models.
-- No boiling, steam, freezing or sealed/pressurised vessels; water is constant-property.
+- AC is steady-state phasor only: no switching transients, harmonics or semiconductor models. A balanced three-phase supply cannot be mixed with single-phase AC sources in one network; unbalanced systems are built from three AC sources. Induction motors need the balanced supply.
+- No boiling, steam, freezing or sealed/pressurised vessels; water has variable viscosity and tank density but constant heat capacity.
 - No validated wear, ageing or arc models for contacts, cables, supplies or motors. Out-of-rating operation is reported, not destroyed.
 - Rigid-body experiments cannot use adaptive stepping. Hydraulic and motor networks can since the second expansion (§10); their fixed-step speed is unchanged.
 - Tank heat loss assumes a vertical cylinder; other geometries need an explicit UA.
@@ -229,7 +229,7 @@ The six follow-up items from the first version of this list are now implemented 
 
 ## 11. Remaining deferred items, by priority
 
-1. **High:** unbalanced three-phase networks, reactance and power factor, and an induction motor model. This needs an AC phasor solver.
-2. **Medium:** breaker selectivity plots and time-current curve displays; cavitation head-loss model; water hammer (needs compressible pipe dynamics).
+1. *Done in the engineering-depth revision:* AC phasor solver with reactance and power factor, unbalanced three-phase from single-phase sources, induction motor; see [PHYSICS.md](PHYSICS.md).
+2. **Medium:** variable-frequency drives and single-phase machines; breaker selectivity plots and time-current curve displays; cavitation head-loss model; water hammer (needs compressible pipe dynamics).
 3. **Medium:** distributed 1-D wall conduction; fouling and phase change in heat exchangers.
 4. **Low:** lead-lag, dead-band and lookup-table blocks; sealed vessels with a gas headspace; evaporation above about 80 °C; Monte-Carlo tolerance studies.
