@@ -1,0 +1,234 @@
+import { prop, type Project } from './model';
+import { solveElectrical, solveLinear, type ElectricalResult } from './electrical';
+import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, type TankState } from './hydraulic';
+import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
+import type { Simulation } from './engine';
+import { shaftBody } from './spatial-model';
+export interface MotorState { omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number }
+export class Multiphysics {
+  tanks: Record<string, TankState> = {};
+  motors: Record<string, MotorState> = {};
+  positions: Record<string, number> = {};
+  /** Water-cell temperatures (K) of pipes with inventory, inlet → outlet. */
+  pipeCells: Record<string, number[]> = {};
+  hydraulic = emptyHydraulics();
+  initialMass = 0;
+  initialPotential = 0;
+  transferred: Record<string, number> = {};
+  copperEnergy = 0;
+  frictionEnergy = 0;
+  pumpWork = 0;
+  hydraulicWork = 0;
+  dissipation = 0;
+  externalShaftWork = 0;
+  dryLoss = 0;
+  removedMass = 0;
+  removedEnergy = 0;
+  /** Cumulative volume spilled over each tank rim (m³) and the rate over the last step (m³/s). */
+  overflowed: Record<string, number> = {};
+  overflowRate: Record<string, number> = {};
+  residual = 0;
+  couplingIterations = 0;
+  initialize(p: Project) {
+    for (const c of p.components) {
+      if (c.kind === 'tank') {
+        const volume = U.litersToM3(prop(c, 'volume'));
+        this.tanks[c.id] = { volume, mass: volume * RHO, temperature: U.celsiusToK(prop(c, 'initialTemperature', 20)), vessel: prop(c, 'vesselHeatCapacity') };
+        this.initialMass += volume * RHO;
+      }
+      if (c.kind === 'motor') this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0 };
+      if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
+      if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
+      if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
+    }
+    this.initialPotential = this.potential(p);
+  }
+  get massResidual() { return Object.values(this.tanks).reduce((s, t) => s + t.mass, 0) + this.removedMass - this.initialMass; }
+  get kinetic() { return this.kineticEnergy(this.lastProject); }
+  private lastProject?: Project;
+  kineticEnergy(p?: Project) { return p ? p.components.filter(c => c.kind === 'motor' && !shaftBody(p, c.id)).reduce((s, c) => s + 0.5 * prop(c, 'inertia') * (this.motors[c.id]?.omega ?? 0) ** 2, 0) : 0; }
+  potential(p: Project) { return p.components.filter(c => c.kind === 'tank').reduce((s, c) => { const v = this.tanks[c.id]?.volume ?? 0; return s + RHO * G * (prop(c, 'elevation') * v + v * v / (2 * prop(c, 'surfaceArea'))); }, 0); }
+  private controls(s: Simulation) {
+    return Object.fromEntries(s.project.components.filter(c => c.kind === 'motor').map(c => {
+      const has = (port: string) => s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);
+      const enable = s.automation.input(c, 'enable', s), speed = s.automation.input(c, 'speed', s);
+      const enabled = !s.failed[c.id] && !['failedOpen', 'powerLoss', 'motorFailure', 'controlLost'].includes(s.faults[c.id]) && (has('enable') ? enable.valid && enable.value === true : Boolean(c.props.enabled));
+      const command = has('speed') ? (speed.valid && typeof speed.value === 'number' ? Math.max(0, U.rpmToRad(speed.value)) : 0) : c.props.speedControl ? U.rpmToRad(prop(c, 'speedCommand')) : null;
+      const duty = command === null ? 1 : Math.max(0.001, Math.min(1, prop(c, 'emfConstant') * command / prop(c, 'ratedVoltage') + 0.02 * (command - (this.motors[c.id]?.omega ?? 0))));
+      return [c.id, { enabled: enabled && (command === null || command > 0), duty }];
+    }));
+  }
+  solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks) {
+    const motors = s.project.components.filter(c => c.kind === 'motor');
+    const electrical = solveElectrical(s.project, s.failed, { contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(), motors: Object.fromEntries(motors.map((c, i) => [c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }])) });
+    const speeds: Record<string, number> = {};
+    const pairs: Record<string, string> = {};
+    for (const w of s.project.connections.filter(w => w.domain === 'mechanical' && !s.disconnected.has(w.id))) {
+      const motor = motors.find(c => c.id === w.from.component || c.id === w.to.component);
+      if (motor) { const pump = motor.id === w.from.component ? w.to.component : w.from.component; if (s.project.components.find(c => c.id === pump)?.kind === 'pump') { pairs[motor.id] = pump; speeds[pump] = omega[motors.indexOf(motor)]; } }
+    }
+    const hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells);
+    const state = motors.map((c, i) => {
+      const ctrl = controls[c.id], r = electrical.readings[c.id];
+      const current = ctrl.enabled && !s.failed[c.id] ? (ctrl.duty * r.voltage - prop(c, 'emfConstant') * omega[i]) / prop(c, 'resistance') : 0;
+      const pump = pairs[c.id] ? hydraulic.readings[pairs[c.id]] : undefined;
+      const load = (pump?.torque ?? 0) + prop(c, 'loadTorque');
+      const torque = prop(c, 'torqueConstant') * current;
+      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower: current * current * prop(c, 'resistance'), duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia') };
+    });
+    return { electrical, hydraulic, state, speeds };
+  }
+  private midpointTanks(s: Simulation, h: number): Record<string, TankState> {
+    return Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => {
+      const c = s.project.components.find((c) => c.id === id);
+      const capacity = c ? U.litersToM3(prop(c, 'capacity')) : Infinity;
+      const volume = Math.max(0, Math.min(capacity, t.volume + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0)));
+      return [id, { ...t, volume, mass: volume * RHO }];
+    }));
+  }
+  refresh(s: Simulation) {
+    this.lastProject = s.project;
+    const ms = s.project.components.filter(c => c.kind === 'motor');
+    const speeds = () => ms.map(c => { const body = shaftBody(s.project, c.id); return body ? s.spatial.readings[body]?.omega ?? 0 : this.motors[c.id]?.omega ?? 0; });
+    let r = this.solve(s, speeds(), this.controls(s));
+    this.hydraulic = r.hydraulic;
+    if (!Object.keys(r.hydraulic.nodeTemperatures).length && Object.keys(r.hydraulic.potentials).length) {
+      // First solve: no transported temperatures yet. A zero-length transport mixes the current
+      // inventories into node temperatures, then the network is re-solved with their viscosities.
+      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells);
+      r = this.solve(s, speeds(), this.controls(s));
+      this.hydraulic = r.hydraulic;
+    }
+    ms.forEach((c, i) => {
+      const m = r.state[i];
+      if (shaftBody(s.project, c.id)) {
+        // Shaft output excludes acceleration of the motor's own rotor inertia.
+        const load = m.torque - prop(c, 'friction') * m.omega - prop(c, 'inertia') * m.acceleration;
+        this.motors[c.id] = { ...m, load, shaftPower: load * m.omega };
+      } else this.motors[c.id] = m;
+    });
+    return r.electrical;
+  }
+  advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number } {
+    s.spatial.stepMs = 0;
+    this.lastProject = s.project;
+    const motors = s.project.components.filter(c => c.kind === 'motor'), controls = this.controls(s), heatEnergy: Record<string, number> = {};
+    let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
+    const adaptive = !s.spatial.count && dt > 0.1 + 1e-12;
+    const spilledThisStep: Record<string, number> = {};
+    // Midpoint shaft/electrical/hydraulic solve; 1/240 s bounds head/storage splitting error.
+    while (remaining > 1e-12) {
+      if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
+      // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit;
+      // fixed steps keep the 1/240 s head/storage splitting bound.
+      let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining);
+      const old = motors.map(c => this.motors[c.id].omega);
+      const linked = motors.map(c => shaftBody(s.project, c.id));
+      const snapshot = linked.some(Boolean) ? s.spatial.checkpoint() : undefined;
+      let accepted: ReturnType<Multiphysics['solve']> | undefined;
+      let acceptedTrial: ReturnType<typeof s.spatial.trial> | undefined;
+      const torqueMap = (r: ReturnType<Multiphysics['solve']>, x: number[]) => Object.fromEntries(motors.flatMap((c, i) => linked[i] ? [[linked[i]!, r.state[i].torque - r.state[i].load - prop(c, 'friction') * x[i]]] : []));
+      let midpoint = [...old];
+      for (let event = 0; event < 12; event++) {
+        midpoint = [...old];
+        // Adaptive macro steps solve the network at predicted mid-step tank levels (second order in
+        // the head/storage coupling); fixed steps keep start-of-step levels.
+        const levels = adaptive ? this.midpointTanks(s, h) : this.tanks;
+        const residualAt = (x: number[]) => {
+          const r = this.solve(s, x, controls, levels);
+          const trial = snapshot ? s.spatial.trial(s, h, torqueMap(r, x), snapshot) : undefined;
+          return { r, trial, f: x.map((v, i) => linked[i] ? 2 * v - old[i] - trial!.bodies[linked[i]!].getAngularVelocity() : 2 * (v - old[i]) - h * r.state[i].acceleration) };
+        };
+        let converged = !motors.length;
+        for (let k = 0; k < 16 && motors.length; k++) {
+          const { r, f, trial } = residualAt(midpoint); this.couplingIterations = k + 1;
+          if (Math.max(...f.map(Math.abs)) < 1e-8) { accepted = r; acceptedTrial = trial; converged = true; break; }
+          const jac = motors.map(() => motors.map(() => 0));
+          for (let j = 0; j < motors.length; j++) {
+            const trial = [...midpoint], eps = Math.max(1e-5, Math.abs(midpoint[j]) * 1e-5); trial[j] += eps;
+            const g = residualAt(trial).f;
+            for (let i = 0; i < motors.length; i++) jac[i][j] = (g[i] - f[i]) / eps;
+          }
+          const d = solveLinear(jac, f.map(v => -v));
+          midpoint = midpoint.map((v, i) => v + d[i]);
+        }
+        if (!converged) throw Error('Electromechanical midpoint coupling failed to converge.');
+        accepted = accepted ?? this.solve(s, midpoint, controls, levels);
+        const safe = boundaryTime(s.project, this.tanks, accepted.hydraulic, h);
+        if (safe < h * (1 - 1e-9)) { h = Math.max(1e-10, safe); accepted = undefined; acceptedTrial = undefined; continue; }
+        break;
+      }
+      if (!accepted) throw Error('Tank boundary event failed to converge.');
+      const r = accepted;
+      if (s.spatial.hasMovingBodies) {
+        const torques = torqueMap(r, midpoint);
+        s.spatial.accept(acceptedTrial ?? s.spatial.trial(s, h, torques), s, torques);
+      }
+      this.hydraulic = r.hydraulic;
+      motors.forEach((c, i) => {
+        const m = r.state[i], next = linked[i] ? s.spatial.readings[linked[i]!].omega : 2 * midpoint[i] - old[i];
+        const acceleration = (next - old[i]) / h;
+        const load = linked[i] ? m.torque - prop(c, 'friction') * midpoint[i] - prop(c, 'inertia') * acceleration : m.load;
+        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration };
+        this.copperEnergy += m.copperPower * h;
+        const friction = prop(c, 'friction') * midpoint[i] ** 2;
+        this.frictionEnergy += friction * h;
+        heatEnergy[c.id] = (heatEnergy[c.id] ?? 0) + (m.copperPower + friction) * h;
+        this.externalShaftWork += prop(c, 'loadTorque') * midpoint[i] * h;
+        if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);
+        if (Math.abs(m.torque) > prop(c, 'ratedTorque') * 1.001) s.automation.status[c.id] = 'overloaded';
+      });
+      for (const [id, reading] of Object.entries(r.hydraulic.readings)) {
+        this.pumpWork += reading.shaftPower * h;
+        this.hydraulicWork += reading.hydraulicPower * h;
+        this.transferred[id] = (this.transferred[id] ?? 0) + Math.abs(reading.flow) * h;
+        if (Math.abs(reading.flow) < 1e-14 && reading.shaftPower > 0) { this.dryLoss += reading.shaftPower * h; ambient += reading.shaftPower * h; }
+      }
+      this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
+      const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells);
+      for (const c of s.project.components.filter(c => c.kind === 'pump' && prop(c, 'npshRequired') > 0)) {
+        const reading = r.hydraulic.readings[c.id];
+        if (!reading || reading.flow <= 1e-9) continue;
+        const available = (101325 + reading.inletPressure - vaporPressure(U.kToCelsius(reading.temperature))) / (RHO * G);
+        const required = prop(c, 'npshRequired') * (reading.flow / prop(c, 'ratedFlow')) ** 2;
+        reading.npshAvailable = available;
+        if (available < required) r.hydraulic.diagnostics.push(`${c.name}: cavitation risk — NPSH available ${available.toFixed(2)} m < required ${required.toFixed(2)} m (head loss from cavitation is not modelled).`);
+      }
+      ambient += transported.ambient;
+      thermalGain += transported.heat - transported.ambient;
+      for (const [id, spill] of Object.entries(transported.spills)) {
+        // Spilled water leaves the system boundary: mass, enthalpy and rim potential energy are exported.
+        this.removedMass += spill.mass;
+        this.removedEnergy += spill.enthalpy + spill.potential;
+        thermalGain -= spill.enthalpy;
+        this.overflowed[id] = (this.overflowed[id] ?? 0) + spill.mass / RHO;
+        spilledThisStep[id] = (spilledThisStep[id] ?? 0) + spill.mass / RHO;
+      }
+      for (const c of s.project.components.filter(c => c.kind === 'pressureReducingValve')) {
+        // Pilot-operated regulator: integral action on outlet gauge pressure, stroke-rate limited.
+        if (['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) continue;
+        const outlet = r.hydraulic.readings[c.id]?.pressure ?? 0;
+        const demand = Math.max(-1, Math.min(1, (prop(c, 'pressureSetpoint') - outlet) / prop(c, 'proportionalBand')));
+        this.positions[c.id] = Math.max(0, Math.min(100, this.positions[c.id] + demand * 100 * h / prop(c, 'responseTime')));
+      }
+      for (const c of s.project.components.filter(c => c.kind === 'actuatedValve')) {
+        let target = prop(c, 'opening');
+        const wired = s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id);
+        const input = s.automation.input(c, 'position', s);
+        if (wired) target = input.valid && typeof input.value === 'number' ? input.value : (c.props.failOpen ? 100 : 0);
+        if (s.faults[c.id] === 'stuckClosed') target = 0;
+        if (s.faults[c.id] === 'stuckOpen') target = 100;
+        const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
+        if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
+      }
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0 }])) };
+      totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
+      totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
+      for (const [id, v] of Object.entries(r.electrical.readings)) totalElectrical.readings[id].power += v.power * h / dt;
+      remaining -= h;
+    }
+    for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
+    this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
+    return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain };
+  }
+}
