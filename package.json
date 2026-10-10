@@ -1,7 +1,7 @@
 {
   "name": "physics-lab",
   "private": true,
-  "version": "2.0.0",
+  "version": "3.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -10,10 +10,17 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:physics": "vitest run && node scripts/validate-physics.mjs",
-    "validate:physics": "node scripts/validate-physics.mjs"
+    "validate:coupled": "node scripts/check-coupled.mjs",
+    "validate:physics": "node scripts/validate-physics.mjs",
+    "validate:spatial": "node scripts/check-spatial.mjs",
+    "validate:scaling": "node scripts/validate-scaling.mjs",
+    "audit:parameters": "node scripts/parameter-audit.mjs",
+    "benchmark:spatial": "node scripts/benchmark-spatial.mjs",
+    "validate:examples": "node scripts/check-examples.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
+    "planck": "1.4.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

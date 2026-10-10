@@ -1,7 +1,9 @@
-import { projectCost, prop, type Project } from "./model";
+import { economyFactor } from "./scoring";
+import { projectCost, prop, type Project, type ChallengeId } from "./model";
 import { solveElectrical } from "./electrical";
 import { challengeError } from "./integrity";
 import type { Simulation } from "./engine";
+import { evaluateMechanical, updateMechanicalChallenge, mechanicalIds } from './spatial-challenges';
 type Rule = {
   metric:
     | "lampHold"
@@ -33,7 +35,7 @@ export const runawayScenario = {
 } as const;
 interface ChallengeDefinition {
   update?: (simulation: Simulation, dt: number) => void;
-  id: "light" | "heat" | "runaway";
+  id: ChallengeId;
   number: string;
   title: string;
   difficulty: string;
@@ -48,6 +50,27 @@ interface ChallengeDefinition {
   progressStart: number;
 }
 export const challenges: Record<string, ChallengeDefinition> = {
+  descent: { id: 'descent', number: '007', title: 'Controlled Descent', difficulty: 'FOUNDATION', budget: 250, description: 'Lower a 10 kg guided load from 5 m to the 1 m landing using a passive brake. Set the brake damping before running; impact speed must stay below 0.6 m/s.', objectives: ['Land at 1.00 ±0.08 m and rest for 3 s', 'Impact ≤0.6 m/s; braking heat ≤500 J', 'Complete within 120 s and €250'], target: 1, rules: [], idealEnergy: 400, idealTime: 15, progressMetric: 'lampHold', progressStart: 0 },
+  lift: { id: 'lift', number: '008', title: 'Motorized Lift', difficulty: 'INTERMEDIATE', budget: 900, description: 'Wire a 48 V motor and position feedback to raise a 10 kg load by 2 m through a real rack transmission. Tune the PI controller to hold the target safely.', objectives: ['Wire source, shared rotor shaft and position feedback', 'Lift to 3.00 ±0.08 m and hold for 3 s', 'Respect 48 V, 2 kW, €900 and 120 s limits'], target: 3, rules: [], idealEnergy: 500, idealTime: 15, progressMetric: 'lampHold', progressStart: 0 },
+  rotation: { id: 'rotation', number: '009', title: 'Rotational Control', difficulty: 'ADVANCED', budget: 750, description: 'Wire closed-loop speed control for 1,200 RPM while a physical shaft load alternates between 0.4 and 1.2 N·m every 15 s.', objectives: ['Use motor, spatial rotor, speed sensor and controller', 'After 10 s startup, regulate for 60 s: ≥95% within ±60 RPM', 'RMS ≤60 RPM; 48 V, 2 kW, €750 limits'], target: 1200, rules: [], idealEnergy: 8000, idealTime: 70, progressMetric: 'lampHold', progressStart: 0 },
+  transfer: {
+    id: "transfer", number: "004", title: "Water Transfer", difficulty: "INTERMEDIATE", budget: 650,
+    description: "Transfer 100 L from the finite 150 L source into a tank elevated by 2 m. Build and power the shaft-driven hydraulic circuit within 300 s.",
+    objectives: ["Deliver ≥100 L through a real hydraulic network", "Stay below 500 W, 24 V and 2 bar", "Finish in 300 s without overflow or dry run"],
+    target: 100, rules: [], idealEnergy: 12000, idealTime: 180, progressMetric: "lampHold", progressStart: 0,
+  },
+  pressure: {
+    id: "pressure", number: "005", title: "Pressure Control", difficulty: "ADVANCED", budget: 750,
+    description: "Maintain 0.35 bar at the delivery pipe outlet for 180 s after 15 s startup. Consumer valve demand alternates between 40% and 80% every 60 s.",
+    objectives: ["Wire pressure feedback and numeric speed control", "Stay within ±10% for ≥90% of the scored interval", "RMS error ≤3.5 kPa; no overshoot above 0.6 bar", "500 W, 24 V, 2 bar and €750 limits"],
+    target: 180, rules: [], idealEnergy: 15000, idealTime: 195, progressMetric: "lampHold", progressStart: 0,
+  },
+  supply: {
+    id: "supply", number: "006", title: "Automated Water Supply", difficulty: "ADVANCED", budget: 850,
+    description: "Autonomously maintain a destination between 30% and 90% for 600 s after 120 s commissioning. Protect both inventories and survive a primary level-sensor fault at 300 s.",
+    objectives: ["Use 30/90% hysteresis, source interlock and independent high-level guard", "≥95% in band after commissioning; ≤12 motor starts/stops", "Handle primary level-sensor failure without operator input", "Respect 500 W, 24 V, 2 bar and €850 limits"],
+    target: 600, rules: [], idealEnergy: 25000, idealTime: 720, progressMetric: "lampHold", progressStart: 0,
+  },
   runaway: {
     update: updateRunaway,
     id: "runaway",
@@ -164,6 +187,8 @@ export function evaluateChallenge(
   s: Simulation,
 ): ChallengeResult | null {
   if (!p.challenge) return null;
+  if (mechanicalIds.includes(p.challenge as typeof mechanicalIds[number])) return evaluateMechanical(p, s);
+  if (["transfer", "pressure", "supply"].includes(p.challenge)) return evaluateHydraulic(p, s);
   if (p.challenge === "runaway") {
     const r = s.runaway,
       cost = projectCost(p),
@@ -207,7 +232,7 @@ export function evaluateChallenge(
             50 +
               15 * stability * Math.max(0, 1 - r.overshoot / 13) +
               10 * Math.min(1, 2508000 / Math.max(1, s.energy)) +
-              10 * Math.max(0, 1 - cost / 500) +
+              10 * economyFactor("runaway", cost, 500) +
               10 * Math.min(1, 1800 / Math.max(1800, s.time)) +
               5 * Math.max(0, 1 - r.switches / runawayScenario.maxSwitches),
           )
@@ -289,12 +314,12 @@ export function evaluateChallenge(
   };
   const checks = d.rules.map((r) => ({
     label: r.label,
-    ok: r.comparison === "min" ? metric(r) >= r.target : metric(r) <= r.target,
+    ok: r.comparison === "min" ? metric(r) >= r.target - 1e-9 : metric(r) <= r.target,
   }));
   const complete = checks.every((c) => c.ok);
   const efficiency =
     d.idealEnergy > 0 ? Math.min(1, d.idealEnergy / Math.max(1, s.energy)) : 1;
-  const economy = Math.max(0, 1 - cost / d.budget),
+  const economy = economyFactor(p.challenge, cost, d.budget),
     time = Math.min(1, d.idealTime / Math.max(d.idealTime, s.time));
   const score = complete
     ? Math.round(60 + 20 * efficiency + 10 * economy + 10 * time)
@@ -318,7 +343,9 @@ export function evaluateChallenge(
 }
 
 export function updateScenario(s: Simulation, dt: number) {
-  if (s.project.challenge) challenges[s.project.challenge]?.update?.(s, dt);
+  if (s.project.challenge && mechanicalIds.includes(s.project.challenge as typeof mechanicalIds[number])) { updateMechanicalChallenge(s, dt); return; }
+  if (s.project.challenge && ["transfer", "pressure", "supply"].includes(s.project.challenge)) updateHydraulic(s, dt);
+  else if (s.project.challenge) challenges[s.project.challenge]?.update?.(s, dt);
 }
 export function recordFeedbackTransitions(
   s: Simulation,
@@ -495,4 +522,93 @@ function updateRunaway(s: Simulation, dt: number) {
     if (s.time - r.cutoffAt > runawayScenario.recoveryTimeout)
       s.violation("Recovery exceeded 1,800 s.");
   }
+}
+
+function hydraulicFeedback(p: Project, actuator: string, kinds: string[], target: string, seen = new Set<string>()): boolean {
+  if (seen.has(actuator)) return false;
+  seen.add(actuator);
+  const c = p.components.find(c => c.id === actuator);
+  if (c && kinds.includes(c.kind) && c.props.target === target) return true;
+  return p.connections.filter(w => w.domain === "control" && w.to.component === actuator).some(w => hydraulicFeedback(p, w.from.component, kinds, target, seen));
+}
+function updateHydraulic(s: Simulation, dt: number) {
+  const p = s.project, state = s.hydraulicChallenge, destination = p.components.find(c => c.kind === "tank" && c.name === "Destination tank"), source = p.components.find(c => c.name === "Source reservoir");
+  if (!destination || !source) return;
+  const level = s.hydraulicMeasurement(destination.id, "level") ?? 0;
+  const motor = p.components.find(c => c.kind === "motor"), on = !!motor && Math.abs(s.multiphysics.motors[motor.id]?.current ?? 0) > 0.1;
+  if (on !== state.previousOn) { state.switches++; state.previousOn = on; }
+  for (const r of Object.values(s.multiphysics.hydraulic.readings)) if (Math.max(r.pressure, r.inletPressure) > 200000) s.violation("Assignment pressure limit exceeded: 2 bar.");
+  if (s.peakPower > 500.001) s.violation("Assignment electrical input exceeds 500 W.");
+  if (p.challenge === "transfer" && s.time > 300) s.violation("Water transfer exceeded 300 s deadline.");
+  // Full tanks now spill over their rim instead of silently blocking inflow; any spill is lost water.
+  for (const tank of p.components.filter(c => c.kind === "tank"))
+    if ((s.multiphysics.overflowed[tank.id] ?? 0) > 0) s.violation(`${tank.name} overflowed: water was lost over the rim. Add level control or protection.`);
+  if (p.challenge === "pressure" && s.time >= 15) {
+    const demand = p.components.find(c => c.name === "Consumer demand")!, nodes = s.multiphysics.hydraulic.terminalNodes;
+    const sensor = p.components.find(c => c.kind === "pressureSensor" && (nodes[`${c.props.target}:outlet`] ?? nodes[`${c.props.target}:fluid`]) === nodes[`${demand.id}:inlet`]), measured = sensor ? s.automation.sensors[sensor.id] : undefined;
+    const pressure = measured?.valid ? Number(measured.value) : 0, error = pressure - 35000;
+    state.evaluated += dt; state.squaredError += error * error * dt;
+    const demandFlow = Math.abs(s.multiphysics.hydraulic.readings[demand.id]?.flow ?? 0);
+    if (Math.floor((s.time - dt) / 60) % 2) { state.highDemandFlow += demandFlow * dt; state.highDemandTime += dt; }
+    else { state.lowDemandFlow += demandFlow * dt; state.lowDemandTime += dt; }
+    state.maxOvershoot = Math.max(state.maxOvershoot, pressure - 35000);
+    if (Math.abs(error) <= 3500) state.inBand += dt;
+    const phaseTime = s.time % 60;
+    if (phaseTime < dt * 1.5) state.settledAt = 0;
+    if (Math.abs(error) <= 3500 && !state.settledAt) { state.settledAt = s.time; state.responseTime = Math.max(state.responseTime, phaseTime); }
+  }
+  if (p.challenge === "supply") {
+    if (s.time >= 120) { state.evaluated += dt; if (level >= 30 && level <= 90.1) state.inBand += dt; }
+    if (!state.faultInjected && s.time >= 300) {
+      // Identify the primary sensor by its role in the learner's circuit, not a starter-only name.
+      const upstream = (id: string, seen = new Set<string>()): typeof p.components[number] | undefined => {
+        if (seen.has(id)) return;
+        seen.add(id);
+        const c = p.components.find(c => c.id === id);
+        if (c?.kind === 'levelSensor' && c.props.target === destination.id) return c;
+        for (const w of p.connections.filter(w => w.domain === 'control' && w.to.component === id)) {
+          const sensor = upstream(w.from.component, seen);
+          if (sensor) return sensor;
+        }
+      };
+      const primary = p.components.filter(c => c.kind === 'hysteresis').map(c => upstream(c.id)).find(Boolean);
+      if (primary) { s.injectFault(primary.id, "sensorFault", true); state.faultInjected = true; }
+    }
+    if (level > 95.001) s.violation("Independent high-level safeguard failed (95%).");
+    if ((s.hydraulicMeasurement(source.id, "level") ?? 0) < 4.9) s.violation("Source low-level protection failed (5%).");
+    if (state.switches > 12) s.violation("Excessive pump cycling: more than 12 transitions.");
+  }
+}
+function evaluateHydraulic(p: Project, s: Simulation): ChallengeResult {
+  const kind = p.challenge!, d = challenges[kind], r = s.hydraulicChallenge;
+  const destination = p.components.find(c => c.kind === "tank" && c.name === "Destination tank"), source = p.components.find(c => c.name === "Source reservoir");
+  const delivered = destination ? (s.multiphysics.tanks[destination.id]?.volume ?? 0) * 1000 : 0;
+  const safe = !challengeError(p) && !s.error && !s.violations.length && !Object.keys(s.failed).length && Math.abs(s.multiphysics.massResidual) < 1e-6;
+  const motors = p.components.filter(c => c.kind === "motor");
+  const working = motors.some(c => s.componentEnergy[c.id] > 1) && s.multiphysics.pumpWork > 1 && delivered > 0;
+  const feedback = kind === "pressure" ? motors.some(c => p.components.some(sensor => sensor.kind === "pressureSensor" && hydraulicFeedback(p, c.id, ["pressureSensor"], String(sensor.props.target)) && (() => {
+      const nodes = s.multiphysics.hydraulic.terminalNodes, demand = p.components.find(c => c.name === "Consumer demand");
+      return demand && (nodes[`${sensor.props.target}:outlet`] ?? nodes[`${sensor.props.target}:fluid`]) === nodes[`${demand.id}:inlet`];
+    })())) : kind === "supply" && destination && source ? motors.some(c => hydraulicFeedback(p, c.id, ["levelSensor"], destination.id) && hydraulicFeedback(p, c.id, ["levelSensor"], source.id)) : true;
+  const band = r.evaluated ? r.inBand / r.evaluated : 0;
+  const rms = r.evaluated ? Math.sqrt(r.squaredError / r.evaluated) : Infinity;
+  const checks = [
+    { label: "Powered motor, shared pump shaft and physically transferred water", ok: working },
+    { label: "Valid configuration; safe inventory, pressure, power and budget", ok: safe },
+    ...(kind === "transfer" ? [{ label: "At least 100 L delivered within 300 s", ok: delivered >= 100 - 1e-6 && s.time <= 300 }] : kind === "pressure" ? [
+      { label: "Pressure sensor actually feeds motor speed control", ok: !!feedback },
+      { label: "Both consumer demand phases produced distinct real flow", ok: r.lowDemandTime > 30 && r.highDemandTime > 30 && Math.abs(r.highDemandFlow / Math.max(1, r.highDemandTime) - r.lowDemandFlow / Math.max(1, r.lowDemandTime)) > 1e-5 },
+      { label: "180 s scored; ≥90% in band; RMS ≤3.5 kPa; overshoot ≤25 kPa", ok: r.evaluated >= 180 - 1e-6 && band >= 0.9 && rms <= 3500 && r.maxOvershoot <= 25000 },
+    ] : [
+      { label: "Destination feedback and source-level interlock drive motor", ok: !!feedback },
+      { label: "Independent high-level sensing and fault exercised", ok: r.faultInjected && p.components.filter(c => c.kind === "levelSensor" && c.props.target === destination?.id && motors.some(m => (() => {
+        const visit = (id: string, seen = new Set<string>()): boolean => { if (id === c.id) return true; if (seen.has(id)) return false; seen.add(id); return p.connections.filter(w => w.domain === "control" && w.to.component === id).some(w => visit(w.from.component, seen)); };
+        return visit(m.id);
+      })())).length >= 2 },
+      { label: "600 s scored; ≥95% in band; 2–12 switching transitions", ok: r.evaluated >= 600 - 1e-6 && band >= 0.95 && r.switches >= 2 && r.switches <= 12 },
+    ]),
+  ];
+  const complete = checks.every(c => c.ok), cost = projectCost(p);
+  const score = complete ? Math.round(55 + 15 * Math.min(1, d.idealEnergy / Math.max(1, s.suppliedEnergy)) + 10 * economyFactor(p.challenge!, cost, d.budget) + 10 * Math.min(1, d.idealTime / Math.max(d.idealTime, s.time)) + 10 * (kind === "transfer" ? 1 : band) - (kind === "pressure" ? Math.min(5, r.responseTime / 10 + r.maxOvershoot / 25000) : 0)) : 0;
+  return { checks, complete, failed: !safe, score, stars: complete ? score >= 90 ? 3 : score >= 80 ? 2 : 1 : 0, progress: Math.min(1, kind === "transfer" ? delivered / 100 : r.evaluated / (kind === "pressure" ? 180 : 600)) };
 }

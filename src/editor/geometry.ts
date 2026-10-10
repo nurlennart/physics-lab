@@ -13,9 +13,13 @@ export function dimensions(c: Component) {
 export function portLocal(c: Component, port: string): Point {
   const { w, h } = dimensions(c);
   const p = definitions[c.kind].ports.find((p) => p.id === port);
+  if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
+    return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
+  if (p?.domain === "hydraulic") return { x: port === "inlet" ? -12 : port === "outlet" ? w + 12 : w / 2, y: port === "fluid" ? h + 12 : h / 2 };
+  if (p?.domain === "mechanical") return { x: w / 2, y: -12 };
   if (p?.domain === "control") {
-    if (["relay", "safety", "cooler"].includes(c.kind))
-      return { x: port === "in" ? w * 0.3 : w * 0.7, y: h + 12 };
+    if (["relay", "safety", "cooler", "motor", "actuatedValve", "breaker", "motorProtector"].includes(c.kind))
+      return { x: ["in", "enable", "position"].includes(port) ? w * 0.3 : w * 0.7, y: h + 12 };
     if (p.direction === "out") return { x: w + 12, y: h / 2 };
     const inputs = definitions[c.kind].ports.filter(
       (p) => p.direction === "in",

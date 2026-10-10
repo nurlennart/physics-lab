@@ -1,4 +1,6 @@
 import {
+  Waves,
+  Cog,
   X,
   Lightbulb,
   Flame,
@@ -36,8 +38,9 @@ export function ChallengeStrip() {
             : `${s.project.challenge === "runaway" ? simulation.runaway.phase + " · " : ""}${Math.round(r.progress * 100)}%`}
       </span>
       <button
-        title="Challenge details"
-        onClick={() => actions.set({ view: "challenges" })}
+        title="Open challenge guidebook"
+        aria-label="Open challenge guidebook"
+        onClick={() => actions.set({ view: "guidebook" })}
       >
         <BookOpen size={14} />
       </button>
@@ -56,8 +59,8 @@ export default function Challenges() {
       >
         <div className="dialog-header">
           <div>
-            <span className="eyebrow">ENGINEERING ASSIGNMENTS</span>
-            <h2>Put your engineering to the test.</h2>
+            <span className="eyebrow">THE ENGINEERING PLAYGROUND</span>
+            <h2>Nine missions. Your inventions.</h2>
           </div>
           <button
             aria-label="Close challenges"
@@ -67,14 +70,14 @@ export default function Challenges() {
           </button>
         </div>
         <p className="dialog-intro">
-          Design, measure, iterate. Every objective is evaluated against your
-          actual simulation.
+          Pick a mission, choose your equipment, and chase three stars. Each mission comes with a guidebook and optional hints. Only the fixed test environment is supplied.
         </p>
         <div className="challenge-cards">
           {Object.values(challenges)
             .sort((a, b) => a.number.localeCompare(b.number))
             .map((d) => {
-              const Icon = d.id === "light" ? Lightbulb : Flame;
+              const mechanical = ['descent', 'lift', 'rotation'].includes(d.id);
+              const Icon = mechanical ? Cog : d.id === "light" ? Lightbulb : ["transfer", "pressure", "supply"].includes(d.id) ? Waves : Flame;
               return (
                 <article className={`challenge-card ${d.id}`} key={d.id}>
                   <div className="challenge-card-top">
@@ -83,7 +86,7 @@ export default function Challenges() {
                   </div>
                   <div className="challenge-illustration">
                     <Icon size={45} strokeWidth={1} />
-                    <span>{d.id === "light" ? "V = IR" : "Q = mcΔT"}</span>
+                    <span>{mechanical ? 'τ = Iα' : d.id === "light" ? "V = IR" : ["transfer", "pressure", "supply"].includes(d.id) ? "P = Δp Q" : "Q = mcΔT"}</span>
                   </div>
                   <h3>{d.title}</h3>
                   <p>{d.description}</p>
@@ -123,10 +126,10 @@ export default function Challenges() {
             economy 10, and time 10. Thermal Runaway uses completion 50,
             stability/overshoot 15, efficiency 10, economy 10, time 10, and
             switching economy 5. Earn 2 stars at 80 points and 3 at 90. Safety
-            and budget constraints must pass.
+            and budget constraints must pass. Economy earns full points at or below the reference build cost shown in each mission guidebook, then decreases to zero at the budget.
           </p>
         </div>
-        {s.project.challenge === "runaway" && (
+        {s.project.challenge === 'runaway' && (
           <div className="runaway-details">
             <p>
               State: <strong>{simulation.runaway.phase}</strong> · Regulation{" "}
@@ -137,13 +140,15 @@ export default function Challenges() {
               fault, select ST-01 and manually reset its safety latch once the
               vessel is below its reset margin.
             </p>
+          </div>
+        )}
+        {s.project.challenge && <div className="runaway-details">
             {evaluateChallenge(s.project, simulation)?.checks.map((c) => (
               <p key={c.label}>
                 {c.ok ? "✓" : "○"} {c.label}
               </p>
             ))}
-          </div>
-        )}
+          </div>}
         {s.project.challenge && (
           <button
             className="text-link"

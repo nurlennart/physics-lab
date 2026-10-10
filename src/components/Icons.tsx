@@ -1,4 +1,5 @@
 import {
+  Waves, Fan, Gauge, GitBranch, Pipette,
   BatteryCharging,
   Zap,
   Lightbulb,
@@ -8,10 +9,15 @@ import {
   Earth,
   Shield,
   Activity,
+  Box, Move, RotateCw, Cable,
   type LucideIcon,
 } from "lucide-react";
 import type { Kind } from "../simulation/model";
 export const kindIcons: Record<Kind, LucideIcon> = {
+  rigidBody: Box, positionSensor: Move, speedSensor: RotateCw, forceActuator: Activity,
+  motor: Fan, pump: Waves, pipe: Pipette, valve: ToggleRight, checkValve: Shield,
+  actuatedValve: ToggleRight, fluidJunction: GitBranch, pressureSensor: Gauge,
+  flowSensor: Activity, levelSensor: Container, pid: Activity,
   source: BatteryCharging,
   resistor: Zap,
   lamp: Lightbulb,
@@ -36,6 +42,18 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   safety: Shield,
   cooler: Container,
   junction: Zap,
+  cable: Cable,
+  breaker: Shield,
+  motorProtector: Shield,
+  thermalMass: Container,
+  heatExchanger: GitBranch,
+  pressureReducingValve: Gauge,
+  scale: Activity,
+  limiter: Activity,
+  filter: Activity,
+  rateLimiter: Activity,
+  selector: GitBranch,
+  source3: BatteryCharging,
 };
 export function ComponentIcon({
   kind,

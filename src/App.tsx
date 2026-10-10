@@ -1,3 +1,4 @@
+import { Examples, ChallengeGuidebook } from "./components/Learning";
 import { useEffect, useRef, useState } from "react";
 import {
   FlaskConical,
@@ -37,11 +38,28 @@ import Workspace from "./components/Workspace";
 import Telemetry, { formatTime } from "./components/Telemetry";
 import Challenges, { ChallengeStrip } from "./components/Challenges";
 import Models from "./components/Models";
+import PhysicalView, { PhysicalTools, PhysicalInspector } from './components/PhysicalView';
 import { actions, simulation, useLab, toast, getState } from "./editor/store";
-import { parseProject } from "./simulation/projects";
 import { evaluateChallenge } from "./simulation/challenges";
 import { projectCost } from "./simulation/model";
 import { registerLabTools } from "./editor/webmcp";
+/** Preset files use a transient picker so the project import remains the only file input. */
+function importPresetFile() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json,application/json";
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      if (file.size > 2000000) throw Error("Preset files must be smaller than 2 MB.");
+      actions.importPresets(JSON.parse(await file.text()));
+    } catch (error) {
+      toast(`Preset import failed: ${(error as Error).message}`);
+    }
+  };
+  input.click();
+}
 export default function App() {
   const s = useLab(),
     fileInput = useRef<HTMLInputElement>(null),
@@ -72,7 +90,7 @@ export default function App() {
         if (k === "v") actions.paste();
         if (k === "o") fileInput.current?.click();
         if (k === "a")
-          actions.select(getState().project.components.map((c) => c.id));
+          actions.select(getState().project.components.filter(c => getState().workspaceView === 'schematic' || c.spatial).map((c) => c.id));
         return;
       }
       if (k === "delete" || k === "backspace") actions.remove();
@@ -135,13 +153,9 @@ export default function App() {
               <FilePlus2 size={15} />
               New experiment
             </button>
-            <button onClick={() => actions.newProject("heat")}>
-              <FlaskConical size={15} />
-              Heating starter
-            </button>
-            <button onClick={() => actions.newProject("light")}>
+            <button onClick={() => actions.set({ view: "examples" })}>
               <Layers size={15} />
-              Circuit starter
+              Starters & examples
             </button>
             <hr />
             <button onClick={() => fileInput.current?.click()}>
@@ -152,6 +166,9 @@ export default function App() {
               <Save size={15} />
               Save project file <kbd>Ctrl S</kbd>
             </button>
+            <button onClick={actions.exportScenario}><Save size={15} />Export scenario configuration</button>
+            <button onClick={actions.exportPresets}><Download size={15} />Export component presets</button>
+            <button onClick={importPresetFile}><FileUp size={15} />Import component presets</button>
             <button onClick={actions.recover}>
               <Clock3 size={15} />
               Load device recovery
@@ -249,8 +266,8 @@ export default function App() {
             try {
               if (file.size > 2000000)
                 throw Error("Project files must be smaller than 2 MB.");
-              actions.load(parseProject(JSON.parse(await file.text())));
-              toast("Project imported.");
+              await actions.importData(JSON.parse(await file.text()));
+
             } catch (error) {
               toast(`Import failed: ${(error as Error).message}`);
             }
@@ -268,18 +285,20 @@ export default function App() {
             <Menu size={17} />
           </button>
           <button
-            className="workspace-tab active"
-            onClick={() => actions.set({ view: "workspace" })}
+            className={`workspace-tab ${s.workspaceView === 'schematic' ? 'active' : ''}`}
+            onClick={() => actions.workspace('schematic')}
+            aria-label="Schematic view"
           >
             <FlaskConical size={15} />
             Experiment 01 <span className="tab-indicator" />
           </button>
+          <button className={`workspace-tab ${s.workspaceView === 'physical' ? 'active' : ''}`} aria-label="Physical view" onClick={() => actions.workspace('physical')}><Layers size={15} />Physical view</button>
           <button
             className="workspace-tab"
             onClick={() => actions.set({ view: "challenges" })}
           >
             <Trophy size={15} />
-            Challenges<span className="tab-count">3</span>
+            Challenges<span className="tab-count">9</span>
           </button>
           <button
             className="add-experiment"
@@ -300,7 +319,7 @@ export default function App() {
           </button>
           <span>DC ELECTRICAL</span>
           <i />
-          <span>THERMAL</span>
+          <span>THERMAL · HYDRAULIC · MECHANICAL</span>
           <div className="mode-badge">
             {s.project.challenge ? "CHALLENGE" : "SANDBOX MODE"}
           </div>
@@ -309,10 +328,10 @@ export default function App() {
       <div
         className={`lab-grid ${mobileLibrary ? "show-library" : ""} ${mobileInspector ? "show-inspector" : ""}`}
       >
-        <Library />
+        {s.workspaceView === 'physical' ? <PhysicalTools /> : <Library />}
         <main className="engineering-area">
           <ChallengeStrip />
-          <Workspace />
+          {s.workspaceView === 'physical' ? <PhysicalView /> : <Workspace />}
           {simulation.error && (
             <div className="solver-error" role="alert">
               <TriangleAlert size={16} />
@@ -326,7 +345,7 @@ export default function App() {
             </div>
           )}
         </main>
-        <Inspector />
+        {s.workspaceView === 'physical' ? <PhysicalInspector /> : <Inspector />}
         <Telemetry />
       </div>
       <div className="simulation-bar">
@@ -334,7 +353,7 @@ export default function App() {
           <span className={s.running ? "status-dot running" : "status-dot"} />
           <strong>
             {s.busy
-              ? "Advancing fixed steps"
+              ? simulation.adaptiveUnavailable() ? "Advancing fixed steps" : "Advancing adaptively"
               : s.running
                 ? "Simulation running"
                 : result?.complete
@@ -379,7 +398,7 @@ export default function App() {
               value={s.speed}
               onChange={(e) => actions.set({ speed: Number(e.target.value) })}
             >
-              {[0.25, 0.5, 1, 2, 4].map((v) => (
+              {[0.25, 0.5, 1, 2, 4, 10, 30, 60].map((v) => (
                 <option key={v} value={v}>
                   {v}×
                 </option>
@@ -387,20 +406,43 @@ export default function App() {
             </select>
             <ChevronDown size={12} />
           </label>
-          <button
-            className="advance-button"
-            title="Execute 3,600 fixed steps while paused"
-            disabled={s.running || s.busy}
-            onClick={() => actions.advance(60)}
-          >
-            <ChevronsRight size={16} />
-            <span>Advance 60 s</span>
-          </button>
+          {s.progress !== null ? (
+            <button className="advance-button advancing" onClick={actions.cancelAdvance} title="Stop advancing; the state reached so far is kept and recorded">
+              <X size={14} />
+              <span>{Math.round(s.progress * 100)}% · Stop</span>
+            </button>
+          ) : (
+            <>
+              <button
+                className="advance-button"
+                title={simulation.adaptiveUnavailable() ? "Execute 3,600 fixed steps while paused" : "Advance 60 s with event-aware adaptive steps"}
+                disabled={s.running || s.busy}
+                onClick={() => actions.advance(60)}
+              >
+                <ChevronsRight size={16} />
+                <span>Advance 60 s</span>
+              </button>
+              <label className="advance-control" title={simulation.adaptiveUnavailable() ?? "Thermal/electrical/control experiment: event-aware adaptive steps (switching and trips resolved at 1/60 s)"}>
+                <select
+                  aria-label="Advance by"
+                  value=""
+                  disabled={s.running || s.busy}
+                  onChange={(e) => e.target.value && actions.advance(Number(e.target.value))}
+                >
+                  <option value="">More…</option>
+                  {[[1, "+1 s"], [10, "+10 s"], [600, "+10 min"], [3600, "+1 h"], [6 * 3600, "+6 h"], [24 * 3600, "+24 h"]].map(([v, label]) => (
+                    <option key={v} value={v}>{label}</option>
+                  ))}
+                </select>
+                <span className="advance-mode">{simulation.adaptiveUnavailable() ? "FIXED" : "ADAPTIVE"}</span>
+              </label>
+            </>
+          )}
         </div>
         <span className="simulation-clock">
           t <strong>{formatTime(simulation.time)}</strong>
         </span>
-        <div className="solver-status">
+        <div className={`solver-status ${simulation.solverMs > 1000 / 60 ? "over-budget" : ""}`} title={simulation.solverMs > 1000 / 60 ? "Physics exceeds the 60 Hz frame budget. The fixed-step clock slows; reduce active bodies or constraints." : "Fixed-step simulation independent of rendering"}>
           <span>FIXED STEP</span>
           <strong>1 / 60 s</strong>
           <i />
@@ -423,7 +465,7 @@ export default function App() {
           </span>
           <span>{s.project.components.length} components</span>
           <span>{s.project.connections.length} connections</span>
-          <span>€{projectCost(s.project)} total</span>
+          <span>€{projectCost(s.project).toFixed(0)} {s.project.challenge ? "total" : "est. total"}</span>
         </div>
         <div>
           <span>
@@ -438,6 +480,8 @@ export default function App() {
       </footer>
       {s.view === "challenges" && <Challenges />}
       {s.view === "models" && <Models />}
+      {s.view === "examples" && <Examples />}
+      {s.view === "guidebook" && <ChallengeGuidebook />}
       {s.toast && (
         <div className="toast" role="status">
           <span>{s.toast}</span>

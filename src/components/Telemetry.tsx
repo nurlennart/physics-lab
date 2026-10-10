@@ -163,14 +163,15 @@ export default function Telemetry() {
     b = [...simulation.samples].reverse().find((x) => x.time <= end),
     delta = (
       key:
-        | "supplied"
+        | "kinetic" | "potential" | "shaftExport" | "copper" | "pumpWork" | "hydraulicWork" | "dissipation"
+        | "supplied" | 'spatialEnergy' | 'spatialExternal' | 'mechanicalLoss'
         | "energy"
         | "waterStored"
         | "heaterStored"
         | "stored"
         | "ambient",
     ) => (b?.[key] ?? 0) - (a?.[key] ?? 0);
-  const balance = delta("supplied") - delta("stored") - delta("ambient");
+  const balance = delta("supplied") + delta('spatialExternal') - delta("stored") - delta("ambient") - delta("kinetic") - delta("potential") - delta("shaftExport") - delta('spatialEnergy') - delta('mechanicalLoss');
   return (
     <section className="telemetry">
       <div className="telemetry-top">
@@ -233,9 +234,9 @@ export default function Telemetry() {
                 value={window}
                 onChange={(e) => setWindow(Number(e.target.value))}
               >
-                {[30, 60, 300, 600, 1800, 3600].map((x) => (
+                {[30, 60, 300, 600, 1800, 3600, 21600, 86400, 604800].map((x) => (
                   <option key={x} value={x}>
-                    {x} s
+                    {x < 3600 ? `${x} s` : x < 86400 ? `${x / 3600} h` : `${x / 86400} d`}
                   </option>
                 ))}
               </select>
@@ -253,7 +254,7 @@ export default function Telemetry() {
               />
             </label>
             <span>
-              {formatTime(simulation.time)} · 4 samples/s ·{" "}
+              {formatTime(simulation.time)} · {simulation.sampleInterval <= 0.25 ? "4 samples/s" : `1 sample / ${simulation.sampleInterval} s`} ·{" "}
               {s.busy ? "Advancing" : s.running ? "Recording" : "Paused"}
             </span>
             {s.panel === "telemetry" && (
@@ -273,7 +274,17 @@ export default function Telemetry() {
               </div>
               {[
                 { name: "Electrical supplied", value: delta("supplied") },
-                { name: "Electrical dissipated", value: delta("energy") },
+                { name: 'External mechanical work (signed)', value: delta('spatialExternal') },
+                { name: 'Spatial kinetic / potential / spring Δ', value: delta('spatialEnergy') },
+                { name: 'Contact, stop and brake heat', value: delta('mechanicalLoss') },
+                { name: "Electrical conversion (internal)", value: delta("energy") },
+                { name: "Motor copper heat (internal)", value: delta("copper") },
+                { name: "Pump shaft work (internal)", value: delta("pumpWork") },
+                { name: "Net pump hydraulic work Δp·Q (internal)", value: delta("hydraulicWork") },
+                { name: "Hydraulic dissipation (internal)", value: delta("dissipation") },
+                { name: "Rotor kinetic energy Δ", value: delta("kinetic") },
+                { name: "Fluid potential energy Δ", value: delta("potential") },
+                { name: "External shaft, drain & overflow export", value: delta("shaftExport") },
                 { name: "Water storage Δ", value: delta("waterStored") },
                 { name: "Element storage Δ", value: delta("heaterStored") },
                 {
@@ -292,6 +303,8 @@ export default function Telemetry() {
                   </strong>
                 </div>
               ))}
+              <div>Mass residual <strong>{simulation.multiphysics.massResidual.toExponential(3)} kg</strong></div>
+              <div>Hydraulic continuity <strong>{simulation.multiphysics.hydraulic.residual.toExponential(3)} m³/s</strong></div>
               <div className="energy-error">
                 <Scale size={16} />
                 <span>
@@ -299,7 +312,7 @@ export default function Telemetry() {
                   <strong>{balance.toExponential(3)} J</strong>
                 </span>
                 <p>
-                  Supplied = total storage change + external heat. Electrical
+                  Electrical supply + signed external mechanical work = thermal, rotational, gravitational and spring storage changes + external heat, contact/brake losses and exported shaft/drain energy. Electrical
                   dissipation is an internal conversion, not an additional
                   output. Signed ambient heat includes the ideal coolant
                   reservoir. Interval endpoints use recorded samples.

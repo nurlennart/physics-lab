@@ -35,25 +35,47 @@ export default function Models() {
             Use V for Select, H for Pan, W for Wire, R to rotate, Ctrl/Cmd D to
             duplicate, Ctrl/Cmd C/V to copy and paste, and Ctrl/Cmd Z to undo.
           </p>
+          <h3>Physical construction and shared machines</h3>
+          <p>Switch between Schematic and Physical without resetting. Physical geometry uses metres and radians, with a separate pan/zoom camera. Use the geometry tools, Shift-selection, 0.1 m snap, alignment, rotation/resize handles and undo. Select two bodies, choose a joint, then click world anchors. A gear/rack couples two grounded bearings or slides. Build mode ends when simulation time advances; Reset restores initial poses and unlocks geometry.</p>
+          <div className="formula">m = ρ A depth · Idisc = ½mr² · τ = Iα · Espring = ½kΔx²</div>
+          <p>Planck 1.4.2 provides Box2D rigid-body collision, friction, restitution, sleeping and continuous collision detection. Static, dynamic and prescribed-velocity kinematic bodies are supported. Joints connect static/dynamic bodies; kinematic joint drive is deferred. Material density/contact coefficients affect mechanics. Material heat capacity and conductivity are metadata; visual contact creates no thermal connection or damage. Engineering equipment uses static housings; attach a separate dynamic wheel through a grounded bearing and the motor shaft selector.</p>
+          <p>The motor’s MNA current and torque drive the actual rigid-body shaft. Wheel speed determines back EMF and pump load; motor rotor inertia is included once in the body mass matrix. Mechanical substeps are at most 1/480 s with bounded implicit electrical/shaft iteration; explicit springs/dampers may require smaller steps. Joint constraint drift and the first-order rigid-body integrator remain measured numerical errors. External forces and impulses are recorded energy sources; brake, contact and stop losses leave as heat. They do not automatically warm an unrelated thermal component.</p>
+          <p>Open the mechanism, rotor, descent, lift or rotational-control examples under File → Starters & examples. Add position/speed sensors to the existing control graph; external force actuators account for their work. Challenges 007–009 score actual descent, lifting and changing-load regulation. A tank’s hydraulic elevation follows spatial y only when explicitly linked; pipe length remains configured independently. Moving finite equipment, spatial water, fracture and automatic contact conduction are unsupported.</p>
+          <h3>Free Sandbox and engineering parameters</h3>
+          <p>Every implemented parameter is configurable in the sandbox. The Inspector groups parameters into operating controls, engineering configuration, ratings, thermal, initial state and advanced model. Each field shows its SI unit, valid domain and policy: <strong>live</strong> parameters are conservation-safe at any time; <strong>reset</strong> parameters define stored energy, mass or the initial state; <strong>calc</strong> values are derived (e.g. heater resistance, motor back-EMF constant, cable resistance and cooling). Validity domains come from the implemented physics, for example the 1–95 °C liquid-water model. Ratings are limits, not controls. Inputs accept engineering notation such as 30k, 4.7M or 100m.</p>
+          <p>Catalog models and the Laboratory / General-purpose / Industrial / High-capacity presets are starting points. Custom presets are validated, stored on this device and can be exported. Scored challenges accept only purchasable catalog models, the assignment environment and the budget; custom ratings are rejected before costing. Custom sandbox sizes show an estimated cost (six-tenths rule).</p>
+          <p>Thermal, electrical and control experiments can advance up to 24 h with event-aware adaptive steps. The thermal network is implicit, so the energy ledger balances for every step size. Steps are limited to 0.05 K per step and by timers, sampling, controllers and protection, and any switching or trip restarts at 1/60 s. Adaptive advances are recorded and replay exactly. Hydraulic and motor experiments also advance adaptively: steps are bounded by 1% of tank height per step, valve and regulator travel, and motor acceleration, and the network is solved at predicted mid-step tank levels. Rigid-body scenes and challenges always use fixed 1/60 s steps.</p>
+          <h3>Protection, thermal networks and advanced plant</h3>
+          <p><strong>Circuit breakers and motor-protective breakers</strong> carry a thermal image θ with dθ/dt = ((I/In)² − θ)/τ, integrated exactly. They trip at θ ≥ 1.3² (breaker) or 1.12² (motor protector, τ from the trip class at 7.2 × setting), and instantly at the magnetic multiple. Re-closing is possible once θ has cooled below 1. Interrupting more than the breaking capacity is reported. Arcs are not modelled.</p>
+          <p><strong>Thermal ports</strong> link any thermal masses: tanks, heaters, resistors, cables, motors and the generic heat sink / thermal mass. A link's conductance is the series combination 1/(1/G₁ + 1/G₂) of both ports; a tank's side is ideal.</p>
+          <p><strong>Pipes hold water</strong> in N well-mixed cells (ρAL), integrated implicitly, which gives transport delay and stored heat; switch inventory off for an ideal zero-volume pipe. <strong>Heat exchangers</strong> couple two hydraulic streams with ε-NTU (counter- or parallel-flow); each stream has a quadratic loss. <strong>Pressure-reducing valves</strong> integrate the outlet-pressure error with a stroke-rate limit. <strong>Pump curves</strong> may be entered as flow:head points; affinity laws scale them with speed. NPSH available is compared with the required value and logged as a cavitation warning; cavitation performance loss is not modelled.</p>
+          <p><strong>Three-phase supplies</strong> make their network a balanced per-phase (star-equivalent) model: phase EMF V_LL/√3, line currents, and powers ×3. Per-pole devices (cables, fuses, breakers, switches, contacts) count three poles thermally. Loads are resistive at unity power factor; reactance and induction machines are not modelled, and DC motors are rejected on three-phase networks.</p>
+          <p><strong>Signal conditioning:</strong> scale/offset, limiter, exact first-order filter, rate limiter and min/max/switch selector. The PID's derivative acts on the filtered measurement rate.</p>
           <h3>DC electrical model</h3>
           <div className="formula">
             V = IR &nbsp;&nbsp; P = VI = I²R &nbsp;&nbsp; Σ I<sub>node</sub> = 0
           </div>
           <p>
-            Modified nodal analysis solves voltages and ideal source currents
-            using partial-pivot Gaussian elimination. Wires have zero
-            resistance. Switches use 0.01 Ω when closed and infinite resistance
-            when open. Lamps and heaters use constant resistance; filament
-            temperature dependence is omitted. A voltmeter loads the circuit
-            with 10 MΩ.
+            Modified nodal analysis solves voltages and source currents using
+            partial-pivot Gaussian elimination. Wires have zero resistance;
+            the Power cable component models R = ρL/A with temperature
+            dependence and conductor heating. Switches use 0.01 Ω when closed
+            and infinite resistance when open. Resistive elements use
+            R(T) = R₂₀(1 + α(T − 20 °C)) at their simulated temperature (α = 0
+            by default). Heaters derive R = V²ₙₒₘ/Pₙₒₘ; their actual power is
+            V²/R of the solved circuit. A voltmeter loads the circuit with
+            10 MΩ.
           </p>
           <p>
-            Disconnected islands each have a local reference. Ground components
-            share one reference. Shorts across ideal sources and singular source
-            configurations pause the simulation. Ratings exceeded for 0.5 s
-            cause passive elements to fail open. Fuses open after 0.1 s over
-            rated current. Supply current limits pause the solver; they do not
-            implement current regulation.
+            Sources are ideal (output protection trips above the current
+            rating), Thevenin (internal resistance), current-limited CV/CC
+            (active-set crossover to I = I<sub>limit</sub>) or constant-current
+            with voltage compliance. Disconnected islands each have a local
+            reference; ground components share one. A short across an ideal
+            source without internal resistance pauses the simulation. Exceeding
+            power, current or voltage ratings is reported and the component is
+            marked overloaded; failure follows from its modelled temperature.
+            Fuses open after their configurable trip delay above rated current.
           </p>
           <h3>Coupled thermal model</h3>
           <div className="formula">
@@ -76,9 +98,19 @@ export default function Models() {
             Euler introduces first-order time discretization error. Ambient loss
             is integrated using end-of-step temperature. Tanks support liquid
             water from 1–95°C; crossing these limits pauses the experiment.
-            There is no boiling, fluid flow, pressure solver, or wall thermal
-            mass in this milestone.
+            Boiling, phase change and wall thermal mass remain unsupported. Moving water uses the hydraulic and conservative advection models below.
           </p>
+          <h3>Hydraulic networks and finite water storage</h3>
+          <div className="formula">ΣQ = 0 · Δp = f(L/D)ρv|v|/2 · pbottom = ρgV/A</div>
+          <p>Blue terminals connect fluid nodes; insert pipe components to create physical resistance. A pipe’s configured length and diameter determine its losses independently of the canvas route. Water uses ρ = 1,000 kg/m³, μ = 0.001 Pa·s, cp = 4,180 J/kg·K. Laminar friction uses 64/Re, turbulent friction uses Swamee–Jain, blended across Re 2,300–4,000. A damped nodal Newton solve has bounded iterations and monitored continuity residuals.</p>
+          <p>Tanks are finite, vented, well-mixed vessels with bottom connections. Their elevation and water level set pressure potential. The engine splits timesteps at empty/full inventory events, then blocks outward/inward boundary flow and resolves the network. A full vented tank is an ideal spill boundary: its free surface is held at the rim, inflow continues, and the excess leaves over the rim at the mixed tank temperature. The spill carries mass, enthalpy c_p·T and potential energy g·z_rim out of the system, and is shown as overflow rate, cumulative volume and start/stop events. A full tank never acts as a hidden shut-off valve; filling protection needs an explicit valve or level control. Sealed tanks are unsupported. Pipe friction uses the IAPWS 2008 viscosity μ(T) of the local water (pipe cells, or the upstream node for zero-volume pipes, lagged by one solver substep); density and c_p stay constant (1000 kg/m³, 4180 J/kg·K). Water hammer, cavitation loss and spatial mixing are not modelled. Pipe heat loss uses explicit thermal UA; material and insulation are descriptive metadata.</p>
+          <h3>Motors and centrifugal pumps</h3>
+          <div className="formula">I = (dV − keω)/R · τ = ktI · J dω/dt = τ − τload − bω<br/>H = H0[(ω/ωrated)² − ½(Q/Qrated)²] · P_imp = ρgHQ · P_net = Δp·Q = P_imp − R·Q² · P_shaft = P_imp/η_h + kω³ · η = P_net/P_shaft</div>
+          <p>Connect a motor’s gray shaft terminal to a pump shaft and wire its electrical terminals to a real circuit. Motor back EMF is stamped into MNA. The ideal optional PWM drive exchanges bus current dI and armature voltage dV, preserving electrical power; speed inputs use RPM. Shaft speed is solved implicitly at the midpoint with pump load feeding back into current. Internal substeps are at most 1/240 s. Armature inductance, commutation and drive losses are omitted. A pump includes a reverse-flow check. Beyond the positive-head curve it acts as a passive restriction; turbine behavior is unsupported and reported.</p>
+          <p>Copper and rotational friction heat the motor; pump losses and hydraulic dissipation heat flowing water. At zero flow, pump drag heat goes to the environment. The energy panel separates internal transfers from electrical supply, thermal/rotor/gravitational storage and external losses. Hydrostatic storage splitting has a measured timestep error; the engine reports a residual beyond 0.5 J or 0.5% supplied energy. This is a teaching model, not equipment certification.</p>
+          <h3>Hydraulic automation, saves and challenges</h3>
+          <p>Pressure sensors output Pa, flow sensors m³/s, level sensors percent. They read calculated state and share the existing controller graph, fault semantics and simulation clock. A PI regulator has bounded output and anti-windup; motor speed commands use RPM and valve position commands percent. Actuated valves have a finite stroke time and fail position; actuator power is omitted. Independent source and high-level sensors can gate motor enable without relying on the primary level measurement.</p>
+          <p>Use the water-transfer, automatic-supply and heated-loop examples under File → Starters & examples. Challenges 004–006 supply only fixed environment fixtures and a mission guidebook; learners add equipment, and scoring uses the calculated performance; hydraulic scored runs lock operating edits after startup to require autonomy. Normal Save includes recorded inputs and elapsed time for a live run; Import recomputes all dynamic state using recorded fixed steps. Export scenario configuration saves only the initial model. Replay and restore yield to the browser, support up to 30 simulated days (fixed-step portions replay step by step), and do not trust imported dynamic scores.</p>
           <h3>Automation and independent protection</h3>
           <p>
             Purple connections carry typed numeric or Boolean signals and no
@@ -135,18 +167,21 @@ export default function Models() {
           </p>
           <h3>Clock, measurements, and project files</h3>
           <p>
-            Simulation advances in fixed 1/60 s steps independently of
-            rendering. Speeds range from 0.25× to 4×. Advance 60 s executes
-            3,600 ordinary steps while paused. Long background frames are
-            bounded to 0.25 s of wall time, so the clock slows safely when a tab
-            is suspended. Telemetry records at 4 Hz, retaining the latest 14,400
-            samples. Events use simulation timestamps. The Event log offers
-            deterministic replay from the last reset and recorded editor inputs,
-            up to two simulation hours. Replay reconstructs the final state; it
+            Running simulation advances in fixed 1/60 s steps independently of
+            rendering. Speeds range from 0.25× to 60×. While paused, Advance
+            (60 s or +1 s … +24 h) uses the adaptive integrator for
+            thermal/electrical/control experiments and 1/60 s steps otherwise,
+            with progress and Stop. Long background frames are bounded to
+            0.25 s of wall time, so the clock slows safely when a tab is
+            suspended. Telemetry records at 4 Hz; beyond 14,400 samples the
+            whole history is kept at progressively coarser spacing. Events use
+            simulation timestamps. The Event log offers deterministic replay
+            from the last reset and recorded editor inputs, including adaptive
+            advances, up to 30 simulated days. Replay reconstructs the final state on the pinned engine; cross-platform bitwise identity is not guaranteed. It
             does not provide timeline scrubbing.
           </p>
           <p>
-            Save downloads a version 2 JSON project and stores a recovery copy
+            Save downloads a version 4 spatial or version 3 schematic scenario or a live-run archive and stores a recovery copy
             on this device. Import opens a validated project file. Project files
             contain construction and initial conditions; loading starts a
             reproducible fresh experiment. CSV exports measured telemetry. Mass,

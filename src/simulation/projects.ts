@@ -1,3 +1,5 @@
+import { hydraulicStarter, industrialStarter, heatExchangerStarter, type HydraulicMode } from "./hydraulic-projects";
+import { mechanicalStarter, type MechanicalMode } from './spatial-projects';
 import {
   connect,
   definitions,
@@ -11,11 +13,15 @@ import {
   type Component,
 } from "./model";
 export function starter(
-  mode: "heat" | "light" | "blank" | "runaway" | "automated" = "heat",
+  mode: "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode = "heat",
   challenge = false,
 ): Project {
+  if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
+  if (mode === "exchanger") return heatExchangerStarter();
+  if (mode === "industrial") return industrialStarter();
+  if (["transfer", "pressure", "supply", "circulation"].includes(mode)) return hydraulicStarter(mode as HydraulicMode, challenge);
   let p: Project = {
-    version: 2,
+    version: 3,
     probes: [],
     assemblies: [],
     id: uid(),
@@ -156,16 +162,28 @@ export function starter(
   ];
   return p;
 }
-export { ranges } from "./integrity";
-import { ranges, catalogError, challengeError } from "./integrity";
+import { challengeError, transitionError, componentError } from "./integrity";
+import { applyDerived } from "./parameters";
+/**
+ * Schema migration: properties introduced after a file was written take their
+ * catalog values (variant-aware). A legacy heater defined only by resistance and
+ * rated power gets the nominal voltage that reproduces exactly that resistance.
+ */
+export function migrateComponent(c: Component): Component {
+  const model = catalog(c).props, props = { ...c.props };
+  if (c.kind === "heater" && props.ratedVoltage === undefined && typeof props.resistance === "number" && typeof props.ratedPower === "number")
+    props.ratedVoltage = Math.sqrt(props.resistance * props.ratedPower);
+  for (const [k, v] of Object.entries(model)) if (props[k] === undefined) props[k] = v;
+  return { ...c, props: applyDerived(c.kind, props) };
+}
 import { measurements } from "./measurements";
 export function parseProject(input: unknown): Project {
   if (!input || typeof input !== "object")
     throw Error("Expected a PHYSICS LAB project object.");
   const p = structuredClone(input) as Project;
-  if (p.version !== 1 && p.version !== 2)
+  if (p.version !== 1 && p.version !== 2 && p.version !== 3 && p.version !== 4)
     throw Error(
-      "Unsupported project version. This application reads versions 1 and 2.",
+      "Unsupported project version. This application reads versions 1–4.",
     );
   if (
     typeof p.name !== "string" ||
@@ -183,11 +201,11 @@ export function parseProject(input: unknown): Project {
     throw Error("Project limit: 100 components and 300 connections.");
   if (
     p.challenge !== undefined &&
-    !["light", "heat", "runaway"].includes(p.challenge)
+    !["light", "heat", "runaway", "transfer", "pressure", "supply", 'descent', 'lift', 'rotation'].includes(p.challenge)
   )
     throw Error("Unknown challenge.");
-  const migrated = p.version === 1;
-  p.version = 2;
+  const migrated = p.version < 3;
+  p.version = p.world || p.components.some(c => c.spatial) || p.version === 4 ? 4 : 3;
   p.probes ??= [];
   p.assemblies ??= [];
   const ids = new Set<string>();
@@ -205,6 +223,7 @@ export function parseProject(input: unknown): Project {
     c.variant ??= "standard";
     if (!c.props || typeof c.props !== "object")
       throw Error("Missing component properties.");
+    if (input && (input as Project).version < 4 && c.kind === 'pid' && !('feedforward' in c.props)) c.props.feedforward = 0;
     if (migrated) c.props = { ...catalog(c).props, ...c.props };
     if (
       ![c.x, c.y, c.rotation].every(Number.isFinite) ||
@@ -212,21 +231,19 @@ export function parseProject(input: unknown): Project {
       Math.abs(c.y) > 100000
     )
       throw Error("Invalid component position.");
-    if (!c.props || typeof c.props !== "object")
-      throw Error("Missing component properties.");
+    if (c.preset !== undefined && (typeof c.preset !== "string" || c.preset.length > 80)) throw Error("Invalid component preset label.");
+    const unknown = Object.keys(c.props).find((k) => !(k in definitions[c.kind].defaults));
+    if (unknown) throw Error(`${c.name}: unsupported property "${unknown}" (written by a newer or modified application). Remove it explicitly; it is not discarded silently.`);
     for (const [key, def] of Object.entries(definitions[c.kind].defaults)) {
       const v = c.props[key];
-      if (typeof v !== typeof def) throw Error(`Invalid ${key} on ${c.name}.`);
-      if (typeof v === "number") {
-        const r = ranges[key];
-        if (!Number.isFinite(v) || (r && (v < r[0] || v > r[1])))
-          throw Error(`${c.name}: ${key} is out of range.`);
-      }
+      if (v !== undefined && typeof v !== typeof def) throw Error(`Invalid ${key} on ${c.name}.`);
     }
-    const modelError = catalogError(c);
+    Object.assign(c, migrateComponent(c));
+    const modelError = componentError(c);
     if (modelError) throw Error(modelError);
     if (c.kind === "hysteresis" && Number(c.props.low) >= Number(c.props.high))
       throw Error("Low threshold must be below high threshold.");
+    if (["pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor"].includes(c.kind) && Number(c.props.minRange) >= Number(c.props.maxRange)) throw Error("Invalid sensor range.");
     if (["sensor", "thermostat", "safety"].includes(c.kind)) {
       if (Number(c.props.minRange) >= Number(c.props.maxRange))
         throw Error("Invalid sensor range.");
@@ -281,6 +298,8 @@ export function parseProject(input: unknown): Project {
   }
   const challengeViolation = challengeError(validated);
   if (challengeViolation) throw Error(challengeViolation);
+  const physicsError = transitionError(validated, validated, 0);
+  if (physicsError) throw Error(physicsError);
   validateProbes(validated);
   if (!Array.isArray(validated.assemblies) || validated.assemblies.length > 30)
     throw Error("At most 30 saved assemblies.");
@@ -299,9 +318,11 @@ export function parseProject(input: unknown): Project {
       connections: assembly.connections,
       probes: [],
       assemblies: [],
+      ...(assembly.components.some(c => c.spatial) || assembly.joints?.length ? { world: { gravity: { x: 0, y: -9.80665 }, joints: assembly.joints ?? [] } } : {}),
     });
     assembly.components = checked.components;
     assembly.connections = checked.connections;
+    if (checked.world) assembly.joints = checked.world.joints;
   }
   return JSON.parse(JSON.stringify(validated));
 }
@@ -338,6 +359,8 @@ export function validateProbes(p: Project) {
     ids.add(probe.id);
     if (
       ![
+        "pressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
+        'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',
         "voltage",
         "current",
         "currentNC",

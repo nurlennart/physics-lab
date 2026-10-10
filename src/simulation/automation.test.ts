@@ -202,18 +202,21 @@ describe("closed-loop physical experiments", () => {
       10,
     );
   });
-  it("an undersized paid relay fails open and immediately updates measurements", () => {
+  it("an undersized paid relay is reported outside its rating without a fabricated failure", () => {
     const p = starter("automated"),
       relay = p.components.find((c) => c.kind === "relay")!;
     relay.variant = "compact";
     relay.props = catalog(relay).props;
     const s = new Simulation(p);
     advance(s, 0.6);
-    expect(s.failed[relay.id]).toBe(true);
-    expect(s.electrical.dissipatedPower).toBe(0);
-    s.reset();
-    expect(s.failed).toEqual({});
+    // No validated contact-wear model: the overload is reported, the circuit keeps conducting,
+    // and failure can only follow from the modelled contact temperature.
+    expect(s.failed[relay.id]).toBeUndefined();
+    expect(s.automation.status[relay.id]).toBe("overloaded");
+    expect(s.violations.some((v) => /RY-01: operated outside its current rating/.test(v))).toBe(true);
     expect(s.electrical.dissipatedPower).toBeGreaterThan(1900);
+    s.reset();
+    expect(s.violations).toEqual([]);
   });
   it("independent cutoff interrupts welded heating, retains heat and requires cool manual reset", () => {
     const p = starter("automated"),

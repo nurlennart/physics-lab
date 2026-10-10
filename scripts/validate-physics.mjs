@@ -1,17 +1,17 @@
 import { build } from "esbuild";
 import { mkdir, writeFile } from "node:fs/promises";
 const bundle = await build({
-  entryPoints: ["src/simulation/validation.ts"],
+  stdin: { contents: 'export { runValidation } from "./src/simulation/validation"; export { runHydraulicValidation } from "./src/simulation/hydraulic-validation"; export { runSpatialValidation } from "./src/simulation/spatial-validation";', resolveDir: process.cwd() },
   bundle: true,
   platform: "node",
   format: "esm",
   write: false,
 });
-const { runValidation } = await import(
+const { runValidation, runHydraulicValidation, runSpatialValidation } = await import(
   "data:text/javascript;base64," +
     Buffer.from(bundle.outputFiles[0].text).toString("base64")
 );
-const rows = runValidation();
+const rows = [...runValidation(), ...runHydraulicValidation(), ...runSpatialValidation()];
 const report = {
   executedAt: new Date().toISOString(),
   timestepSeconds: 1 / 60,

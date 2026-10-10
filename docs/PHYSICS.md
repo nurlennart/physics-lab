@@ -1,5 +1,7 @@
 # Physical and numerical models
 
+Phase 3A adds validated rigid bodies, joints and motor shafts. See [mechanical equations, conservation and limitations](PHASE3A.md) and [executed results](PHASE3A-RESULTS.md).
+
 All internal values use volts, amperes, ohms, watts, joules, seconds and Celsius temperature differences. Tank volume is configured in liters and converted using 1 kg/L. Temperature differences in °C and K are identical.
 
 ## Electrical model
@@ -58,3 +60,78 @@ Specific heat and density are deliberate constant engineering approximations ove
 The electrical and thermal equations above are retained. See [the Phase 2 audit](PHASE2-AUDIT.md) for sensor lag, simulation-clock control scheduling, finite-resistance SPDT contacts, independent latched protection, signed coolant energy, engineering edit rules and declared numerical limits. Temperature differences in degrees Celsius equal kelvin differences; volumes configured in liters convert to water mass using 1 kg/L (1,000 kg/m³). Power, energy, thermal capacity and conductance use W, J, J/K and W/K consistently.
 
 Source and contact ratings are catalog specifications. Normal source voltage and controller setpoints are operating settings. Stored mass/capacity and physical-model changes require Reset after time advances; no hidden refill, heat source or arbitrary mass adjustment occurs. Control output traces carry declared units (°C for temperature sensors, Boolean for logic, dimensionless for numeric constants) and use separate plot groups.
+
+## Phase 2B hydraulic and electromechanical equations
+
+The new hydraulic branch, finite-storage, brushed motor, centrifugal pump, conservative fluid heat transport and unified energy equations are documented in [PHASE2B.md](PHASE2B.md). Existing electrical/thermal-only experiments retain their original integration scheme. New internal mechanical/hydraulic substeps and inventory boundary events are independent of rendering.
+
+## Tank overflow, water viscosity and pump power (realism revision)
+
+### Tank overflow: ideal spill boundary
+
+**Previous behaviour (removed).** When a vented tank reached capacity, the hydraulic solver blocked further inflow. In effect the full tank became an invisible shut-off valve: the delivery flow stopped while the pump kept turning against a dead end.
+
+**Current model.**
+- **Spilling.** A full vented tank keeps its free surface at the rim, z_rim = elevation + capacity/A, so its boundary pressure is ρ·g·z_rim. Inflow is never blocked. The enthalpy transport first mixes all inflow into the well-mixed inventory. Any mass above capacity then leaves over the rim at the mixed temperature T, carrying:
+  - mass m_spill;
+  - enthalpy m_spill·c_p·T, on the same 0 K datum as all transport and the `depleted` drain;
+  - potential energy m_spill·g·z_rim, the datum of the tank potential ρg(z·V + V²/2A).
+- **Accounting.** All three are added to the exported mass and energy (`removedMass`, `removedEnergy`), so the mass residual and the energy residual close. The spilled enthalpy is subtracted from stored energy.
+- **Reporting.** Overflow is shown as a rate (`overflow`, L/min), a cumulative volume (`overflowVolume`, L), start and stop events, the tank caption, the energy panel ("External shaft, drain & overflow export") and the measurement API (`overflow.rateM3s`, `overflow.volumeM3`).
+- **Events within a step.** The coupled step still splits exactly at the instant a tank reaches capacity or empties, so onset inside a timestep is resolved. Empty tanks continue to block outflow only.
+- **Adaptive steps** do not shrink while a full tank spills at a constant level.
+
+**Approximations.**
+- The spill leaves instantly with no weir head; a real overflow needs a small surcharge h ∝ Q^(2/3) above the rim.
+- Spilled water leaves the system rather than flowing to another component.
+- Inflow and spill mix perfectly.
+
+**Filling protection** must be explicit: a valve, level switch or controller. The automatic-supply starter does this and does not overflow.
+
+**Compatibility.**
+- Projects that used to rely on the hidden shut-off now spill. This is physically correct, and every project file still loads; no schema change was needed.
+- In hydraulic challenges, any spill is a rule violation ("… overflowed"). This makes the existing "without overflow" objective of challenge 004 enforceable. Before, a full destination silently passed.
+- The challenge reference designs do not overflow, and their completion times are unchanged.
+
+### Water properties
+
+`src/simulation/water.ts`:
+- **Viscosity:** IAPWS R12-08 (2008) viscosity μ(T, ρ) with μ̄₂ = 1. Density for the evaluation comes from Kell (1975) at 1 atm.
+- **Validated** against the official IAPWS check values: 889.735100 and 307.883622 µPa·s, to the printed digits. Against published 1 atm values at 10/20/40/80 °C the error is ≤ 0.004 %.
+- **Domain:** the 0–100 °C liquid range at 1 atm. Outside it the property call throws a clear error; it never extrapolates.
+
+Where viscosity is used:
+- **Pipes:** the friction loss and Reynolds number use μ at the local water temperature:
+  - Inventory pipes: each mixing cell's own temperature, independent of flow direction.
+  - Zero-volume pipes: the upstream node temperature, chosen by flow direction.
+
+  Laminar (Hagen–Poiseuille), transitional (linear blend 2300–4000) and turbulent (Swamee–Jain) regimes are evaluated per segment.
+- **Feedback** from temperature to flow uses the node temperatures of the previous transport substep (1/240 s lag; for an adaptive macro step, one macro step). There is no nested temperature–flow iteration. At t = 0 a zero-length transport mixes the inventories and the network is re-solved once, so the first reading already uses the correct viscosities.
+- **Valves, heat-exchanger streams and pump internals** use constant loss coefficients (fully turbulent K), so they are viscosity-independent.
+
+**Constant density and heat capacity (deliberate).** ρ = 1000 kg/m³ and c_p = 4180 J/kg·K remain constant for mass, volume, hydrostatics and enthalpy. Real values change by 3.8 % and 1 % over 1–95 °C. Making them variable would require thermal expansion of tank inventories, variable-density hydrostatics and a consistent pressure–volume energy ledger; that has not been done. This is why density enters only the viscosity correlation.
+
+### Pump power definitions
+
+The same function, `pumpCurve()`, feeds the solver, live readings, Inspector ratings, probes, the CSV export and the measurement API:
+
+| Quantity | Definition | API field | Probe |
+| --- | --- | --- | --- |
+| Impeller (gross hydraulic) power | ρ·g·H_imp(Q, ω)·Q, with H_imp ≥ 0 from the affinity-scaled curve | `impellerPower` | `impellerPower` (W) |
+| Net delivered hydraulic power | Δp_rise·Q = P_imp − R_int·Q² (R_int = 1e5 Pa·s/m³ internal resistance) | `hydraulicPower` | `hydraulicPower` (W) |
+| Mechanical loss | k·ω³ (windage, disc friction, bearings) | `mechanicalLoss` | `mechanicalLoss` (W) |
+| Shaft input power | P_imp/η_h + k·ω³ | `shaftPower` | `shaftPower` (W) |
+| Internal hydraulic efficiency η_h | P_imp/(P_shaft − P_mech); the curve value, null if P_imp = 0 | `hydraulicEfficiency` (fraction) | `hydraulicEfficiency` (%) |
+| Overall efficiency η | P_net/P_shaft; null if P_shaft = 0 (stopped) or P_net < 0 (passive restriction beyond the curve) | `efficiency` (fraction) | `efficiency` (%) |
+
+**Energy accounting.**
+- The motor delivers P_shaft through the shared shaft.
+- The losses P_shaft − P_net heat the pumped water when it flows. They are counted once: branch dissipation P_imp − P_net plus shaft − impeller.
+- At zero flow (deadhead) the shaft power, which is the mechanical loss alone, leaves as heat to ambient (`dryLoss`). The zero-volume pump cannot warm its trapped water.
+- Reverse and turbine operation are unsupported; the pump branch is one-way.
+
+**Corrections.**
+- Before this revision the UI's "efficiency" was P_imp/P_shaft, while the API's `efficiency` was η_h.
+- The Inspector's "Shaft power at rating" omitted k·ω³. For the laboratory pump that is 81 W at 300 rad/s, so the nominal shaft power is 137.0 W, not 56.0 W.
+
+**Catalog observation.** The laboratory pump's drag coefficient makes its mechanical loss larger than its rated hydraulic output. The overall efficiency at rating is therefore 28.6 %. The catalog value was kept for challenge compatibility.

@@ -44,7 +44,7 @@ function CircuitSymbol({ c }: { c: Component }) {
   const failed = simulation.failed[c.id];
   if (c.kind === "tank") {
     const temp = simulation.temperatures[c.id] ?? 20,
-      fill = Math.min(1, prop(c, "volume") / prop(c, "capacity"));
+      fill = Math.min(1, (simulation.multiphysics.tanks[c.id]?.volume ?? prop(c, "volume") / 1000) * 1000 / prop(c, "capacity"));
     return (
       <g>
         <rect
@@ -92,6 +92,42 @@ function CircuitSymbol({ c }: { c: Component }) {
       </g>
     );
   }
+  if (["motor", "pump"].includes(c.kind)) {
+    const speed = c.kind === "motor" ? simulation.multiphysics.motors[c.id]?.omega ?? 0 : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && (w.from.component === c.id || w.to.component === c.id)); return wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component]?.omega ?? 0 : 0; })();
+    return <g><path d="M0 66H52M122 66H174M87 0V32" stroke="#75a7b5" strokeWidth="2"/><circle cx="87" cy="66" r="34" fill="#15242c" stroke="#75a7b5" strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke="#75a7b5" transform={`rotate(${speed * simulation.time * 180 / Math.PI},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{(speed * 30 / Math.PI).toFixed(0)} RPM</text></g>;
+  }
+  if (c.kind === "heatExchanger") {
+    const hot = simulation.multiphysics.hydraulic.readings[`${c.id}#hot`], cold = simulation.multiphysics.hydraulic.readings[`${c.id}#cold`];
+    return (
+      <g>
+        <rect x="18" y="30" width="138" height="72" rx="4" fill="#15242c" stroke="#75a7b5" />
+        <path d="M0 40H174" stroke="#d98b6b" strokeWidth="2" />
+        <path d="M174 99H0" stroke="#5aa6d1" strokeWidth="2" />
+        <path d="M30 48V91M50 48V91M70 48V91M90 48V91M110 48V91M130 48V91M150 48V91" stroke="#4a6875" />
+        <text x="87" y="73" textAnchor="middle" className="component-state">{((hot?.duty ?? 0) / 1000).toFixed(2)} kW · UA {prop(c, "ua")} W/K</text>
+        <text x="87" y="123" textAnchor="middle" className="scale-label">A {((hot?.flow ?? 0) * 60000).toFixed(1)} · B {((cold?.flow ?? 0) * 60000).toFixed(1)} L/min</text>
+      </g>
+    );
+  }
+  if (["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction", "pressureReducingValve"].includes(c.kind)) {
+    const r = simulation.multiphysics.hydraulic.readings[c.id], opening = simulation.faults[c.id] === "stuckClosed" ? 0 : simulation.faults[c.id] === "stuckOpen" ? 100 : c.kind === "checkValve" ? (Math.abs(r?.flow ?? 0) > 1e-12 ? 100 : 0) : simulation.multiphysics.positions[c.id] ?? prop(c, "opening", 100);
+    return <g><path d="M0 66H174" stroke="#6199b1" strokeWidth={c.kind === "pipe" ? 8 : 2}/>{c.kind.includes("alve") && <path d="M61 49L111 83V49L61 83Z" fill="#203b4a" stroke="#84b8ca"/>}<text x="87" y="107" textAnchor="middle" className="scale-label">{c.kind.includes("alve") ? `${opening.toFixed(0)}% · ` : ""}{((r?.flow ?? 0) * 60000).toFixed(2)} L/min</text><text x="87" y="123" textAnchor="middle" className="scale-label">{((r?.pressure ?? 0) / 100000).toFixed(3)} bar {Math.abs(r?.flow ?? 0) < 1e-12 ? "" : r!.flow > 0 ? "→" : "←"}</text></g>;
+  }
+  if (c.kind === "source3")
+    return (
+      <g>
+        <rect x="17" y="43" width="140" height="61" rx="3" fill="#111a20" stroke="#3e4a52" />
+        <text x="87" y="80" textAnchor="middle" className="supply-number">
+          {prop(c, "lineVoltage").toFixed(0)}
+          <tspan className="unit"> V 3~</tspan>
+        </text>
+        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? "#e26d72" : "#79bca5"} />
+        <text x="39" y="95" className="scale-label">{c.props.enabled === false ? "OUTPUT OFF" : failed ? "TRIPPED" : `${prop(c, "frequency")} Hz · PER-PHASE MODEL`}</text>
+        <path d="M0 66H17M157 66H174" stroke="#bdad8c" />
+        <text x="5" y="57" className="polarity">L</text>
+        <text x="161" y="57" className="polarity">N</text>
+      </g>
+    );
   if (c.kind === "source")
     return (
       <g>
@@ -108,9 +144,9 @@ function CircuitSymbol({ c }: { c: Component }) {
           {prop(c, "voltage").toFixed(1)}
           <tspan className="unit"> V</tspan>
         </text>
-        <circle cx="29" cy="92" r="2.5" fill="#79bca5" />
+        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? "#e26d72" : r?.regulation === "cc" ? "#e9bd6a" : "#79bca5"} />
         <text x="39" y="95" className="scale-label">
-          DC OUTPUT
+          {c.props.enabled === false ? "OUTPUT OFF" : failed ? "TRIPPED" : r?.regulation === "cc" ? "CC LIMIT" : c.props.mode === "cvcc" ? "DC OUT · CV/CC" : c.props.mode === "cc" ? "DC OUT · CC" : "DC OUTPUT"}
         </text>
         <path d="M0 66H17M157 66H174" stroke="#bdad8c" />
         <text x="7" y="57" className="polarity">
@@ -238,6 +274,32 @@ function CircuitSymbol({ c }: { c: Component }) {
         </text>
       </g>
     );
+  if (c.kind === "thermalMass")
+    return (
+      <g>
+        <rect x="37" y="44" width="100" height="52" rx="4" fill="#241d1a" stroke="#b98b6f" />
+        <path d="M47 44V34M62 44V34M77 44V34M92 44V34M107 44V34M122 44V34" stroke="#8d6d5a" />
+        <text x="87" y="76" textAnchor="middle" className="component-state" fill="#eaa17b">
+          {(simulation.temperatures[c.id] ?? prop(c, "initialTemperature")).toFixed(1)} °C
+        </text>
+        <text x="87" y="114" textAnchor="middle" className="component-state">
+          {(prop(c, "heatCapacity") / 1000).toPrecision(3)} kJ/K · {prop(c, "loss")} W/K
+        </text>
+      </g>
+    );
+  if (c.kind === "breaker" || c.kind === "motorProtector") {
+    const tripped = simulation.breakers[c.id]?.tripped, open = tripped || c.props.closed === false;
+    return (
+      <g>
+        <path d="M0 66H55M119 66H174" stroke="#a1b2bc" strokeWidth="2" />
+        <path d={open ? "M55 66L112 44" : "M55 66L119 66"} stroke={tripped ? "#e26d72" : "#bec8ce"} strokeWidth="2" />
+        <rect x="70" y="76" width="34" height="16" rx="2" fill="none" stroke="#7f8f99" />
+        <text x="87" y="110" textAnchor="middle" className="component-state">
+          {prop(c, "ratedCurrent")} A · {tripped ? "TRIPPED" : open ? "OPEN" : "CLOSED"}
+        </text>
+      </g>
+    );
+  }
   if (definitions[c.kind].ports.some((p) => p.domain === "control")) {
     const v = simulation.automation.signals[c.id],
       sensor = simulation.automation.sensors[c.id];
@@ -269,7 +331,7 @@ function CircuitSymbol({ c }: { c: Component }) {
         </text>
         <text x="87" y="114" textAnchor="middle" className="component-state">
           {sensor?.valid
-            ? Number(sensor.value).toFixed(2) + " °C"
+            ? Number(sensor.value).toPrecision(5) + " " + (definitions[c.kind].ports.find(p => p.id === "out")?.unit ?? "°C")
             : c.kind === "timer"
               ? `${simulation.automation.memory[c.id]?.elapsed.toFixed(2) ?? "0"} s`
               : definitions[c.kind].spec}
@@ -318,7 +380,11 @@ function CircuitSymbol({ c }: { c: Component }) {
       )}
       {!heater && (
         <text x="87" y="110" textAnchor="middle" className="component-state">
-          {failed ? "OPEN / FAILED" : `${prop(c, "resistance")} Ω`}
+          {failed
+            ? "OPEN / FAILED"
+            : c.kind === "cable"
+              ? `${c.props.material === "aluminium" ? "Al" : "Cu"} ${prop(c, "area")} mm² · ${prop(c, "length")} m`
+              : `${Number(prop(c, "resistance").toPrecision(4))} Ω`}
         </text>
       )}
     </g>
@@ -707,14 +773,20 @@ export default function Workspace() {
             const path = wirePath(w, project.components),
               from = project.components.find((c) => c.id === w.from.component),
               r = from && simulation.electrical.readings[from.id];
+            const fluidFlow = w.domain === "hydraulic" ? (() => {
+              const h = simulation.multiphysics.hydraulic;
+              const portFlow = (id: string, port: string) => { const reading = h.readings[id]; if (!reading || !["inlet", "outlet"].includes(port)) return undefined; return reading.flow * (port === "outlet" ? 1 : -1); };
+              return portFlow(w.from.component, w.from.port) ?? -(portFlow(w.to.component, w.to.port) ?? 0);
+            })() : 0;
             const live =
               state.running &&
-              (w.domain === "thermal"
+              (w.domain === "hydraulic" ? Math.abs(fluidFlow) > 1e-12 : w.domain === "thermal"
                 ? simulation.electrical.dissipatedPower > 1
                 : Math.abs(r?.current ?? 0) > 0.001);
             return (
               <g
                 key={w.id}
+                style={{ animationDirection: fluidFlow < 0 ? "reverse" : "normal" }}
                 className={`connection ${w.domain} ${live ? "flowing" : ""} ${state.selectedWire === w.id ? "selected-wire" : ""}`}
               >
                 <path
@@ -905,7 +977,17 @@ export default function Workspace() {
                     className="live-caption"
                   >
                     {c.kind === "tank"
-                      ? `${prop(c, "volume").toFixed(1)} L  ·  ${((prop(c, "volume") * 4180) / 1000).toFixed(1)} kJ/K`
+                      ? (simulation.multiphysics.overflowRate[c.id] ?? 0) > 1e-9
+                        ? `FULL · overflowing ${((simulation.multiphysics.overflowRate[c.id] ?? 0) * 60000).toFixed(2)} L/min · ${((simulation.multiphysics.overflowed[c.id] ?? 0) * 1000).toFixed(2)} L spilled`
+                        : `${((simulation.multiphysics.tanks[c.id]?.volume ?? prop(c, "volume") / 1000) * 1000).toFixed(2)} L  ·  ${((simulation.multiphysics.tanks[c.id]?.mass ?? prop(c, "volume")) * 4.18).toFixed(1)} kJ/K`
+                      : c.kind === "heatExchanger"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / 1000).toFixed(1)} kW heat · ${c.props.arrangement}`
+                      : c.kind === "pump"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(simulation.multiphysics.hydraulic.readings[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
+                        : ["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction"].includes(c.kind)
+                          ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
+                        : c.kind === "motor"
+                          ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A armature · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
                       : c.kind === "source"
                         ? `${Math.abs(r?.current ?? 0).toFixed(2)} A  ·  ${Math.abs(r?.power ?? 0).toFixed(1)} W`
                         : c.kind === "switch"
@@ -937,14 +1019,14 @@ export default function Workspace() {
       {!project.components.length && (
         <div className="empty-canvas">
           <span className="empty-cross">+</span>
-          <h2>Your next experiment starts here.</h2>
+          <h2>{project.challenge ? "Your mission. Your circuit." : "Your next experiment starts here."}</h2>
           <p>
             Drag a component from the library onto the workspace.
             <br />
             Click two matching terminals to connect them.
           </p>
-          <button onClick={() => actions.newProject("light")}>
-            Load a simple circuit
+          <button onClick={() => actions.set({ view: project.challenge ? 'guidebook' : 'examples' })}>
+            {project.challenge ? 'Open mission guidebook' : 'Explore starters & examples'}
           </button>
         </div>
       )}

@@ -6,6 +6,7 @@ import {
   type Component,
 } from "./model";
 export type FaultType =
+  | "powerLoss" | "motorFailure" | "stuckOpen" | "depleted"
   | "failedOpen"
   | "stuckClosed"
   | "sensorFault"
@@ -35,14 +36,21 @@ export interface ControlMemory {
   switches: number;
   lastChange: number;
   manualResets: number;
+  integral?: number;
+  output?: number;
+  measurement?: number;
+  derivative?: number;
 }
 export interface ControlWorld {
+  mechanicalMeasurement?: (id: string, metric: string) => number | undefined;
+  hydraulicMeasurement?: (id: string, metric: string) => number | undefined;
   project: Project;
   time: number;
   temperatures: Record<string, number>;
   faults: Record<string, FaultType>;
   failed: Record<string, boolean>;
   disconnected: Set<string>;
+  breakers?: Record<string, { tripped: boolean }>;
   log: (
     message: string,
     level?: "info" | "warning" | "error" | "success",
@@ -84,7 +92,9 @@ export class Automation {
   }
   sense(c: Component, w: ControlWorld, dt: number): Signal {
     const id = textProp(c, "target"),
-      actual = w.temperatures[id];
+      actual = c.kind === 'positionSensor' ? w.mechanicalMeasurement?.(id, textProp(c, 'axis')) : c.kind === 'speedSensor' ? w.mechanicalMeasurement?.(id, 'rpm') : ["pressureSensor", "flowSensor", "levelSensor"].includes(c.kind)
+        ? w.hydraulicMeasurement?.(id, c.kind === "pressureSensor" ? "pressure" : c.kind === "flowSensor" ? "flow" : "level")
+        : w.temperatures[id];
     if (
       w.faults[c.id] === "sensorFault" ||
       w.faults[c.id] === "disabled" ||
@@ -92,7 +102,7 @@ export class Automation {
     )
       return invalid("Sensor fault.");
     if (!id || actual === undefined)
-      return invalid("No thermal target assigned.");
+      return invalid("No compatible physical target assigned.");
     const m = this.getMemory(c);
     const lag = prop(c, "lag");
     if (m.filtered === undefined) m.filtered = actual;
@@ -175,13 +185,64 @@ export class Automation {
                   ? "tripped"
                   : "healthy";
       switch (c.kind) {
+        case 'positionSensor':
+        case 'speedSensor':
+        case "pressureSensor":
+        case "flowSensor":
+        case "levelSensor":
         case "sensor":
           out = this.sense(c, w, dt);
           this.sensors[c.id] = out;
           break;
+        case "pid": {
+          const v = this.input(c, "in", w);
+          if (!v.valid || typeof v.value !== "number") { out = invalid("PI feedback invalid; actuator must use its fail state."); break; }
+          const error = prop(c, "reference") - v.value, integral = m.integral ?? 0;
+          // Derivative on measurement through a first-order filter (exact update on the simulation clock).
+          if (dt > 0 && m.measurement !== undefined) {
+            const raw = (v.value - m.measurement) / dt;
+            m.derivative = (m.derivative ?? 0) + (raw - (m.derivative ?? 0)) * -Math.expm1(-dt / prop(c, "derivativeFilter", 1));
+          }
+          if (dt > 0) m.measurement = v.value;
+          const dTerm = -prop(c, "kd") * (m.derivative ?? 0);
+          const trial = integral + prop(c, "ki") * error * dt;
+          const raw = prop(c, 'feedforward') + prop(c, "kp") * error + dTerm + trial, min = prop(c, "minOutput"), max = prop(c, "maxOutput");
+          if ((raw >= min && raw <= max) || (raw > max && error * prop(c, "ki") < 0) || (raw < min && error * prop(c, "ki") > 0)) m.integral = trial;
+          out = signal(Math.max(min, Math.min(max, prop(c, 'feedforward') + prop(c, "kp") * error + dTerm + (m.integral ?? 0))));
+          break;
+        }
         case "constant":
           out = signal(prop(c, "value"));
           break;
+        case "scale":
+        case "limiter":
+        case "filter":
+        case "rateLimiter": {
+          const v = this.input(c, "in", w);
+          if (!v.valid || typeof v.value !== "number") { out = invalid(v.reason ?? "Numeric input required."); m.output = undefined; break; }
+          const x = v.value;
+          if (c.kind === "scale") out = signal(prop(c, "gain") * x + prop(c, "offset"));
+          else if (c.kind === "limiter") out = signal(Math.max(prop(c, "minOutput"), Math.min(prop(c, "maxOutput"), x)));
+          else {
+            const previous = m.output ?? x;
+            const next = c.kind === "filter"
+              ? previous + (x - previous) * -Math.expm1(-dt / prop(c, "timeConstant"))
+              : previous + Math.max(-prop(c, "rate") * dt, Math.min(prop(c, "rate") * dt, x - previous));
+            m.output = next;
+            out = signal(next);
+          }
+          break;
+        }
+        case "selector": {
+          const a = this.input(c, "in", w), b = this.input(c, "in2", w);
+          if (!a.valid || !b.valid || typeof a.value !== "number" || typeof b.value !== "number") { out = invalid(a.reason ?? b.reason ?? "Two numeric inputs required."); break; }
+          const mode = textProp(c, "mode");
+          if (mode === "switch") {
+            const sel = this.input(c, "select", w);
+            out = !sel.valid || typeof sel.value !== "boolean" ? invalid(sel.reason ?? "Boolean select input required.") : signal(sel.value ? b.value : a.value);
+          } else out = signal(mode === "min" ? Math.min(a.value, b.value) : Math.max(a.value, b.value));
+          break;
+        }
         case "reset":
           out = signal(this.pulses.has(c.id));
           break;
@@ -332,6 +393,13 @@ export class Automation {
           out = signal(on);
           break;
         }
+        case "breaker":
+        case "motorProtector": {
+          const tripped = !!w.breakers?.[c.id]?.tripped && fault !== "stuckClosed";
+          if (tripped) this.status[c.id] = "tripped";
+          out = signal(!tripped && c.props.closed !== false && fault !== "failedOpen" && !w.failed[c.id]);
+          break;
+        }
         case "safety": {
           const measured = this.sense(c, w, dt);
           this.sensors[c.id] = measured;
@@ -393,6 +461,7 @@ export class Automation {
   }
 }
 export function allowedFaults(c: Component): FaultType[] {
+  if (c.kind === "breaker" || c.kind === "motorProtector") return ["stuckClosed", "failedOpen"];
   if (["relay", "safety"].includes(c.kind))
     return [
       "stuckClosed",
@@ -400,7 +469,10 @@ export function allowedFaults(c: Component): FaultType[] {
       "controlLost",
       ...(c.kind === "safety" ? ["sensorFault" as const] : []),
     ];
-  if (["sensor", "thermostat"].includes(c.kind))
+  if (c.kind === "motor") return ["powerLoss", "motorFailure", "controlLost"];
+  if (["valve", "actuatedValve", "checkValve", "pressureReducingValve"].includes(c.kind)) return ["stuckOpen", "stuckClosed", ...(c.kind === "actuatedValve" ? ["controlLost" as const] : [])];
+  if (c.kind === "tank") return ["depleted"];
+  if (["sensor", "thermostat", "pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor"].includes(c.kind))
     return [
       "sensorFault",
       "disabled",
@@ -409,6 +481,12 @@ export function allowedFaults(c: Component): FaultType[] {
   if (c.kind === "cooler") return ["coolingFailed", "coolingReduced"];
   if (
     [
+      "pid",
+      "scale",
+      "limiter",
+      "filter",
+      "rateLimiter",
+      "selector",
       "hysteresis",
       "comparator",
       "timer",

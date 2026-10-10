@@ -1,4 +1,5 @@
-import { definitions, prop, terminalKey, type Project } from "./model";
+import { definitions, isSource, prop, terminalKey, type Component, type Project } from "./model";
+import { actualResistance } from "./parameters";
 export interface ElectricalReading {
   voltage: number;
   current: number;
@@ -6,6 +7,12 @@ export interface ElectricalReading {
   currentNC?: number;
   contactCurrent?: number;
   voltageValid?: boolean;
+  /** Source regulation state: constant voltage or constant current. */
+  regulation?: "cv" | "cc";
+  /** Actual resistance used by the solver (temperature and tolerance applied). */
+  resistance?: number;
+  /** 3 in a balanced three-phase island: voltage is phase-to-neutral, current is line current, power is the 3-phase total. */
+  phases?: 1 | 3;
 }
 export interface ElectricalResult {
   readings: Record<string, ElectricalReading>;
@@ -62,7 +69,15 @@ export interface ElectricalRuntime {
   contacts?: Record<string, boolean>;
   faults?: Record<string, string>;
   disconnected?: Set<string>;
+  motors?: Record<string, { emf: number; duty: number; enabled: boolean }>;
+  /** Protective devices currently tripped open (breakers, motor protectors). */
+  open?: Set<string>;
+  /** Element temperatures (°C) for temperature-dependent resistance. */
+  temperatures?: Record<string, number>;
 }
+export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? c.props.mode : "ideal") as "ideal" | "internal" | "cvcc" | "cc";
+/** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
+export const sourceLimit = (c: Component) => sourceMode(c) === "cc" ? prop(c, "current") : sourceMode(c) === "cvcc" ? prop(c, "maxCurrent") : Infinity;
 export function solveElectrical(
   project: Project,
   failed: Record<string, boolean> = {},
@@ -94,6 +109,9 @@ export function solveElectrical(
     (c) =>
       !["ground", "junction"].includes(c.kind) &&
       !failed[c.id] &&
+      !(isSource(c) && c.props.enabled === false) &&
+      !((c.kind === "breaker" || c.kind === "motorProtector") && (c.props.closed === false || runtime.open?.has(c.id))) &&
+      !(c.kind === "motor" && runtime.motors?.[c.id]?.enabled === false) &&
       runtime.faults?.[c.id] !== "failedOpen" &&
       !(c.kind === "switch" && !c.props.closed) &&
       !(c.kind === "safety" && !contact(c)),
@@ -112,15 +130,33 @@ export function solveElectrical(
   }
   const voltages: Record<string, number> = {},
     sourceI: Record<string, number> = {},
+    regulation: Record<string, "cv" | "cc"> = {},
+    islandPhases = new Map<string, 3>(),
     references: Record<string, string> = {};
+  const resistances: Record<string, number> = {};
+  const resistanceOf = (c: Component) => {
+    if (resistances[c.id] !== undefined) return resistances[c.id];
+    const r = c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20);
+    if (!Number.isFinite(r) || r <= 0)
+      throw Error(`${c.name}: resistance must be positive (temperature-dependent model gives ${r.toPrecision(3)} Ω at ${(runtime.temperatures?.[c.id] ?? 20).toFixed(1)} °C).`);
+    return (resistances[c.id] = r);
+  };
   let residual = 0;
   for (const [island, ns] of groups) {
     const members = active.filter((c) => ns.includes(node(c.id, "a"))),
-      sources = members.filter((c) => c.kind === "source");
+      sources = members.filter(isSource);
+    if (sources.some((c) => c.kind === "source3")) {
+      if (sources.some((c) => c.kind === "source"))
+        throw Error("A DC supply and a three-phase supply cannot share one network.");
+      const motor = members.find((c) => c.kind === "motor");
+      if (motor) throw Error(`${motor.name}: a DC motor cannot run on a three-phase AC network (induction machines are not modelled).`);
+      islandPhases.set(island, 3);
+    }
+    const shorted = (s: Component) => node(s.id, "a") === node(s.id, "b");
     for (const s of sources)
-      if (node(s.id, "a") === node(s.id, "b"))
+      if (shorted(s) && sourceLimit(s) === Infinity && prop(s, "internalResistance") <= 0)
         throw Error(
-          `${s.name}: supply terminals are shorted. Remove the short circuit.`,
+          `${s.name}: supply terminals are shorted. Remove the short circuit, add internal resistance, or use a current-limited supply.`,
         );
     const g = grounds.find((c) => ns.includes(node(c.id, "a"))),
       ref = g
@@ -141,41 +177,76 @@ export function solveElectrical(
         j = indices.get(col);
       if (i !== undefined && j !== undefined) a[i][j] += v;
     };
-    for (const c of members.filter((c) => c.kind !== "source")) {
-      const resistance = prop(c, "resistance", 1);
-      if (!Number.isFinite(resistance) || resistance <= 0)
-        throw Error(`${c.name}: resistance must be positive.`);
-      const conductance = 1 / resistance,
+    for (const c of members.filter((c) => !isSource(c))) {
+      const resistance = resistanceOf(c);
+      const motor = c.kind === "motor" ? runtime.motors?.[c.id] : undefined;
+      const duty = motor?.duty ?? 1;
+      const conductance = (c.kind === "motor" ? duty * duty : 1) / resistance,
         p = node(c.id, "a"),
         q = node(c.id, end(c));
       stamp(p, p, conductance);
       stamp(q, q, conductance);
       stamp(p, q, -conductance);
       stamp(q, p, -conductance);
+      if (motor) {
+        const norton = duty * motor.emf / resistance;
+        const pi = indices.get(p), qi = indices.get(q);
+        if (pi !== undefined) b[pi] += norton;
+        if (qi !== undefined) b[qi] -= norton;
+      }
     }
-    sources.forEach((s, i) => {
-      const k = unknown.length + i,
-        p = indices.get(node(s.id, "a")),
-        q = indices.get(node(s.id, "b"));
-      if (p !== undefined) {
-        a[p][k] += 1;
-        a[k][p] += 1;
-      }
-      if (q !== undefined) {
-        a[q][k] -= 1;
-        a[k][q] -= 1;
-      }
-      b[k] = prop(s, "voltage");
-    });
-    const x = size ? solveLinear(a, b) : [];
+    // Branch variable k is the current *into* terminal a (negative while delivering).
+    // CV row: Va − Vb − Rᵢ·I = Vset. CC row: I = −limit·direction.
+    // CV/CC crossover is an active-set iteration, as in a regulated laboratory supply.
+    const fixed: (number | null)[] = sources.map((s) => shorted(s) && sourceLimit(s) < Infinity ? -sourceLimit(s) : null);
+    let x: number[] = [], am: number[][] = a, bm: number[] = b;
+    for (let iteration = 0; ; iteration++) {
+      am = a.map((row) => [...row]);
+      bm = [...b];
+      sources.forEach((s, i) => {
+        const k = unknown.length + i,
+          p = indices.get(node(s.id, "a")),
+          q = indices.get(node(s.id, "b"));
+        if (p !== undefined) am[p][k] += 1;
+        if (q !== undefined) am[q][k] -= 1;
+        if (fixed[i] !== null) {
+          am[k][k] = 1;
+          bm[k] = fixed[i]!;
+          return;
+        }
+        if (p !== undefined) am[k][p] += 1;
+        if (q !== undefined) am[k][q] -= 1;
+        am[k][k] -= prop(s, "internalResistance");
+        // Three-phase: the per-phase (star-equivalent) EMF is V_LL/√3.
+        bm[k] = s.kind === "source3" ? prop(s, "lineVoltage") / Math.sqrt(3) : prop(s, "voltage");
+      });
+      x = size ? solveLinear(am, bm) : [];
+      if (iteration >= 12) break;
+      let changed = false;
+      sources.forEach((s, i) => {
+        const limit = sourceLimit(s), current = x[unknown.length + i];
+        if (limit === Infinity) return;
+        if (fixed[i] === null && Math.abs(current) > limit * (1 + 1e-12)) {
+          fixed[i] = Math.sign(current || -1) * limit;
+          changed = true;
+        } else if (fixed[i] !== null) {
+          const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0,
+            vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
+          const emf = va - vb - prop(s, "internalResistance") * current;
+          if (Math.abs(emf) > prop(s, "voltage") * (1 + 1e-12) + 1e-12) {
+            fixed[i] = null;
+            changed = true;
+          }
+        }
+      });
+      if (!changed) break;
+    }
+    sources.forEach((s, i) => (regulation[s.id] = fixed[i] === null ? "cv" : "cc"));
+    for (let i = 0; i < size; i++)
+      residual = Math.max(residual, Math.abs(am[i].reduce((sum, v, j) => sum + v * x[j], 0) - bm[i]));
     voltages[ref] = 0;
     unknown.forEach((n, i) => (voltages[n] = x[i]));
     sources.forEach((c, i) => (sourceI[c.id] = x[unknown.length + i]));
-    for (let i = 0; i < size; i++)
-      residual = Math.max(
-        residual,
-        Math.abs(a[i].reduce((sum, v, j) => sum + v * x[j], 0) - b[i]),
-      );
   }
   const readings: Record<string, ElectricalReading> = {};
   let sourcePower = 0,
@@ -196,19 +267,23 @@ export function solveElectrical(
     const valid = islands.find(a) === islands.find(b);
     const voltage = (voltages[a] ?? 0) - (voltages[b] ?? 0);
     const activeVoltage = (voltages[a] ?? 0) - (voltages[q] ?? 0);
+    const phases = islandPhases.get(islands.find(a)) ?? 1;
     const contactCurrent =
-      c.kind === "source"
+      isSource(c)
         ? (sourceI[c.id] ?? 0)
         : active.includes(c)
-          ? activeVoltage / prop(c, "resistance", 1)
+          ? c.kind === "motor" && runtime.motors?.[c.id]
+            ? runtime.motors[c.id].duty * (runtime.motors[c.id].duty * activeVoltage - runtime.motors[c.id].emf) / prop(c, "resistance", 1)
+            : activeVoltage / resistanceOf(c)
           : 0;
     const current = c.kind === "relay" && end(c) === "nc" ? 0 : contactCurrent;
     const currentNC =
       c.kind === "relay" && end(c) === "nc" ? contactCurrent : 0;
     const power =
-      c.kind === "source"
+      phases *
+      (isSource(c)
         ? voltage * contactCurrent
-        : activeVoltage * contactCurrent;
+        : activeVoltage * contactCurrent);
     readings[c.id] = {
       voltage,
       current,
@@ -216,8 +291,10 @@ export function solveElectrical(
       contactCurrent,
       power,
       voltageValid: valid,
+      ...(isSource(c) ? { regulation: regulation[c.id] ?? "cv" } : resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}),
+      ...(phases === 3 ? { phases: 3 as const } : {}),
     };
-    if (c.kind === "source") sourcePower -= power;
+    if (isSource(c)) sourcePower -= power;
     else dissipatedPower += power;
   }
   const nodes: Record<string, number> = {},

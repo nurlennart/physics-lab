@@ -258,20 +258,20 @@ export function runValidation() {
   const overloaded = new Simulation(overloadProject);
   advance(overloaded, 0.6);
   add(
-    "Undersized relay fails open",
+    "Undersized relay reported outside its rating",
     "protection",
     1,
-    Number(overloaded.failed[smallRelay.id]),
+    Number(overloaded.automation.status[smallRelay.id] === "overloaded" && overloaded.violations.some((v) => v.includes("current rating"))),
     0,
-    "8.32 A exceeds paid 5 A model for at least 0.5 s",
+    "8.32 A through a paid 5 A model: rating violation reported (scored run fails); no contact-wear model, so no fabricated failure",
   );
   add(
-    "Post-failure current immediately zero",
+    "Overloaded contact keeps conducting actual current",
     "electrical",
-    0,
+    240 / (28.8 + 0.02 + 0.01),
     overloaded.electrical.readings[smallRelay.id].current,
-    1e-10,
-    "Actual contact topology updated at protection boundary",
+    1e-9,
+    "Failure only through the modelled contact temperature",
   );
   overloaded.reset();
   add(

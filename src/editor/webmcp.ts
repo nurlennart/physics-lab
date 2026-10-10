@@ -25,7 +25,7 @@ export function registerLabTools() {
       name: "read_lab_measurements",
       title: "Read laboratory measurements",
       description:
-        "Read calculated voltages, currents, temperatures, energy, and simulation status.",
+        "Read calculated voltages, currents, temperatures, energy, and simulation status. Hydraulic readings are SI; pump hydraulicPower is net Δp·Q, impellerPower is ρgH·Q, efficiency is overall net/shaft as a fraction (null when undefined).",
       inputSchema: {
         type: "object",
         properties: {},
@@ -38,6 +38,14 @@ export function registerLabTools() {
         project: getState().project.name,
         readings: simulation.electrical.readings,
         temperatures: simulation.temperatures,
+        hydraulics: simulation.multiphysics.hydraulic,
+        tanks: simulation.multiphysics.tanks,
+        /** Spill over tank rims: rate over the last step (m³/s) and cumulative volume (m³). */
+        overflow: { rateM3s: simulation.multiphysics.overflowRate, volumeM3: simulation.multiphysics.overflowed },
+        motors: simulation.multiphysics.motors,
+        spatial: { bodies: simulation.spatial.readings, joints: simulation.spatial.jointReadings, contacts: simulation.spatial.contacts, residual: simulation.spatial.residual, externalWork: simulation.spatial.externalWork, dampingLoss: simulation.spatial.dampingLoss, contactLoss: simulation.spatial.contactLoss, limitLoss: simulation.spatial.limitLoss },
+        massResidualKg: simulation.multiphysics.massResidual,
+        energyResidualJ: simulation.energyResidual,
         energyJ: simulation.energy,
         error: simulation.error,
       }),
@@ -70,10 +78,10 @@ export function registerLabTools() {
       name: "advance_lab_simulation",
       title: "Advance the paused experiment",
       description:
-        "Execute the requested duration in fixed 1/60 second steps while the experiment is paused.",
+        "Advance the paused experiment. Thermal/electrical/control experiments use event-aware adaptive steps; hydraulic, motor and rigid-body experiments use fixed 1/60 second steps.",
       inputSchema: {
         type: "object",
-        properties: { seconds: { type: "integer", minimum: 1, maximum: 600 } },
+        properties: { seconds: { type: "integer", minimum: 1, maximum: 86400 } },
         required: ["seconds"],
         additionalProperties: false,
       },
@@ -84,9 +92,9 @@ export function registerLabTools() {
           typeof seconds !== "number" ||
           !Number.isInteger(seconds) ||
           seconds < 1 ||
-          seconds > 600
+          seconds > 86400
         )
-          throw Error("seconds must be an integer from 1 to 600.");
+          throw Error("seconds must be an integer from 1 to 86,400.");
         if (getState().running) throw Error("Pause the experiment first.");
         await actions.advance(seconds);
         return {

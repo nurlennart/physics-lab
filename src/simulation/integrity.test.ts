@@ -56,10 +56,13 @@ describe("engine-boundary integrity", () => {
     overspent.components.push(makeComponent("heater", 0, 0));
     expect(challengeError(overspent)).toMatch(/budget/);
   });
-  it("uses paid catalog ratings and rejects free rating edits", () => {
+  it("uses paid catalog ratings in challenges and allows custom ratings in the sandbox", () => {
     const p = starter(),
       c = p.components.find((c) => c.kind === "heater")!;
-    expect(propertyError(p, c, "ratedPower", 3000, 0)).toMatch(/catalog/);
+    expect(propertyError(p, c, "ratedPower", 3000, 0)).toBeNull();
+    const scored = starter("heat", true),
+      scoredHeater = scored.components.find((c) => c.kind === "heater")!;
+    expect(propertyError(scored, scoredHeater, "ratedPower", 3000, 0)).toMatch(/catalog/);
     const upgraded = {
       ...c,
       variant: "industrial",
@@ -84,7 +87,7 @@ describe("engine-boundary integrity", () => {
       if (c.kind === "source") delete c.props.ratedVoltage;
     }
     const migrated = parseProject(p);
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(3);
     expect(migrated.connections).toEqual(p.connections);
     expect(migrated.components[0].props.ratedVoltage).toBe(240);
   });

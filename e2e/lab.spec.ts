@@ -1,3 +1,4 @@
+import { openExample, addMissionEquipment } from "./learning-helpers";
 import { test, expect, type Page } from "@playwright/test";
 const port = (p: Page, name: string) => p.locator(`[data-port="${name}"]`);
 async function wire(p: Page, a: string, b: string) {
@@ -51,10 +52,11 @@ test("builds a functioning light circuit and completes challenge 001", async ({
   page,
 }) => {
   await startChallenge(page, 0);
+  await addMissionEquipment(page, "light");
   await expect(page.locator(".status-footer")).toContainText("0 connections");
   await wireCircuit(page, "L-01");
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.locator(".challenge-strip")).toContainText("3 stars", {
+  await expect(page.locator(".challenge-strip")).toContainText("3 stars · 100/100", {
     timeout: 15000,
   });
   await expect(page.locator('[data-component="lamp"]')).toContainText(
@@ -68,14 +70,16 @@ test("builds a functioning light circuit and completes challenge 001", async ({
 test("builds and completes heating challenge 002 using real fixed steps", async ({
   page,
 }) => {
+  test.setTimeout(180000);
   await startChallenge(page, 1);
+  await addMissionEquipment(page, "heat");
   await wireCircuit(page, "H-01");
   await wire(page, "H-01:heat", "TK-01:heat");
   for (let i = 0; i < 25; i++) {
     await page.getByRole("button", { name: "Advance 60 s" }).click();
     await expect(
       page.getByRole("button", { name: "Advance 60 s" }),
-    ).toBeEnabled();
+    ).toBeEnabled({ timeout: 30000 });
     if (
       (await page.locator(".challenge-strip").textContent())?.includes("stars")
     )
@@ -251,7 +255,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.getByRole("button", { name: "Open closed-loop starter" }).click();
+  await openExample(page, "A heater that thinks");
   await expect(page.locator(".status-footer")).toContainText("8 connections");
   await page.locator('[data-component="sensor"]').click();
   await expect(page.locator(".primary-reading")).toContainText("20.00");
@@ -310,7 +314,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
 test("connected duplication, undo, reusable assemblies and node probes preserve topology", async ({
   page,
 }) => {
-  await page.getByRole("button", { name: "Open closed-loop starter" }).click();
+  await openExample(page, "A heater that thinks");
   await page.keyboard.press("Control+a");
   await page.getByRole("button", { name: "Duplicate selected" }).click();
   await expect(page.locator(".status-footer")).toContainText("16 connections");

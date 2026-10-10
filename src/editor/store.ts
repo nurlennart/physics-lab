@@ -1,3 +1,4 @@
+import { challengeProject } from "../simulation/learning";
 import { useSyncExternalStore } from "react";
 import {
   connect,
@@ -18,17 +19,32 @@ import {
   parseProject,
   serializeProject,
   download,
-  ranges,
 } from "../simulation/projects";
+import {
+  builtinPresets,
+  loadUserPresets,
+  storeUserPresets,
+  presetProps,
+  presetComponentProps,
+  parsePresetFile,
+  serializePresets,
+  type ComponentPreset,
+} from "../simulation/presets";
 import { captureAssembly, insertAssembly } from "./assemblies";
 import type { FaultType } from "../simulation/automation";
 import { probeColors, probeUnit } from "../simulation/measurements";
-import { propertyError, transitionError } from "../simulation/integrity";
-import { Simulation, FixedClock, DT } from "../simulation/engine";
+import { propertyError, transitionError, withProperty, editPolicy } from "../simulation/integrity";
+import { Simulation, FixedClock, DT, AdaptiveRun } from "../simulation/engine";
+import { paramSpec } from "../simulation/parameters";
 import { evaluateChallenge } from "../simulation/challenges";
-import { replayExperiment, type RecordedInput } from "../simulation/replay";
+import { createRunArchive, restoreRunArchive, type RecordedInput } from "../simulation/replay";
+import { makeSpatial, defaultWorld, type ShapeKind, type SpatialBody, type MechanicalJoint } from '../simulation/spatial-model';
+import { makeJoint } from '../simulation/spatial-projects';
+import { layoutEquipment } from './spatial-layout';
 export type Tool = "select" | "pan" | "wire";
 interface EditorState {
+  workspaceView: 'schematic' | 'physical';
+  selectedJoint: string | null;
   project: Project;
   selected: string[];
   selectedWire: string | null;
@@ -45,7 +61,10 @@ interface EditorState {
   nodeMode: boolean;
   reference: Terminal | null;
   panel: "telemetry" | "events" | "energy";
-  view: "workspace" | "challenges" | "models";
+  view: "workspace" | "challenges" | "models" | "examples" | "guidebook";
+  /** Fraction of a running "advance" operation, or null. */
+  progress: number | null;
+  presets: ComponentPreset[];
 }
 const initial = starter();
 const sim = new Simulation(initial);
@@ -62,6 +81,7 @@ let hasWon = false;
 let replayOrigin = structuredClone(initial);
 let recordedInputs: RecordedInput[] = [];
 let state: EditorState = {
+  workspaceView: 'schematic', selectedJoint: null,
   project: initial,
   selected: [initial.components.find((c) => c.kind === "tank")!.id],
   selectedWire: null,
@@ -79,6 +99,8 @@ let state: EditorState = {
   reference: null,
   panel: "telemetry",
   view: "workspace",
+  progress: null,
+  presets: loadUserPresets(),
 };
 export const getState = () => state;
 function emit(patch: Partial<EditorState> = {}) {
@@ -105,6 +127,8 @@ function recordInput(p: Project) {
   else recordedInputs.push(input);
 }
 function edit(p: Project, record = true) {
+  if (sim.time === 0 && !p.challenge && (p.world || state.workspaceView === 'physical'))
+    p = layoutEquipment(p);
   const invalid = transitionError(
     state.project,
     p,
@@ -130,7 +154,63 @@ export function toast(message: string) {
 export const actions = {
   set: emit,
   select(ids: string[], wire: string | null = null) {
-    emit({ selected: ids, selectedWire: wire });
+    emit({ selected: ids, selectedWire: wire, selectedJoint: null });
+  },
+  workspace(workspaceView: 'schematic' | 'physical') {
+    // Initial placement is a normal, persisted Build edit. Never rebuild a live
+    // solver or modify a challenge merely because its presentation changed.
+    if (workspaceView === 'physical' && sim.time === 0 && !state.busy && !state.project.challenge) {
+      const placed = layoutEquipment(state.project);
+      if (placed !== state.project) edit(placed);
+    }
+    emit({ workspaceView, view: 'workspace' });
+  },
+  addBody(shape: ShapeKind, x = 3 + state.project.components.filter(c => c.spatial).length * 0.3, y = shape === 'floor' ? -0.25 : 4) {
+    if (state.project.components.length >= 100) return toast('The scene supports at most 100 components/bodies.');
+    const c = makeComponent('rigidBody', 100 + state.project.components.length * 30, 220, state.project.components);
+    c.spatial = makeSpatial(shape, x, y);
+    if (edit({ ...state.project, version: 4, world: state.project.world ?? defaultWorld(), components: [...state.project.components, c] })) emit({ selected: [c.id], workspaceView: 'physical', selectedJoint: null });
+  },
+  associate(id: string) {
+    const c = state.project.components.find(c => c.id === id); if (!c) return;
+    if (edit(layoutEquipment(state.project))) emit({ selected: [id], workspaceView: 'physical', selectedJoint: null });
+  },
+  spatial(id: string, patch: Partial<SpatialBody>, record = true) {
+    const components = state.project.components.map(c => { if (c.id !== id || !c.spatial) return c; const spatial = { ...c.spatial, ...patch }; return { ...c, spatial, props: spatial.elevationLinked ? { ...c.props, elevation: spatial.y + spatial.elevationOffset } : c.props }; });
+    return edit({ ...state.project, components }, record);
+  },
+  moveSpatial(positions: Record<string, { x: number; y: number }>) {
+    return edit({ ...state.project, components: state.project.components.map(c => { if (!positions[c.id] || !c.spatial || c.spatial.locked) return c; const spatial = { ...c.spatial, ...positions[c.id] }; return { ...c, spatial, props: spatial.elevationLinked ? { ...c.props, elevation: spatial.y + spatial.elevationOffset } : c.props }; }) }, false);
+  },
+  gravity(x: number, y: number) { edit({ ...state.project, version: 4, world: { ...(state.project.world ?? defaultWorld()), gravity: { x, y } } }); },
+  addJoint(kind: MechanicalJoint['kind'], a: string, b: string, pointA: { x: number; y: number }, pointB = pointA) {
+    const ca = state.project.components.find(c => c.id === a), cb = state.project.components.find(c => c.id === b); if (!ca?.spatial || !cb?.spatial) return;
+    const j = makeJoint(state.project, kind, ca, cb, pointA, pointB);
+    if (edit({ ...state.project, version: 4, world: { ...(state.project.world ?? defaultWorld()), joints: [...(state.project.world?.joints ?? []), j] } })) emit({ selected: [], selectedJoint: j.id });
+  },
+  gear(joint1: string, joint2: string, ratio: number) {
+    const first = state.project.world?.joints.find(j => j.id === joint1), second = state.project.world?.joints.find(j => j.id === joint2); if (!first || !second) return;
+    const a = state.project.components.find(c => c.id === first.b)!, b = state.project.components.find(c => c.id === second.b)!;
+    const j = makeJoint(state.project, 'gear', a, b, a.spatial!, b.spatial!); j.joint1 = joint1; j.joint2 = joint2; j.ratio = ratio;
+    if (edit({ ...state.project, world: { ...state.project.world!, joints: [...state.project.world!.joints, j] } })) emit({ selected: [], selectedJoint: j.id });
+  },
+  joint(id: string, patch: Partial<MechanicalJoint> | null) {
+    let joints = (state.project.world?.joints ?? []).filter(j => patch || j.id !== id).map(j => j.id === id && patch ? { ...j, ...patch } : j);
+    joints = joints.filter(j => j.kind !== 'gear' || joints.some(x => x.id === j.joint1) && joints.some(x => x.id === j.joint2));
+    if (edit({ ...state.project, world: { ...(state.project.world ?? defaultWorld()), joints } }) && !patch) emit({ selectedJoint: null });
+  },
+  alignSpatial(axis: 'x' | 'y') {
+    const cs = state.project.components.filter(c => state.selected.includes(c.id) && c.spatial && !c.spatial.locked); if (cs.length < 2) return;
+    const mean = cs.reduce((sum, c) => sum + c.spatial![axis], 0) / cs.length;
+    checkpoint(); actions.moveSpatial(Object.fromEntries(cs.map(c => [c.id, { x: c.spatial!.x, y: c.spatial!.y, [axis]: mean }])));
+  },
+  shaftRotor(motor: string, rotor: string) {
+    let p = { ...state.project, connections: state.project.connections.filter(w => !(w.domain === 'mechanical' && [w.from.component, w.to.component].includes(motor) && state.project.components.some(c => c.kind === 'rigidBody' && [w.from.component, w.to.component].includes(c.id)))) };
+    try { if (rotor) p = connect(p, { component: motor, port: 'shaft' }, { component: rotor, port: 'shaft' }); edit(p); } catch (e) { toast((e as Error).message); }
+  },
+  impulse(id: string, x: number, y: number, angular = 0) {
+    const error = sim.applyImpulse(id, { x, y }, angular); if (error) return toast(error);
+    recordedInputs.push({ at: sim.time, impulse: { id, x, y, angular } }); emit();
   },
   add(kind: Kind, x?: number, y?: number) {
     if (state.project.components.length >= 100) {
@@ -143,6 +223,12 @@ export const actions = {
       y ?? 220 + Math.random() * 60,
       state.project.components,
     );
+    if (state.project.challenge === 'light' && kind === 'source') c.props.voltage = 12;
+    if (state.project.challenge === 'descent' && kind === 'forceActuator') {
+      c.props.target = state.project.components.find(c => c.name === 'Suspended load')!.id;
+      c.props.axis = 'y';
+      c.props.value = 0;
+    }
     c.x = Math.round(c.x / 20) * 20;
     c.y = Math.round(c.y / 20) * 20;
     if (
@@ -165,24 +251,6 @@ export const actions = {
     );
   },
   property(id: string, key: string, value: Property) {
-    if (
-      state.project.challenge &&
-      sim.time > 0 &&
-      ["volume", "capacity", "initialTemperature", "heatCapacity"].includes(key)
-    ) {
-      toast(
-        "Reset the challenge before changing thermal mass or initial conditions.",
-      );
-      return;
-    }
-    if (
-      typeof value === "number" &&
-      (!Number.isFinite(value) ||
-        (ranges[key] && (value < ranges[key][0] || value > ranges[key][1])))
-    ) {
-      toast("That value is outside the supported range.");
-      return;
-    }
     const c = state.project.components.find((c) => c.id === id);
     if (!c) return;
     const invalid = propertyError(state.project, c, key, value, sim.time);
@@ -190,21 +258,66 @@ export const actions = {
       toast(invalid);
       return;
     }
-    if (
-      c.kind === "tank" &&
-      ((key === "volume" && Number(value) > Number(c.props.capacity)) ||
-        (key === "capacity" && Number(value) < Number(c.props.volume)))
-    ) {
-      toast("Water volume must not exceed tank capacity.");
-      return;
+    const next = withProperty(state.project, c, key, value);
+    if (edit({ ...next, components: next.components.map((x) => (x.id === id && x.preset ? { ...x, preset: undefined } : x)) }))
+      sim.log(`${c.name}: ${paramSpec(c.kind, key)?.label ?? key} set to ${value}${paramSpec(c.kind, key)?.unit ? " " + paramSpec(c.kind, key)!.unit : ""}.`);
+  },
+  /** Restore the catalog values of every configuration parameter (keeps commands, targets, wiring). */
+  resetDefaults(id: string) {
+    const c = state.project.components.find((c) => c.id === id);
+    if (!c) return;
+    const model = catalog(c).props;
+    const props = Object.fromEntries(Object.entries(model).map(([k, v]) => [k, editPolicy(c, k) === "live" && paramSpec(c.kind, k)?.group === "operating" || k === "target" ? c.props[k] : v]));
+    if (edit({ ...state.project, components: state.project.components.map((x) => (x.id === id ? { ...x, preset: undefined, props } : x)) }))
+      toast(`${c.name}: configuration restored to the ${catalog(c).label.toLowerCase()} catalog model.`);
+  },
+  applyPreset(id: string, presetId: string) {
+    const c = state.project.components.find((c) => c.id === id),
+      preset = [...builtinPresets, ...state.presets].find((p) => p.id === presetId);
+    if (!c || !preset || preset.kind !== c.kind) return;
+    const { variant, props } = presetComponentProps(preset, c);
+    if (edit({ ...state.project, components: state.project.components.map((x) => (x.id === id ? { ...x, variant, props, preset: preset.name } : x)) }))
+      sim.log(`${c.name}: preset “${preset.name}” applied.`);
+  },
+  savePreset(id: string, name: string) {
+    const c = state.project.components.find((c) => c.id === id);
+    if (!c || !name.trim()) return;
+    const preset: ComponentPreset = { id: uid(), name: name.trim().slice(0, 80), kind: c.kind, family: "Custom", base: c.variant ?? "standard", props: presetProps(c) };
+    const presets = [...state.presets.filter((p) => !(p.kind === c.kind && p.name === preset.name)), preset];
+    storeUserPresets(presets);
+    emit({ presets, project: { ...state.project, components: state.project.components.map((x) => (x.id === id ? { ...x, preset: preset.name } : x)) }, dirty: true });
+    toast(`Preset “${preset.name}” saved on this device.`);
+  },
+  renamePreset(presetId: string, name: string) {
+    if (!name.trim()) return;
+    const presets = state.presets.map((p) => (p.id === presetId ? { ...p, name: name.trim().slice(0, 80) } : p));
+    storeUserPresets(presets);
+    emit({ presets });
+  },
+  deletePreset(presetId: string) {
+    const presets = state.presets.filter((p) => p.id !== presetId);
+    storeUserPresets(presets);
+    emit({ presets });
+  },
+  exportPresets() {
+    if (!state.presets.length) return toast("No custom presets to export yet. Use “Save as preset” in the Inspector.");
+    download("physics-lab-presets.json", serializePresets(state.presets));
+  },
+  importPresets(value: unknown) {
+    try {
+      const imported = parsePresetFile(value).map((p) => ({ ...p, id: uid() }));
+      const presets = [...state.presets.filter((p) => !imported.some((x) => x.kind === p.kind && x.name === p.name)), ...imported];
+      storeUserPresets(presets);
+      emit({ presets });
+      toast(`${imported.length} component presets imported.`);
+    } catch (e) {
+      toast(`Preset import failed: ${(e as Error).message}`);
     }
-    edit({
-      ...state.project,
-      components: state.project.components.map((c) =>
-        c.id === id ? { ...c, props: { ...c.props, [key]: value } } : c,
-      ),
-    });
-    sim.log(`${c.name}: ${key} set to ${value}.`);
+  },
+  /** Sandbox environment (ambient for element thermal masses). */
+  environment(ambient: number) {
+    if (!Number.isFinite(ambient)) return toast("Ambient temperature must be a finite number.");
+    edit({ ...state.project, environment: { ambient } });
   },
   toggle(id: string) {
     const c = state.project.components.find((c) => c.id === id);
@@ -225,6 +338,7 @@ export const actions = {
     }
   },
   remove() {
+    if (state.workspaceView === 'physical' && state.selectedJoint) { actions.joint(state.selectedJoint, null); return; }
     if (!state.selected.length && !state.selectedWire) return;
     edit({
       ...state.project,
@@ -246,10 +360,12 @@ export const actions = {
           !state.selected.includes(w.from.component) &&
           !state.selected.includes(w.to.component),
       ),
+      ...(state.project.world ? { world: { ...state.project.world, joints: state.project.world.joints.filter(j => !state.selected.includes(j.a) && !state.selected.includes(j.b)).filter((j, _, all) => j.kind !== 'gear' || all.some(x => x.id === j.joint1) && all.some(x => x.id === j.joint2)) } } : {}),
     });
     emit({ selected: [], selectedWire: null });
   },
   rotate() {
+    if (state.workspaceView === 'physical') { edit({ ...state.project, components: state.project.components.map(c => state.selected.includes(c.id) && c.spatial && !c.spatial.locked ? { ...c, spatial: { ...c.spatial, angle: c.spatial.angle + Math.PI / 12 } } : c) }); return; }
     edit({
       ...state.project,
       components: state.project.components.map((c) =>
@@ -331,6 +447,7 @@ export const actions = {
             ? {
                 ...x,
                 variant,
+                preset: undefined,
                 props: {
                   ...model.props,
                   ...Object.fromEntries(
@@ -338,8 +455,8 @@ export const actions = {
                       "target",
                       "setpoint",
                       "hysteresis",
-                      "voltage",
-                      "volume",
+                      ...(x.kind === "source" && Number(x.props.voltage) > Number(model.props.ratedVoltage) ? [] : ["voltage"]),
+                      ...(x.kind === "tank" && !state.project.challenge ? [] : ["volume"]),
                       "ambient",
                       "initialTemperature",
                       "closed",
@@ -480,24 +597,27 @@ export const actions = {
   },
   reset() {
     if (state.busy) return;
-    replayOrigin = structuredClone(state.project);
+    const project = state.workspaceView === 'physical' && !state.project.challenge ? layoutEquipment(state.project) : state.project;
+    replayOrigin = structuredClone(project);
     recordedInputs = [];
-    sim.reset(state.project);
+    sim.reset(project);
     clock.accumulator = 0;
     hasWon = false;
-    emit({ running: false });
+    emit({ project, running: false, dirty: state.dirty || project !== state.project });
   },
-  replay() {
-    emit({ running: false });
+  async replay() {
+    if (state.busy) return;
+    emit({ running: false, busy: true });
     try {
-      const replayed = replayExperiment(replayOrigin, recordedInputs, sim.time);
+      const replayed = (await restoreRunArchive(createRunArchive(state.project, replayOrigin, recordedInputs, sim.time))).simulation;
+      replayed.log("Deterministic replay completed, including control and fault inputs.");
       Object.assign(sim, replayed);
       clock.accumulator = 0;
       emit({ project: sim.project });
       toast("Experiment reproduced from reset and recorded editor inputs.");
     } catch (e) {
       toast((e as Error).message);
-    }
+    } finally { emit({ busy: false }); }
   },
   step() {
     if (state.busy) return;
@@ -505,36 +625,61 @@ export const actions = {
     checkChallenge();
     emit();
   },
+  /**
+   * Advance the paused experiment. Thermal/electrical/control experiments use the
+   * event-aware adaptive integrator (recorded for replay); hydraulic, motor and
+   * rigid-body experiments execute fixed 1/60 s steps in responsive batches.
+   */
   async advance(seconds = 60) {
     if (state.running || state.busy) return;
-    emit({ busy: true });
-    let count = 0;
-    const total = Math.round(Math.min(seconds, 7200) / DT);
+    emit({ busy: true, progress: 0 });
+    const unavailable = sim.adaptiveUnavailable();
     try {
-      while (count < total && state.busy) {
-        const start = performance.now();
-        while (count < total && performance.now() - start < 12) {
-          count++;
-          if (
-            !sim.step(DT) ||
-            evaluateChallenge(state.project, sim)?.complete
-          ) {
-            count = total;
-            break;
-          }
+      if (!unavailable) {
+        const at = sim.time, tolerance = 0.05, maxStep = 30;
+        const run = new AdaptiveRun(sim, seconds, { tolerance, maxStep });
+        let painted = 0;
+        while (!run.done && state.busy) {
+          run.run(12);
+          if (performance.now() - painted > 100) { painted = performance.now(); emit({ progress: run.progress }); }
+          await new Promise((r) => setTimeout(r, 0));
         }
-        emit();
-        await new Promise((r) => setTimeout(r, 0));
+        if (run.steps) {
+          recordedInputs.push({ at, adaptive: { duration: seconds, steps: run.steps, tolerance, maxStep } });
+          sim.log(`Adaptive advance ${(sim.time - at).toFixed(1)} s in ${run.steps} steps (step ${run.minStep.toPrecision(2)}–${run.maxTaken.toPrecision(3)} s, ${run.events} discrete events resolved at 1/60 s).`);
+        }
+      } else {
+        let count = 0, painted = 0;
+        const total = Math.round(Math.min(seconds, 86400) / DT);
+        while (count < total && state.busy) {
+          const start = performance.now();
+          while (count < total && performance.now() - start < 12) {
+            count++;
+            if (
+              !sim.step(DT) ||
+              evaluateChallenge(state.project, sim)?.complete
+            ) {
+              count = total;
+              break;
+            }
+          }
+          if (performance.now() - painted > 100) { painted = performance.now(); emit({ progress: count / total }); }
+          await new Promise((r) => setTimeout(r, 0));
+        }
       }
       checkChallenge();
     } finally {
-      emit({ busy: false });
+      emit({ busy: false, progress: null });
     }
+  },
+  cancelAdvance() {
+    if (state.busy && state.progress !== null) emit({ busy: false });
   },
   load(p: Project) {
     if (state.busy) return;
     try {
-      const valid = parseProject(p);
+      const parsed = parseProject(p);
+      const valid = parsed.world && !parsed.challenge ? layoutEquipment(parsed) : parsed;
       history = [];
       future = [];
       hasWon = false;
@@ -544,6 +689,7 @@ export const actions = {
       clock.accumulator = 0;
       emit({
         project: valid,
+        workspaceView: valid.world ? 'physical' : 'schematic', selectedJoint: null,
         selected: [],
         selectedWire: null,
         running: false,
@@ -555,20 +701,39 @@ export const actions = {
     }
   },
   newProject(
-    mode: "heat" | "light" | "blank" | "runaway" | "automated" = "blank",
+    mode: Parameters<typeof starter>[0] = "blank",
     challenge = false,
   ) {
-    actions.load(starter(mode, challenge));
+    if (challenge && mode !== "blank" && mode !== "automated" && mode !== "industrial" && mode !== "exchanger" && mode !== "circulation" && mode !== "mechanism" && mode !== "rotor") {
+      actions.load(challengeProject(mode));
+      if (state.project.challenge === mode) emit({ view: "guidebook" });
+    } else actions.load(starter(mode));
   },
+  async importData(value: unknown) {
+    if (state.busy) return;
+    if (value && typeof value === "object" && "format" in value && value.format === "physics-lab-run") {
+      emit({ running: false, busy: true });
+      try {
+        const restored = await restoreRunArchive(value);
+        history = []; future = []; recordedInputs = restored.archive.inputs; replayOrigin = restored.archive.origin;
+        Object.assign(sim, restored.simulation); clock.accumulator = 0; hasWon = false;
+        emit({ project: sim.project, selected: [], selectedWire: null, selectedJoint: null, workspaceView: sim.project.world ? 'physical' : 'schematic', dirty: false, view: "workspace" });
+        toast("Saved live experiment restored.");
+      } catch (e) { toast(`Import failed: ${(e as Error).message}`); }
+      finally { emit({ busy: false }); }
+    } else actions.load(parseProject(value));
+  },
+  exportScenario() { download("physics-lab-scenario.physics.json", serializeProject(state.project)); },
   save() {
     try {
+      const contents = sim.time > 0 ? JSON.stringify(createRunArchive(state.project, replayOrigin, recordedInputs, sim.time), null, 2) : serializeProject(state.project);
       download(
         `${state.project.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.physics.json`,
-        serializeProject(state.project),
+        contents,
       );
       localStorage.setItem(
         "physics-lab-last-project",
-        serializeProject(state.project),
+        contents,
       );
       emit({ dirty: false });
       toast("Project file saved. A recovery copy is available on this device.");
@@ -576,7 +741,7 @@ export const actions = {
       toast(`Could not save: ${(e as Error).message}`);
     }
   },
-  recover() {
+  async recover() {
     try {
       const raw = localStorage.getItem("physics-lab-last-project");
       if (!raw) {
@@ -585,7 +750,7 @@ export const actions = {
         );
         return;
       }
-      actions.load(parseProject(JSON.parse(raw)));
+      await actions.importData(JSON.parse(raw));
       toast("Device recovery copy loaded.");
     } catch (e) {
       toast(`Could not load: ${(e as Error).message}`);
@@ -634,7 +799,7 @@ function tick(now: number) {
     if (!ok) emit({ running: false });
     checkChallenge();
     return ok && state.running;
-  });
+  }, 12);
   frames++;
   if (now - frameStart >= 1000) {
     const fps = Math.round((frames * 1000) / (now - frameStart));

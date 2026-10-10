@@ -1,5 +1,7 @@
 # Validation record
 
+Current Phase 3A evidence is in [the executed results](PHASE3A-RESULTS.md), [raw quantitative results](../validation/latest.md), and `validation/phase3a-*`. Earlier phase results below are historical evidence.
+
 Validated on 2026-10-09 with Node 22.23.3.
 
 - TypeScript and Vite production build: passed.
@@ -43,3 +45,7 @@ The [executed engine scenarios](../validation/latest.md) contain 32 quantitative
 All 12 Chromium workflows passed: the original eight workflows plus real closed-loop faults/probes/replay, connected duplication/undo/reusable assemblies/node probes, draggable wire bends, and a full visible Thermal Runaway construction/operating/fault/manual-reset/recovery run. The recovery scoring requires feedback transitions that alter actual heater power; passive cooling cannot earn automatic regulation credit. Browser tests await responsive fast-forward batches instead of assuming a blocking action.
 
 Production TypeScript/Vite build passed. The rebuilt Docker production image passed all 12 Chromium workflows at http://localhost:8080 and its nginx health check. Native WebMCP host integration remains untested; registration/API contracts are browser-shim tested. No peak-size or long-duration real-device performance benchmark is claimed.
+
+## Phase 2B executed audit
+
+See [PHASE2B-RESULTS.md](PHASE2B-RESULTS.md) for executed regression, whole-system, browser and Docker results; [validation/latest.md](../validation/latest.md) includes the preserved original checks plus quantified motor/pump/fluid convergence and conservation. `npm run validate:coupled` executes all three hydraulic reference designs to scored completion and a heated circulation loop; its raw final states and timings are in [phase2b-coupled.json](../validation/phase2b-coupled.json). Scenarios A–J are covered across motor load/energy, hydraulic operating point, finite elevated transfer/boundaries, valve/current response, thermal advection, simulation-clock hysteresis, pump/sensor failure, 720 s drift, actual timestep refinement, and challenge/import integrity. Scope limits and unsupported physics are stated in the model and component inventory rather than implied by a decorative catalog entry.
