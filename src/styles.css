@@ -3246,3 +3246,55 @@ select option {
   .status-footer .solver-status, .status-footer > div:last-child > span { display: none; }
 }
 .status-footer .engine-status i { display: none; }
+
+/* ─── Design overhaul 3/4: canvas ──────────────────────────────────────────
+   Wires carry their domain colour and weight; live values ride on the wires;
+   component identifiers are domain-coloured; captions are readable. */
+.construction-canvas { background: var(--n-5); }
+.component-body { fill: var(--n-3); stroke: var(--n-9); stroke-width: 1; }
+.component-selected { fill: var(--n-4); stroke: var(--n-15); stroke-width: 2; filter: drop-shadow(0 0 6px rgb(var(--n-15-rgb) / 0.25)); }
+.component-failed { stroke: var(--fault); stroke-width: 2; }
+.component-id { font: 600 12px var(--mono); letter-spacing: 0; fill: var(--n-14); }
+.domain-electrical .component-id { fill: var(--electrical-text); }
+.domain-thermal .component-id { fill: var(--thermal-text); }
+.domain-hydraulic .component-id { fill: var(--hydraulic-text); }
+.domain-mechanical .component-id { fill: var(--mechanical-text); }
+.component-caption { font: 500 13px var(--sans); fill: var(--n-14); }
+.live-caption { font: 500 12px var(--mono); fill: var(--n-13); letter-spacing: 0; }
+.scale-label { font-size: 9px; letter-spacing: 0.2px; }
+
+.wire-line { stroke: var(--electrical); stroke-width: 3; stroke-linecap: round; }
+.connection.thermal .wire-line { stroke: var(--thermal); stroke-width: 2.5; stroke-dasharray: 6 5; }
+.connection.hydraulic .wire-line { stroke: var(--hydraulic); stroke-width: 5; }
+.connection.mechanical .wire-line { stroke: var(--mechanical); stroke-width: 4; stroke-dasharray: 10 6; }
+.connection.control .wire-line { stroke: var(--n-13); stroke-width: 1.5; stroke-dasharray: 2 4; }
+.connection:hover .wire-line, .selected-wire .wire-line { stroke-width: 5; filter: drop-shadow(0 0 4px rgb(var(--n-15-rgb) / 0.35)); }
+.connection.electrical:hover .wire-line, .connection.electrical.selected-wire .wire-line { stroke: var(--electrical-text); }
+.connection.hydraulic:hover .wire-line, .connection.hydraulic.selected-wire .wire-line { stroke: var(--hydraulic-text); stroke-width: 7; }
+.connection.mechanical:hover .wire-line, .connection.mechanical.selected-wire .wire-line { stroke: var(--mechanical-text); }
+.connection.thermal:hover .wire-line, .connection.thermal.selected-wire .wire-line { stroke: var(--thermal-text); }
+.connection.control:hover .wire-line, .connection.control.selected-wire .wire-line { stroke: var(--n-15); stroke-width: 2.5; }
+.flow-line { stroke: var(--electrical-text); stroke-width: 2.5; stroke-dasharray: 3 21; opacity: 0.9; }
+.connection.control .flow-line { stroke: var(--n-15); }
+
+.terminal { color: var(--electrical); }
+.terminal.thermal { color: var(--thermal); }
+.terminal.control { color: var(--n-13); }
+.terminal.hydraulic { color: var(--hydraulic); fill: var(--n-3); stroke: var(--hydraulic); }
+.terminal.mechanical { color: var(--mechanical); fill: var(--n-3); stroke: var(--mechanical); }
+.port-circle { fill: var(--n-3); stroke-width: 2; }
+
+.wire-chip rect { fill: var(--n-2); stroke-width: 1; }
+.wire-chip text { font: 500 12px var(--mono); }
+.wire-chip.electrical rect { stroke: rgb(var(--electrical-rgb) / 0.6); }
+.wire-chip.electrical text { fill: var(--electrical-text); }
+.wire-chip.hydraulic rect { stroke: rgb(var(--hydraulic-rgb) / 0.6); }
+.wire-chip.hydraulic text { fill: var(--hydraulic-text); }
+.wire-chip.mechanical rect { stroke: rgb(var(--mechanical-rgb) / 0.6); }
+.wire-chip.mechanical text { fill: var(--mechanical-text); }
+.header-project { flex: 1 1 0; }
+.header-project .project-name { min-width: 0; justify-content: flex-start; }
+.project-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-transport { flex: 0 0 auto; }
+.header-actions { flex: 1 1 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+@media (max-width: 850px) { .header-project, .header-actions { flex: 0 1 auto; } .header-project { flex-grow: 1; } }

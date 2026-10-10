@@ -27,6 +27,7 @@ import {
   definitions,
   prop,
   type Component,
+  type Connection,
   type Terminal,
 } from "../simulation/model";
 import {
@@ -390,6 +391,48 @@ function CircuitSymbol({ c }: { c: Component }) {
       )}
     </g>
   );
+}
+
+/** Signed volume flow along a hydraulic wire (from → to), from the branch reading at either end. */
+function wireFlow(w: Connection) {
+  if (w.domain !== "hydraulic") return 0;
+  const h = simulation.multiphysics.hydraulic;
+  const portFlow = (id: string, port: string) => { const reading = h.readings[id]; if (!reading || !["inlet", "outlet"].includes(port)) return undefined; return reading.flow * (port === "outlet" ? 1 : -1); };
+  return portFlow(w.from.component, w.from.port) ?? -(portFlow(w.to.component, w.to.port) ?? 0);
+}
+/** Physical domain that colours a component's identifier (control and sensors stay neutral). */
+const domainOf = (c: Component) => ({ Electrical: "electrical", Thermal: "thermal", Hydraulic: "hydraulic", Mechanical: "mechanical" } as Record<string, string>)[definitions[c.kind].category] ?? "control";
+/** Readable number of significant digits for live chips. */
+const chipNumber = (v: number) => { const a = Math.abs(v); return a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2); };
+/**
+ * Live value carried by a wire, or null when it cannot be stated exactly:
+ * hydraulic flow at its port, shaft speed of a connected motor, and electrical current only where a
+ * two-terminal element is the sole branch at that terminal (then the wire current equals the element current).
+ */
+function wireValue(w: Connection, project: { components: Component[]; connections: Connection[] }, fluidFlow: number): string | null {
+  if (w.domain === "hydraulic") return Math.abs(fluidFlow) > 1e-9 ? `${chipNumber(fluidFlow * 60000)} L/min` : null;
+  if (w.domain === "mechanical") {
+    const motor = [w.from.component, w.to.component].map((id) => simulation.multiphysics.motors[id]).find(Boolean);
+    return motor ? `${(Math.abs(motor.omega) * 30 / Math.PI).toFixed(0)} rpm` : null;
+  }
+  if (w.domain !== "electrical") return null;
+  for (const end of [w.from, w.to]) {
+    const c = project.components.find((x) => x.id === end.component);
+    if (!c || definitions[c.kind].ports.filter((p) => p.domain === "electrical").length !== 2) continue;
+    const wires = project.connections.filter((x) => x.domain === "electrical" && [x.from, x.to].some((t) => t.component === end.component && t.port === end.port));
+    const r = simulation.electrical.readings[c.id];
+    if (wires.length === 1 && r && Math.abs(r.current) > 1e-6) return `${chipNumber(r.current)} A`;
+  }
+  return null;
+}
+/** Midpoint of the longest segment of a routed wire: away from the terminals, where a chip fits. */
+function chipAnchor(points: { x: number; y: number }[]) {
+  let best = { x: 0, y: 0, length: -1 };
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1], b = points[i], length = Math.hypot(b.x - a.x, b.y - a.y);
+    if (length > best.length) best = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, length };
+  }
+  return best.length > 40 ? best : null;
 }
 export default function Workspace() {
   const state = useLab(),
@@ -762,7 +805,7 @@ export default function Workspace() {
             x={camera.x}
             y={camera.y}
           >
-            <circle cx="1" cy="1" r=".75" fill={T.n10} />
+            <circle cx="1" cy="1" r=".75" fill={T.n9} />
           </pattern>
           <filter id="lampGlow">
             <feGaussianBlur stdDeviation="10" />
@@ -774,11 +817,7 @@ export default function Workspace() {
             const path = wirePath(w, project.components),
               from = project.components.find((c) => c.id === w.from.component),
               r = from && simulation.electrical.readings[from.id];
-            const fluidFlow = w.domain === "hydraulic" ? (() => {
-              const h = simulation.multiphysics.hydraulic;
-              const portFlow = (id: string, port: string) => { const reading = h.readings[id]; if (!reading || !["inlet", "outlet"].includes(port)) return undefined; return reading.flow * (port === "outlet" ? 1 : -1); };
-              return portFlow(w.from.component, w.from.port) ?? -(portFlow(w.to.component, w.to.port) ?? 0);
-            })() : 0;
+            const fluidFlow = wireFlow(w);
             const live =
               state.running &&
               (w.domain === "hydraulic" ? Math.abs(fluidFlow) > 1e-12 : w.domain === "thermal"
@@ -847,12 +886,12 @@ export default function Workspace() {
           {project.components.map((c) => {
             const { w, h } = dimensions(c),
               sel = selected.includes(c.id),
-              r = simulation.electrical.readings[c.id],
-              thermal = c.kind === "tank" || c.kind === "heater";
+              r = simulation.electrical.readings[c.id];
             return (
               <g
                 key={c.id}
                 data-component={c.kind}
+                className={`component-node domain-${domainOf(c)}`}
                 transform={`translate(${c.x},${c.y})`}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -864,26 +903,12 @@ export default function Workspace() {
                   <rect
                     width={w}
                     height={h}
-                    rx="5"
+                    rx="8"
                     className={`component-body ${sel ? "component-selected" : ""} ${simulation.failed[c.id] ? "component-failed" : ""}`}
                   />
                   <path d={`M0 31H${w}`} stroke={T.n9} />
                   <text x="13" y="20" className="component-id">
                     {c.name}
-                  </text>
-                  <text
-                    x={w - 12}
-                    y="20"
-                    textAnchor="end"
-                    className={`component-domain ${thermal ? "thermal-text" : ""}`}
-                  >
-                    {c.kind === "tank"
-                      ? "WATER"
-                      : c.kind === "heater"
-                        ? "HEATER"
-                        : c.kind === "source"
-                          ? "POWER"
-                          : c.kind.toUpperCase()}
                   </text>
                   <CircuitSymbol c={c} />
                   {definitions[c.kind].ports.map((p) => {
@@ -1005,6 +1030,18 @@ export default function Workspace() {
                             : `${(r?.voltage ?? 0).toFixed(2)} V  ·  ${(r?.power ?? 0).toFixed(1)} W`}
                   </text>
                 )}
+              </g>
+            );
+          })}
+          {camera.z >= 0.35 && project.connections.map((w) => {
+            const value = wireValue(w, project, wireFlow(w)), at = value && chipAnchor(routePoints(w, project.components));
+            if (!value || !at) return null;
+            // Counter-scale so chips stay about 12 px on screen at any zoom.
+            const k = Math.min(2.2, Math.max(0.9, 1 / camera.z)), width = value.length * 7.4 + 14;
+            return (
+              <g key={`chip-${w.id}`} className={`wire-chip ${w.domain}`} transform={`translate(${at.x},${at.y}) scale(${k})`} pointerEvents="none">
+                <rect x={-width / 2} y={-11} width={width} height={22} rx={6} />
+                <text x={0} y={4} textAnchor="middle">{value}</text>
               </g>
             );
           })}

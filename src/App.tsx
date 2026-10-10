@@ -213,7 +213,7 @@ export default function App() {
                 setRenaming(true);
               }}
             >
-              {s.project.name}
+              <span className="project-title">{s.project.name}</span>
               <ChevronDown size={12} />
             </button>
           )}
@@ -313,6 +313,7 @@ export default function App() {
             t <strong>{formatTime(simulation.time)}</strong>
           </span>
         </div>
+        <div className="header-actions">
         <button
           className="import-button"
           onClick={() => fileInput.current?.click()}
@@ -331,6 +332,7 @@ export default function App() {
         >
           <HelpCircle size={18} />
         </button>
+        </div>
       </header>
       <input
         type="file"
