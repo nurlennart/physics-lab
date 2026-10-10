@@ -7,6 +7,7 @@ Scope: existing electrical, thermal, hydraulic, shaft, spatial, sensor and contr
 | Defect | Independent expectation / regression |
 | --- | --- |
 | DC capacitor nodal solve used 1 GΩ leakage, but readings and heat used 0.05 Ω ESR, reporting ~480 A at 24 V | Series 1 GΩ + 10 Ω: I = 24/(10⁹+10) A; capacitor heat = I²·10⁹ W; KCL and thermal ledger |
+| AC capacitor ESR ignored its configured temperature coefficient/tolerance | At 24 V, 50 Hz, C = 1 mF, R20 = 0.5 Ω, α = 0.01/K and 60 °C: ESR = 0.7 Ω; I = 7.3638625 A and heat = I²·0.7 W |
 | De-energized AC relay heat used a–b voltage while its NC branch conducted | 24 V, 10 Ω load, 0.1 Ω contact: I = 24/10.1 A; contact heat = 0.5646505 W. Both NO and NC tested; unused a–b probe is invalid |
 | Induction motor treated loss of supply / unwired state as incompatible DC, stopping instead of coasting | Unexcited current and torque zero; unloaded speed decay ω = ω₀ exp(−bt/J); recovery tested. Energized DC/single-phase rejection retained |
 | Induction machine had no selectable motor faults despite engine support | Existing power-loss, motor-failure and control-loss paths exposed; fault/clear and UI archive replay exercised |
@@ -50,7 +51,7 @@ Live archives use the corrected current engine, so old histories that depended o
 The final release gate uses `VITEST_MAX_WORKERS=1 npm run check` to run tests sequentially on this host. Physical tolerances, timeout limits, ratings and reference scores were retained. Earlier concurrent baseline runs were interrupted after CPU contention caused wall-time failures; they are not counted as successful validation.
 
 - Typecheck: passed.
-- Unit/integration regressions: 279/279 tests, 23 files, including nine new focused audit cases.
+- Unit/integration regressions: 279/279 tests, 23 files, before the final ESR correction. The final focused rerun passed all 22 AC/audit tests, including ten audit cases; the clean deployment gate includes 280 unit/integration tests.
 - Quantitative physics: 87/87 checks, including timestep refinement; [expected/measured results](../validation/latest.md).
 - Scale campaign: 124/124 checks; [results](../validation/scaling.md).
 - Challenge score guard: all nine reference outcomes unchanged.
@@ -61,4 +62,4 @@ The final release gate uses `VITEST_MAX_WORKERS=1 npm run check` to run tests se
 - Production UI: all 65 distinct workflows passed across the campaign and corrected-test rerun. The first complete browser run passed 64/65; the new induction test used a checkbox API on a button. Its interaction was corrected without changing physical assertions, and all three new browser regressions passed on rerun. All 16 supplied experiments plus `blank.physics.json` were imported, advanced, saved/reloaded and reset. Existing workflows exercised live adjustments, fault recovery, charts/CSV and all nine missions.
 - `git diff --check`: passed.
 
-Release target: `deploy-2026-10-11.3`. The deployment script reruns the complete release gate from the clean tag before replacing the live service; runtime deployment status is reported separately in the task result.
+Release target: `deploy-2026-10-11.4`. The earlier `.3` candidate was stopped during validation, before changing the live service, to include the confirmed ESR parameter correction. The deployment script reruns the complete release gate from the clean tag before replacing the live service; runtime deployment status is reported separately in the task result.

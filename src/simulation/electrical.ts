@@ -191,11 +191,11 @@ export function solveElectrical(
     islandPhases = new Map<string, 3>(),
     references: Record<string, string> = {};
   const resistances: Record<string, number> = {};
-  const resistanceOf = (c: Component) => {
+  const resistanceOf = (c: Component, ac = false) => {
     if (resistances[c.id] !== undefined) return resistances[c.id];
     // DC capacitor insulation leakage is distinct from the AC series ESR. Use the
     // same resistance for stamping, readings and thermal power accounting.
-    const r = c.kind === "capacitor" ? 1e9 : c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20);
+    const r = c.kind === "capacitor" && !ac ? 1e9 : c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20);
     if (!Number.isFinite(r) || r <= 0)
       throw Error(`${c.name}: resistance must be positive (temperature-dependent model gives ${r.toPrecision(3)} Ω at ${(runtime.temperatures?.[c.id] ?? 20).toFixed(1)} °C).`);
     return (resistances[c.id] = r);
@@ -233,7 +233,7 @@ export function solveElectrical(
         circuits.set(c.id, circuit);
         z = circuit.impedance;
       } else if (c.kind === "inductor") z = [resistanceOf(c), w * prop(c, "inductance")];
-      else if (c.kind === "capacitor") z = [prop(c, "resistance"), -1 / (w * prop(c, "capacitance"))];
+      else if (c.kind === "capacitor") z = [resistanceOf(c, true), -1 / (w * prop(c, "capacitance"))];
       else z = [resistanceOf(c), 0];
       impedance.set(c.id, z);
       const y = cdiv([1, 0], z), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, end(c)));

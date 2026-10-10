@@ -280,7 +280,7 @@ The engine holds the switch-on solution at t = 0 (needed for inspection and test
 
 ## Audit corrections (2026-10-11)
 
-DC capacitor readings and heat use the same 1 GΩ insulation leakage as the nodal solve; ESR applies to AC. AC relay heat uses the conducting contact voltage (a–nc when de-energized); the public voltage probe remains a–b and is unavailable across separate islands.
+DC capacitor readings and heat use the same 1 GΩ insulation leakage as the nodal solve; ESR, including its configured temperature coefficient and sample tolerance, applies to AC. AC relay heat uses the conducting contact voltage (a–nc when de-energized); the public voltage probe remains a–b and is unavailable across separate islands.
 
 An induction machine on an unpowered island has zero excitation/current/torque and coasts under its modeled mechanical loads. Residual-flux and reconnection transients are unsupported. Power-loss, machine-failure and control-loss injections use the existing motor fault paths. An energized incompatible DC or single-phase connection still reports an error.
 

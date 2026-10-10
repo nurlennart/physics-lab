@@ -112,3 +112,15 @@ it('rejects a backed-up overflow route that would require pumping uphill', () =>
   expect(s.step()).toBe(false);
   expect(s.error).toMatch(/overflow.*back|back.*overflow/i);
 });
+
+it('AC capacitor ESR uses its configured temperature coefficient for current and heat', () => {
+  const b = new Builder(), source = b.add('sourceAC', { voltage: 24, frequency: 50 });
+  const cap = b.add('capacitor', { resistance: 0.5, tempCoefficient: 0.01, capacitance: 0.001 });
+  b.series(source, cap);
+  const r = solveElectrical(b.p, {}, { temperatures: { [cap.id]: 60 } });
+  // R(60 °C) = 0.5 × (1 + 0.01 × 40) = 0.7 Ω, Xc = -1/(2πfC).
+  const current = 24 / Math.hypot(0.7, 1 / (2 * Math.PI * 50 * 0.001));
+  expect(r.readings[cap.id].current).toBeCloseTo(current, 12);
+  expect(r.readings[cap.id].power).toBeCloseTo(current ** 2 * 0.7, 12);
+  expect(r.powerResidual).toBeCloseTo(0, 10);
+});
