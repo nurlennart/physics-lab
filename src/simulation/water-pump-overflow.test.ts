@@ -89,12 +89,17 @@ describe("explicit tank overflow", () => {
     const s = new Simulation(hydraulicStarter("transfer")), dest = s.project.components.find((c) => c.name === "Destination tank")!;
     const pump = s.project.components.find((c) => c.kind === "pump")!;
     fillUntilFull(s, dest.id);
-    run(s, 10);
-    expect(s.multiphysics.tanks[dest.id].volume).toBeCloseTo(0.12, 12);
+    run(s, 30);
     const inflow = s.multiphysics.hydraulic.readings[pump.id].flow;
     expect(inflow).toBeGreaterThan(1e-5);
-    // The spill rate is averaged over the step; inflow is the end-of-step reading (source level falls).
-    expect(rel(s.multiphysics.overflowRate[dest.id], inflow)).toBeLessThan(1e-4);
+    // Quasi-steady weir: the surcharge h above the rim satisfies Q = ⅔·C_d·√(2g)·L·h^1.5
+    // (C_d 0.62, L 0.3 m), computed here independently of the implementation.
+    const h = (s.multiphysics.tanks[dest.id].volume - 0.12) / 0.1;
+    const expectedH = (s.multiphysics.overflowRate[dest.id] / ((2 / 3) * 0.62 * Math.sqrt(2 * 9.80665) * 0.3)) ** (2 / 3);
+    expect(h).toBeGreaterThan(0);
+    expect(rel(h, expectedH)).toBeLessThan(2e-3);
+    // With a slowly falling source level the spill tracks the inflow closely.
+    expect(rel(s.multiphysics.overflowRate[dest.id], inflow)).toBeLessThan(0.02);
     expect(probe(s, dest.id, "overflow")).toBeCloseTo(s.multiphysics.overflowRate[dest.id] * 60000, 9);
     expect(s.events.some((e) => /overflowing/.test(e.message))).toBe(true);
     expect(Math.abs(s.multiphysics.massResidual)).toBeLessThan(1e-9);
@@ -107,6 +112,8 @@ describe("explicit tank overflow", () => {
     expect(v(source.id)).toBeGreaterThanOrEqual(0);
     expect(v(source.id)).toBeLessThan(1e-9);
     expect(v(dest.id) + s.multiphysics.overflowed[dest.id]).toBeCloseTo(0.15, 9);
+    // After the inflow stops the surcharge drains back towards the rim.
+    expect(v(dest.id) - 0.12).toBeLessThan(2e-4);
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-5);
     expect(s.events.some((e) => /overflow stopped/.test(e.message))).toBe(true);
   });
@@ -122,15 +129,16 @@ describe("explicit tank overflow", () => {
     const p = b.add("pipe", { diameter: 0.02, length: 5, inventory: false });
     b.wire(low, "fluid", p, "inlet"); b.wire(p, "outlet", high, "fluid");
     const s = new Simulation(b.p);
-    let previous = 0, signChanges = 0;
+    // A weir rises smoothly to one peak and decays; oscillation would reverse the trend repeatedly.
+    let previous = 0, trend = 0, reversals = 0;
     for (let i = 0; i < 60 * 30; i++) {
       s.step();
-      const rate = s.multiphysics.overflowRate[low.id];
-      if (i > 120 && Math.sign(rate - previous) !== 0 && rate > 0 && previous > 0 && Math.abs(rate - previous) > 1e-9 && rate > previous) signChanges++;
+      const rate = s.multiphysics.overflowRate[low.id], change = rate - previous;
+      if (Math.abs(change) > 1e-10) { const sign = Math.sign(change); if (trend && sign !== trend) reversals++; trend = sign; }
       previous = rate;
     }
     expect(s.multiphysics.hydraulic.readings[p.id].flow).toBeLessThan(0);
-    expect(signChanges).toBe(0);
+    expect(reversals).toBeLessThanOrEqual(1);
     expect(s.multiphysics.tanks[high.id].volume).toBeGreaterThanOrEqual(0);
     expect(s.multiphysics.tanks[low.id].volume + s.multiphysics.tanks[high.id].volume + s.multiphysics.overflowed[low.id]).toBeCloseTo(0.1995, 9);
   });
@@ -151,9 +159,9 @@ describe("pump power and efficiency definitions", () => {
   const pump = () => makeComponent("pump", 0, 0);
   it("nominal rating includes mechanical loss and matches an independent hand calculation", () => {
     const rows = Object.fromEntries(pumpRatingReadouts(pump()).map((r) => [r.label, r.value]));
-    // Hs 8 m, Qr 1 L/s, ω 300 rad/s, η 0.7, k 3e-6, R_int 1e5 Pa·s/m³.
-    const impeller = 1000 * 9.80665 * 4 * 0.001, mech = 3e-6 * 300 ** 3, shaft = impeller / 0.7 + mech, net = impeller - 1e5 * 0.001 ** 2;
-    expect(mech).toBeCloseTo(81, 9);
+    // Hs 8 m, Qr 1 L/s, ω 300 rad/s, η 0.7, k 1e-7 (revised catalog), R_int 1e5 Pa·s/m³.
+    const impeller = 1000 * 9.80665 * 4 * 0.001, mech = 1e-7 * 300 ** 3, shaft = impeller / 0.7 + mech, net = impeller - 1e5 * 0.001 ** 2;
+    expect(mech).toBeCloseTo(2.7, 9);
     expect(rows["Impeller power at rating"]).toBeCloseTo(impeller, 9);
     expect(rows["Mechanical loss at rated speed"]).toBeCloseTo(mech, 9);
     expect(rows["Shaft power at rating"]).toBeCloseTo(shaft, 9);
@@ -185,7 +193,7 @@ describe("pump power and efficiency definitions", () => {
     const stopped = pumpCurve(c, 0, 0);
     expect([stopped.shaftPower, stopped.efficiency, stopped.hydraulicEfficiency]).toEqual([0, null, null]);
     const deadhead = pumpCurve(c, 300, 0);
-    expect(deadhead.shaftPower).toBeCloseTo(81, 9);
+    expect(deadhead.shaftPower).toBeCloseTo(2.7, 9);
     expect(deadhead.efficiency).toBe(0);
     expect(deadhead.hydraulicEfficiency).toBeNull();
     const restriction = pumpCurve(c, 300, 0.002);

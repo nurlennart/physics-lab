@@ -1,5 +1,5 @@
 {
-  "recordedAt": "2026-10-10T15:58:38.754Z",
+  "recordedAt": "2026-10-10T16:39:47.967Z",
   "results": {
     "light": {
       "complete": true,
@@ -31,16 +31,16 @@
     "transfer": {
       "complete": true,
       "failed": false,
-      "score": 96,
+      "score": 100,
       "stars": 3,
-      "time": 144.317,
+      "time": 125.733,
       "error": null,
       "violations": []
     },
     "pressure": {
       "complete": true,
       "failed": false,
-      "score": 95,
+      "score": 98,
       "stars": 3,
       "time": 194.983,
       "error": null,

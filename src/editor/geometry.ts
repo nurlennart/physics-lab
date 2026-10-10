@@ -15,6 +15,7 @@ export function portLocal(c: Component, port: string): Point {
   const p = definitions[c.kind].ports.find((p) => p.id === port);
   if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
     return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
+  if (p?.domain === "hydraulic" && port === "overflow") return { x: w + 12, y: 28 };
   if (p?.domain === "hydraulic") return { x: port === "inlet" ? -12 : port === "outlet" ? w + 12 : w / 2, y: port === "fluid" ? h + 12 : h / 2 };
   if (p?.domain === "mechanical") return { x: w / 2, y: -12 };
   if (p?.domain === "control") {

@@ -29,6 +29,8 @@ export class Multiphysics {
   overflowRate: Record<string, number> = {};
   residual = 0;
   couplingIterations = 0;
+  /** Last electromechanical Jacobian (chord Newton), valid for one substep length and motor count. */
+  private chord?: { h: number; n: number; jac: number[][] };
   initialize(p: Project) {
     for (const c of p.components) {
       if (c.kind === 'tank') {
@@ -81,8 +83,9 @@ export class Multiphysics {
   private midpointTanks(s: Simulation, h: number): Record<string, TankState> {
     return Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => {
       const c = s.project.components.find((c) => c.id === id);
-      const capacity = c ? U.litersToM3(prop(c, 'capacity')) : Infinity;
-      const volume = Math.max(0, Math.min(capacity, t.volume + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0)));
+      // Tanks may surcharge above their rim (weir overflow), so only emptiness bounds the estimate.
+      void c;
+      const volume = Math.max(0, t.volume + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0));
       return [id, { ...t, volume, mass: volume * RHO }];
     }));
   }
@@ -130,7 +133,8 @@ export class Multiphysics {
       const torqueMap = (r: ReturnType<Multiphysics['solve']>, x: number[]) => Object.fromEntries(motors.flatMap((c, i) => linked[i] ? [[linked[i]!, r.state[i].torque - r.state[i].load - prop(c, 'friction') * x[i]]] : []));
       let midpoint = [...old];
       for (let event = 0; event < 12; event++) {
-        midpoint = [...old];
+        // Predictor: start the midpoint speed from the last acceleration (exact for steady acceleration).
+        midpoint = old.map((w, i) => w + 0.5 * h * (this.motors[motors[i].id]?.acceleration ?? 0));
         // Adaptive macro steps solve the network at predicted mid-step tank levels (second order in
         // the head/storage coupling); fixed steps keep start-of-step levels.
         const levels = adaptive ? this.midpointTanks(s, h) : this.tanks;
@@ -140,15 +144,24 @@ export class Multiphysics {
           return { r, trial, f: x.map((v, i) => linked[i] ? 2 * v - old[i] - trial!.bodies[linked[i]!].getAngularVelocity() : 2 * (v - old[i]) - h * r.state[i].acceleration) };
         };
         let converged = !motors.length;
-        for (let k = 0; k < 16 && motors.length; k++) {
+        // Chord Newton: the finite-difference Jacobian (one extra coupled solve per motor) is reused
+        // across iterations and substeps while it still contracts the residual by 4×, and rebuilt
+        // when the step size changes or convergence slows. Same 1e-8 convergence criterion.
+        let jac = this.chord && this.chord.h === h && this.chord.n === motors.length ? this.chord.jac : undefined, lastNorm = Infinity;
+        for (let k = 0; k < 32 && motors.length; k++) {
           const { r, f, trial } = residualAt(midpoint); this.couplingIterations = k + 1;
-          if (Math.max(...f.map(Math.abs)) < 1e-8) { accepted = r; acceptedTrial = trial; converged = true; break; }
-          const jac = motors.map(() => motors.map(() => 0));
-          for (let j = 0; j < motors.length; j++) {
-            const trial = [...midpoint], eps = Math.max(1e-5, Math.abs(midpoint[j]) * 1e-5); trial[j] += eps;
-            const g = residualAt(trial).f;
-            for (let i = 0; i < motors.length; i++) jac[i][j] = (g[i] - f[i]) / eps;
+          const norm = Math.max(...f.map(Math.abs));
+          if (norm < 1e-8) { accepted = r; acceptedTrial = trial; converged = true; break; }
+          if (!jac || norm > 0.25 * lastNorm) {
+            jac = motors.map(() => motors.map(() => 0));
+            for (let j = 0; j < motors.length; j++) {
+              const probe = [...midpoint], eps = Math.max(1e-5, Math.abs(midpoint[j]) * 1e-5); probe[j] += eps;
+              const g = residualAt(probe).f;
+              for (let i = 0; i < motors.length; i++) jac[i][j] = (g[i] - f[i]) / eps;
+            }
+            this.chord = { h, n: motors.length, jac };
           }
+          lastNorm = norm;
           const d = solveLinear(jac, f.map(v => -v));
           midpoint = midpoint.map((v, i) => v + d[i]);
         }
@@ -201,8 +214,11 @@ export class Multiphysics {
         this.removedMass += spill.mass;
         this.removedEnergy += spill.enthalpy + spill.potential;
         thermalGain -= spill.enthalpy;
-        this.overflowed[id] = (this.overflowed[id] ?? 0) + spill.mass / RHO;
-        spilledThisStep[id] = (spilledThisStep[id] ?? 0) + spill.mass / RHO;
+      }
+      // Overflow volume counts routed and spilled water alike; only spilled water leaves the system.
+      for (const [id, w] of Object.entries(r.hydraulic.weir)) if (w.flow > 0) {
+        this.overflowed[id] = (this.overflowed[id] ?? 0) + w.flow * h;
+        spilledThisStep[id] = (spilledThisStep[id] ?? 0) + w.flow * h;
       }
       for (const c of s.project.components.filter(c => c.kind === 'pressureReducingValve')) {
         // Pilot-operated regulator: integral action on outlet gauge pressure, stroke-rate limited.

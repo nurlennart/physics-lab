@@ -8,6 +8,7 @@ import {
   connectionError,
   catalog,
   isThermalMass,
+  LEGACY_PUMP_DRAG,
   type Kind,
   type Project,
   type Component,
@@ -238,6 +239,9 @@ export function parseProject(input: unknown): Project {
       const v = c.props[key];
       if (v !== undefined && typeof v !== typeof def) throw Error(`Invalid ${key} on ${c.name}.`);
     }
+    // Scored assignments must use the current catalog: map the superseded pump drag values.
+    const legacyDrag = c.kind === "pump" ? LEGACY_PUMP_DRAG[c.variant ?? "standard"] : undefined;
+    if (p.challenge && legacyDrag && c.props.mechanicalDrag === legacyDrag[0]) c.props.mechanicalDrag = legacyDrag[1];
     Object.assign(c, migrateComponent(c));
     const modelError = componentError(c);
     if (modelError) throw Error(modelError);

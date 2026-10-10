@@ -379,8 +379,10 @@ export class Simulation {
     for (const c of this.project.components) {
       if (c.kind === "tank") {
         const q = Math.abs(this.multiphysics.hydraulic.readings[c.id]?.flow ?? 0), area = prop(c, "surfaceArea");
-        const full = (this.multiphysics.tanks[c.id]?.volume ?? 0) >= prop(c, "capacity") / 1000 - 1e-9;
-        if (q > 1e-12 && !(full && (this.multiphysics.overflowRate[c.id] ?? 0) > 0)) limit = Math.min(limit, Math.max(0.005, 0.01 * prop(c, "capacity") / 1000 / area) * area / q);
+        if (q > 1e-12) limit = Math.min(limit, Math.max(0.005, 0.01 * prop(c, "capacity") / 1000 / area) * area / q);
+        // Surcharged weir: explicit level update stays well inside its time constant A/(dQ/dh), dQ/dh = 1.5·Q/h.
+        const reading = this.multiphysics.hydraulic.readings[c.id];
+        if ((reading?.surcharge ?? 0) > 1e-9 && (reading?.overflow ?? 0) > 0) limit = Math.min(limit, 0.3 * area / (1.5 * reading!.overflow! / reading!.surcharge!));
       }
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
       const motor = c.kind === "motor" ? this.multiphysics.motors[c.id] : undefined;
@@ -654,7 +656,9 @@ export class Simulation {
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
       }
       for (const c of p.components.filter((c) => c.kind === "tank")) {
-        const rate = this.multiphysics.overflowRate[c.id] ?? 0, spilling = rate > 1e-9;
+        // Start/stop events use a 1e-6 m³/s (0.06 L/min) reporting threshold: a draining weir decays
+        // asymptotically (h ~ 1/t²). The cumulative overflow volume is exact regardless.
+        const rate = this.multiphysics.overflowRate[c.id] ?? 0, spilling = rate > (this.overflowing[c.id] ? 1e-6 : 2e-6);
         if (spilling !== !!this.overflowing[c.id]) {
           this.overflowing[c.id] = spilling;
           this.log(spilling

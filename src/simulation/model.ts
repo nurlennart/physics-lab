@@ -115,6 +115,12 @@ export interface Project {
   environment?: { ambient: number };
 }
 export const DEFAULT_AMBIENT = 20;
+/**
+ * Catalog values revised on 2026-10-10: pump mechanical drag k (k·ω³) was 3e-6 (laboratory) and
+ * 1.2e-5 (industrial), i.e. 81 W and 324 W at 300 rad/s — more than the rated hydraulic output.
+ * Saved challenge files carrying the old catalog values are mapped to the current catalog.
+ */
+export const LEGACY_PUMP_DRAG: Record<string, [number, number]> = { standard: [0.000003, 0.0000001], industrial: [0.000012, 0.0000015] };
 export const projectAmbient = (p: Pick<Project, "environment">) => p.environment?.ambient ?? DEFAULT_AMBIENT;
 export interface Port {
   unit?: string;
@@ -190,7 +196,7 @@ const fluid: Port[] = [
 ];
 const shaft: Port = { id: "shaft", domain: "mechanical", label: "Rotating shaft" };
 const sensing = { target: "", minRange: -1000000, maxRange: 1000000, resolution: 0.001, lag: 0, noise: 0, sampleInterval: 0 };
-const valveDefaults = { opening: 100, diameter: 0.025, lossCoefficient: 5, maxPressure: 1000000, elevation: 0 };
+const valveDefaults = { opening: 100, diameter: 0.025, lossCoefficient: 5, laminarK: 500, maxPressure: 1000000, elevation: 0 };
 export const definitions: Record<Kind, Definition> = {
   rigidBody: { label: 'Rigid body', category: 'Mechanical', description: 'Spatial rectangle, circle, convex polygon, beam, wheel or structural boundary; real mass, inertia and collision geometry', spec: 'SI geometry · static / dynamic / kinematic', cost: 25, prefix: 'RB', ports: [shaft], defaults: { forceX: 0, forceY: 0, appliedTorque: 0, brakeDamping: 0 } },
   positionSensor: { label: 'Position sensor', category: 'Sensors', description: 'Actual world position of the target body; selected x or y axis in metres', spec: 'm output', cost: 12, prefix: 'XS', ports: [output('number', 'm')], defaults: { ...sensing, axis: 'y', resolution: 0.00001 } },
@@ -201,21 +207,21 @@ export const definitions: Record<Kind, Definition> = {
     { id: "industrial180", label: "Industrial DC 180 V", cost: 480, spec: "180 V · 60 A limit · 33 N·m torque limit", overrides: { resistance: 3, torqueConstant: 0.55, emfConstant: 0.55, inertia: 0.12, friction: 0.002, ratedVoltage: 180, ratedCurrent: 60, ratedTorque: 33, ratedPower: 11000, heatCapacity: 6000, loss: 15, maxTemperature: 150 } },
     { id: "industrial440", label: "Industrial DC 440 V · 75 kW", cost: 6800, spec: "440 V · 190 A · 437 N·m · 1,750 RPM", overrides: { resistance: 0.1, torqueConstant: 2.3, emfConstant: 2.3, inertia: 1.2, friction: 0.02, ratedVoltage: 440, ratedCurrent: 190, ratedTorque: 437, ratedPower: 84000, maxSpeed: 230, heatCapacity: 60000, loss: 60, maxTemperature: 155, speedCommand: 1500 } },
   ] },
-  pump: { label: "Centrifugal pump", category: "Hydraulic", description: "Shaft-driven quadratic head curve with affinity scaling and built-in reverse-flow check; zero-volume wetted inventory", spec: "8 m shutoff · 60 L/min · 2,865 RPM", cost: 70, prefix: "P", ports: [...fluid, shaft], defaults: { ratedSpeed: 300, ratedFlow: 0.001, shutoffHead: 8, efficiency: 0.7, mechanicalDrag: 0.000003, maxPressure: 1000000, elevation: 0, curvePoints: "", npshRequired: 2 }, variants: [
-    { id: "industrial", label: "Industrial transfer pump", cost: 360, spec: "35 m shutoff · 360 L/min reference flow · 2,865 RPM", overrides: { ratedFlow: 0.006, shutoffHead: 35, efficiency: 0.78, mechanicalDrag: 0.000012 } },
+  pump: { label: "Centrifugal pump", category: "Hydraulic", description: "Shaft-driven quadratic head curve with affinity scaling and built-in reverse-flow check; zero-volume wetted inventory", spec: "8 m shutoff · 60 L/min · 2,865 RPM", cost: 70, prefix: "P", ports: [...fluid, shaft], defaults: { ratedSpeed: 300, ratedFlow: 0.001, shutoffHead: 8, efficiency: 0.7, mechanicalDrag: 0.0000001, maxPressure: 1000000, elevation: 0, curvePoints: "", npshRequired: 2 }, variants: [
+    { id: "industrial", label: "Industrial transfer pump", cost: 360, spec: "35 m shutoff · 360 L/min reference flow · 2,865 RPM", overrides: { ratedFlow: 0.006, shutoffHead: 35, efficiency: 0.78, mechanicalDrag: 0.0000015 } },
     { id: "highCapacity", label: "High-capacity process pump", cost: 2400, spec: "30 m shutoff · 3,000 L/min reference flow · 1,475 RPM", overrides: { ratedSpeed: 154.5, ratedFlow: 0.05, shutoffHead: 30, efficiency: 0.82, mechanicalDrag: 0.00002, maxPressure: 1600000 } },
   ] },
   pipe: { label: "Pipe", category: "Hydraulic", description: "Darcy–Weisbach pipe with laminar/transition/turbulent friction, explicit physical length and water inventory in mixing cells (thermal transport delay)", spec: "5 m · Ø25 mm", cost: 12, prefix: "PL", ports: fluid, defaults: { length: 5, diameter: 0.025, roughness: 0.000045, maxPressure: 1000000, material: "steel", conductivity: 45, insulation: 0, thermalUA: 0, ambient: 20, elevation: 0, inventory: true, segments: 4, initialTemperature: 20 } },
   heatExchanger: { label: "Heat exchanger", category: "Hydraulic", description: "Two-stream ε-NTU heat exchanger (counter- or parallel-flow); each stream is a hydraulic branch with quadratic pressure loss; no wetted inventory", spec: "2 kW/K · counterflow", cost: 160, prefix: "HX", ports: [
     { id: "hotIn", domain: "hydraulic", label: "Stream A (hot) inlet" }, { id: "hotOut", domain: "hydraulic", label: "Stream A (hot) outlet" },
     { id: "coldIn", domain: "hydraulic", label: "Stream B (cold) inlet" }, { id: "coldOut", domain: "hydraulic", label: "Stream B (cold) outlet" },
-  ], defaults: { ua: 2000, arrangement: "counterflow", diameter: 0.025, lossCoefficient: 10, maxPressure: 1000000, elevation: 0 }, variants: [
+  ], defaults: { ua: 2000, arrangement: "counterflow", diameter: 0.025, lossCoefficient: 10, laminarK: 1000, maxPressure: 1000000, elevation: 0 }, variants: [
     { id: "plate", label: "Plate heat exchanger 20 kW/K", cost: 950, spec: "20 kW/K · DN50 · 16 bar", overrides: { ua: 20000, diameter: 0.05, lossCoefficient: 15, maxPressure: 1600000 } },
     { id: "shellTube", label: "Shell-and-tube 100 kW/K", cost: 4200, spec: "100 kW/K · DN100", overrides: { ua: 100000, diameter: 0.1, lossCoefficient: 12, maxPressure: 1600000 } },
   ] },
-  pressureReducingValve: { label: "Pressure-reducing valve", category: "Hydraulic", description: "Pilot-style regulator: integral action drives the opening until the outlet gauge pressure equals the setpoint; forward-only", spec: "2 bar setpoint · 5 s stroke", cost: 120, prefix: "PRV", ports: fluid, defaults: { pressureSetpoint: 200000, proportionalBand: 20000, responseTime: 5, diameter: 0.025, lossCoefficient: 8, maxPressure: 1600000, elevation: 0 } },
+  pressureReducingValve: { label: "Pressure-reducing valve", category: "Hydraulic", description: "Pilot-style regulator: integral action drives the opening until the outlet gauge pressure equals the setpoint; forward-only", spec: "2 bar setpoint · 5 s stroke", cost: 120, prefix: "PRV", ports: fluid, defaults: { pressureSetpoint: 200000, proportionalBand: 20000, responseTime: 5, diameter: 0.025, lossCoefficient: 8, laminarK: 1500, maxPressure: 1600000, elevation: 0 } },
   valve: { label: "Manual valve", category: "Hydraulic", description: "Quadratic loss K/opening²; exact isolation at zero opening", spec: "0–100% · bidirectional", cost: 14, prefix: "V", ports: fluid, defaults: valveDefaults },
-  checkValve: { label: "Check valve", category: "Hydraulic", description: "Forward-only hydraulic branch with cracking pressure and reverse isolation", spec: "1 kPa cracking", cost: 18, prefix: "CV", ports: fluid, defaults: { ...valveDefaults, crackingPressure: 1000 } },
+  checkValve: { label: "Check valve", category: "Hydraulic", description: "Forward-only hydraulic branch with cracking pressure and reverse isolation", spec: "1 kPa cracking", cost: 18, prefix: "CV", ports: fluid, defaults: { ...valveDefaults, laminarK: 1500, crackingPressure: 1000 } },
   actuatedValve: { label: "Actuated valve", category: "Hydraulic", description: "Rate-limited ideal external actuator; numeric percent command, defined fail position; actuator supply power omitted", spec: "5 s full stroke", cost: 35, prefix: "AV", ports: [...fluid, input("position", "number", true)], defaults: { ...valveDefaults, responseTime: 5, failOpen: false } },
   fluidJunction: { label: "Fluid junction", category: "Hydraulic", description: "Ideal zero-volume mixing junction; pressure and continuity solved from connected branches", spec: "Conservative junction", cost: 2, prefix: "HJ", ports: [{ id: "fluid", domain: "hydraulic", label: "Fluid node" }], defaults: { elevation: 0, maxPressure: 1000000 } },
   pressureSensor: { label: "Pressure sensor", category: "Sensors", description: "Gauge pressure of the target outlet, measured from the hydraulic solution", spec: "Pa output", cost: 12, prefix: "PSN", ports: [output("number", "Pa")], defaults: sensing },
@@ -403,7 +409,7 @@ export const definitions: Record<Kind, Definition> = {
     spec: "10 L · 4,180 J/kg·K",
     cost: 40,
     prefix: "TK",
-    ports: [heat, { id: "fluid", domain: "hydraulic", label: "Bottom fluid connection" }],
+    ports: [heat, { id: "fluid", domain: "hydraulic", label: "Bottom fluid connection" }, { id: "overflow", domain: "hydraulic", label: "Overflow outlet at the rim (optional)", optional: true }],
     defaults: {
       elevation: 0,
       surfaceArea: 0.1,
@@ -416,6 +422,7 @@ export const definitions: Record<Kind, Definition> = {
       loss: 2.2,
       ambient: 20,
       vesselHeatCapacity: 0,
+      weirLength: 0.3,
       lossModel: "manual",
       insulationThickness: 0.05,
       insulationConductivity: 0.04,

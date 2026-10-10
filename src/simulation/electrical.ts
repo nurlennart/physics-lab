@@ -78,27 +78,34 @@ export interface ElectricalRuntime {
 export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? c.props.mode : "ideal") as "ideal" | "internal" | "cvcc" | "cc";
 /** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
 export const sourceLimit = (c: Component) => sourceMode(c) === "cc" ? prop(c, "current") : sourceMode(c) === "cvcc" ? prop(c, "maxCurrent") : Infinity;
+/** Wire connectivity depends only on the immutable project and disconnected wires; it is cached. */
+type ElectricalTopology = { cs: Component[]; grounds: Component[]; root: Map<string, string> };
+const electricalCache = new WeakMap<Project, Map<string, ElectricalTopology>>();
+function electricalTopology(project: Project, disconnected: Set<string>): ElectricalTopology {
+  const key = [...disconnected].sort().join(","), byProject = electricalCache.get(project) ?? new Map<string, ElectricalTopology>();
+  electricalCache.set(project, byProject);
+  const cached = byProject.get(key);
+  if (cached) return cached;
+  const uf = new Union();
+  const cs = project.components.filter((c) => definitions[c.kind].ports.some((p) => p.domain === "electrical"));
+  for (const c of cs) for (const p of definitions[c.kind].ports.filter((p) => p.domain === "electrical")) uf.find(`${c.id}:${p.id}`);
+  for (const w of project.connections.filter((w) => w.domain === "electrical" && !disconnected.has(w.id))) uf.join(terminalKey(w.from), terminalKey(w.to));
+  const grounds = cs.filter((c) => c.kind === "ground");
+  for (const g of grounds.slice(1)) uf.join(`${g.id}:a`, `${grounds[0].id}:a`);
+  const root = new Map([...uf.p.keys()].map((k) => [k, uf.find(k)]));
+  const topology = { cs, grounds, root };
+  byProject.set(key, topology);
+  return topology;
+}
 export function solveElectrical(
   project: Project,
   failed: Record<string, boolean> = {},
   runtime: ElectricalRuntime = {},
 ): ElectricalResult {
-  const uf = new Union();
-  const cs = project.components.filter((c) =>
-    definitions[c.kind].ports.some((p) => p.domain === "electrical"),
-  );
-  for (const c of cs)
-    for (const p of definitions[c.kind].ports.filter(
-      (p) => p.domain === "electrical",
-    ))
-      uf.find(`${c.id}:${p.id}`);
-  for (const w of project.connections.filter(
-    (w) => w.domain === "electrical" && !runtime.disconnected?.has(w.id),
-  ))
-    uf.join(terminalKey(w.from), terminalKey(w.to));
-  const grounds = cs.filter((c) => c.kind === "ground");
-  for (const g of grounds.slice(1)) uf.join(`${g.id}:a`, `${grounds[0].id}:a`);
-  const node = (id: string, p: string) => uf.find(`${id}:${p}`);
+  const topology = electricalTopology(project, runtime.disconnected ?? new Set());
+  const { cs, grounds, root } = topology;
+  const uf = { p: root, find: (k: string) => root.get(k) ?? k };
+  const node = (id: string, p: string) => root.get(`${id}:${p}`)!;
   const end = (c: (typeof cs)[number]) =>
     c.kind === "relay" && !contact(c) ? "nc" : "b";
   const contact = (c: (typeof cs)[number]) =>

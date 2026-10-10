@@ -68,11 +68,13 @@ describe('hydraulic reference mechanics', () => {
     it(`conserves mass at empty/full boundary crossings at dt=${dt}`, () => {
       // The receiver fills within the run and then spills over its rim (no implicit shut-off):
       // the source drains completely and the 0.09 L excess leaves as overflow.
+      // The receiver fills within the run, surcharges above its rim and spills over its weir
+      // (no implicit shut-off): the source drains completely and no water is lost.
       const { p, a, b } = gravity({ volume: 0.1, capacity: 1 }, { volume: 0.99, capacity: 1 });
       const s = run(new Simulation(p), 1, dt);
-      expect(s.multiphysics.tanks[b.id].volume).toBeCloseTo(0.001, 12);
       expect(s.multiphysics.tanks[a.id].volume).toBeCloseTo(0, 12);
-      expect(s.multiphysics.overflowed[b.id]).toBeCloseTo(0.00009, 12);
+      expect(s.multiphysics.tanks[b.id].volume).toBeGreaterThanOrEqual(0.001);
+      expect(s.multiphysics.tanks[b.id].volume + s.multiphysics.overflowed[b.id]).toBeCloseTo(0.00109, 12);
       expect(s.multiphysics.massResidual).toBeCloseTo(0, 8);
       const empty = gravity({ volume: 0.01 }, { volume: 0, capacity: 1 });
       const e = run(new Simulation(empty.p), 1, dt);
