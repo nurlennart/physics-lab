@@ -168,6 +168,7 @@ export function solveElectrical(
       !(isSource(c) && c.props.enabled === false) &&
       !((c.kind === "breaker" || c.kind === "motorProtector") && (c.props.closed === false || runtime.open?.has(c.id))) &&
       !(c.kind === "motor" && runtime.motors?.[c.id]?.enabled === false) &&
+      !(c.kind === "inductionMotor" && runtime.inductionMotors?.[c.id]?.enabled === false) &&
       runtime.faults?.[c.id] !== "failedOpen" &&
       !(c.kind === "switch" && !c.props.closed) &&
       !(c.kind === "safety" && !contact(c)),
@@ -192,7 +193,9 @@ export function solveElectrical(
   const resistances: Record<string, number> = {};
   const resistanceOf = (c: Component) => {
     if (resistances[c.id] !== undefined) return resistances[c.id];
-    const r = c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20);
+    // DC capacitor insulation leakage is distinct from the AC series ESR. Use the
+    // same resistance for stamping, readings and thermal power accounting.
+    const r = c.kind === "capacitor" ? 1e9 : c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20);
     if (!Number.isFinite(r) || r <= 0)
       throw Error(`${c.name}: resistance must be positive (temperature-dependent model gives ${r.toPrecision(3)} Ω at ${(runtime.temperatures?.[c.id] ?? 20).toFixed(1)} °C).`);
     return (resistances[c.id] = r);
@@ -276,7 +279,9 @@ export function solveElectrical(
         const airGap = circuit.z2 ? phases * rotorSq * r2 / circuit.slip : 0;
         machine = { torque: circuit.syncSpeed > 0 ? airGap / circuit.syncSpeed : 0, statorCopper: phases * cabs(current) ** 2 * prop(c, "statorResistance"), rotorCopper: phases * rotorSq * r2, slip: circuit.slip };
       }
-      record(c, terminal, current, { ...(machine ? { machine } : {}), ...(resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}) });
+      // Power belongs to the conducting contact (a–nc for a de-energized relay).
+      // The voltage measurement retains the public a–b terminal convention.
+      record(c, across, current, { voltage: cabs(terminal), voltageValid: islands.find(node(c.id, "a")) === islands.find(node(c.id, "b")), ...(machine ? { machine } : {}), ...(resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}) });
       if (c.kind === "relay" && end(c) === "nc") { acReadings[c.id].currentNC = acReadings[c.id].current; acReadings[c.id].current = 0; }
     }
   };
@@ -288,7 +293,15 @@ export function solveElectrical(
       continue;
     }
     const machine = members.find((c) => c.kind === "inductionMotor");
-    if (machine) throw Error(`${machine.name}: an induction motor needs a three-phase AC supply, not a DC network.`);
+    if (machine) {
+      if (sources.length || members.some(c => c.kind === "motor")) throw Error(`${machine.name}: an induction motor needs a three-phase AC supply, not a DC network.`);
+      // An isolated induction machine has no excitation in this steady phasor
+      // model. Power loss is normal shutdown; residual-flux transients are omitted.
+      const g = grounds.find(c => ns.includes(node(c.id, "a")));
+      references[island] = g ? node(g.id, "a") : ns[0];
+      for (const n of ns) voltages[n] = 0;
+      continue;
+    }
     const shorted = (s: Component) => node(s.id, "a") === node(s.id, "b");
     for (const s of sources)
       if (shorted(s) && sourceLimit(s) === Infinity && prop(s, "internalResistance") <= 0)
@@ -316,7 +329,7 @@ export function solveElectrical(
     };
     for (const c of members.filter((c) => !isSource(c))) {
       // Steady DC: a capacitor is open apart from its insulation leakage (1 GΩ); an inductor is its winding resistance.
-      const resistance = c.kind === "capacitor" ? 1e9 : resistanceOf(c);
+      const resistance = resistanceOf(c);
       const motor = c.kind === "motor" ? runtime.motors?.[c.id] : undefined;
       const duty = motor?.duty ?? 1;
       const conductance = (c.kind === "motor" ? duty * duty : 1) / resistance,
@@ -416,7 +429,7 @@ export function solveElectrical(
     const contactCurrent =
       isSource(c)
         ? (sourceI[c.id] ?? 0)
-        : active.includes(c)
+        : active.includes(c) && c.kind !== "inductionMotor"
           ? c.kind === "motor" && runtime.motors?.[c.id]
             ? runtime.motors[c.id].duty * (runtime.motors[c.id].duty * activeVoltage - runtime.motors[c.id].emf) / prop(c, "resistance", 1)
             : activeVoltage / resistanceOf(c)

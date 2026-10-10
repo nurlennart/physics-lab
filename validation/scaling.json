@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-10T22:47:35.545Z",
-  "wallSeconds": 22.5,
+  "executedAt": "2026-10-10T23:12:58.664Z",
+  "wallSeconds": 23.23,
   "passed": 124,
   "total": 124,
   "results": [
@@ -976,8 +976,8 @@
       "name": "D: coupled energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": -2.7834499278105795,
-      "absoluteError": 2.7834499278105795,
+      "measured": -2.783449940616265,
+      "absoluteError": 2.783449940616265,
       "relativeError": null,
       "tolerance": "±3553.616514479855",
       "pass": true,

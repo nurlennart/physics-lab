@@ -1,0 +1,378 @@
+{
+  "phase2b-coupled": {
+    "executedAt": "2026-10-10T23:21:30.431Z",
+    "reports": [
+      {
+        "mode": "transfer",
+        "time": 125.53333333332749,
+        "error": null,
+        "violations": [],
+        "massResidual": -8.324576583618182e-09,
+        "energyResidual": -0.03264484334158624,
+        "supplied": 10322.374736464077,
+        "metrics": {
+          "inBand": 0,
+          "evaluated": 0,
+          "squaredError": 0,
+          "maxOvershoot": 0,
+          "faultInjected": false,
+          "switches": 1,
+          "previousOn": true,
+          "responseTime": 0,
+          "settledAt": 0,
+          "lowDemandFlow": 0,
+          "highDemandFlow": 0,
+          "lowDemandTime": 0,
+          "highDemandTime": 0
+        },
+        "challenge": {
+          "checks": [
+            {
+              "label": "Powered motor, shared pump shaft and physically transferred water",
+              "ok": true
+            },
+            {
+              "label": "Valid configuration; safe inventory, pressure, power and budget",
+              "ok": true
+            },
+            {
+              "label": "At least 100 L delivered within 300 s",
+              "ok": true
+            }
+          ],
+          "complete": true,
+          "failed": false,
+          "score": 100,
+          "stars": 3,
+          "progress": 1
+        }
+      },
+      {
+        "mode": "pressure",
+        "time": 194.98333333338064,
+        "error": null,
+        "violations": [],
+        "massResidual": -2.226130391136394e-09,
+        "energyResidual": -0.1992806024387619,
+        "supplied": 11008.825057176644,
+        "metrics": {
+          "inBand": 178.3166666667007,
+          "evaluated": 180.00000000003539,
+          "squaredError": 87639191.19009699,
+          "maxOvershoot": 14224.186999999998,
+          "faultInjected": false,
+          "switches": 3,
+          "previousOn": true,
+          "responseTime": 15.000000000000325,
+          "settledAt": 180.01666666670206,
+          "lowDemandFlow": 0.035482298564262126,
+          "highDemandFlow": 0.05046628555856534,
+          "lowDemandTime": 105.01666666666199,
+          "highDemandTime": 74.98333333333036
+        },
+        "challenge": {
+          "checks": [
+            {
+              "label": "Powered motor, shared pump shaft and physically transferred water",
+              "ok": true
+            },
+            {
+              "label": "Valid configuration; safe inventory, pressure, power and budget",
+              "ok": true
+            },
+            {
+              "label": "Pressure sensor actually feeds motor speed control",
+              "ok": true
+            },
+            {
+              "label": "Both consumer demand phases produced distinct real flow",
+              "ok": true
+            },
+            {
+              "label": "180 s scored; \u226590% in band; RMS \u22643.5 kPa; overshoot \u226425 kPa",
+              "ok": true
+            }
+          ],
+          "complete": true,
+          "failed": false,
+          "score": 98,
+          "stars": 3,
+          "progress": 1
+        }
+      },
+      {
+        "mode": "supply",
+        "time": 719.9999999996738,
+        "error": null,
+        "violations": [],
+        "massResidual": -8.127898354359786e-09,
+        "energyResidual": -0.0335560829635142,
+        "supplied": 12878.384325537558,
+        "metrics": {
+          "inBand": 593.9999999997884,
+          "evaluated": 599.999999999783,
+          "squaredError": 0,
+          "maxOvershoot": 0,
+          "faultInjected": true,
+          "switches": 2,
+          "previousOn": false,
+          "responseTime": 0,
+          "settledAt": 0,
+          "lowDemandFlow": 0,
+          "highDemandFlow": 0,
+          "lowDemandTime": 0,
+          "highDemandTime": 0
+        },
+        "challenge": {
+          "checks": [
+            {
+              "label": "Powered motor, shared pump shaft and physically transferred water",
+              "ok": true
+            },
+            {
+              "label": "Valid configuration; safe inventory, pressure, power and budget",
+              "ok": true
+            },
+            {
+              "label": "Destination feedback and source-level interlock drive motor",
+              "ok": true
+            },
+            {
+              "label": "Independent high-level sensing and fault exercised",
+              "ok": true
+            },
+            {
+              "label": "600 s scored; \u226595% in band; 2\u201312 switching transitions",
+              "ok": true
+            }
+          ],
+          "complete": true,
+          "failed": false,
+          "score": 100,
+          "stars": 3,
+          "progress": 0.9999999999996383
+        }
+      },
+      {
+        "mode": "circulation",
+        "time": 59.999999999997875,
+        "error": null,
+        "violations": [],
+        "massResidual": -1.1999645721516572e-09,
+        "energyResidual": -0.22692236039165437,
+        "supplied": 34539.28326106558,
+        "metrics": {
+          "inBand": 0,
+          "evaluated": 0,
+          "squaredError": 0,
+          "maxOvershoot": 0,
+          "faultInjected": false,
+          "switches": 0,
+          "previousOn": false,
+          "responseTime": 0,
+          "settledAt": 0,
+          "lowDemandFlow": 0,
+          "highDemandFlow": 0,
+          "lowDemandTime": 0,
+          "highDemandTime": 0
+        },
+        "challenge": null
+      }
+    ]
+  },
+  "phase3a-scenarios": {
+    "executedAt": "2026-10-10T23:21:44.888Z",
+    "reports": [
+      {
+        "mode": "mechanism",
+        "time": 59.999999999997875,
+        "error": null,
+        "violations": [],
+        "energyResidual": 1.004427078581216,
+        "suppliedEnergy": 0,
+        "mechanical": {
+          "externalWork": 0,
+          "shaftWork": 0,
+          "contactLoss": 667.4667825184351,
+          "dampingLoss": 237.58547885398036,
+          "residual": 1.004427078581216,
+          "maxImpactSpeed": 9.520622708333281
+        },
+        "metrics": {
+          "hold": 0,
+          "evaluated": 0,
+          "inBand": 0,
+          "squaredError": 0,
+          "peakError": 0,
+          "loadChanges": 0,
+          "lastLoadPhase": -1
+        },
+        "challenge": null
+      },
+      {
+        "mode": "rotor",
+        "time": 10.000000000000076,
+        "error": null,
+        "violations": [],
+        "energyResidual": -1.3938006304670125e-10,
+        "suppliedEnergy": 7057.2011262129945,
+        "mechanical": {
+          "externalWork": 0,
+          "shaftWork": 1678.832361352631,
+          "contactLoss": 0,
+          "dampingLoss": 513.94840568053,
+          "residual": -4.092726157978177e-12,
+          "maxImpactSpeed": 0
+        },
+        "metrics": {
+          "hold": 0,
+          "evaluated": 0,
+          "inBand": 0,
+          "squaredError": 0,
+          "peakError": 0,
+          "loadChanges": 0,
+          "lastLoadPhase": -1
+        },
+        "challenge": null
+      },
+      {
+        "mode": "descent",
+        "time": 11.166666666666801,
+        "error": null,
+        "violations": [],
+        "energyResidual": 2.8705926524708048e-11,
+        "suppliedEnergy": 0,
+        "mechanical": {
+          "externalWork": 0,
+          "shaftWork": 0,
+          "contactLoss": 1.2021298027812426,
+          "dampingLoss": 389.1895236504325,
+          "residual": 2.8705926524708048e-11,
+          "maxImpactSpeed": 0.4903324999999985
+        },
+        "metrics": {
+          "hold": 2.9999999999999942,
+          "evaluated": 0,
+          "inBand": 0,
+          "squaredError": 0,
+          "peakError": 0,
+          "loadChanges": 0,
+          "lastLoadPhase": -1
+        },
+        "challenge": {
+          "checks": [
+            {
+              "label": "Locked load/environment, catalog ratings, budget and safety respected",
+              "ok": true
+            },
+            {
+              "label": "Load rests at 1.00 \u00b10.08 m with speed \u22640.05 m/s for 3 s",
+              "ok": true
+            },
+            {
+              "label": "Impact \u22640.6 m/s, passive braking \u2264500 J, finish within 120 s",
+              "ok": true
+            }
+          ],
+          "complete": true,
+          "failed": false,
+          "score": 100,
+          "stars": 3,
+          "progress": 0.9952217460938304
+        }
+      },
+      {
+        "mode": "lift",
+        "time": 18.100000000000254,
+        "error": null,
+        "violations": [],
+        "energyResidual": -0.0015237828149849975,
+        "suppliedEnergy": 4271.898237780992,
+        "mechanical": {
+          "externalWork": 0,
+          "shaftWork": 195.85740017062335,
+          "contactLoss": 0,
+          "dampingLoss": 0,
+          "residual": -0.001523783088515529,
+          "maxImpactSpeed": 0
+        },
+        "metrics": {
+          "hold": 2.9999999999999942,
+          "evaluated": 0,
+          "inBand": 0,
+          "squaredError": 0,
+          "peakError": 0,
+          "loadChanges": 0,
+          "lastLoadPhase": -1
+        },
+        "challenge": {
+          "checks": [
+            {
+              "label": "Locked load/environment, catalog ratings, budget and safety respected",
+              "ok": true
+            },
+            {
+              "label": "Powered motor, real transmission and position feedback; \u2265100 J shaft work",
+              "ok": true
+            },
+            {
+              "label": "10 kg load raised to 3.00 \u00b10.08 m, stable for 3 s",
+              "ok": true
+            }
+          ],
+          "complete": true,
+          "failed": false,
+          "score": 81,
+          "stars": 2,
+          "progress": 0.9980916032369622
+        }
+      },
+      {
+        "mode": "rotation",
+        "time": 69.98333333333065,
+        "error": null,
+        "violations": [],
+        "energyResidual": 4.624553184839897e-09,
+        "suppliedEnergy": 20077.03852034205,
+        "mechanical": {
+          "externalWork": -6458.766191058936,
+          "shaftWork": 7727.701765501348,
+          "contactLoss": 0,
+          "dampingLoss": 0,
+          "residual": -4.7975845518521965e-11,
+          "maxImpactSpeed": 0
+        },
+        "metrics": {
+          "hold": 0,
+          "evaluated": 59.999999999997875,
+          "inBand": 59.5499999999979,
+          "squaredError": 5944.374708735295,
+          "peakError": 62.89536846088026,
+          "loadChanges": 4,
+          "lastLoadPhase": 4
+        },
+        "challenge": {
+          "checks": [
+            {
+              "label": "Locked load/environment, catalog ratings, budget and safety respected",
+              "ok": true
+            },
+            {
+              "label": "Electrical motor, rotor and actual speed sensor feed control",
+              "ok": true
+            },
+            {
+              "label": "60 s scored, \u226595% within \u00b160 RPM, RMS \u226460 RPM, changing load exercised",
+              "ok": true
+            }
+          ],
+          "complete": true,
+          "failed": false,
+          "score": 88,
+          "stars": 2,
+          "progress": 0.9999999999999646
+        }
+      }
+    ]
+  }
+}

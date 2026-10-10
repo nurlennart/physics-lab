@@ -141,7 +141,7 @@ describe("thermal coupling and energy", () => {
     );
     expect(s.ambientEnergy).toBeGreaterThan(0);
   });
-  it("reproduces 2.508 MJ for an isolated 10kg water temperature rise of 60K", () => {
+  it("reproduces sensible heat for isolated 10 L water using its physical initial mass", () => {
     const p = starter("heat"),
       h = p.components.find((c) => c.kind === "heater")!,
       t = p.components.find((c) => c.kind === "tank")!,
@@ -153,9 +153,11 @@ describe("thermal coupling and energy", () => {
     const s = new Simulation(p);
     for (let i = 0; i < 80000 && (s.temperatures[t.id] ?? 20) < 80; i++)
       s.step();
-    const waterEnergy = 10 * 4180 * (s.temperatures[t.id] - 20);
-    expect(waterEnergy).toBeGreaterThanOrEqual(2508000);
-    expect(waterEnergy).toBeLessThan(2508040);
+    // Independent evaluation of the declared Kell approximation at 20 °C.
+    // Assert the actual ledger, rather than assuming that 10 L is exactly 10 kg.
+    const expected = 0.01 * 998.2041322 * 4180 * 60;
+    expect(s.waterStored).toBeGreaterThanOrEqual(expected - 0.001);
+    expect(s.waterStored).toBeLessThan(expected + 40);
     expect(Math.abs(s.energy - s.storedEnergy - s.ambientEnergy)).toBeLessThan(
       0.002,
     );

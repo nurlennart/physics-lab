@@ -2,7 +2,7 @@
 
 Phase 3A adds validated rigid bodies, joints and motor shafts. See [mechanical equations, conservation and limitations](PHASE3A.md) and [executed results](PHASE3A-RESULTS.md).
 
-All internal values use volts, amperes, ohms, watts, joules, seconds and Celsius temperature differences. Tank volume is configured in liters and converted using 1 kg/L. Temperature differences in °C and K are identical.
+All internal values use volts, amperes, ohms, watts, joules, seconds and Celsius temperature differences. Tank volume is configured in liters; initial mass uses Kell density at the initial temperature. Hydraulic flow and pipe inventory use a 1,000 kg/m³ reference density. Temperature differences in °C and K are identical.
 
 ## Electrical model
 
@@ -17,13 +17,13 @@ Every resistive branch stamps conductance `1/R` into G. Voltage-source incidence
 
 A closed switch is 0.01 Ω; an open switch contributes no conductance. A fuse is 0.02 Ω until it opens. A voltmeter has 10 MΩ input resistance. Lamp brightness derives from measured electrical power. Lamps omit filament temperature dependence. Element resistance is constant. Ground references merge; independent islands get individual reference potentials.
 
-A wire short across an ideal supply produces an explicit solver error. Redundant/conflicting ideal-source configurations can produce singular matrices; the experiment pauses instead of substituting values. Supply current above its configured maximum pauses. Passive power above the rating for 0.5 s fails the branch open; fuses open after 0.1 s above rated current. An element exceeding its thermal rating also fails open. These are idealized protection and failure models, not manufacturer-specific fuse curves.
+A wire short across an ideal supply produces an explicit solver error. Redundant/conflicting ideal-source configurations can produce singular matrices; the experiment pauses instead of substituting values. DC ideal/internal supplies trip open above their configured current rating; AC supplies use the thermal-magnetic characteristic described below. Sandbox passive overloads warn; scored assignments fail their checks. Temperature can fail a passive branch open. Fuses open after their configurable delay above rated current. An element exceeding its thermal rating also fails open. These are idealized protection and failure models, not manufacturer-specific fuse curves.
 
-Electrical energy uses `E += Σ Ppassive Δt`. With ideal sources and passive DC networks, net supplied power equals passive dissipation. Source internal losses are zero. Wires have no thermal mass or loss.
+Electrical energy uses `E += Σ Ppassive Δt`. With ideal sources and passive DC networks, net supplied power equals passive dissipation. Source readings and energy represent net terminal delivery; configured internal source losses lie outside that terminal-energy boundary. Wires have no thermal mass or loss.
 
 ## Thermal model
 
-Each non-source electrical element has a lumped thermal capacity C in J/K. Tanks use `C = m cp` with `cp = 4180 J/(kg K)`. Every node has ambient conductance UA in W/K. A heater connected to water adds symmetric inter-node conductance.
+Each non-source electrical element has a lumped thermal capacity C in J/K. Tanks use `C = m cp + C_vessel` with `cp = 4180 J/(kg K)`. Empty tanks retain a configured nonzero vessel capacity; fluid-temperature sensing remains unavailable until water is present. Every node has ambient conductance UA in W/K. A heater connected to water adds symmetric inter-node conductance.
 
 ```
 Ch dTh/dt = P − UAhw(Th − Tw) − UAha(Th − Ta)
@@ -41,7 +41,7 @@ This unconditionally stable linear diffusion discretization has first-order time
 
 The energy panel checks `Eelectrical − ΔUthermal − Eambient`. Editing physical properties or inserting/removing thermal masses while running constitutes an external intervention. Such construction changes can alter stored energy without an explicit work/enthalpy model; reset the experiment before using its balance as an uninterrupted conservation test.
 
-Water is well mixed, fixed density, fixed heat capacity, and bounded to 1–95°C. Crossing a bound pauses. Wall mass, evaporation, boiling, latent heat, temperature-dependent properties, radiation, spatial gradients, pressure and fluid flow are omitted. No tank pressure or flow is fabricated.
+Water is well mixed, fixed density, fixed heat capacity, and bounded to 1–95°C. Crossing a bound pauses. Vessel mass is lumped at the mixed temperature. Evaporation, boiling, latent heat, radiation and spatial gradients are omitted. Current hydraulic pressure, flow, expansion and viscosity models are described below; heat capacity remains constant.
 
 ## References and tolerances
 
@@ -49,7 +49,7 @@ Water is well mixed, fixed density, fixed heat capacity, and bounded to 1–95°
 - Series 6 Ω + 3 Ω at 12 V: 4/3 A, with voltage drops summing to 12 V.
 - Parallel 6 Ω and 12 Ω at 12 V: 3 A total, 36 W total.
 - 24 W for 5 s: 120 J, within 1e-7 J in the test.
-- 10 kg × 4180 J/(kg K) × (80 − 20) K = **2,508,000 J**. The isolated reference test allows less than 40 J overshoot from the final fixed step. Element energy is counted separately.
+- 10 kg × 4180 J/(kg K) × (80 − 20) K = **2,508,000 J**. That is the analytical 10 kg reference. The supplied 10 L tank starts with 9.982041322 kg at 20°C; its actual-storage test uses that mass and allows less than 40 J final-step overshoot. Element energy is counted separately.
 - 20 s coupled heating with losses: energy balance residual less than 1e-5 J. The long isolated heating reference allows less than 0.002 J accumulated roundoff.
 - 30, 60 and 144 render frames/s produce identical fixed-step state over five seconds.
 
@@ -277,3 +277,13 @@ The engine holds the switch-on solution at t = 0 (needed for inspection and test
 - wire chips, live captions and lamp/heater glow appear only once time advances;
 - state quantities such as temperature, level and stored inventory stay visible;
 - the status bar says "Ready to run".
+
+## Audit corrections (2026-10-11)
+
+DC capacitor readings and heat use the same 1 GΩ insulation leakage as the nodal solve; ESR applies to AC. AC relay heat uses the conducting contact voltage (a–nc when de-energized); the public voltage probe remains a–b and is unavailable across separate islands.
+
+An induction machine on an unpowered island has zero excitation/current/torque and coasts under its modeled mechanical loads. Residual-flux and reconnection transients are unsupported. Power-loss, machine-failure and control-loss injections use the existing motor fault paths. An energized incompatible DC or single-phase connection still reports an error.
+
+Free-overfall overflow cannot drive water into a drain whose piezometric pressure exceeds the tank free surface. Such routes now stop with an explicit unsupported-backpressure error, rather than moving water uphill and assigning negative dissipation. Submerged weirs and drain backpressure require a different hydraulic boundary model.
+
+Tank inspector mass, sensible heat and cooling time use the same initial temperature-dependent inventory density as the engine. Empty vessels continue to exchange configured heat; this remains a single lumped vessel model, without a distinct wet/dry contact coefficient.

@@ -490,7 +490,7 @@ export function allowedFaults(c: Component): FaultType[] {
       "controlLost",
       ...(c.kind === "safety" ? ["sensorFault" as const] : []),
     ];
-  if (c.kind === "motor") return ["powerLoss", "motorFailure", "controlLost"];
+  if (c.kind === "motor" || c.kind === "inductionMotor") return ["powerLoss", "motorFailure", "controlLost"];
   if (["valve", "actuatedValve", "checkValve", "pressureReducingValve"].includes(c.kind)) return ["stuckOpen", "stuckClosed", ...(c.kind === "actuatedValve" ? ["controlLost" as const] : [])];
   if (c.kind === "tank") return ["depleted"];
   if (["sensor", "thermostat", "pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor"].includes(c.kind))

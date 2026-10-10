@@ -1,6 +1,6 @@
 # Complete component inventory — Phase 3A + sandbox freedom
 
-All 51 catalog entries are connected to a solver or to the existing automation graph. **E** = MNA electrical; **T** = lumped thermal; **H** = hydraulic/enthalpy; **M** = mechanical midpoint; **C** = simulation-time control; **S** = Planck spatial rigid bodies. Validation references: **legacy** = physics/automation/integrity tests and quantitative report; **hydraulic** = hydraulic tests and coupled reference runs; **browser** = construction, probes, saves, faults and playable challenges. These are coverage categories, not a claim that every combination has been exhaustively tested.
+All 55 component kinds are connected to a solver or to the existing automation graph. **E** = MNA electrical; **T** = lumped thermal; **H** = hydraulic/enthalpy; **M** = mechanical midpoint; **C** = simulation-time control; **S** = Planck spatial rigid bodies. Validation references: **legacy** = physics/automation/integrity tests and quantitative report; **hydraulic** = hydraulic tests and coupled reference runs; **browser** = construction, probes, saves, faults and playable challenges. These are coverage categories, not a claim that every combination has been exhaustively tested.
 
 | Component | Status / integration | Physical model / simplification | Validation | Missing functionality / priority |
 | --- | --- | --- | --- | --- |
@@ -16,16 +16,16 @@ All 51 catalog entries are connected to a solver or to the existing automation g
 | Three-phase supply | Implemented E | Balanced per-phase star equivalent in the complex phasor solver: V_LL/√3 EMF, line currents, P and Q ×3, per-pole thermal ×3; R, L, C and induction-motor loads | features.test, ac.test, scaling campaign | Phase loss, harmonics, transients: low |
 | AC source (single-phase) | Implemented E (new) | RMS phasor V∠φ behind R_i + jX_i at one network frequency; three of them form an explicit, possibly unbalanced three-phase system | ac.test (R–L, power-factor correction, unbalanced star) | Switching transients: low |
 | Inductor | Implemented E/T (new) | R_w + jωL on AC; winding resistance on DC; I²R heat | ac.test, scaling campaign | Saturation, transient energy storage: medium |
-| Capacitor | Implemented E/T (new) | ESR − j/(ωC) on AC; open (1 GΩ leakage) on DC; ESR heat | ac.test | Charging transients, ageing: medium |
+| Capacitor | Implemented E/T (new) | ESR − j/(ωC) on AC; 1 GΩ leakage on DC; AC ESR / DC insulation heat | ac.test | Charging transients, ageing: medium |
 | Induction motor | Implemented E/M/T (new); 7.5 kW and 45 kW, 400 V 4-pole | Per-phase equivalent circuit at slip s, air-gap torque 3I₂²R₂′/(sω_s), shared shaft/load model, copper heat | ac.test (locked rotor, run-up energy, pump drive), scaling campaign | Core loss, saturation, VFD, single-phase machines: medium |
 | Power cable | Implemented E/T (new) | R = ρL/A (Cu/Al) with α, conductor heat capacity, ampacity-calibrated UA; insulation limit reported | sandbox, scaling campaign | Bundling/derating factors, insulation ageing: low |
 | Switch | Implemented E/T | Finite closed R, exact open | legacy, browser | Arcs/bounce: low |
 | Filament lamp | Implemented E/T | Constant R, calculated brightness/heat | legacy, browser | Nonlinear filament R: medium |
-| Heater | Implemented E/T/H storage; 100 W–100 kW models and presets | Nominal V and P define derived R = V²/P; actual power from the circuit; element mass/UA/burn-out; any number per tank | legacy, hydraulic circulation, sandbox, scaling matrix | Three-phase topology, boiling: medium |
+| Heater | Implemented E/T/H storage; 100 W–100 kW models and presets | Nominal V and P define derived R = V²/P; actual power from the circuit; element mass/UA/burn-out; any number per tank | legacy, hydraulic circulation, sandbox, scaling matrix | Explicit unbalanced heater topology, boiling: medium |
 | Water tank | Implemented H/T; 1 L–50,000 L presets | Finite vented water, bottom port, level pressure, mixed enthalpy incl. vessel thermal mass; explicit or insulation-derived UA; thermal expansion (mass inventory, Kell density); weir overflow Q = ⅔C_d√(2g)Lh^1.5 above the rim, routed through the overflow port or exported | boundary/mixing/overflow tests, all hydraulic challenges, scaling matrix | Sealed gas headspace, multiple port elevations, stratification: medium |
 | Ground | Implemented E | Shared zero reference | legacy | None for DC model |
 | Wire junction | Implemented E | Explicit ideal shared node | legacy, browser | None for DC model |
-| Fuse | Implemented E/T; 10 A–250 A models, presets to 630 A | Definite-time trip (configurable trip delay) above rating | legacy, sandbox | I²t/arc model, circuit breaker: high |
+| Fuse | Implemented E/T; 10 A–250 A models, presets to 630 A | Definite-time trip (configurable trip delay) above rating | legacy, sandbox | I²t/arc model: high |
 | Voltmeter | Implemented E | 10 MΩ differential loading | legacy, browser | Instrument noise/ranges: low |
 | Temperature sensor | Implemented T/C | Actual target temperature, exact lag, resolution, seeded noise, invalid failure | legacy, browser | Physical sensor thermal mass: low |
 | Comparator | Implemented C | Typed numeric comparison, optional reference | legacy, hydraulic | No power model, intentionally ideal |
@@ -52,7 +52,6 @@ All 51 catalog entries are connected to a solver or to the existing automation g
 | Flow sensor / flow probes | Implemented H/C | Signed branch flow; no extra hydraulic meter loss | hydraulic, browser | Real meter pressure loss: low |
 | Level sensor | Implemented H/C | Actual inventory percent, lag/range/noise/failure | supply/fault tests, browser | Geometry-specific level response: low |
 | PID regulator | Implemented C | Simulation-time integral, bounds, conditional anti-windup, feedforward, derivative on measurement with first-order filter | changing-demand challenge, features.test | Output-unit inference: low |
-
 | Rigid body | Implemented S | Rectangle, circle, convex polygon, beam, wall, floor, platform, wheel; density×area×depth or explicit mass; collision/friction/restitution/CCD | Spatial references, collision/angular momentum/material/long-run tests, browser editing | Deformation/fracture: deferred; compound concave geometry: medium |
 | Position sensor | Implemented S/C | Actual body-origin x/y metres, shared lag/range/noise/fault semantics | Lift/control/fault tests, browser | Off-center point/displacement sensor: low |
 | Speed sensor | Implemented S/M/C | Actual body or lumped-motor RPM; shaft speed is authoritative | Rotation challenge/load/fault tests, browser | Encoder pulse/quantization dynamics: medium |
@@ -60,17 +59,13 @@ All 51 catalog entries are connected to a solver or to the existing automation g
 
 Spatial representations are available for motor, pump, tank, heater, cooler, source, resistor, lamp, pipe and valves. These are optional **static housings of the existing component identity**, not extra catalog entries or new thermal masses. Material thermal properties remain metadata. Fixed, revolute, prismatic, distance, spring and gear/rack constraints are world records with tested solver integration; they are not decorative catalog items. Motor rotor inertia joins the spatial rotor exactly once. Mechanical material/contact/constraint limitations are detailed in [Phase 3A](PHASE3A.md).
 
-## Reviewed components without decorative catalog entries
+## Remaining unsupported extensions
 
 | Requested foundation / extension | Actual status | Rationale / recommended priority |
 | --- | --- | --- |
-| Current source | Not implemented | MNA extension; not required for powered DC motor experiments. Medium |
-| Circuit breaker | Not implemented | Existing fuse and latched electrical cutoff provide the required protective experiments; thermal/magnetic trip dynamics deferred. Medium |
-| Generic thermal mass | No separate catalog item | Heater/electrical casing masses and finite tank heat storage exist. Generic solid mass/contact network is a useful Phase 3 foundation. Medium |
-| Heat sink | No separate solid model | Cooling jacket supplies a supported ideal UA sink. Finite solid heat sink needs generic thermal network extension. Medium |
-| Heat exchanger | Deferred | Requires two finite fluid streams and explicit transfer surfaces. No decorative block added. High after pipe inventories |
+| Dedicated current-source component | No separate catalog entry | The DC supply already supports constant-current regulation with voltage compliance. |
 | Radiator | Pipe UA supports simple zero-volume heat rejection | No separate spatial radiator/fin/fan model. Medium |
 | Hydraulic pressure boundary / infinite reservoir | No catalog entry | Finite tanks provide supported boundaries; infinite supplies are not disguised as tanks. Low |
 | In-line flow meter | Branch probe/sensor implemented | Ideal measurement has no resistance; explicit calibrated meter loss deferred. Low |
 | Generic safety interlock | Existing Boolean gates, sensors and motor enable; independent thermal contact | Actual source/high-level logic works. Separate hydraulic latched hardware cutoff and common-cause fault studies remain medium priority |
-| Turbine/generator, AC, semiconductors, steam, structural failure | Unsupported | Require separate energetic/transient modules; Phase 3 or later |
+| Turbine, dedicated generator, semiconductors, steam, structural failure | Unsupported | AC phasors and induction machines are implemented above; these extensions require separate models. |

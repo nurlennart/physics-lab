@@ -110,7 +110,8 @@ describe("derived engineering relationships", () => {
     const t = catalog({ ...makeComponent("tank", 0, 0), variant: "process2000" }).props;
     const area = 2 * 1.54 + 2 * Math.PI * Math.sqrt(1.54 / Math.PI) * (2.2 / 1.54);
     expect(t.loss).toBeCloseTo(area / (1 / 10 + 0.1 / 0.04), 9);
-    expect(derivedReadouts({ ...makeComponent("tank", 0, 0), props: t }).find((x) => x.label === "Water mass")!.value).toBe(2000);
+    // 2 m³ × the declared Kell density at 20 °C (independent evaluation).
+    expect(derivedReadouts({ ...makeComponent("tank", 0, 0), props: t }).find((x) => x.label === "Water mass")!.value).toBe(1996.4082644011673);
   });
 });
 

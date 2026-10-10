@@ -599,7 +599,7 @@ export class Simulation {
       } catch (e) { Object.assign(this.multiphysics, checkpoint); if (spatialBefore) this.spatial.restore(spatialBefore); Object.assign(this.spatial, spatialLedger); this.temperatures = temperaturesBefore; this.error = (e as Error).message; this.log(this.error, "error"); return false; }
     }
     const p = this.project,
-      thermal = p.components.filter(c => isThermalMass(c) && (c.kind !== "tank" || (this.multiphysics.tanks[c.id]?.mass ?? 0) > 1e-10)),
+      thermal = p.components.filter(c => isThermalMass(c) && (c.kind !== "tank" || (this.multiphysics.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, "vesselHeatCapacity") > 0)),
       index = new Map(thermal.map((c, i) => [c.id, i])),
       n = thermal.length;
     const a = Array.from({ length: n }, () => Array(n).fill(0)),

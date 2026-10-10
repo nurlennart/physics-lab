@@ -8,6 +8,7 @@
  * the engine; challenge restrictions live in integrity.ts / challenges.ts.
  */
 import type { Component, Kind, Property } from "./model";
+import { kellDensity } from "./water";
 
 export type ParamGroup = "operating" | "configuration" | "ratings" | "thermal" | "initial" | "advanced";
 /**
@@ -419,7 +420,7 @@ export function derivedReadouts(c: Component): Readout[] {
       { label: "Thermal time constant", value: n("loss") > 0 ? n("heatCapacity") / n("loss") : Infinity, unit: "s" },
     ];
     case "tank": {
-      const mass = n("volume"), g = vesselGeometry(n("capacity"), n("surfaceArea"));
+      const mass = n("volume") / 1000 * kellDensity(n("initialTemperature", 20)), g = vesselGeometry(n("capacity"), n("surfaceArea"));
       return [
         { label: "Water mass", value: mass, unit: "kg" },
         { label: "Total heat capacity", value: mass * 4180 + n("vesselHeatCapacity"), unit: "J/K", note: "water + vessel" },

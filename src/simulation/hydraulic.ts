@@ -432,9 +432,11 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const w = result.weir[c.id];
     if (!w?.routed) continue;
     const from = result.tankNodes[c.id], drop = (p[from] - p[w.node]) * 1000;
+    // The free-overfall law cannot force water into a pressurized/submerged
+    // drain. Continuing would pump uphill and disguise the work as negative heat.
+    if (drop < -1e-6) throw Error(`${c.name}: overflow line backs up above the free surface. Submerged/backpressured overflow is unsupported; lower or widen the drain, or disconnect the overflow route.`);
     result.branches.push({ id: `${c.id}#overflow`, component: c.id, from, to: w.node, flow: w.flow, loss: drop * w.flow, gain: 0 });
     result.readings[`${c.id}#overflow`] = { flow: w.flow, pressure: p[w.node] * 1000, inletPressure: p[from] * 1000, differentialPressure: drop, velocity: 0, reynolds: 0, frictionFactor: 0, hydraulicPower: 0, impellerPower: 0, shaftPower: 0, mechanicalLoss: 0, hydraulicEfficiency: null, efficiency: null, torque: 0, temperature: tanks[c.id].temperature };
-    if (drop < 0) result.diagnostics.push(`${c.name}: overflow line backs up above the free surface — the overflow route cannot carry the spill.`);
   }
   for (const c of cs.filter(c => !branchKinds.has(c.kind) && definitions[c.kind].ports.some(p => p.id === 'fluid'))) {
     const n = node(c, 'fluid');
@@ -576,7 +578,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const vessel = t.vessel ?? 0;
     const enthalpy = (t.mass * CP + vessel) * t.temperature + (energyRate[id] ?? 0) * dt;
     t.mass = Math.abs(mass) < 1e-10 ? 0 : mass;
-    if (t.mass > 1e-10) t.temperature = enthalpy / (t.mass * CP + vessel);
+    if (t.mass > 1e-10 || vessel > 0) t.temperature = enthalpy / (t.mass * CP + vessel);
     t.volume = inventoryVolume(t.mass, t.temperature);
   }
   nodes.forEach((n, i) => (result.nodeTemperatures[n] = temperatures[i]));

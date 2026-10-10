@@ -3,6 +3,7 @@ import { starter, serializeProject } from '../src/simulation/projects';
 import { makeComponent, uid } from '../src/simulation/model';
 import { examples } from '../src/simulation/learning';
 import { openExample } from './learning-helpers';
+import { resolve } from 'node:path';
 
 async function advance(page: Page, seconds = 60) {
   if (seconds === 60) await page.getByRole('button', { name: 'Advance 60 s', exact: true }).click();
@@ -18,6 +19,8 @@ for (const example of examples) test(`UI starter: ${example.title} runs, resets 
   test.setTimeout(120000);
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('/'); await openExample(page, example.title);
+  // Validate the supplied project artifact too, rather than only its generator.
+  await page.locator('input[type=file]').setInputFiles(resolve('examples', `${example.mode}.physics.json`));
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(example.mode)) await page.getByRole('button', { name: 'Physical view', exact: true }).click();
   await page.getByRole('button', { name: 'Run', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
