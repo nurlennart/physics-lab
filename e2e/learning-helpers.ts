@@ -30,8 +30,10 @@ export async function addMissionEquipment(page: Page, mode: 'light' | 'heat' | '
   const kit = mode === 'transfer'
     ? [['DC power supply', 80, 110], ['DC motor', 320, 110], ['Centrifugal pump', 320, 370], ['Pipe', 570, 370], ['Manual valve', 800, 370]] as const
     : [['DC power supply', 100, 160], ['Switch', 360, 90], [mode === 'heat' ? 'Immersion heater' : 'Filament lamp', 630, 160]] as const;
+  // Kit coordinates were laid out for a 924 px stage; scale them to the actual stage width.
+  const stage = (await canvas.boundingBox())!, fit = Math.min(1, (stage.width - 60) / 860);
   for (const [label, x, y] of kit) {
-    await page.locator('.library-component').filter({ has: page.getByText(label, { exact: true }) }).dragTo(canvas, { targetPosition: { x, y } });
+    await page.locator('.library-component').filter({ has: page.getByText(label, { exact: true }) }).dragTo(canvas, { targetPosition: { x: x * fit, y } });
     if (label === 'DC power supply' && mode === 'heat') {
       await page.getByLabel('Voltage setpoint', { exact: true }).fill('240');
       await page.getByLabel('Voltage setpoint', { exact: true }).press('Enter');

@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-10T20:57:35.009Z. 124/124 checks passed in 21.86 s wall time.
+Executed: 2026-10-10T21:32:05.998Z. 124/124 checks passed in 22.46 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |

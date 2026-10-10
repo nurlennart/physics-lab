@@ -133,8 +133,8 @@ export default function App() {
             <FlaskConical size={22} strokeWidth={1.6} />
           </span>
           <span>
-            PHYSICS<span className="brand-light">LAB</span>
-            <small>ENGINEERING SANDBOX</small>
+            Physics Lab
+            <small>Engineering sandbox</small>
           </span>
         </a>
         <div className="header-divider" />
@@ -188,15 +188,7 @@ export default function App() {
             </button>
           </div>
         </details>
-        <button
-          className="header-menu"
-          onClick={() => actions.set({ view: "models" })}
-        >
-          Reference
-        </button>
-        <div className="header-center">
-          <span className="workspace-breadcrumb">Workspace</span>
-          <ChevronRight size={13} />
+        <div className="header-project">
           {renaming ? (
             <input
               aria-label="Experiment name"
@@ -234,6 +226,91 @@ export default function App() {
                 Ready
               </>
             )}
+          </span>
+          <span className={`mode-badge ${s.project.challenge ? "challenge" : ""}`}>{s.project.challenge ? "Challenge" : "Sandbox"}</span>
+        </div>
+        <div className="header-transport">
+          <div className="transport">
+            <button
+              className={`run-button ${s.running ? "is-running" : ""}`}
+              disabled={s.busy}
+              onClick={actions.run}
+            >
+              {s.running ? (
+                <Pause size={14} fill="currentColor" />
+              ) : (
+                <Play size={14} fill="currentColor" />
+              )}
+              {s.running ? "Pause" : "Run"}
+            </button>
+            <button
+              title="Reset simulation"
+              aria-label="Reset simulation"
+              disabled={s.busy}
+              onClick={actions.reset}
+            >
+              <RotateCcw size={16} />
+            </button>
+            <button
+              title="Single step (1/60 s)"
+              aria-label="Single simulation step"
+              disabled={s.running || s.busy}
+              onClick={actions.step}
+            >
+              <StepForward size={16} />
+            </button>
+            <span className="control-divider" />
+            <label className="speed-control">
+              <span>Speed</span>
+              <select
+                aria-label="Simulation speed"
+                value={s.speed}
+                onChange={(e) => actions.set({ speed: Number(e.target.value) })}
+              >
+                {[0.25, 0.5, 1, 2, 4, 10, 30, 60].map((v) => (
+                  <option key={v} value={v}>
+                    {v}×
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={12} />
+            </label>
+            {s.progress !== null ? (
+              <button className="advance-button advancing" onClick={actions.cancelAdvance} title="Stop advancing; the state reached so far is kept and recorded">
+                <X size={14} />
+                <span>{Math.round(s.progress * 100)}% · Stop</span>
+              </button>
+            ) : (
+              <>
+                <button
+                  className="advance-button"
+                  aria-label="Advance 60 s"
+                  title={simulation.adaptiveUnavailable() ? "Execute 3,600 fixed steps while paused" : "Advance 60 s with event-aware adaptive steps"}
+                  disabled={s.running || s.busy}
+                  onClick={() => actions.advance(60)}
+                >
+                  <ChevronsRight size={16} />
+                  <span>60 s</span>
+                </button>
+                <label className="advance-control" title={simulation.adaptiveUnavailable() ?? "Thermal/electrical/control experiment: event-aware adaptive steps (switching and trips resolved at 1/60 s)"}>
+                  <select
+                    aria-label="Advance by"
+                    value=""
+                    disabled={s.running || s.busy}
+                    onChange={(e) => e.target.value && actions.advance(Number(e.target.value))}
+                  >
+                    <option value="">More…</option>
+                    {[[1, "+1 s"], [10, "+10 s"], [600, "+10 min"], [3600, "+1 h"], [6 * 3600, "+6 h"], [24 * 3600, "+24 h"]].map(([v, label]) => (
+                      <option key={v} value={v}>{label}</option>
+                    ))}
+                  </select>
+                  <span className="advance-mode">{simulation.adaptiveUnavailable() ? "FIXED" : "ADAPTIVE"}</span>
+                </label>
+              </>
+            )}
+          </div>
+          <span className="simulation-clock">
+            t <strong>{formatTime(simulation.time)}</strong>
           </span>
         </div>
         <button
@@ -275,56 +352,30 @@ export default function App() {
           }
         }}
       />
-      <div className="workspace-bar">
-        <div className="workspace-tabs">
-          <button
-            className="mobile-library-button"
-            aria-label="Toggle component library"
-            onClick={() => setMobileLibrary(!mobileLibrary)}
-          >
-            <Menu size={17} />
-          </button>
-          <button
-            className={`workspace-tab ${s.workspaceView === 'schematic' ? 'active' : ''}`}
-            onClick={() => actions.workspace('schematic')}
-            aria-label="Schematic view"
-          >
-            <FlaskConical size={15} />
-            Experiment 01 <span className="tab-indicator" />
-          </button>
-          <button className={`workspace-tab ${s.workspaceView === 'physical' ? 'active' : ''}`} aria-label="Physical view" onClick={() => actions.workspace('physical')}><Layers size={15} />Physical view</button>
-          <button
-            className="workspace-tab"
-            onClick={() => actions.set({ view: "challenges" })}
-          >
-            <Trophy size={15} />
-            Challenges<span className="tab-count">9</span>
-          </button>
-          <button
-            className="add-experiment"
-            title="New empty experiment"
-            aria-label="New empty experiment"
-            onClick={() => actions.newProject("blank")}
-          >
-            +
-          </button>
-        </div>
-        <div className="workspace-info">
-          <button
-            className="mobile-inspector-button"
-            aria-label="Toggle inspector"
-            onClick={() => setMobileInspector(!mobileInspector)}
-          >
-            <SlidersHorizontal size={17} />
-          </button>
-          <span>DC ELECTRICAL</span>
-          <i />
-          <span>THERMAL · HYDRAULIC · MECHANICAL</span>
-          <div className="mode-badge">
-            {s.project.challenge ? "CHALLENGE" : "SANDBOX MODE"}
-          </div>
-        </div>
-      </div>
+      <div className="app-body">
+      <nav className="app-rail" aria-label="Workspace">
+        <button className="rail-item mobile-library-button" aria-label="Toggle component library" onClick={() => setMobileLibrary(!mobileLibrary)}>
+          <Menu size={19} /><span>Library</span>
+        </button>
+        <button className={`rail-item ${s.workspaceView === 'schematic' ? 'active' : ''}`} aria-label="Schematic view" title="Schematic view" aria-current={s.workspaceView === 'schematic' ? 'page' : undefined} onClick={() => actions.workspace('schematic')}>
+          <FlaskConical size={19} /><span>Schematic</span>
+        </button>
+        <button className={`rail-item ${s.workspaceView === 'physical' ? 'active' : ''}`} aria-label="Physical view" title="Physical view" aria-current={s.workspaceView === 'physical' ? 'page' : undefined} onClick={() => actions.workspace('physical')}>
+          <Layers size={19} /><span>Physical</span>
+        </button>
+        <button className="rail-item" aria-label="Challenges, 9 missions" title="Challenges, 9 missions" onClick={() => actions.set({ view: "challenges" })}>
+          <Trophy size={19} /><span>Challenges</span><i className="rail-count">9</i>
+        </button>
+        <button className="rail-item" aria-label="Starters and examples" title="Starters and examples" onClick={() => actions.set({ view: "examples" })}>
+          <BookOpen size={19} /><span>Examples</span>
+        </button>
+        <button className="rail-item rail-new" title="New empty experiment" aria-label="New empty experiment" onClick={() => actions.newProject("blank")}>
+          <FilePlus2 size={19} /><span>New</span>
+        </button>
+        <button className="rail-item mobile-inspector-button" aria-label="Toggle inspector" onClick={() => setMobileInspector(!mobileInspector)}>
+          <SlidersHorizontal size={19} /><span>Inspector</span>
+        </button>
+      </nav>
       <div
         className={`lab-grid ${mobileLibrary ? "show-library" : ""} ${mobileInspector ? "show-inspector" : ""}`}
       >
@@ -348,117 +399,21 @@ export default function App() {
         {s.workspaceView === 'physical' ? <PhysicalInspector /> : <Inspector />}
         <Telemetry />
       </div>
-      <div className="simulation-bar">
-        <div className="simulation-caption">
-          <span className={s.running ? "status-dot running" : "status-dot"} />
-          <strong>
-            {s.busy
-              ? simulation.adaptiveUnavailable() ? "Advancing fixed steps" : "Advancing adaptively"
-              : s.running
-                ? "Simulation running"
-                : result?.complete
-                  ? "Challenge complete"
-                  : "Simulation paused"}
-          </strong>
-        </div>
-        <div className="transport">
-          <button
-            className={`run-button ${s.running ? "is-running" : ""}`}
-            disabled={s.busy}
-            onClick={actions.run}
-          >
-            {s.running ? (
-              <Pause size={14} fill="currentColor" />
-            ) : (
-              <Play size={14} fill="currentColor" />
-            )}
-            {s.running ? "Pause" : "Run"}
-          </button>
-          <button
-            title="Reset simulation"
-            aria-label="Reset simulation"
-            disabled={s.busy}
-            onClick={actions.reset}
-          >
-            <RotateCcw size={16} />
-          </button>
-          <button
-            title="Single step (1/60 s)"
-            aria-label="Single simulation step"
-            disabled={s.running || s.busy}
-            onClick={actions.step}
-          >
-            <StepForward size={16} />
-          </button>
-          <span className="control-divider" />
-          <label className="speed-control">
-            <span>Speed</span>
-            <select
-              aria-label="Simulation speed"
-              value={s.speed}
-              onChange={(e) => actions.set({ speed: Number(e.target.value) })}
-            >
-              {[0.25, 0.5, 1, 2, 4, 10, 30, 60].map((v) => (
-                <option key={v} value={v}>
-                  {v}×
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={12} />
-          </label>
-          {s.progress !== null ? (
-            <button className="advance-button advancing" onClick={actions.cancelAdvance} title="Stop advancing; the state reached so far is kept and recorded">
-              <X size={14} />
-              <span>{Math.round(s.progress * 100)}% · Stop</span>
-            </button>
-          ) : (
-            <>
-              <button
-                className="advance-button"
-                title={simulation.adaptiveUnavailable() ? "Execute 3,600 fixed steps while paused" : "Advance 60 s with event-aware adaptive steps"}
-                disabled={s.running || s.busy}
-                onClick={() => actions.advance(60)}
-              >
-                <ChevronsRight size={16} />
-                <span>Advance 60 s</span>
-              </button>
-              <label className="advance-control" title={simulation.adaptiveUnavailable() ?? "Thermal/electrical/control experiment: event-aware adaptive steps (switching and trips resolved at 1/60 s)"}>
-                <select
-                  aria-label="Advance by"
-                  value=""
-                  disabled={s.running || s.busy}
-                  onChange={(e) => e.target.value && actions.advance(Number(e.target.value))}
-                >
-                  <option value="">More…</option>
-                  {[[1, "+1 s"], [10, "+10 s"], [600, "+10 min"], [3600, "+1 h"], [6 * 3600, "+6 h"], [24 * 3600, "+24 h"]].map(([v, label]) => (
-                    <option key={v} value={v}>{label}</option>
-                  ))}
-                </select>
-                <span className="advance-mode">{simulation.adaptiveUnavailable() ? "FIXED" : "ADAPTIVE"}</span>
-              </label>
-            </>
-          )}
-        </div>
-        <span className="simulation-clock">
-          t <strong>{formatTime(simulation.time)}</strong>
-        </span>
-        <div className={`solver-status ${simulation.solverMs > 1000 / 60 ? "over-budget" : ""}`} title={simulation.solverMs > 1000 / 60 ? "Physics exceeds the 60 Hz frame budget. The fixed-step clock slows; reduce active bodies or constraints." : "Fixed-step simulation independent of rendering"}>
-          <span>FIXED STEP</span>
-          <strong>1 / 60 s</strong>
-          <i />
-          <span>SOLVER</span>
-          <strong>{simulation.solverMs.toFixed(2)} ms</strong>
-        </div>
-        <button
-          className={`warning-count ${warnings ? "has-warning" : ""}`}
-          onClick={() => actions.set({ panel: "events" })}
-        >
-          <TriangleAlert size={14} />
-          {warnings} <span>warnings</span>
-        </button>
       </div>
       <footer className="status-footer">
         <div>
+          <div className="simulation-caption">
+            <span className={s.running ? "status-dot running" : "status-dot"} />
+            <strong>
+              {s.busy
+                ? simulation.adaptiveUnavailable() ? "Advancing fixed steps" : "Advancing adaptively"
+                : s.running
+                  ? "Simulation running"
+                  : result?.complete
+                    ? "Challenge complete"
+                    : "Simulation paused"}
+            </strong>
+          </div>
           <span className="engine-status">
             <i />
             {simulation.error ? "Engine halted" : "Engine ready"}
@@ -468,6 +423,20 @@ export default function App() {
           <span>€{projectCost(s.project).toFixed(0)} {s.project.challenge ? "total" : "est. total"}</span>
         </div>
         <div>
+          <div className={`solver-status ${simulation.solverMs > 1000 / 60 ? "over-budget" : ""}`} title={simulation.solverMs > 1000 / 60 ? "Physics exceeds the 60 Hz frame budget. The fixed-step clock slows; reduce active bodies or constraints." : "Fixed-step simulation independent of rendering"}>
+            <span>FIXED STEP</span>
+            <strong>1 / 60 s</strong>
+            <i />
+            <span>SOLVER</span>
+            <strong>{simulation.solverMs.toFixed(2)} ms</strong>
+          </div>
+          <button
+            className={`warning-count ${warnings ? "has-warning" : ""}`}
+            onClick={() => actions.set({ panel: "events" })}
+          >
+            <TriangleAlert size={14} />
+            {warnings} <span>warnings</span>
+          </button>
           <span>
             KCL residual {simulation.electrical.residual.toExponential(1)}
           </span>
