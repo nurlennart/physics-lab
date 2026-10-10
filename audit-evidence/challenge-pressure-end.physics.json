@@ -1,0 +1,1014 @@
+{
+  "format": "physics-lab-run",
+  "version": 1,
+  "configuration": {
+    "version": 3,
+    "id": "i5jygnshikf",
+    "name": "Pressure regulation laboratory",
+    "components": [
+      {
+        "id": "g0uv026f3ch",
+        "kind": "source",
+        "name": "PS-01",
+        "x": 40,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "voltage": 24,
+          "maxCurrent": 20,
+          "ratedVoltage": 240
+        }
+      },
+      {
+        "id": "3ilmstkibcl",
+        "kind": "motor",
+        "name": "M-01",
+        "x": 300,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 1.2,
+          "torqueConstant": 0.08,
+          "emfConstant": 0.08,
+          "inertia": 0.006,
+          "friction": 0.0005,
+          "loadTorque": 0,
+          "ratedVoltage": 24,
+          "ratedCurrent": 20,
+          "ratedTorque": 1.6,
+          "ratedPower": 500,
+          "maxSpeed": 400,
+          "heatCapacity": 500,
+          "loss": 2,
+          "maxTemperature": 120,
+          "enabled": true,
+          "speedControl": false,
+          "speedCommand": 2500
+        }
+      },
+      {
+        "id": "qpn7ezrtmaq",
+        "kind": "pump",
+        "name": "P-01",
+        "x": 300,
+        "y": 330,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "ratedSpeed": 300,
+          "ratedFlow": 0.001,
+          "shutoffHead": 8,
+          "efficiency": 0.7,
+          "mechanicalDrag": 0.000003,
+          "maxPressure": 1000000,
+          "elevation": 0
+        }
+      },
+      {
+        "id": "fr9ed6ykb7",
+        "kind": "tank",
+        "name": "Source reservoir",
+        "x": 30,
+        "y": 340,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 150,
+          "capacity": 150,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      },
+      {
+        "id": "fijeir4pqcl",
+        "kind": "tank",
+        "name": "Destination tank",
+        "x": 1010,
+        "y": 340,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 0,
+          "capacity": 120,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      },
+      {
+        "id": "y3a2q7u6xkc",
+        "kind": "pipe",
+        "name": "PL-01",
+        "x": 550,
+        "y": 330,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "length": 5,
+          "diameter": 0.025,
+          "roughness": 0.000045,
+          "maxPressure": 1000000,
+          "material": "steel",
+          "conductivity": 45,
+          "insulation": 0,
+          "thermalUA": 0,
+          "ambient": 20,
+          "elevation": 0
+        }
+      },
+      {
+        "id": "yta44v4algo",
+        "kind": "valve",
+        "name": "Consumer demand",
+        "x": 780,
+        "y": 330,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "opening": 40,
+          "diameter": 0.018,
+          "lossCoefficient": 5,
+          "maxPressure": 1000000,
+          "elevation": 0
+        }
+      },
+      {
+        "id": "bl9ayqnnh3a",
+        "kind": "pressureSensor",
+        "name": "PSN-01",
+        "x": 540,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "target": "y3a2q7u6xkc",
+          "minRange": -1000000,
+          "maxRange": 1000000,
+          "resolution": 0.001,
+          "lag": 0,
+          "noise": 0
+        }
+      },
+      {
+        "id": "9krbdg3jas9",
+        "kind": "pid",
+        "name": "PI-01",
+        "x": 790,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "reference": 35000,
+          "feedforward": 0,
+          "kp": 0.06,
+          "ki": 0.08,
+          "minOutput": 0,
+          "maxOutput": 3500
+        }
+      },
+      {
+        "id": "ej1larssv1h",
+        "kind": "pipe",
+        "name": "Return line",
+        "x": 1010,
+        "y": 650,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "length": 1,
+          "diameter": 0.04,
+          "roughness": 0.000045,
+          "maxPressure": 1000000,
+          "material": "steel",
+          "conductivity": 45,
+          "insulation": 0,
+          "thermalUA": 0,
+          "ambient": 20,
+          "elevation": 0
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "90jkhf7juno",
+        "domain": "electrical",
+        "from": {
+          "component": "g0uv026f3ch",
+          "port": "a"
+        },
+        "to": {
+          "component": "3ilmstkibcl",
+          "port": "a"
+        }
+      },
+      {
+        "id": "dua6zi92bdp",
+        "domain": "electrical",
+        "from": {
+          "component": "3ilmstkibcl",
+          "port": "b"
+        },
+        "to": {
+          "component": "g0uv026f3ch",
+          "port": "b"
+        }
+      },
+      {
+        "id": "liqro9u2eqj",
+        "domain": "mechanical",
+        "from": {
+          "component": "3ilmstkibcl",
+          "port": "shaft"
+        },
+        "to": {
+          "component": "qpn7ezrtmaq",
+          "port": "shaft"
+        }
+      },
+      {
+        "id": "hqeq2bgfpfn",
+        "domain": "hydraulic",
+        "from": {
+          "component": "fr9ed6ykb7",
+          "port": "fluid"
+        },
+        "to": {
+          "component": "qpn7ezrtmaq",
+          "port": "inlet"
+        }
+      },
+      {
+        "id": "td543ipc1e",
+        "domain": "hydraulic",
+        "from": {
+          "component": "qpn7ezrtmaq",
+          "port": "outlet"
+        },
+        "to": {
+          "component": "y3a2q7u6xkc",
+          "port": "inlet"
+        }
+      },
+      {
+        "id": "rugkmxpfsjn",
+        "domain": "hydraulic",
+        "from": {
+          "component": "y3a2q7u6xkc",
+          "port": "outlet"
+        },
+        "to": {
+          "component": "yta44v4algo",
+          "port": "inlet"
+        }
+      },
+      {
+        "id": "6gx66fvlixp",
+        "domain": "hydraulic",
+        "from": {
+          "component": "yta44v4algo",
+          "port": "outlet"
+        },
+        "to": {
+          "component": "fijeir4pqcl",
+          "port": "fluid"
+        }
+      },
+      {
+        "id": "ywu013bujua",
+        "domain": "control",
+        "from": {
+          "component": "bl9ayqnnh3a",
+          "port": "out"
+        },
+        "to": {
+          "component": "9krbdg3jas9",
+          "port": "in"
+        }
+      },
+      {
+        "id": "8gcigsepby7",
+        "domain": "control",
+        "from": {
+          "component": "9krbdg3jas9",
+          "port": "out"
+        },
+        "to": {
+          "component": "3ilmstkibcl",
+          "port": "speed"
+        }
+      },
+      {
+        "id": "aoriet6tj3q",
+        "domain": "hydraulic",
+        "from": {
+          "component": "fijeir4pqcl",
+          "port": "fluid"
+        },
+        "to": {
+          "component": "ej1larssv1h",
+          "port": "inlet"
+        }
+      },
+      {
+        "id": "19o82o05vtq",
+        "domain": "hydraulic",
+        "from": {
+          "component": "ej1larssv1h",
+          "port": "outlet"
+        },
+        "to": {
+          "component": "fr9ed6ykb7",
+          "port": "fluid"
+        }
+      }
+    ],
+    "probes": [
+      {
+        "id": "abbcmnw5sll",
+        "name": "Destination level",
+        "component": "fijeir4pqcl",
+        "measurement": "level",
+        "color": "#59b99b",
+        "visible": true
+      },
+      {
+        "id": "fvya621rkbg",
+        "name": "Delivery flow",
+        "component": "y3a2q7u6xkc",
+        "measurement": "flow",
+        "color": "#3ba6d8",
+        "visible": true
+      },
+      {
+        "id": "yihvjpigax",
+        "name": "Motor current",
+        "component": "3ilmstkibcl",
+        "measurement": "current",
+        "color": "#e9bd6a",
+        "visible": true
+      },
+      {
+        "id": "nmj26dpmoxc",
+        "name": "Delivery pressure",
+        "component": "y3a2q7u6xkc",
+        "measurement": "pressure",
+        "color": "#a58ae3",
+        "visible": true
+      },
+      {
+        "id": "hhuy9csn9as",
+        "name": "Destination water",
+        "component": "fijeir4pqcl",
+        "measurement": "fluidTemperature",
+        "color": "#ef9975",
+        "visible": true
+      }
+    ],
+    "assemblies": [],
+    "challenge": "pressure"
+  },
+  "origin": {
+    "version": 3,
+    "id": "i5jygnshikf",
+    "name": "Pressure regulation laboratory",
+    "components": [
+      {
+        "id": "g0uv026f3ch",
+        "kind": "source",
+        "name": "PS-01",
+        "x": 40,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "voltage": 24,
+          "maxCurrent": 20,
+          "ratedVoltage": 240
+        }
+      },
+      {
+        "id": "3ilmstkibcl",
+        "kind": "motor",
+        "name": "M-01",
+        "x": 300,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 1.2,
+          "torqueConstant": 0.08,
+          "emfConstant": 0.08,
+          "inertia": 0.006,
+          "friction": 0.0005,
+          "loadTorque": 0,
+          "ratedVoltage": 24,
+          "ratedCurrent": 20,
+          "ratedTorque": 1.6,
+          "ratedPower": 500,
+          "maxSpeed": 400,
+          "heatCapacity": 500,
+          "loss": 2,
+          "maxTemperature": 120,
+          "enabled": true,
+          "speedControl": false,
+          "speedCommand": 2500
+        }
+      },
+      {
+        "id": "qpn7ezrtmaq",
+        "kind": "pump",
+        "name": "P-01",
+        "x": 300,
+        "y": 330,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "ratedSpeed": 300,
+          "ratedFlow": 0.001,
+          "shutoffHead": 8,
+          "efficiency": 0.7,
+          "mechanicalDrag": 0.000003,
+          "maxPressure": 1000000,
+          "elevation": 0
+        }
+      },
+      {
+        "id": "fr9ed6ykb7",
+        "kind": "tank",
+        "name": "Source reservoir",
+        "x": 30,
+        "y": 340,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 150,
+          "capacity": 150,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      },
+      {
+        "id": "fijeir4pqcl",
+        "kind": "tank",
+        "name": "Destination tank",
+        "x": 1010,
+        "y": 340,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 0,
+          "capacity": 120,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      },
+      {
+        "id": "y3a2q7u6xkc",
+        "kind": "pipe",
+        "name": "PL-01",
+        "x": 550,
+        "y": 330,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "length": 5,
+          "diameter": 0.025,
+          "roughness": 0.000045,
+          "maxPressure": 1000000,
+          "material": "steel",
+          "conductivity": 45,
+          "insulation": 0,
+          "thermalUA": 0,
+          "ambient": 20,
+          "elevation": 0
+        }
+      },
+      {
+        "id": "yta44v4algo",
+        "kind": "valve",
+        "name": "Consumer demand",
+        "x": 780,
+        "y": 330,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "opening": 40,
+          "diameter": 0.018,
+          "lossCoefficient": 5,
+          "maxPressure": 1000000,
+          "elevation": 0
+        }
+      },
+      {
+        "id": "bl9ayqnnh3a",
+        "kind": "pressureSensor",
+        "name": "PSN-01",
+        "x": 540,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "target": "y3a2q7u6xkc",
+          "minRange": -1000000,
+          "maxRange": 1000000,
+          "resolution": 0.001,
+          "lag": 0,
+          "noise": 0
+        }
+      },
+      {
+        "id": "9krbdg3jas9",
+        "kind": "pid",
+        "name": "PI-01",
+        "x": 790,
+        "y": 70,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "reference": 35000,
+          "feedforward": 0,
+          "kp": 0.06,
+          "ki": 0.08,
+          "minOutput": 0,
+          "maxOutput": 3500
+        }
+      },
+      {
+        "id": "ej1larssv1h",
+        "kind": "pipe",
+        "name": "Return line",
+        "x": 1010,
+        "y": 650,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "length": 1,
+          "diameter": 0.04,
+          "roughness": 0.000045,
+          "maxPressure": 1000000,
+          "material": "steel",
+          "conductivity": 45,
+          "insulation": 0,
+          "thermalUA": 0,
+          "ambient": 20,
+          "elevation": 0
+        }
+      }
+    ],
+    "connections": [],
+    "probes": [
+      {
+        "id": "abbcmnw5sll",
+        "name": "Destination level",
+        "component": "fijeir4pqcl",
+        "measurement": "level",
+        "color": "#59b99b",
+        "visible": true
+      },
+      {
+        "id": "fvya621rkbg",
+        "name": "Delivery flow",
+        "component": "y3a2q7u6xkc",
+        "measurement": "flow",
+        "color": "#3ba6d8",
+        "visible": true
+      },
+      {
+        "id": "yihvjpigax",
+        "name": "Motor current",
+        "component": "3ilmstkibcl",
+        "measurement": "current",
+        "color": "#e9bd6a",
+        "visible": true
+      },
+      {
+        "id": "nmj26dpmoxc",
+        "name": "Delivery pressure",
+        "component": "y3a2q7u6xkc",
+        "measurement": "pressure",
+        "color": "#a58ae3",
+        "visible": true
+      },
+      {
+        "id": "hhuy9csn9as",
+        "name": "Destination water",
+        "component": "fijeir4pqcl",
+        "measurement": "fluidTemperature",
+        "color": "#ef9975",
+        "visible": true
+      }
+    ],
+    "assemblies": [],
+    "challenge": "pressure"
+  },
+  "inputs": [
+    {
+      "at": 0,
+      "project": {
+        "version": 3,
+        "id": "i5jygnshikf",
+        "name": "Pressure regulation laboratory",
+        "components": [
+          {
+            "id": "g0uv026f3ch",
+            "kind": "source",
+            "name": "PS-01",
+            "x": 40,
+            "y": 70,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "voltage": 24,
+              "maxCurrent": 20,
+              "ratedVoltage": 240
+            }
+          },
+          {
+            "id": "3ilmstkibcl",
+            "kind": "motor",
+            "name": "M-01",
+            "x": 300,
+            "y": 70,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "resistance": 1.2,
+              "torqueConstant": 0.08,
+              "emfConstant": 0.08,
+              "inertia": 0.006,
+              "friction": 0.0005,
+              "loadTorque": 0,
+              "ratedVoltage": 24,
+              "ratedCurrent": 20,
+              "ratedTorque": 1.6,
+              "ratedPower": 500,
+              "maxSpeed": 400,
+              "heatCapacity": 500,
+              "loss": 2,
+              "maxTemperature": 120,
+              "enabled": true,
+              "speedControl": false,
+              "speedCommand": 2500
+            }
+          },
+          {
+            "id": "qpn7ezrtmaq",
+            "kind": "pump",
+            "name": "P-01",
+            "x": 300,
+            "y": 330,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "ratedSpeed": 300,
+              "ratedFlow": 0.001,
+              "shutoffHead": 8,
+              "efficiency": 0.7,
+              "mechanicalDrag": 0.000003,
+              "maxPressure": 1000000,
+              "elevation": 0
+            }
+          },
+          {
+            "id": "fr9ed6ykb7",
+            "kind": "tank",
+            "name": "Source reservoir",
+            "x": 30,
+            "y": 340,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "elevation": 0,
+              "surfaceArea": 0.1,
+              "density": 1000,
+              "maxPressure": 1000000,
+              "vented": true,
+              "volume": 150,
+              "capacity": 150,
+              "initialTemperature": 20,
+              "loss": 2.2,
+              "ambient": 20
+            }
+          },
+          {
+            "id": "fijeir4pqcl",
+            "kind": "tank",
+            "name": "Destination tank",
+            "x": 1010,
+            "y": 340,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "elevation": 0,
+              "surfaceArea": 0.1,
+              "density": 1000,
+              "maxPressure": 1000000,
+              "vented": true,
+              "volume": 0,
+              "capacity": 120,
+              "initialTemperature": 20,
+              "loss": 2.2,
+              "ambient": 20
+            }
+          },
+          {
+            "id": "y3a2q7u6xkc",
+            "kind": "pipe",
+            "name": "PL-01",
+            "x": 550,
+            "y": 330,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "length": 5,
+              "diameter": 0.025,
+              "roughness": 0.000045,
+              "maxPressure": 1000000,
+              "material": "steel",
+              "conductivity": 45,
+              "insulation": 0,
+              "thermalUA": 0,
+              "ambient": 20,
+              "elevation": 0
+            }
+          },
+          {
+            "id": "yta44v4algo",
+            "kind": "valve",
+            "name": "Consumer demand",
+            "x": 780,
+            "y": 330,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "opening": 40,
+              "diameter": 0.018,
+              "lossCoefficient": 5,
+              "maxPressure": 1000000,
+              "elevation": 0
+            }
+          },
+          {
+            "id": "bl9ayqnnh3a",
+            "kind": "pressureSensor",
+            "name": "PSN-01",
+            "x": 540,
+            "y": 70,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "target": "y3a2q7u6xkc",
+              "minRange": -1000000,
+              "maxRange": 1000000,
+              "resolution": 0.001,
+              "lag": 0,
+              "noise": 0
+            }
+          },
+          {
+            "id": "9krbdg3jas9",
+            "kind": "pid",
+            "name": "PI-01",
+            "x": 790,
+            "y": 70,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "reference": 35000,
+              "feedforward": 0,
+              "kp": 0.06,
+              "ki": 0.08,
+              "minOutput": 0,
+              "maxOutput": 3500
+            }
+          },
+          {
+            "id": "ej1larssv1h",
+            "kind": "pipe",
+            "name": "Return line",
+            "x": 1010,
+            "y": 650,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "length": 1,
+              "diameter": 0.04,
+              "roughness": 0.000045,
+              "maxPressure": 1000000,
+              "material": "steel",
+              "conductivity": 45,
+              "insulation": 0,
+              "thermalUA": 0,
+              "ambient": 20,
+              "elevation": 0
+            }
+          }
+        ],
+        "connections": [
+          {
+            "id": "90jkhf7juno",
+            "domain": "electrical",
+            "from": {
+              "component": "g0uv026f3ch",
+              "port": "a"
+            },
+            "to": {
+              "component": "3ilmstkibcl",
+              "port": "a"
+            }
+          },
+          {
+            "id": "dua6zi92bdp",
+            "domain": "electrical",
+            "from": {
+              "component": "3ilmstkibcl",
+              "port": "b"
+            },
+            "to": {
+              "component": "g0uv026f3ch",
+              "port": "b"
+            }
+          },
+          {
+            "id": "liqro9u2eqj",
+            "domain": "mechanical",
+            "from": {
+              "component": "3ilmstkibcl",
+              "port": "shaft"
+            },
+            "to": {
+              "component": "qpn7ezrtmaq",
+              "port": "shaft"
+            }
+          },
+          {
+            "id": "hqeq2bgfpfn",
+            "domain": "hydraulic",
+            "from": {
+              "component": "fr9ed6ykb7",
+              "port": "fluid"
+            },
+            "to": {
+              "component": "qpn7ezrtmaq",
+              "port": "inlet"
+            }
+          },
+          {
+            "id": "td543ipc1e",
+            "domain": "hydraulic",
+            "from": {
+              "component": "qpn7ezrtmaq",
+              "port": "outlet"
+            },
+            "to": {
+              "component": "y3a2q7u6xkc",
+              "port": "inlet"
+            }
+          },
+          {
+            "id": "rugkmxpfsjn",
+            "domain": "hydraulic",
+            "from": {
+              "component": "y3a2q7u6xkc",
+              "port": "outlet"
+            },
+            "to": {
+              "component": "yta44v4algo",
+              "port": "inlet"
+            }
+          },
+          {
+            "id": "6gx66fvlixp",
+            "domain": "hydraulic",
+            "from": {
+              "component": "yta44v4algo",
+              "port": "outlet"
+            },
+            "to": {
+              "component": "fijeir4pqcl",
+              "port": "fluid"
+            }
+          },
+          {
+            "id": "ywu013bujua",
+            "domain": "control",
+            "from": {
+              "component": "bl9ayqnnh3a",
+              "port": "out"
+            },
+            "to": {
+              "component": "9krbdg3jas9",
+              "port": "in"
+            }
+          },
+          {
+            "id": "8gcigsepby7",
+            "domain": "control",
+            "from": {
+              "component": "9krbdg3jas9",
+              "port": "out"
+            },
+            "to": {
+              "component": "3ilmstkibcl",
+              "port": "speed"
+            }
+          },
+          {
+            "id": "aoriet6tj3q",
+            "domain": "hydraulic",
+            "from": {
+              "component": "fijeir4pqcl",
+              "port": "fluid"
+            },
+            "to": {
+              "component": "ej1larssv1h",
+              "port": "inlet"
+            }
+          },
+          {
+            "id": "19o82o05vtq",
+            "domain": "hydraulic",
+            "from": {
+              "component": "ej1larssv1h",
+              "port": "outlet"
+            },
+            "to": {
+              "component": "fr9ed6ykb7",
+              "port": "fluid"
+            }
+          }
+        ],
+        "probes": [
+          {
+            "id": "abbcmnw5sll",
+            "name": "Destination level",
+            "component": "fijeir4pqcl",
+            "measurement": "level",
+            "color": "#59b99b",
+            "visible": true
+          },
+          {
+            "id": "fvya621rkbg",
+            "name": "Delivery flow",
+            "component": "y3a2q7u6xkc",
+            "measurement": "flow",
+            "color": "#3ba6d8",
+            "visible": true
+          },
+          {
+            "id": "yihvjpigax",
+            "name": "Motor current",
+            "component": "3ilmstkibcl",
+            "measurement": "current",
+            "color": "#e9bd6a",
+            "visible": true
+          },
+          {
+            "id": "nmj26dpmoxc",
+            "name": "Delivery pressure",
+            "component": "y3a2q7u6xkc",
+            "measurement": "pressure",
+            "color": "#a58ae3",
+            "visible": true
+          },
+          {
+            "id": "hhuy9csn9as",
+            "name": "Destination water",
+            "component": "fijeir4pqcl",
+            "measurement": "fluidTemperature",
+            "color": "#ef9975",
+            "visible": true
+          }
+        ],
+        "assemblies": [],
+        "challenge": "pressure"
+      }
+    }
+  ],
+  "duration": 194.98333333338064
+}

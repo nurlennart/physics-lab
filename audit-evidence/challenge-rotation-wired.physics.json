@@ -1,0 +1,348 @@
+{
+  "version": 4,
+  "id": "eznjod5upm",
+  "name": "Rotational feedback laboratory",
+  "components": [
+    {
+      "id": "5u5ftfueh4l",
+      "kind": "rigidBody",
+      "name": "Foundation",
+      "x": 40,
+      "y": 380,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "forceX": 0,
+        "forceY": 0,
+        "appliedTorque": 0,
+        "brakeDamping": 0
+      },
+      "spatial": {
+        "type": "static",
+        "shape": "floor",
+        "x": 5,
+        "y": -0.25,
+        "angle": 0,
+        "width": 16,
+        "height": 0.5,
+        "depth": 0.05,
+        "material": "concrete",
+        "mass": 0,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": true,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "zq8qvfgrxj",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 30,
+      "y": 70,
+      "rotation": 0,
+      "variant": "motorSupply",
+      "props": {
+        "voltage": 48,
+        "maxCurrent": 80,
+        "ratedVoltage": 240
+      },
+      "spatial": {
+        "type": "static",
+        "shape": "rectangle",
+        "x": 1,
+        "y": 1,
+        "angle": 0,
+        "width": 1,
+        "height": 0.7,
+        "depth": 0.05,
+        "material": "aluminum",
+        "mass": 15,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "nrpl9tnj0c",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 280,
+      "y": 70,
+      "rotation": 0,
+      "variant": "traction48",
+      "props": {
+        "resistance": 1.2,
+        "torqueConstant": 0.15,
+        "emfConstant": 0.15,
+        "inertia": 0.025,
+        "friction": 0.001,
+        "loadTorque": 0,
+        "ratedVoltage": 48,
+        "ratedCurrent": 40,
+        "ratedTorque": 6,
+        "ratedPower": 2000,
+        "maxSpeed": 400,
+        "heatCapacity": 1800,
+        "loss": 5,
+        "maxTemperature": 120,
+        "enabled": true,
+        "speedControl": false,
+        "speedCommand": 2500
+      },
+      "spatial": {
+        "type": "static",
+        "shape": "rectangle",
+        "x": 3,
+        "y": 1,
+        "angle": 0,
+        "width": 0.9,
+        "height": 0.6,
+        "depth": 0.05,
+        "material": "aluminum",
+        "mass": 20,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": false,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "zfl56d0nw49",
+      "kind": "rigidBody",
+      "name": "Driven rotor",
+      "x": 700,
+      "y": 380,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "forceX": 0,
+        "forceY": 0,
+        "appliedTorque": 0,
+        "brakeDamping": 0
+      },
+      "spatial": {
+        "type": "dynamic",
+        "shape": "wheel",
+        "x": 3,
+        "y": 3,
+        "angle": 0,
+        "width": 0.4,
+        "height": 0.4,
+        "depth": 0.02,
+        "material": "aluminum",
+        "mass": 0,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    },
+    {
+      "id": "10npjcaz1g3",
+      "kind": "speedSensor",
+      "name": "WS-01",
+      "x": 540,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "zfl56d0nw49",
+        "minRange": -1000000,
+        "maxRange": 1000000,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0
+      }
+    },
+    {
+      "id": "oqzwwp160o",
+      "kind": "pid",
+      "name": "PI-01",
+      "x": 780,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "reference": 1200,
+        "feedforward": 0,
+        "kp": 0.8,
+        "ki": 2,
+        "minOutput": 0,
+        "maxOutput": 3000
+      }
+    },
+    {
+      "id": "7uwlaby8jdg",
+      "kind": "forceActuator",
+      "name": "Variable shaft load",
+      "x": 1020,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "zfl56d0nw49",
+        "axis": "torque",
+        "value": -0.4,
+        "damping": 0,
+        "maxForce": 10000,
+        "enabled": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "c4g9a3zlkj",
+      "domain": "electrical",
+      "from": {
+        "component": "zq8qvfgrxj",
+        "port": "a"
+      },
+      "to": {
+        "component": "nrpl9tnj0c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gw1uc991njd",
+      "domain": "electrical",
+      "from": {
+        "component": "nrpl9tnj0c",
+        "port": "b"
+      },
+      "to": {
+        "component": "zq8qvfgrxj",
+        "port": "b"
+      }
+    },
+    {
+      "id": "nozve3ktpq",
+      "domain": "mechanical",
+      "from": {
+        "component": "nrpl9tnj0c",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "zfl56d0nw49",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "bxovy21j8ln",
+      "domain": "control",
+      "from": {
+        "component": "10npjcaz1g3",
+        "port": "out"
+      },
+      "to": {
+        "component": "oqzwwp160o",
+        "port": "in"
+      }
+    },
+    {
+      "id": "edegf42vyln",
+      "domain": "control",
+      "from": {
+        "component": "oqzwwp160o",
+        "port": "out"
+      },
+      "to": {
+        "component": "nrpl9tnj0c",
+        "port": "speed"
+      }
+    }
+  ],
+  "world": {
+    "gravity": {
+      "x": 0,
+      "y": -9.80665
+    },
+    "joints": [
+      {
+        "id": "luhripxkjj",
+        "name": "revolute 1",
+        "kind": "revolute",
+        "a": "5u5ftfueh4l",
+        "b": "zfl56d0nw49",
+        "anchorA": {
+          "x": -2,
+          "y": 3.25
+        },
+        "anchorB": {
+          "x": 0,
+          "y": 0
+        },
+        "axis": {
+          "x": 0,
+          "y": 1
+        },
+        "referenceAngle": 0,
+        "limits": false,
+        "lower": -3.141592653589793,
+        "upper": 3.141592653589793,
+        "length": 0.05,
+        "stiffness": 100,
+        "damping": 2,
+        "ratio": 1,
+        "collideConnected": false
+      }
+    ]
+  },
+  "probes": [
+    {
+      "id": "8j3hoogort6",
+      "name": "Rotor speed",
+      "component": "zfl56d0nw49",
+      "measurement": "angularVelocity",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "8jvx4zmxqw9",
+      "name": "Motor current",
+      "component": "nrpl9tnj0c",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "1bmv28475euj",
+      "name": "Mechanical energy",
+      "component": "zfl56d0nw49",
+      "measurement": "kineticEnergy",
+      "color": "#c9d3dc",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "challenge": "rotation"
+}

@@ -1,0 +1,9 @@
+# Phase 2B preflight
+
+Executed 2026-10-09 before implementation: `npm run test:physics`: 63/63 Vitest tests, 32/32 quantitative scenarios passed. No blocking physics regression observed. Browser and Docker status will be rechecked after implementation.
+
+Verified in code: MNA DC source/resistance network with floating islands and residuals; implicit lumped thermal solve; heater immersion conductance; simulation-clock sensors, hysteresis, PI extension point, relay and independent cutoff; faults; typed terminal wiring; arbitrary multitrace probes and CSV; configuration save/load, input replay, undo/redo; three existing performance challenges. Current source is an ideal voltage supply with overload stop, not a current-limited supply. Lamp resistance is constant. Cooling jackets are ideal thermal reservoirs. There is no current source, circuit breaker, AC, armature inductance, hydraulic solver, or shaft state in Phase 2A.
+
+Scheduling: fixed outer 1/60 s independent of rendering (`FixedClock`); engine owns a frozen validated configuration, dynamic temperatures/automation/faults separately. Thermal solver is backward Euler. Electrical solves cache by contact/fault state; motor back EMF must invalidate that cache. Accelerated editor stepping yields every 12 ms; replay is synchronous and limited to two hours. Tests assert conservation and controller behavior.
+
+Extension: add modular hydraulic and mechanical runtime beside existing thermal state; typed hydraulic/mechanical terminals; preserve the old tank's L/°C configuration and thermal ports, migrate old saves to v3, use SI in new runtime. Existing thermal-only experiments must retain their numerical behavior. Live state-defining edits already require Reset; new inventory and shaft model parameters follow that policy. Existing project saves contain configuration only; Phase 2B must add a distinct validated run archive for dynamic restoration/replay.

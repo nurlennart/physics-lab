@@ -1,0 +1,53 @@
+{
+  "executedAt": "2026-10-09",
+  "regression": {
+    "passed": 87,
+    "total": 87,
+    "command": "npm run test:physics"
+  },
+  "quantitative": {
+    "passed": 60,
+    "total": 60,
+    "report": "validation/latest.json"
+  },
+  "coupledScenarios": {
+    "passed": 4,
+    "total": 4,
+    "report": "validation/phase2b-coupled.json"
+  },
+  "productionBrowser": {
+    "passed": 17,
+    "total": 17,
+    "baseURL": "http://localhost:8080",
+    "wallMinutesApproximately": 4.9
+  },
+  "finalFocusedHydraulic": {
+    "passed": 24,
+    "total": 24,
+    "command": "npx vitest run src/simulation/hydraulic.test.ts"
+  },
+  "finalProductionSmoke": {
+    "passed": 2,
+    "total": 2,
+    "wallSeconds": 8.2
+  },
+  "build": {
+    "passed": true,
+    "javascriptKB": 438.58,
+    "javascriptGzipKB": 135.86,
+    "cssKB": 41.46,
+    "cssGzipKB": 9.8
+  },
+  "docker": {
+    "rebuilt": true,
+    "container": "physics-lab-physics-lab-1",
+    "healthy": true,
+    "publishedPort": 8080,
+    "httpStatus": 200,
+    "image": "sha256:8e41bc5f0b2e7e76bb7effd45a46c753367f9f17064c46d042b9c953ec5a9532"
+  },
+  "notes": [
+    "Full regression/browser suites preceded final scoped instrumentation and challenge-lock refinements; the 24-test focused hydraulic suite and two production smoke workflows were executed after deploying those refinements.",
+    "Longest hydraulic scenario: 720 simulation seconds; no two-hour or maximum-size network validation claimed."
+  ]
+}

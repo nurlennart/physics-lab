@@ -1,0 +1,28 @@
+
+ RUN  v5.0.3 /home/physics/physics-lab
+
+ ❯ src/simulation/spatial-integration.test.ts (9 tests | 1 failed) 2521ms
+   × responds to motor stall, power failure and sensor failure without scripted body velocity 1832ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/simulation/spatial-integration.test.ts > responds to motor stall, power failure and sensor failure without scripted body velocity
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ src/simulation/spatial-integration.test.ts:57:168
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 8 passed (9)
+   Start at  16:48:21
+   Duration  3.18s (tests 83%, transform 15%, import 2%)
+

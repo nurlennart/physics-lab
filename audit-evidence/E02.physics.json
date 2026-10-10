@@ -1,0 +1,93 @@
+{
+  "version": 3,
+  "probes": [],
+  "assemblies": [],
+  "id": "wyeo3ypidpq",
+  "name": "Untitled experiment",
+  "components": [
+    {
+      "id": "flf8atzbmbp",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 0,
+      "y": 20,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 20,
+        "ratedVoltage": 240
+      }
+    },
+    {
+      "id": "z7q8hbbzqlk",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 280,
+      "y": 20,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "cg7zfq56kii",
+      "kind": "resistor",
+      "name": "R-02",
+      "x": 560,
+      "y": 20,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "s1",
+      "domain": "electrical",
+      "from": {
+        "component": "flf8atzbmbp",
+        "port": "a"
+      },
+      "to": {
+        "component": "z7q8hbbzqlk",
+        "port": "a"
+      }
+    },
+    {
+      "id": "s2",
+      "domain": "electrical",
+      "from": {
+        "component": "z7q8hbbzqlk",
+        "port": "b"
+      },
+      "to": {
+        "component": "cg7zfq56kii",
+        "port": "a"
+      }
+    },
+    {
+      "id": "s3",
+      "domain": "electrical",
+      "from": {
+        "component": "cg7zfq56kii",
+        "port": "b"
+      },
+      "to": {
+        "component": "flf8atzbmbp",
+        "port": "b"
+      }
+    }
+  ]
+}

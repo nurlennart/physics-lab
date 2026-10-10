@@ -1,0 +1,40 @@
+{
+  "version": 3,
+  "probes": [
+    {
+      "id": "coolprobe",
+      "name": "Water temperature",
+      "component": "debcb74a-0fad-4a98-8f33-1c004db52bd4",
+      "measurement": "temperature",
+      "visible": true,
+      "color": "#ef9975"
+    }
+  ],
+  "assemblies": [],
+  "id": "aba19dd7-a249-4347-b585-27790adbc524",
+  "name": "Isolated 10 kg cooling",
+  "components": [
+    {
+      "id": "debcb74a-0fad-4a98-8f33-1c004db52bd4",
+      "kind": "tank",
+      "name": "TK-01",
+      "x": 300,
+      "y": 200,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 10,
+        "capacity": 20,
+        "initialTemperature": 80,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    }
+  ],
+  "connections": []
+}

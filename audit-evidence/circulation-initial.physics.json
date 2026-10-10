@@ -1,0 +1,387 @@
+{
+  "version": 3,
+  "id": "jpuxy89kms",
+  "name": "Heated circulation loop",
+  "components": [
+    {
+      "id": "vftljiypq3n",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 40,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 24,
+        "maxCurrent": 20,
+        "ratedVoltage": 240
+      }
+    },
+    {
+      "id": "xtbntkg4i7",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 300,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 1.2,
+        "torqueConstant": 0.08,
+        "emfConstant": 0.08,
+        "inertia": 0.006,
+        "friction": 0.0005,
+        "loadTorque": 0,
+        "ratedVoltage": 24,
+        "ratedCurrent": 20,
+        "ratedTorque": 1.6,
+        "ratedPower": 500,
+        "maxSpeed": 400,
+        "heatCapacity": 500,
+        "loss": 2,
+        "maxTemperature": 120,
+        "enabled": true,
+        "speedControl": false,
+        "speedCommand": 2500
+      }
+    },
+    {
+      "id": "oqd5dpjnr7",
+      "kind": "pump",
+      "name": "P-01",
+      "x": 300,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedSpeed": 300,
+        "ratedFlow": 0.001,
+        "shutoffHead": 8,
+        "efficiency": 0.7,
+        "mechanicalDrag": 0.000003,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "vlniy8nq4s9",
+      "kind": "tank",
+      "name": "Source reservoir",
+      "x": 30,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 150,
+        "capacity": 150,
+        "initialTemperature": 60,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "uxbqz91wwx",
+      "kind": "tank",
+      "name": "Destination tank",
+      "x": 1010,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 50,
+        "capacity": 120,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "57agm43c8lj",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 550,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 5,
+        "diameter": 0.025,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "9flig9lkb9f",
+      "kind": "valve",
+      "name": "Delivery valve",
+      "x": 780,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.025,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "i9l090tk5us",
+      "kind": "pipe",
+      "name": "PL-02",
+      "x": 750,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.025,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 30,
+        "ambient": 20,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "oy9rqtm9wwa",
+      "kind": "heater",
+      "name": "H-01",
+      "x": 40,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 28.8,
+        "ratedPower": 2000,
+        "heatCapacity": 300,
+        "loss": 0.5,
+        "conductance": 180,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "z340jq2sjws",
+      "kind": "source",
+      "name": "PS-02",
+      "x": 300,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 120,
+        "maxCurrent": 20,
+        "ratedVoltage": 240
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "ck9nscq2z1j",
+      "domain": "electrical",
+      "from": {
+        "component": "vftljiypq3n",
+        "port": "a"
+      },
+      "to": {
+        "component": "xtbntkg4i7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "txqe3cm0za",
+      "domain": "electrical",
+      "from": {
+        "component": "xtbntkg4i7",
+        "port": "b"
+      },
+      "to": {
+        "component": "vftljiypq3n",
+        "port": "b"
+      }
+    },
+    {
+      "id": "w6nr5bso6lg",
+      "domain": "mechanical",
+      "from": {
+        "component": "xtbntkg4i7",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "oqd5dpjnr7",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "55nxiogdt8",
+      "domain": "hydraulic",
+      "from": {
+        "component": "vlniy8nq4s9",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "oqd5dpjnr7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "rlldy0twppn",
+      "domain": "hydraulic",
+      "from": {
+        "component": "oqd5dpjnr7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "57agm43c8lj",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "0muf0og50fd",
+      "domain": "hydraulic",
+      "from": {
+        "component": "57agm43c8lj",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "9flig9lkb9f",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "caerkovxc7",
+      "domain": "hydraulic",
+      "from": {
+        "component": "9flig9lkb9f",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "uxbqz91wwx",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "w3mp42ox3cp",
+      "domain": "hydraulic",
+      "from": {
+        "component": "uxbqz91wwx",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "i9l090tk5us",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "0y3e57xpe9uk",
+      "domain": "hydraulic",
+      "from": {
+        "component": "i9l090tk5us",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "vlniy8nq4s9",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "npbc8dyndba",
+      "domain": "electrical",
+      "from": {
+        "component": "z340jq2sjws",
+        "port": "a"
+      },
+      "to": {
+        "component": "oy9rqtm9wwa",
+        "port": "a"
+      }
+    },
+    {
+      "id": "geuqrjq6dns",
+      "domain": "electrical",
+      "from": {
+        "component": "oy9rqtm9wwa",
+        "port": "b"
+      },
+      "to": {
+        "component": "z340jq2sjws",
+        "port": "b"
+      }
+    },
+    {
+      "id": "2rz0s2we85v",
+      "domain": "thermal",
+      "from": {
+        "component": "oy9rqtm9wwa",
+        "port": "heat"
+      },
+      "to": {
+        "component": "vlniy8nq4s9",
+        "port": "heat"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "1cvbkx9vjic",
+      "name": "Destination level",
+      "component": "uxbqz91wwx",
+      "measurement": "level",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "p0t62nl59y",
+      "name": "Delivery flow",
+      "component": "57agm43c8lj",
+      "measurement": "flow",
+      "color": "#3ba6d8",
+      "visible": true
+    },
+    {
+      "id": "bx611z73dvg",
+      "name": "Motor current",
+      "component": "xtbntkg4i7",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "8nhtk5otc2p",
+      "name": "Delivery pressure",
+      "component": "57agm43c8lj",
+      "measurement": "pressure",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "aumm2onsxsc",
+      "name": "Destination water",
+      "component": "uxbqz91wwx",
+      "measurement": "fluidTemperature",
+      "color": "#ef9975",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

@@ -1,0 +1,88 @@
+[
+  {
+    "name": "C003",
+    "data": {
+      "reset": true,
+      "strip": "003\nThermal Runaway\n2 stars · 87/100",
+      "state": {
+        "time": 2888.5833333425026,
+        "running": false,
+        "project": "Thermal Runaway assignment",
+        "readings": {
+          "wzx502i16p": {
+            "voltage": 240,
+            "current": 0,
+            "currentNC": 0,
+            "contactCurrent": 0,
+            "power": 0,
+            "voltageValid": true
+          },
+          "vpx5wg8z7a": {
+            "voltage": 240,
+            "current": 0,
+            "currentNC": 0,
+            "contactCurrent": 0,
+            "power": 0,
+            "voltageValid": true
+          },
+          "9ha86ed5ka": {
+            "voltage": 0,
+            "current": 0,
+            "currentNC": 0,
+            "contactCurrent": 0,
+            "power": 0,
+            "voltageValid": true
+          },
+          "rk3y6g9173": {
+            "voltage": 0,
+            "current": 0,
+            "currentNC": 0,
+            "contactCurrent": 0,
+            "power": 0,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "vpx5wg8z7a": 20.26436381835754,
+          "9ha86ed5ka": 20.159340001207376,
+          "rk3y6g9173": 79.06482763397368,
+          "xq6muu66gjt": 79.20387938388669
+        },
+        "hydraulics": {
+          "readings": {},
+          "potentials": {},
+          "residual": 0,
+          "pressureResidual": 0,
+          "iterations": 0,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [],
+          "tankNodes": {},
+          "terminalNodes": {}
+        },
+        "tanks": {
+          "xq6muu66gjt": {
+            "volume": 0.01,
+            "mass": 10,
+            "temperature": 352.3538793838867
+          }
+        },
+        "motors": {},
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": 0,
+        "energyResidualJ": 0.000040964921936392784,
+        "energyJ": 3751658.688870592,
+        "error": null
+      }
+    }
+  }
+]

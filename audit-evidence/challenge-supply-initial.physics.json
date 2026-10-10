@@ -1,0 +1,318 @@
+{
+  "version": 3,
+  "id": "pd2amjohhzd",
+  "name": "Automatic water supply",
+  "components": [
+    {
+      "id": "bnyzno1cyj",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 40,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 24,
+        "maxCurrent": 20,
+        "ratedVoltage": 240
+      }
+    },
+    {
+      "id": "hss9vscesk",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 300,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 1.2,
+        "torqueConstant": 0.08,
+        "emfConstant": 0.08,
+        "inertia": 0.006,
+        "friction": 0.0005,
+        "loadTorque": 0,
+        "ratedVoltage": 24,
+        "ratedCurrent": 20,
+        "ratedTorque": 1.6,
+        "ratedPower": 500,
+        "maxSpeed": 400,
+        "heatCapacity": 500,
+        "loss": 2,
+        "maxTemperature": 120,
+        "enabled": true,
+        "speedControl": false,
+        "speedCommand": 2500
+      }
+    },
+    {
+      "id": "ax46bdg2r5e",
+      "kind": "pump",
+      "name": "P-01",
+      "x": 300,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedSpeed": 300,
+        "ratedFlow": 0.001,
+        "shutoffHead": 8,
+        "efficiency": 0.7,
+        "mechanicalDrag": 0.000003,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "x1pl37g8s59",
+      "kind": "tank",
+      "name": "Source reservoir",
+      "x": 30,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 150,
+        "capacity": 150,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "1ya5rwyncf5",
+      "kind": "tank",
+      "name": "Destination tank",
+      "x": 1010,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 2,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 120,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "uk9u25p6v68",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 550,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 5,
+        "diameter": 0.025,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "unw8ydsuksl",
+      "kind": "valve",
+      "name": "Delivery valve",
+      "x": 780,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.025,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "28vre77vpk9",
+      "kind": "levelSensor",
+      "name": "Primary level sensor",
+      "x": 30,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "1ya5rwyncf5",
+        "minRange": 0,
+        "maxRange": 100,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0
+      }
+    },
+    {
+      "id": "g8cpz6q0ilm",
+      "kind": "hysteresis",
+      "name": "HC-01",
+      "x": 280,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "low": 30,
+        "high": 90,
+        "initialOn": false
+      }
+    },
+    {
+      "id": "eqg8p2k5o4w",
+      "kind": "levelSensor",
+      "name": "LS-01",
+      "x": 30,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "x1pl37g8s59",
+        "minRange": 0,
+        "maxRange": 100,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0
+      }
+    },
+    {
+      "id": "rvggjpck4cb",
+      "kind": "comparator",
+      "name": "CMP-01",
+      "x": 280,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "reference": 5,
+        "mode": "gt"
+      }
+    },
+    {
+      "id": "yro9c1zf71r",
+      "kind": "levelSensor",
+      "name": "LS-02",
+      "x": 530,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "1ya5rwyncf5",
+        "minRange": 0,
+        "maxRange": 100,
+        "resolution": 0.001,
+        "lag": 0,
+        "noise": 0
+      }
+    },
+    {
+      "id": "d6rs2ngojvs",
+      "kind": "comparator",
+      "name": "CMP-02",
+      "x": 780,
+      "y": 900,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "reference": 95,
+        "mode": "lt"
+      }
+    },
+    {
+      "id": "08h0pgzxxrtd",
+      "kind": "and",
+      "name": "AND-01",
+      "x": 540,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "731nr792g6m",
+      "kind": "and",
+      "name": "AND-02",
+      "x": 790,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "rauy3ilpgdp",
+      "kind": "valve",
+      "name": "Consumer demand",
+      "x": 1010,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 35,
+        "diameter": 0.012,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    }
+  ],
+  "connections": [],
+  "probes": [
+    {
+      "id": "5lalhlw696s",
+      "name": "Destination level",
+      "component": "1ya5rwyncf5",
+      "measurement": "level",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "6rv50z4z8wv",
+      "name": "Delivery flow",
+      "component": "uk9u25p6v68",
+      "measurement": "flow",
+      "color": "#3ba6d8",
+      "visible": true
+    },
+    {
+      "id": "rvoniesyb9",
+      "name": "Motor current",
+      "component": "hss9vscesk",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "rw03szstrm",
+      "name": "Delivery pressure",
+      "component": "uk9u25p6v68",
+      "measurement": "pressure",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "zfu0pw27azl",
+      "name": "Destination water",
+      "component": "1ya5rwyncf5",
+      "measurement": "fluidTemperature",
+      "color": "#ef9975",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "challenge": "supply"
+}

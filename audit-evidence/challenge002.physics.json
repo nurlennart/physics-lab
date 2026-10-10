@@ -1,0 +1,399 @@
+{
+  "format": "physics-lab-run",
+  "version": 1,
+  "configuration": {
+    "version": 3,
+    "probes": [
+      {
+        "id": "2ospfrp3cfv",
+        "name": "H-01 power",
+        "component": "rj4z7gm3ix",
+        "measurement": "power",
+        "color": "#e9bd6a",
+        "visible": true
+      },
+      {
+        "id": "tgwmrecj43",
+        "name": "TK-01 water",
+        "component": "019vwyt27tzm",
+        "measurement": "temperature",
+        "color": "#ef9975",
+        "visible": true
+      }
+    ],
+    "assemblies": [],
+    "id": "k65wb5jn958",
+    "name": "Water heating experiment",
+    "components": [
+      {
+        "id": "tm26kg4vny9",
+        "kind": "source",
+        "name": "PS-01",
+        "x": 70,
+        "y": 150,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "voltage": 240,
+          "maxCurrent": 20,
+          "ratedVoltage": 240
+        }
+      },
+      {
+        "id": "ywvp9c0z4q",
+        "kind": "switch",
+        "name": "S-01",
+        "x": 330,
+        "y": 80,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 0.01,
+          "ratedPower": 20,
+          "heatCapacity": 20,
+          "loss": 1,
+          "maxTemperature": 150,
+          "closed": true
+        }
+      },
+      {
+        "id": "rj4z7gm3ix",
+        "kind": "heater",
+        "name": "H-01",
+        "x": 600,
+        "y": 150,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 28.8,
+          "ratedPower": 2000,
+          "heatCapacity": 300,
+          "loss": 0.5,
+          "conductance": 180,
+          "maxTemperature": 150
+        }
+      },
+      {
+        "id": "019vwyt27tzm",
+        "kind": "tank",
+        "name": "TK-01",
+        "x": 355,
+        "y": 355,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 10,
+          "capacity": 20,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "j3ytsvhzygp",
+        "domain": "electrical",
+        "from": {
+          "component": "tm26kg4vny9",
+          "port": "a"
+        },
+        "to": {
+          "component": "ywvp9c0z4q",
+          "port": "a"
+        }
+      },
+      {
+        "id": "mnz8e5co1zr",
+        "domain": "electrical",
+        "from": {
+          "component": "ywvp9c0z4q",
+          "port": "b"
+        },
+        "to": {
+          "component": "rj4z7gm3ix",
+          "port": "a"
+        }
+      },
+      {
+        "id": "xtvj58gceyp",
+        "domain": "electrical",
+        "from": {
+          "component": "rj4z7gm3ix",
+          "port": "b"
+        },
+        "to": {
+          "component": "tm26kg4vny9",
+          "port": "b"
+        }
+      },
+      {
+        "id": "1ffzgomo1lz",
+        "domain": "thermal",
+        "from": {
+          "component": "rj4z7gm3ix",
+          "port": "heat"
+        },
+        "to": {
+          "component": "019vwyt27tzm",
+          "port": "heat"
+        }
+      }
+    ],
+    "challenge": "heat"
+  },
+  "origin": {
+    "version": 3,
+    "probes": [
+      {
+        "id": "2ospfrp3cfv",
+        "name": "H-01 power",
+        "component": "rj4z7gm3ix",
+        "measurement": "power",
+        "color": "#e9bd6a",
+        "visible": true
+      },
+      {
+        "id": "tgwmrecj43",
+        "name": "TK-01 water",
+        "component": "019vwyt27tzm",
+        "measurement": "temperature",
+        "color": "#ef9975",
+        "visible": true
+      }
+    ],
+    "assemblies": [],
+    "id": "k65wb5jn958",
+    "name": "Water heating experiment",
+    "components": [
+      {
+        "id": "tm26kg4vny9",
+        "kind": "source",
+        "name": "PS-01",
+        "x": 70,
+        "y": 150,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "voltage": 240,
+          "maxCurrent": 20,
+          "ratedVoltage": 240
+        }
+      },
+      {
+        "id": "ywvp9c0z4q",
+        "kind": "switch",
+        "name": "S-01",
+        "x": 330,
+        "y": 80,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 0.01,
+          "ratedPower": 20,
+          "heatCapacity": 20,
+          "loss": 1,
+          "maxTemperature": 150,
+          "closed": true
+        }
+      },
+      {
+        "id": "rj4z7gm3ix",
+        "kind": "heater",
+        "name": "H-01",
+        "x": 600,
+        "y": 150,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 28.8,
+          "ratedPower": 2000,
+          "heatCapacity": 300,
+          "loss": 0.5,
+          "conductance": 180,
+          "maxTemperature": 150
+        }
+      },
+      {
+        "id": "019vwyt27tzm",
+        "kind": "tank",
+        "name": "TK-01",
+        "x": 355,
+        "y": 355,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 10,
+          "capacity": 20,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      }
+    ],
+    "connections": [],
+    "challenge": "heat"
+  },
+  "inputs": [
+    {
+      "at": 0,
+      "project": {
+        "version": 3,
+        "probes": [
+          {
+            "id": "2ospfrp3cfv",
+            "name": "H-01 power",
+            "component": "rj4z7gm3ix",
+            "measurement": "power",
+            "color": "#e9bd6a",
+            "visible": true
+          },
+          {
+            "id": "tgwmrecj43",
+            "name": "TK-01 water",
+            "component": "019vwyt27tzm",
+            "measurement": "temperature",
+            "color": "#ef9975",
+            "visible": true
+          }
+        ],
+        "assemblies": [],
+        "id": "k65wb5jn958",
+        "name": "Water heating experiment",
+        "components": [
+          {
+            "id": "tm26kg4vny9",
+            "kind": "source",
+            "name": "PS-01",
+            "x": 70,
+            "y": 150,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "voltage": 240,
+              "maxCurrent": 20,
+              "ratedVoltage": 240
+            }
+          },
+          {
+            "id": "ywvp9c0z4q",
+            "kind": "switch",
+            "name": "S-01",
+            "x": 330,
+            "y": 80,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "resistance": 0.01,
+              "ratedPower": 20,
+              "heatCapacity": 20,
+              "loss": 1,
+              "maxTemperature": 150,
+              "closed": true
+            }
+          },
+          {
+            "id": "rj4z7gm3ix",
+            "kind": "heater",
+            "name": "H-01",
+            "x": 600,
+            "y": 150,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "resistance": 28.8,
+              "ratedPower": 2000,
+              "heatCapacity": 300,
+              "loss": 0.5,
+              "conductance": 180,
+              "maxTemperature": 150
+            }
+          },
+          {
+            "id": "019vwyt27tzm",
+            "kind": "tank",
+            "name": "TK-01",
+            "x": 355,
+            "y": 355,
+            "rotation": 0,
+            "variant": "standard",
+            "props": {
+              "elevation": 0,
+              "surfaceArea": 0.1,
+              "density": 1000,
+              "maxPressure": 1000000,
+              "vented": true,
+              "volume": 10,
+              "capacity": 20,
+              "initialTemperature": 20,
+              "loss": 2.2,
+              "ambient": 20
+            }
+          }
+        ],
+        "connections": [
+          {
+            "id": "j3ytsvhzygp",
+            "domain": "electrical",
+            "from": {
+              "component": "tm26kg4vny9",
+              "port": "a"
+            },
+            "to": {
+              "component": "ywvp9c0z4q",
+              "port": "a"
+            }
+          },
+          {
+            "id": "mnz8e5co1zr",
+            "domain": "electrical",
+            "from": {
+              "component": "ywvp9c0z4q",
+              "port": "b"
+            },
+            "to": {
+              "component": "rj4z7gm3ix",
+              "port": "a"
+            }
+          },
+          {
+            "id": "xtvj58gceyp",
+            "domain": "electrical",
+            "from": {
+              "component": "rj4z7gm3ix",
+              "port": "b"
+            },
+            "to": {
+              "component": "tm26kg4vny9",
+              "port": "b"
+            }
+          },
+          {
+            "id": "1ffzgomo1lz",
+            "domain": "thermal",
+            "from": {
+              "component": "rj4z7gm3ix",
+              "port": "heat"
+            },
+            "to": {
+              "component": "019vwyt27tzm",
+              "port": "heat"
+            }
+          }
+        ],
+        "challenge": "heat"
+      }
+    }
+  ],
+  "duration": 1323.449999999125
+}

@@ -1,0 +1,101 @@
+
+> physics-lab@3.0.0 test:physics
+> vitest run && node scripts/validate-physics.mjs
+
+
+ RUN  v5.0.3 /home/physics/physics-lab
+
+
+ Test Files  8 passed (8)
+      Tests  113 passed (113)
+   Start at  17:45:45
+   Duration  93.10s (tests 98%, transform 1%, import 1%)
+
+PASS 12 V / 6 Ω branch current: measured 2, expected 2, |error| 0.000e+0 ≤ 1e-10
+PASS 12 V × 2 A resistive power: measured 24, expected 24, |error| 0.000e+0 ≤ 1e-9
+PASS 24 W × 10 s energy: measured 240.00000000000233, expected 240, |error| 2.331e-12 ≤ 1e-8
+PASS Net electrical power residual: measured 0, expected 0, |error| 0.000e+0 ≤ 1e-9
+PASS Disconnected load current: measured 0, expected 0, |error| 0.000e+0 ≤ 1e-10
+PASS 10 kg water heated 20→80°C: measured 2508002.5946677467, expected 2508000, |error| 2.595e+0 ≤ 33.33433333333333
+PASS Isolated coupled heating conservation: measured -0.000016620848327875137, expected 0, |error| 1.662e-5 ≤ 0.001
+PASS OFF removes new electrical energy: measured 2530188.1291187955, expected 2530188.1291187955, |error| 0.000e+0 ≤ 1e-8
+PASS Thermal inertia still warms water: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Ambient cooling convergence dt=0.100000 s: measured 78.13487244236272, expected 78.13486761123998, |error| 4.831e-6 ≤ 0.000005001135734072023
+PASS Cooling conservation dt=0.100000 s: measured 5.497277015820146e-7, expected 0, |error| 5.497e-7 ≤ 0.001
+PASS Ambient cooling convergence dt=0.050000 s: measured 78.13487002686408, expected 78.13486761123998, |error| 2.416e-6 ≤ 0.0000025055678670360114
+PASS Cooling conservation dt=0.050000 s: measured -0.0000022109306883066893, expected 0, |error| 2.211e-6 ≤ 0.001
+PASS Ambient cooling convergence dt=0.025000 s: measured 78.13486881907863, expected 78.13486761123998, |error| 1.208e-6 ≤ 0.0000012577839335180056
+PASS Cooling conservation dt=0.025000 s: measured -0.0000021916930563747883, expected 0, |error| 2.192e-6 ≤ 0.001
+PASS Ambient cooling convergence dt=0.016667 s: measured 78.13486841622245, expected 78.13486761123998, |error| 8.050e-7 ≤ 8.418559556786704e-7
+PASS Cooling conservation dt=0.016667 s: measured 0.000008882343536242843, expected 0, |error| 8.882e-6 ≤ 0.001
+PASS Halving timestep approximately halves error: measured 1.9999480658328985, expected 2, |error| 5.193e-5 ≤ 0.001
+PASS Closed relay and safety current: measured 8.324661810613941, expected 8.324661810613943, |error| 1.776e-15 ≤ 1e-9
+PASS Closed-loop regulation inside plausible bounds: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Long run energy conservation: measured 0.000028676935471594334, expected 0, |error| 2.868e-5 ≤ 0.001
+PASS Failed sensor opens controlled heater: measured 0, expected 0, |error| 0.000e+0 ≤ 1e-8
+PASS Independent safety interrupts welded normal contact: measured 0, expected 0, |error| 0.000e+0 ≤ 1e-8
+PASS Safety remains latched: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Live mass edit rejected by engine: measured 0, expected 0, |error| 0.000e+0 ≤ 0
+PASS Undersized relay fails open: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Post-failure current immediately zero: measured 0, expected 0, |error| 0.000e+0 ≤ 1e-10
+PASS Reset restores initial healthy topology: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Half voltage gives quarter heater power: measured 0.25, expected 0.25, |error| 0.000e+0 ≤ 1e-10
+PASS Complete fault-and-recovery challenge: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Challenge stays below critical water temperature: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Locked environment exploit rejected: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Coupled mass balance at dt=0.016666666666666666: measured -7.87281351222191e-12, expected 0, |error| 7.873e-12 ≤ 1e-7
+PASS Coupled energy balance at dt=0.016666666666666666: measured -0.000223449002731968, expected 0, |error| 2.234e-4 ≤ 0.1
+PASS Coupled mass balance at dt=0.008333333333333333: measured -6.480149750132114e-12, expected 0, |error| 6.480e-12 ≤ 1e-7
+PASS Coupled energy balance at dt=0.008333333333333333: measured -0.00022348042315911698, expected 0, |error| 2.235e-4 ≤ 0.1
+PASS Coupled mass balance at dt=0.004166666666666667: measured -3.637978807091713e-12, expected 0, |error| 3.638e-12 ≤ 1e-7
+PASS Coupled energy balance at dt=0.004166666666666667: measured -0.00022397047331423892, expected 0, |error| 2.240e-4 ≤ 0.1
+PASS Coupled mass balance at dt=0.0020833333333333333: measured -1.3358203432289883e-12, expected 0, |error| 1.336e-12 ≤ 1e-7
+PASS Coupled energy balance at dt=0.0020833333333333333: measured -0.00011390907945951767, expected 0, |error| 1.139e-4 ≤ 0.1
+PASS Coupled mass balance at dt=0.0010416666666666667: measured -3.979039320256561e-13, expected 0, |error| 3.979e-13 ≤ 1e-7
+PASS Coupled energy balance at dt=0.0010416666666666667: measured -0.00005620488826707515, expected 0, |error| 5.620e-5 ≤ 0.1
+PASS Destination-volume convergence dt=0.016666666666666666: measured 0.0009082611168115418, expected 0.0009082481270483352, |error| 1.299e-8 ≤ 0.000002
+PASS Motor-current convergence dt=0.016666666666666666: measured 5.888046978928987, expected 5.885554733179088, |error| 2.492e-3 ≤ 0.03
+PASS Motor-speed convergence dt=0.016666666666666666: measured 211.72924817742216, expected 211.72914175082926, |error| 1.064e-4 ≤ 0.01
+PASS Fluid-temperature convergence dt=0.016666666666666666: measured 293.1602681096668, expected 293.160268021742, |error| 8.792e-8 ≤ 0.001
+PASS Destination-volume convergence dt=0.008333333333333333: measured 0.0009082611168126054, expected 0.0009082481270483352, |error| 1.299e-8 ≤ 0.000002
+PASS Motor-current convergence dt=0.008333333333333333: measured 5.888046978913388, expected 5.885554733179088, |error| 2.492e-3 ≤ 0.03
+PASS Motor-speed convergence dt=0.008333333333333333: measured 211.7292481776556, expected 211.72914175082926, |error| 1.064e-4 ≤ 0.01
+PASS Fluid-temperature convergence dt=0.008333333333333333: measured 293.16026818629894, expected 293.160268021742, |error| 1.646e-7 ≤ 0.001
+PASS Destination-volume convergence dt=0.004166666666666667: measured 0.0009082611168147788, expected 0.0009082481270483352, |error| 1.299e-8 ≤ 0.000002
+PASS Motor-current convergence dt=0.004166666666666667: measured 5.88804697888599, expected 5.885554733179088, |error| 2.492e-3 ≤ 0.03
+PASS Motor-speed convergence dt=0.004166666666666667: measured 211.7292481780817, expected 211.72914175082926, |error| 1.064e-4 ≤ 0.01
+PASS Fluid-temperature convergence dt=0.004166666666666667: measured 293.1602682246847, expected 293.160268021742, |error| 2.029e-7 ≤ 0.001
+PASS Destination-volume convergence dt=0.0020833333333333333: measured 0.0009082430211784379, expected 0.0009082481270483352, |error| 5.106e-9 ≤ 0.000002
+PASS Motor-current convergence dt=0.0020833333333333333: measured 5.886383150905281, expected 5.885554733179088, |error| 8.284e-4 ≤ 0.03
+PASS Motor-speed convergence dt=0.0020833333333333333: measured 211.7291951644719, expected 211.72914175082926, |error| 5.341e-5 ≤ 0.01
+PASS Fluid-temperature convergence dt=0.0020833333333333333: measured 293.1602682639989, expected 293.160268021742, |error| 2.423e-7 ≤ 0.001
+PASS Halved internal timestep reduces volume error: measured 2.544084887539528, expected 3, |error| 4.559e-1 ≤ 0.5
+PASS Pump shaft input bounds hydraulic output: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+PASS Free-fall velocity dt=0.016666666666666666: measured -9.806649999999944, expected -9.80665, |error| 5.507e-14 ≤ 1e-8
+PASS Free-fall position dt=0.016666666666666666: measured 5.086459739583345, expected 5.096675, |error| 1.022e-2 ≤ 0.011
+PASS Free-fall velocity dt=0.004166666666666667: measured -9.806649999999944, expected -9.80665, |error| 5.507e-14 ≤ 1e-8
+PASS Free-fall position dt=0.004166666666666667: measured 5.086459739583345, expected 5.096675, |error| 1.022e-2 ≤ 0.011
+PASS Free-fall velocity dt=0.0020833333333333333: measured -9.806649999999944, expected -9.80665, |error| 5.507e-14 ≤ 1e-8
+PASS Free-fall position dt=0.0020833333333333333: measured 5.086459739583345, expected 5.096675, |error| 1.022e-2 ≤ 0.011
+PASS Free-fall velocity dt=0.0010416666666666667: measured -9.80664999999991, expected -9.80665, |error| 8.882e-14 ≤ 1e-8
+PASS Free-fall position dt=0.0010416666666666667: measured 5.091567369791699, expected 5.096675, |error| 5.108e-3 ≤ 0.011
+PASS Free-fall halving internal timestep error ratio: measured 2.00000000001026, expected 2, |error| 1.026e-11 ≤ 1e-7
+PASS Rigid disk inertia: measured 0.04000000000000001, expected 0.04000000000000001, |error| 0.000e+0 ≤ 1e-10
+PASS Constant torque angular acceleration: measured 12.499999999999934, expected 12.499999999999998, |error| 6.395e-14 ≤ 1e-8
+PASS Constant torque work balance: measured 3.197442310920451e-14, expected 0, |error| 3.197e-14 ≤ 1e-8
+PASS Electrical-spatial shaft energy balance dt=0.016666666666666666: measured -8.028600007037312e-11, expected 0, |error| 8.029e-11 ≤ 0.001
+PASS Authoritative motor/body shaft speed dt=0.016666666666666666: measured 0, expected 0, |error| 0.000e+0 ≤ 0
+PASS Electrical-spatial speed convergence dt=0.016666666666666666: measured 64.26387263936584, expected 64.26298311651148, |error| 8.895e-4 ≤ 0.005
+PASS Electrical-spatial current convergence dt=0.016666666666666666: measured 31.97058903968633, expected 31.96891350689891, |error| 1.676e-3 ≤ 0.01
+PASS Electrical-spatial shaft energy balance dt=0.004166666666666667: measured -3.725553199274145e-11, expected 0, |error| 3.726e-11 ≤ 0.001
+PASS Authoritative motor/body shaft speed dt=0.004166666666666667: measured 0, expected 0, |error| 0.000e+0 ≤ 0
+PASS Electrical-spatial speed convergence dt=0.004166666666666667: measured 64.26387263936584, expected 64.26298311651148, |error| 8.895e-4 ≤ 0.005
+PASS Electrical-spatial current convergence dt=0.004166666666666667: measured 31.97058903968633, expected 31.96891350689891, |error| 1.676e-3 ≤ 0.01
+PASS Electrical-spatial shaft energy balance dt=0.0020833333333333333: measured -1.9135804052439198e-10, expected 0, |error| 1.914e-10 ≤ 0.001
+PASS Authoritative motor/body shaft speed dt=0.0020833333333333333: measured 0, expected 0, |error| 0.000e+0 ≤ 0
+PASS Electrical-spatial speed convergence dt=0.0020833333333333333: measured 64.26387263936584, expected 64.26298311651148, |error| 8.895e-4 ≤ 0.005
+PASS Electrical-spatial current convergence dt=0.0020833333333333333: measured 31.97058903968633, expected 31.96891350689891, |error| 1.676e-3 ≤ 0.01
+PASS Electrical-spatial shaft energy balance dt=0.0010416666666666667: measured -2.1326940213839407e-11, expected 0, |error| 2.133e-11 ≤ 0.001
+PASS Authoritative motor/body shaft speed dt=0.0010416666666666667: measured 0, expected 0, |error| 0.000e+0 ≤ 0
+PASS Finer shaft step reduces speed error: measured 1, expected 1, |error| 0.000e+0 ≤ 0
+Validation: 87/87. Reports: validation/latest.json and validation/latest.md

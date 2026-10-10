@@ -1,0 +1,13 @@
+
+> physics-lab@3.0.0 test
+> vitest run
+
+
+ RUN  v5.0.3 /home/physics/physics-lab
+
+
+ Test Files  8 passed (8)
+      Tests  113 passed (113)
+   Start at  19:22:49
+   Duration  67.94s (tests 98%, transform 1%, import 1%)
+

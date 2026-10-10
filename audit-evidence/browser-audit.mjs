@@ -1,0 +1,45 @@
+import { chromium } from '../node_modules/playwright-core/index.mjs';
+import fs from 'node:fs';
+const dir=new URL('./',import.meta.url).pathname;
+const browser=await chromium.launch({headless:true});
+const page=await browser.newPage({viewport:{width:1600,height:1000},ignoreHTTPSErrors:true});
+page.setDefaultTimeout(5000);
+const log=[]; const record=(name,data)=>{log.push({name,data});fs.writeFileSync(dir+'observations.json',JSON.stringify(log,null,2));console.log(name,JSON.stringify(data).slice(0,18000));};
+page.on('pageerror',e=>record('pageerror',e.message));page.on('console',m=>{if(m.type()==='error'||m.type()==='warning')record('console-'+m.type(),m.text());});
+await page.addInitScript(()=>{window.auditTools={};Object.defineProperty(document,'modelContext',{value:{registerTool(tool){window.auditTools[tool.name]=tool;}}});});
+await page.goto('http://fracht.lennartobst.de:8080');await page.locator('[data-component="tank"]').waitFor();
+const shot=async name=>page.screenshot({path:dir+name+'.png',fullPage:true});
+const read=()=>page.evaluate(()=>window.auditTools.read_lab_measurements.execute({}));
+const adv=seconds=>page.evaluate(seconds=>window.auditTools.advance_lab_simulation.execute({seconds}),seconds);
+const wire=async(a,b)=>{await page.locator(`[data-port="${a}"]`).click();await page.locator(`[data-port="${b}"]`).click();};
+let placement=0; const add=async name=>{const i=placement++;await page.locator('.library-component').filter({hasText:name}).first().dragTo(page.locator('.construction-canvas'),{targetPosition:{x:140+(i%3)*285,y:130+Math.floor(i/3)*210}});};
+const select=kind=>page.locator(`[data-component="${kind}"]`).first().click();
+const field=async(label,value)=>{await page.getByLabel(label,{exact:true}).fill(String(value));await page.getByLabel(label,{exact:true}).press('Enter');};
+const save=async name=>{const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Save project',exact:true}).click();const d=await pending;await d.saveAs(dir+name+'.physics.json');return JSON.parse(fs.readFileSync(dir+name+'.physics.json','utf8'));};
+const test=async(name,fn)=>{try{await fn();}catch(e){record(name+'-BLOCKED',e.message);await shot(name+'-blocked').catch(()=>{});}};
+record('environment',{browser:browser.version(),url:page.url(),viewport:{width:1600,height:1000}});record('initial-text',await page.locator('body').innerText());await shot('01-initial');
+await test('thermal',async()=>{
+await save('thermal-initial');await page.getByRole('button',{name:'Advance 60 s',exact:true}).click();await page.getByRole('button',{name:'Advance 60 s',exact:true}).waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector('button[title="Execute 3,600 fixed steps while paused"]')?.disabled);record('T01-60s',await read());
+await select('tank');record('T05-volume-disabled',await page.getByLabel('Water volume',{exact:true}).isDisabled());
+await select('heater');record('heater-fields',await page.locator('.inspector').innerText());
+await select('switch');await page.locator('[data-component="switch"]').dblclick();record('T02-before',await read());await adv(60);record('T02-after60',await read());
+await page.getByRole('button',{name:'Energy balance',exact:true}).click();record('thermal-energy-panel',await page.locator('.energy-panel').innerText());await shot('02-thermal-energy');
+await page.getByRole('button',{name:'Reset simulation',exact:true}).click();record('thermal-reset',await read());
+});
+await test('electrical',async()=>{
+await page.getByRole('button',{name:'New empty experiment',exact:true}).click();placement=0;
+for(const name of ['DC power supply','Resistor'])await add(name);
+await select('source');await field('Supply voltage',12);record('E01-source-fields',await page.locator('.inspector').innerText());
+await wire('PS-01:a','R-01:a');await wire('R-01:b','PS-01:b');record('E01',await read());await shot('03-E01');await save('E01');
+await add('Resistor');
+await wire('PS-01:a','R-02:a');await wire('R-02:b','PS-01:b');record('E03',await read());await save('E03');
+await page.getByRole('button',{name:'New empty experiment',exact:true}).click();placement=0;for(const name of ['DC power supply','Resistor','Resistor','Switch'])await add(name);
+await select('source');await field('Supply voltage',12);
+await wire('PS-01:a','R-01:a');await wire('R-01:b','R-02:a');await wire('R-02:b','S-01:a');await wire('S-01:b','PS-01:b');record('E02-switch',await read());await adv(1);await page.locator('[data-component="switch"]').dblclick();record('E04-open',await read());await shot('04-open');await save('E04');
+await page.locator('[data-component="switch"]').dblclick();await select('source');await field('Supply voltage',6);record('E07-live',await read());await page.getByRole('button',{name:'Undo',exact:true}).click();record('E07-undo',await read());await page.getByRole('button',{name:'Redo',exact:true}).click();record('E07-redo',await read());
+await page.getByRole('button',{name:'Reset simulation',exact:true}).click();await wire('PS-01:a','PS-01:b');record('E05-short',await read());record('E05-text',await page.locator('body').innerText());await shot('05-short');
+});
+await test('overload',async()=>{
+await page.getByRole('button',{name:'New empty experiment',exact:true}).click();placement=0;for(const name of ['DC power supply','Resistor'])await add(name);await select('source');await field('Supply voltage',24);await wire('PS-01:a','R-01:a');await wire('R-01:b','PS-01:b');await adv(1);record('E06-overload',await read());await page.getByRole('button',{name:/Event log/}).click();record('E06-log',await page.locator('.event-log').innerText());await shot('06-overload');await page.getByRole('button',{name:'Reset simulation',exact:true}).click();record('E06-reset',await read());
+});
+await browser.close();

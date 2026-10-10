@@ -1,0 +1,2936 @@
+[
+  {
+    "name": "E02-exact-imported",
+    "data": {
+      "time": 0,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 12,
+          "current": -1,
+          "currentNC": 0,
+          "contactCurrent": -1,
+          "power": -12,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 6,
+          "current": 1,
+          "currentNC": 0,
+          "contactCurrent": 1,
+          "power": 6,
+          "voltageValid": true
+        },
+        "cg7zfq56kii": {
+          "voltage": 6,
+          "current": 1,
+          "currentNC": 0,
+          "contactCurrent": 1,
+          "power": 6,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20,
+        "cg7zfq56kii": 20
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0,
+      "energyJ": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "E05-real-short",
+    "data": {
+      "time": 0,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 12,
+          "current": -2,
+          "currentNC": 0,
+          "contactCurrent": -2,
+          "power": -24,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 12,
+          "current": 2,
+          "currentNC": 0,
+          "contactCurrent": 2,
+          "power": 24,
+          "voltageValid": true
+        },
+        "6wvig9p80o": {
+          "voltage": 12,
+          "current": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0,
+      "energyJ": 0,
+      "error": "PS-01: supply terminals are shorted. Remove the short circuit."
+    }
+  },
+  {
+    "name": "E05-real-short-ui",
+    "data": "PHYSICSLAB\nENGINEERING SANDBOX\nFile\nReference\nWorkspace\nUntitled experiment\nUnsaved changes\nOpen\nSave project\nExperiment 01\nPhysical view\nChallenges\n9\n+\nDC ELECTRICAL\nTHERMAL · HYDRAULIC · MECHANICAL\nSANDBOX MODE\nComponent library\n39\n/\nElectrical\n8\nDC motor\n24–180 V · 3 catalog models\nDC power supply\n0–240 V · 20 A\nResistor\n6 Ω · 50 W\nSwitch\nSPST · 0.01 Ω\nFilament lamp\n6 Ω · 30 W\nGround reference\n0 V reference\nWire junction\nIdeal conductor\nProtective fuse\n10 A · 0.02 Ω\nHydraulic\n6\nCentrifugal pump\n8–35 m head · 2 catalog models\nPipe\n5 m · Ø25 mm\nManual valve\n0–100% · bidirectional\nCheck valve\n1 kPa cracking\nActuated valve\n5 s full stroke\nFluid junction\nConservative junction\nMechanical\n2\nRigid body\nSI geometry · static / dynamic / kinematic\nForce / brake actuator\nN or N·m · declared external supply\nThermal\n3\nImmersion heater\n28.8 Ω · 2 kW\nWater tank\n10 L · 4,180 J/kg·K\nCooling jacket\n8 W/K · 20°C coolant\nSensors\n7\nPosition sensor\nm output\nShaft speed sensor\nRPM output\nPressure sensor\nPa output\nFlow sensor\nm³/s output\nTank level sensor\n% output\nVoltmeter\n10 MΩ input\nTemperature sensor\n0–120°C · 0.01°C\nAutomation\n13\nPI regulator\nNumeric feedback\nComparator\n< · ≤ · > · ≥\nHysteresis controller\n78 / 80°C\nControl relay\n250 V · 12 A · SPDT\nThermostat\n80°C · 2°C band\nSimulation timer\nTON · TOF · PULSE\nAND gate\nBoolean · 2 inputs\nOR gate\nBoolean · 2 inputs\nNOT gate\nBoolean · inverter\nNumeric constant\nNumeric output\nSet/reset latch\nSET · RESET\nManual reset signal\nMomentary Boolean\nIndependent cutoff\n90°C · 250 V · 16 A\nOpen mechanical construction starter\nOpen motor-driven rotor\nOpen closed-loop starter\nOpen water-transfer starter\nOpen industrial pumping station · 180 V\nOpen automatic water supply\nOpen heated circulation loop\nSave selection\nDrag components onto the grid.\nConnect matching terminals.\nPhysics models & assumptions\nLAB ENGINE\nv2.1.0\nPS-01\nPOWER\n12.0 V\nDC OUTPUT\n+\n−\nDC power supply\n2.00 A · 24.0 W\nR-01\nRESISTOR\n6 Ω\nResistor\n12.00 V · 24.0 W\nJ-01\nJUNCTION\nEXPLICIT NODE\nWire junction\n12.00 V · 0.0 W\nENGINEERING WORKSPACE\nSI UNITS\nDrag to move · Click terminals to connect · Space to pan\n125%\nPS-01: supply terminals are shorted. Remove the short circuit.\nDiagnostics\nInspector\nWire junction\nJ-01\nProperties\nPhysical model\nLIVE MEASUREMENTS\nHEALTHY\n12.00V\nTerminal voltage\nstate\n1.00 bool\nCATALOG MODEL\nStandard · €0\n\nIdeal conductor. Ratings are purchased with the model. Reset before changing physical configuration.\n\nCONFIGURATION\nMEASUREMENT PROBES\nstate [bool]\nAdd trace for J-01\n\nDifferential node probes: choose Node measurement mode in the canvas toolbar, then reference and measured terminals.\n\nComponent cost\n€0.00\nLive telemetry\nEvent log\nEnergy balance\nExport CSV\nTime window\n30 s\n60 s\n300 s\n600 s\n1800 s\n3600 s\nHistory\n00:00:00.00 · 4 samples/s · Paused\nManage traces\n\nAdd a targeted measurement in the inspector or Manage traces.\n\nSimulation paused\nRun\nSpeed\n0.25×\n0.5×\n1×\n2×\n4×\nAdvance 60 s\nt 00:00:00.00\nFIXED STEP\n1 / 60 s\nSOLVER\n0.00 ms\n1\nwarnings\nEngine halted\n3 components\n4 connections\n€53 total\nKCL residual 0.0e+0\n0 FPS\nKeyboard shortcuts"
+  },
+  {
+    "name": "E05-run",
+    "data": {
+      "time": 0,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 12,
+          "current": -2,
+          "currentNC": 0,
+          "contactCurrent": -2,
+          "power": -24,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 12,
+          "current": 2,
+          "currentNC": 0,
+          "contactCurrent": 2,
+          "power": 24,
+          "voltageValid": true
+        },
+        "6wvig9p80o": {
+          "voltage": 12,
+          "current": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0,
+      "energyJ": 0,
+      "error": "PS-01: supply terminals are shorted. Remove the short circuit."
+    }
+  },
+  {
+    "name": "E06-before",
+    "data": {
+      "time": 0,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 24,
+          "current": -4,
+          "currentNC": 0,
+          "contactCurrent": -4,
+          "power": -96,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 24,
+          "current": 4,
+          "currentNC": 0,
+          "contactCurrent": 4,
+          "power": 96,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0,
+      "energyJ": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "E06-after",
+    "data": {
+      "time": 1.0000000000000013,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 24,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 24,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20.977237828442544
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": -2.0439205883349132e-13,
+      "energyJ": 49.60000000000002,
+      "error": null
+    }
+  },
+  {
+    "name": "E06-log",
+    "data": "00:00:00.52\nERROR\nR-01: rating exceeded — component failed open.\n00:00:00.00\nINFO\nPS-01: voltage set to 24.\n00:00:00.00\nINFO\nExperiment initialized. Fixed timestep: 1/60 s."
+  },
+  {
+    "name": "E06-reset",
+    "data": {
+      "time": 0,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 24,
+          "current": -4,
+          "currentNC": 0,
+          "contactCurrent": -4,
+          "power": -96,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 24,
+          "current": 4,
+          "currentNC": 0,
+          "contactCurrent": 4,
+          "power": 96,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0,
+      "energyJ": 0,
+      "error": null
+    }
+  },
+  {
+    "name": "A01-1500",
+    "data": {
+      "time": 1499.9999999989645,
+      "running": false,
+      "project": "Closed-loop heating laboratory",
+      "readings": {
+        "7xwekvtq4vp": {
+          "voltage": 240,
+          "current": -8.324661810615456,
+          "currentNC": 0,
+          "contactCurrent": -8.324661810615456,
+          "power": -1997.9188345477096,
+          "voltageValid": true
+        },
+        "siygc6ii4ih": {
+          "voltage": 0.16649323621228973,
+          "current": 8.324661810614487,
+          "currentNC": 0,
+          "contactCurrent": 8.324661810614487,
+          "power": 1.3859998852220652,
+          "voltageValid": true
+        },
+        "fi1mcnkqibj": {
+          "voltage": 0.0832466181061875,
+          "current": 8.32466181061875,
+          "currentNC": 0,
+          "contactCurrent": 8.32466181061875,
+          "power": 0.6929999426117424,
+          "voltageValid": true
+        },
+        "lxxs2rphr5": {
+          "voltage": 239.75026014568152,
+          "current": 8.324661810613941,
+          "currentNC": 0,
+          "contactCurrent": 8.324661810613941,
+          "power": 1995.8398347195125,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "siygc6ii4ih": 21.385999885212527,
+        "fi1mcnkqibj": 20.69299994260493,
+        "lxxs2rphr5": 89.75232102307852,
+        "r8e5zfrj3s": 78.91179539964267
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {
+        "r8e5zfrj3s": {
+          "volume": 0.01,
+          "mass": 10,
+          "temperature": 352.0617953996426
+        }
+      },
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0.000016412348486483097,
+      "energyJ": 2996878.251822618,
+      "error": null
+    }
+  },
+  {
+    "name": "A01-1800",
+    "data": {
+      "time": 1799.9999999986917,
+      "running": false,
+      "project": "Closed-loop heating laboratory",
+      "readings": {
+        "7xwekvtq4vp": {
+          "voltage": 240,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "siygc6ii4ih": {
+          "voltage": 240,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "fi1mcnkqibj": {
+          "voltage": 0,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "lxxs2rphr5": {
+          "voltage": 0,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "siygc6ii4ih": 20.228950146111462,
+        "fi1mcnkqibj": 20.144508704766668,
+        "lxxs2rphr5": 78.97388761574257,
+        "r8e5zfrj3s": 79.11272527261274
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {
+        "r8e5zfrj3s": {
+          "volume": 0.01,
+          "mass": 10,
+          "temperature": 352.2627252726127
+        }
+      },
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0.00002166640479117632,
+      "energyJ": 3192740.8949035807,
+      "error": null
+    }
+  },
+  {
+    "name": "A01-log",
+    "data": "00:28:56.58\nINFO\nRY-01: OFF.\n00:28:56.58\nINFO\nHC-01: OFF.\n00:27:52.23\nINFO\nRY-01: ON.\n00:27:52.23\nINFO\nHC-01: ON.\n00:25:33.68\nINFO\nRY-01: OFF.\n00:25:33.68\nINFO\nHC-01: OFF.\n00:00:00.00\nINFO\nExperiment initialized. Fixed timestep: 1/60 s.\n00:00:00.00\nINFO\nRY-01: ON.\n00:00:00.00\nINFO\nHC-01: ON.\n00:00:00.00\nINFO\nST-01: ON."
+  },
+  {
+    "name": "A03-sensor-fault",
+    "data": {
+      "time": 1799.9999999986917,
+      "running": false,
+      "project": "Closed-loop heating laboratory",
+      "readings": {
+        "7xwekvtq4vp": {
+          "voltage": 240,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "siygc6ii4ih": {
+          "voltage": 240,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "fi1mcnkqibj": {
+          "voltage": 0,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "lxxs2rphr5": {
+          "voltage": 0,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "siygc6ii4ih": 20.228950146111462,
+        "fi1mcnkqibj": 20.144508704766668,
+        "lxxs2rphr5": 78.97388761574257,
+        "r8e5zfrj3s": 79.11272527261274
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {
+        "r8e5zfrj3s": {
+          "volume": 0.01,
+          "mass": 10,
+          "temperature": 352.2627252726127
+        }
+      },
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0.00002166640479117632,
+      "energyJ": 3192740.8949035807,
+      "error": null
+    }
+  },
+  {
+    "name": "A04-welded",
+    "data": {
+      "time": 1799.9999999986917,
+      "running": false,
+      "project": "Closed-loop heating laboratory",
+      "readings": {
+        "7xwekvtq4vp": {
+          "voltage": 240,
+          "current": -8.324661810615456,
+          "currentNC": 0,
+          "contactCurrent": -8.324661810615456,
+          "power": -1997.9188345477096,
+          "voltageValid": true
+        },
+        "siygc6ii4ih": {
+          "voltage": 0.16649323621228973,
+          "current": 8.324661810614487,
+          "currentNC": 0,
+          "contactCurrent": 8.324661810614487,
+          "power": 1.3859998852220652,
+          "voltageValid": true
+        },
+        "fi1mcnkqibj": {
+          "voltage": 0.0832466181061875,
+          "current": 8.32466181061875,
+          "currentNC": 0,
+          "contactCurrent": 8.32466181061875,
+          "power": 0.6929999426117424,
+          "voltageValid": true
+        },
+        "lxxs2rphr5": {
+          "voltage": 239.75026014568152,
+          "current": 8.324661810613941,
+          "currentNC": 0,
+          "contactCurrent": 8.324661810613941,
+          "power": 1995.8398347195125,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "siygc6ii4ih": 20.228950146111462,
+        "fi1mcnkqibj": 20.144508704766668,
+        "lxxs2rphr5": 78.97388761574257,
+        "r8e5zfrj3s": 79.11272527261274
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {
+        "r8e5zfrj3s": {
+          "volume": 0.01,
+          "mass": 10,
+          "temperature": 352.2627252726127
+        }
+      },
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0.00002166640479117632,
+      "energyJ": 3192740.8949035807,
+      "error": null
+    }
+  },
+  {
+    "name": "A02-cutoff",
+    "data": {
+      "time": 2400.000000002948,
+      "running": false,
+      "project": "Closed-loop heating laboratory",
+      "readings": {
+        "7xwekvtq4vp": {
+          "voltage": 240,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "siygc6ii4ih": {
+          "voltage": 0,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "fi1mcnkqibj": {
+          "voltage": 240,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        },
+        "lxxs2rphr5": {
+          "voltage": 0,
+          "current": 0,
+          "currentNC": 0,
+          "contactCurrent": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "siygc6ii4ih": 20.003046780552676,
+        "fi1mcnkqibj": 20.005176834791783,
+        "lxxs2rphr5": 85.69104667616719,
+        "r8e5zfrj3s": 85.84569802045856
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {
+        "r8e5zfrj3s": {
+          "volume": 0.01,
+          "mass": 10,
+          "temperature": 358.9956980204585
+        }
+      },
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0.00003441120497882366,
+      "energyJ": 3902301.7689961065,
+      "error": null
+    }
+  },
+  {
+    "name": "A02-log",
+    "data": "00:35:55.15\nINFO\nST-01: OFF.\n00:35:55.15\nWARNING\nST-01: independent safety trip (90.00°C). Manual reset required.\n00:30:00.00\nINFO\nRY-01: ON.\n00:30:00.00\nWARNING\nRY-01: fault injected — stuckClosed.\n00:30:00.00\nWARNING\nTS-01: fault injected — sensorFault.\n00:28:56.58\nINFO\nRY-01: OFF.\n00:28:56.58\nINFO\nHC-01: OFF.\n00:27:52.23\nINFO\nRY-01: ON.\n00:27:52.23\nINFO\nHC-01: ON.\n00:25:33.68\nINFO\nRY-01: OFF.\n00:25:33.68\nINFO\nHC-01: OFF.\n00:00:00.00\nINFO\nExperiment initialized. Fixed timestep: 1/60 s.\n00:00:00.00\nINFO\nRY-01: ON.\n00:00:00.00\nINFO\nHC-01: ON.\n00:00:00.00\nINFO\nST-01: ON."
+  },
+  {
+    "name": "H01-10",
+    "data": {
+      "time": 10.000000000000076,
+      "running": false,
+      "project": "Water transfer laboratory",
+      "readings": {
+        "r3d0z3evuvs": {
+          "voltage": 24,
+          "current": -4.693766011491364,
+          "currentNC": 0,
+          "contactCurrent": -4.693766011491364,
+          "power": -112.65075746790815,
+          "voltageValid": true
+        },
+        "syn1mj4fr28": {
+          "voltage": 24,
+          "current": 4.693766011491366,
+          "currentNC": 0,
+          "contactCurrent": 4.693766011491366,
+          "power": 112.65075746790819,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "syn1mj4fr28": 21.46050536093527,
+        "ra0q535tmm": 19.999999999999147,
+        "g4zr9f0j5xr": 20.01528266979413
+      },
+      "hydraulics": {
+        "readings": {
+          "pt41xvwmv7": {
+            "flow": 0.0008057462320195543,
+            "pressure": 34391.452075834,
+            "inletPressure": 13988.984955057163,
+            "differentialPressure": -20402.46712077684,
+            "velocity": 1.64145274500584,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 16.504133705510156,
+            "shaftPower": 59.907983950966184,
+            "torque": 0.2609311810233847,
+            "efficiency": 0.6993160420509976,
+            "temperature": 293.1629063315014,
+            "temperatureValid": true
+          },
+          "5vnygj89dy8": {
+            "flow": 0.0008057462319891331,
+            "pressure": 27150.78245181378,
+            "inletPressure": 34391.452075834,
+            "differentialPressure": 7240.669624020225,
+            "dp": 7240.669624022776,
+            "velocity": 1.6414527449438665,
+            "reynolds": 41036.318623596664,
+            "frictionFactor": 0.026873359560812868,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1646385491148,
+            "temperatureValid": true
+          },
+          "i8yja2vsx8h": {
+            "flow": 0.0008057462319291771,
+            "pressure": 20334.29004491392,
+            "inletPressure": 27150.78245181378,
+            "differentialPressure": 6816.492406899858,
+            "velocity": 1.641452744821725,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.16626928892504,
+            "temperatureValid": true
+          },
+          "ra0q535tmm": {
+            "flow": -0.0008057462320195543,
+            "pressure": 13988.984955057163,
+            "inletPressure": 13988.984955057163,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1499999999991
+          },
+          "g4zr9f0j5xr": {
+            "flow": 0.0008057462319291771,
+            "pressure": 720.9900449139204,
+            "inletPressure": 720.9900449139204,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1652822374939
+          }
+        },
+        "potentials": {
+          "pt41xvwmv7:inlet": 13988.984955057163,
+          "5vnygj89dy8:inlet": 34391.452075834,
+          "g4zr9f0j5xr:fluid": 20334.29004491392,
+          "i8yja2vsx8h:inlet": 27150.78245181378
+        },
+        "residual": 5.995592911034464e-14,
+        "pressureResidual": 2.5511326384730637e-9,
+        "iterations": 2,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "pt41xvwmv7",
+            "from": "pt41xvwmv7:inlet",
+            "to": "5vnygj89dy8:inlet",
+            "flow": 0.0008057462320195543,
+            "loss": 0.0649226990413716,
+            "gain": 20483.0417439788
+          },
+          {
+            "id": "5vnygj89dy8",
+            "from": "5vnygj89dy8:inlet",
+            "to": "i8yja2vsx8h:inlet",
+            "flow": 0.0008057462319891331,
+            "loss": 5.834142266632469,
+            "gain": 0
+          },
+          {
+            "id": "i8yja2vsx8h",
+            "from": "i8yja2vsx8h:inlet",
+            "to": "g4zr9f0j5xr:fluid",
+            "flow": 0.0008057462319291771,
+            "loss": 5.492363071833408,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "ra0q535tmm": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+        },
+        "terminalNodes": {
+          "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+          "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+          "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+          "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+          "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+        }
+      },
+      "tanks": {
+        "ra0q535tmm": {
+          "volume": 0.1426445903417943,
+          "mass": 142.6445903417943,
+          "temperature": 293.1499999999991
+        },
+        "g4zr9f0j5xr": {
+          "volume": 0.007355409657910486,
+          "mass": 7.355409657910486,
+          "temperature": 293.1652826697941
+        }
+      },
+      "motors": {
+        "syn1mj4fr28": {
+          "omega": 229.59296557565926,
+          "current": 4.693797111303656,
+          "torque": 0.3755037689042925,
+          "load": 0.2609311810233847,
+          "shaftPower": 59.907983950966184,
+          "copperPower": 26.438077586499055,
+          "duty": 1,
+          "acceleration": -0.037322297221180634
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -2.952162958536064e-10,
+      "energyResidualJ": -0.0023473465666086213,
+      "energyJ": 1418.6638203770462,
+      "error": null
+    }
+  },
+  {
+    "name": "H01-20",
+    "data": {
+      "time": 20.000000000000146,
+      "running": false,
+      "project": "Water transfer laboratory",
+      "readings": {
+        "r3d0z3evuvs": {
+          "voltage": 24,
+          "current": -4.717778266638639,
+          "currentNC": 0,
+          "contactCurrent": -4.717778266638639,
+          "power": -113.22702078018835,
+          "voltageValid": true
+        },
+        "syn1mj4fr28": {
+          "voltage": 24,
+          "current": 4.717778266638639,
+          "currentNC": 0,
+          "contactCurrent": 4.717778266638639,
+          "power": 113.22702078018835,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "syn1mj4fr28": 22.440146578992724,
+        "ra0q535tmm": 20,
+        "g4zr9f0j5xr": 20.01582693333638
+      },
+      "hydraulics": {
+        "readings": {
+          "pt41xvwmv7": {
+            "flow": 0.0007879669264914541,
+            "pressure": 34579.23332506312,
+            "inletPressure": 13207.541690923901,
+            "differentialPressure": -21371.69163413922,
+            "velocity": 1.605233041203751,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 16.902275358600242,
+            "shaftPower": 60.29134839049343,
+            "torque": 0.2630135068241613,
+            "efficiency": 0.6997611660486697,
+            "temperature": 293.16319219695094,
+            "temperatureValid": true
+          },
+          "5vnygj89dy8": {
+            "flow": 0.0007879669264609674,
+            "pressure": 27636.462791529848,
+            "inletPressure": 34579.23332506312,
+            "differentialPressure": 6942.770533533274,
+            "dp": 6942.770533535922,
+            "velocity": 1.605233041141644,
+            "reynolds": 40130.8260285411,
+            "frictionFactor": 0.026943662557721768,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.16485314683933,
+            "temperatureValid": true
+          },
+          "i8yja2vsx8h": {
+            "flow": 0.000787966926398465,
+            "pressure": 21115.733308979838,
+            "inletPressure": 27636.462791529848,
+            "differentialPressure": 6520.72948255001,
+            "velocity": 1.6052330410143152,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.16641312996916,
+            "temperatureValid": true
+          },
+          "ra0q535tmm": {
+            "flow": -0.0007879669264914541,
+            "pressure": 13207.541690923901,
+            "inletPressure": 13207.541690923901,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15000000000003
+          },
+          "g4zr9f0j5xr": {
+            "flow": 0.000787966926398465,
+            "pressure": 1502.4333089798383,
+            "inletPressure": 1502.4333089798383,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.16582681677625
+          }
+        },
+        "potentials": {
+          "pt41xvwmv7:inlet": 13207.541690923901,
+          "5vnygj89dy8:inlet": 34579.23332506312,
+          "g4zr9f0j5xr:fluid": 21115.733308979838,
+          "i8yja2vsx8h:inlet": 27636.462791529848
+        },
+        "residual": 6.25023366396249e-14,
+        "pressureResidual": 2.648448571562767e-9,
+        "iterations": 2,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "pt41xvwmv7",
+            "from": "pt41xvwmv7:inlet",
+            "to": "5vnygj89dy8:inlet",
+            "flow": 0.0007879669264914541,
+            "loss": 0.06208918772443894,
+            "gain": 21450.488326788367
+          },
+          {
+            "id": "5vnygj89dy8",
+            "from": "5vnygj89dy8:inlet",
+            "to": "i8yja2vsx8h:inlet",
+            "flow": 0.0007879669264609674,
+            "loss": 5.470673558431985,
+            "gain": 0
+          },
+          {
+            "id": "i8yja2vsx8h",
+            "from": "i8yja2vsx8h:inlet",
+            "to": "g4zr9f0j5xr:fluid",
+            "flow": 0.000787966926398465,
+            "loss": 5.1381191682407845,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "ra0q535tmm": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+        },
+        "terminalNodes": {
+          "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+          "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+          "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+          "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+          "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+        }
+      },
+      "tanks": {
+        "ra0q535tmm": {
+          "volume": 0.13467616076264322,
+          "mass": 134.6761607626432,
+          "temperature": 293.15
+        },
+        "g4zr9f0j5xr": {
+          "volume": 0.015323839236374811,
+          "mass": 15.32383923637481,
+          "temperature": 293.16582693333635
+        }
+      },
+      "motors": {
+        "syn1mj4fr28": {
+          "omega": 229.23282670698808,
+          "current": 4.717806797960013,
+          "torque": 0.3774245438368011,
+          "load": 0.2630135068241613,
+          "shaftPower": 60.291348390493425,
+          "copperPower": 26.709241179453254,
+          "duty": 1,
+          "acceleration": -0.03423533361910813
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -9.819700608204585e-10,
+      "energyResidualJ": -0.004941335701062144,
+      "energyJ": 2548.1034192992697,
+      "error": null
+    }
+  },
+  {
+    "name": "H04-20pct",
+    "data": {
+      "time": 29.999999999999577,
+      "running": false,
+      "project": "Water transfer laboratory",
+      "readings": {
+        "r3d0z3evuvs": {
+          "voltage": 24,
+          "current": -4.6670626731092675,
+          "currentNC": 0,
+          "contactCurrent": -4.6670626731092675,
+          "power": -112.00943973244469,
+          "voltageValid": true
+        },
+        "syn1mj4fr28": {
+          "voltage": 24,
+          "current": 4.667062673109269,
+          "currentNC": 0,
+          "contactCurrent": 4.667062673109269,
+          "power": 112.00943973244473,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "syn1mj4fr28": 23.37624452711601,
+        "ra0q535tmm": 20.000000000000796,
+        "g4zr9f0j5xr": 20.020082095515264
+      },
+      "hydraulics": {
+        "readings": {
+          "pt41xvwmv7": {
+            "flow": 0.0003468946041895885,
+            "pressure": 54221.41876270755,
+            "inletPressure": 12865.777122801797,
+            "differentialPressure": -41355.641639905756,
+            "velocity": 0.7066878846550977,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 14.358082524323159,
+            "shaftPower": 59.41412423663013,
+            "torque": 0.25832886057550236,
+            "efficiency": 0.6265550910624621,
+            "temperature": 293.1810810144234,
+            "temperatureValid": true
+          },
+          "5vnygj89dy8": {
+            "flow": 0.0003468946042055448,
+            "pressure": 52705.17273561916,
+            "inletPressure": 54221.41876270755,
+            "differentialPressure": 1516.2460270883855,
+            "dp": 1516.246027089943,
+            "velocity": 0.7066878846876037,
+            "reynolds": 17667.19711719009,
+            "frictionFactor": 0.030360882012877604,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.18144375270737,
+            "temperatureValid": true
+          },
+          "i8yja2vsx8h": {
+            "flow": 0.00034689460420732354,
+            "pressure": 21457.49787711336,
+            "inletPressure": 52705.17273561916,
+            "differentialPressure": 31247.674858505805,
+            "velocity": 0.7066878846912272,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1889192730084,
+            "temperatureValid": true
+          },
+          "ra0q535tmm": {
+            "flow": -0.0003468946041895885,
+            "pressure": 12865.777122801797,
+            "inletPressure": 12865.777122801797,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15000000000083
+          },
+          "g4zr9f0j5xr": {
+            "flow": 0.00034689460420732354,
+            "pressure": 1844.1978771133618,
+            "inletPressure": 1844.1978771133618,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1700806570602
+          }
+        },
+        "potentials": {
+          "pt41xvwmv7:inlet": 12865.777122801797,
+          "5vnygj89dy8:inlet": 54221.41876270755,
+          "g4zr9f0j5xr:fluid": 21457.49787711336,
+          "i8yja2vsx8h:inlet": 52705.17273561916
+        },
+        "residual": 1.5956291843366443e-14,
+        "pressureResidual": 1.5575096767861396e-9,
+        "iterations": 2,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "pt41xvwmv7",
+            "from": "pt41xvwmv7:inlet",
+            "to": "5vnygj89dy8:inlet",
+            "flow": 0.0003468946041895885,
+            "loss": 0.01203358664158749,
+            "gain": 41390.33110032472
+          },
+          {
+            "id": "5vnygj89dy8",
+            "from": "5vnygj89dy8:inlet",
+            "to": "i8yja2vsx8h:inlet",
+            "flow": 0.0003468946042055448,
+            "loss": 0.5259775654450553,
+            "gain": 0
+          },
+          {
+            "id": "i8yja2vsx8h",
+            "from": "i8yja2vsx8h:inlet",
+            "to": "g4zr9f0j5xr:fluid",
+            "flow": 0.00034689460420732354,
+            "loss": 10.839649802440507,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "ra0q535tmm": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+        },
+        "terminalNodes": {
+          "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+          "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+          "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+          "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+          "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+        }
+      },
+      "tanks": {
+        "ra0q535tmm": {
+          "volume": 0.13119296985263104,
+          "mass": 131.19296985263105,
+          "temperature": 293.1500000000008
+        },
+        "g4zr9f0j5xr": {
+          "volume": 0.018807030146503933,
+          "mass": 18.807030146503934,
+          "temperature": 293.1700820955152
+        }
+      },
+      "motors": {
+        "syn1mj4fr28": {
+          "omega": 229.99415385256566,
+          "current": 4.66705730458766,
+          "torque": 0.3733645843670128,
+          "load": 0.25832886057550236,
+          "shaftPower": 59.41412423663013,
+          "copperPower": 26.137708661166037,
+          "duty": 1,
+          "acceleration": 0.006442262661039422
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -8.65014726514346e-10,
+      "energyResidualJ": -0.005437017454823945,
+      "energyJ": 3669.533054035471,
+      "error": null
+    }
+  },
+  {
+    "name": "H04-closed",
+    "data": {
+      "time": 39.99999999999901,
+      "running": false,
+      "project": "Water transfer laboratory",
+      "readings": {
+        "r3d0z3evuvs": {
+          "voltage": 24,
+          "current": -3.7510757352027753,
+          "currentNC": 0,
+          "contactCurrent": -3.7510757352027753,
+          "power": -90.02581675431995,
+          "voltageValid": true
+        },
+        "syn1mj4fr28": {
+          "voltage": 24,
+          "current": 3.7510757352027766,
+          "currentNC": 0,
+          "contactCurrent": 3.7510757352027766,
+          "power": 90.02581675431999,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "syn1mj4fr28": 24.16586205060748,
+        "ra0q535tmm": 20.000000000000796,
+        "g4zr9f0j5xr": 20.02007647631674
+      },
+      "hydraulics": {
+        "readings": {
+          "pt41xvwmv7": {
+            "flow": 0,
+            "pressure": 64650.14930673205,
+            "inletPressure": 12865.63537805304,
+            "differentialPressure": -51784.51392867901,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 43.437906005661475,
+            "torque": 0.17821859096528145,
+            "efficiency": 0.45499999999999996,
+            "temperature": 293.15
+          },
+          "5vnygj89dy8": {
+            "flow": -2.2737367544323206e-16,
+            "pressure": 64650.14930673206,
+            "inletPressure": 64650.14930673205,
+            "differentialPressure": -1.4210854715202004e-11,
+            "dp": -1.1857967309049915e-10,
+            "velocity": -4.632018480097623e-13,
+            "reynolds": 1.1580046200244058e-8,
+            "frictionFactor": 5526748243.772219,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "i8yja2vsx8h": {
+            "flow": 0,
+            "pressure": 21457.639621862127,
+            "inletPressure": 64650.14930673206,
+            "differentialPressure": 43192.50968486993,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "ra0q535tmm": {
+            "flow": 0,
+            "pressure": 12865.63537805304,
+            "inletPressure": 12865.63537805304,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1500000000008
+          },
+          "g4zr9f0j5xr": {
+            "flow": 0,
+            "pressure": 1844.3396218621274,
+            "inletPressure": 1844.3396218621274,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.17007648568074
+          }
+        },
+        "potentials": {
+          "pt41xvwmv7:inlet": 12865.63537805304,
+          "5vnygj89dy8:inlet": 64650.14930673205,
+          "g4zr9f0j5xr:fluid": 21457.639621862127,
+          "i8yja2vsx8h:inlet": 64650.14930673206
+        },
+        "residual": 2.2737367544323206e-16,
+        "pressureResidual": 0,
+        "iterations": 2,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "pt41xvwmv7",
+            "from": "pt41xvwmv7:inlet",
+            "to": "5vnygj89dy8:inlet",
+            "flow": 0,
+            "loss": 0,
+            "gain": 51784.51392858303
+          },
+          {
+            "id": "5vnygj89dy8",
+            "from": "5vnygj89dy8:inlet",
+            "to": "i8yja2vsx8h:inlet",
+            "flow": -2.2737367544323206e-16,
+            "loss": 3.2311742677852644e-27,
+            "gain": 0
+          },
+          {
+            "id": "i8yja2vsx8h",
+            "from": "i8yja2vsx8h:inlet",
+            "to": "g4zr9f0j5xr:fluid",
+            "flow": 0,
+            "loss": 0,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "ra0q535tmm": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+        },
+        "terminalNodes": {
+          "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+          "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+          "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+          "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+          "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+        }
+      },
+      "tanks": {
+        "ra0q535tmm": {
+          "volume": 0.13119296985263104,
+          "mass": 131.19296985263105,
+          "temperature": 293.1500000000008
+        },
+        "g4zr9f0j5xr": {
+          "volume": 0.018807030146503933,
+          "mass": 18.807030146503934,
+          "temperature": 293.1700764763167
+        }
+      },
+      "motors": {
+        "syn1mj4fr28": {
+          "omega": 243.73386526707816,
+          "current": 3.7510756611156757,
+          "torque": 0.30008605288925405,
+          "load": 0.17821859096528145,
+          "shaftPower": 43.437906005661475,
+          "copperPower": 16.884682338497285,
+          "duty": 1,
+          "acceleration": 0.00008823039024719037
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -8.65014726514346e-10,
+      "energyResidualJ": -0.005437279778391257,
+      "energyJ": 4587.920536219119,
+      "error": null
+    }
+  },
+  {
+    "name": "H-energy-panel",
+    "data": "Selected interval\n0.00–40.00 s\nElectrical supplied\n4.5879 kJ\nExternal mechanical work (signed)\n0.0000 kJ\nSpatial kinetic / potential / spring Δ\n0.0000 kJ\nContact, stop and brake heat\n0.0000 kJ\nElectrical conversion (internal)\n4.5879 kJ\nMotor copper heat (internal)\n1.2203 kJ\nPump shaft work (internal)\n2.1352 kJ\nHydraulic work (internal)\n0.4513 kJ\nHydraulic dissipation (internal)\n0.3244 kJ\nRotor kinetic energy Δ\n0.1782 kJ\nFluid potential energy Δ\n0.1269 kJ\nExternal shaft / drain export\n0.0000 kJ\nWater storage Δ\n1.5783 kJ\nElement storage Δ\n0.0000 kJ\nOther storage Δ\n2.0829 kJ\nAmbient + coolant heat\n0.6216 kJ\nMass residual -8.650e-10 kg\nHydraulic continuity 2.274e-16 m³/s\nConservation residual -5.437e-3 J\n\nElectrical supply + signed external mechanical work = thermal, rotational, gravitational and spring storage changes + external heat, contact/brake losses and exported shaft/drain energy. Electrical dissipation is an internal conversion, not an additional output. Signed ambient heat includes the ideal coolant reservoir. Interval endpoints use recorded samples."
+  },
+  {
+    "name": "save-restore",
+    "data": {
+      "before": {
+        "time": 39.99999999999901,
+        "running": false,
+        "project": "Water transfer laboratory",
+        "readings": {
+          "r3d0z3evuvs": {
+            "voltage": 24,
+            "current": -3.7510757352027753,
+            "currentNC": 0,
+            "contactCurrent": -3.7510757352027753,
+            "power": -90.02581675431995,
+            "voltageValid": true
+          },
+          "syn1mj4fr28": {
+            "voltage": 24,
+            "current": 3.7510757352027766,
+            "currentNC": 0,
+            "contactCurrent": 3.7510757352027766,
+            "power": 90.02581675431999,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "syn1mj4fr28": 24.16586205060748,
+          "ra0q535tmm": 20.000000000000796,
+          "g4zr9f0j5xr": 20.02007647631674
+        },
+        "hydraulics": {
+          "readings": {
+            "pt41xvwmv7": {
+              "flow": 0,
+              "pressure": 64650.14930673205,
+              "inletPressure": 12865.63537805304,
+              "differentialPressure": -51784.51392867901,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 43.437906005661475,
+              "torque": 0.17821859096528145,
+              "efficiency": 0.45499999999999996,
+              "temperature": 293.15
+            },
+            "5vnygj89dy8": {
+              "flow": -2.2737367544323206e-16,
+              "pressure": 64650.14930673206,
+              "inletPressure": 64650.14930673205,
+              "differentialPressure": -1.4210854715202004e-11,
+              "dp": -1.1857967309049915e-10,
+              "velocity": -4.632018480097623e-13,
+              "reynolds": 1.1580046200244058e-8,
+              "frictionFactor": 5526748243.772219,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.15
+            },
+            "i8yja2vsx8h": {
+              "flow": 0,
+              "pressure": 21457.639621862127,
+              "inletPressure": 64650.14930673206,
+              "differentialPressure": 43192.50968486993,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.15
+            },
+            "ra0q535tmm": {
+              "flow": 0,
+              "pressure": 12865.63537805304,
+              "inletPressure": 12865.63537805304,
+              "differentialPressure": 0,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.1500000000008
+            },
+            "g4zr9f0j5xr": {
+              "flow": 0,
+              "pressure": 1844.3396218621274,
+              "inletPressure": 1844.3396218621274,
+              "differentialPressure": 0,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.17007648568074
+            }
+          },
+          "potentials": {
+            "pt41xvwmv7:inlet": 12865.63537805304,
+            "5vnygj89dy8:inlet": 64650.14930673205,
+            "g4zr9f0j5xr:fluid": 21457.639621862127,
+            "i8yja2vsx8h:inlet": 64650.14930673206
+          },
+          "residual": 2.2737367544323206e-16,
+          "pressureResidual": 0,
+          "iterations": 2,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [
+            {
+              "id": "pt41xvwmv7",
+              "from": "pt41xvwmv7:inlet",
+              "to": "5vnygj89dy8:inlet",
+              "flow": 0,
+              "loss": 0,
+              "gain": 51784.51392858303
+            },
+            {
+              "id": "5vnygj89dy8",
+              "from": "5vnygj89dy8:inlet",
+              "to": "i8yja2vsx8h:inlet",
+              "flow": -2.2737367544323206e-16,
+              "loss": 3.2311742677852644e-27,
+              "gain": 0
+            },
+            {
+              "id": "i8yja2vsx8h",
+              "from": "i8yja2vsx8h:inlet",
+              "to": "g4zr9f0j5xr:fluid",
+              "flow": 0,
+              "loss": 0,
+              "gain": 0
+            }
+          ],
+          "tankNodes": {
+            "ra0q535tmm": "pt41xvwmv7:inlet",
+            "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+          },
+          "terminalNodes": {
+            "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+            "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+            "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+            "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+            "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+            "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+            "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+            "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+          }
+        },
+        "tanks": {
+          "ra0q535tmm": {
+            "volume": 0.13119296985263104,
+            "mass": 131.19296985263105,
+            "temperature": 293.1500000000008
+          },
+          "g4zr9f0j5xr": {
+            "volume": 0.018807030146503933,
+            "mass": 18.807030146503934,
+            "temperature": 293.1700764763167
+          }
+        },
+        "motors": {
+          "syn1mj4fr28": {
+            "omega": 243.73386526707816,
+            "current": 3.7510756611156757,
+            "torque": 0.30008605288925405,
+            "load": 0.17821859096528145,
+            "shaftPower": 43.437906005661475,
+            "copperPower": 16.884682338497285,
+            "duty": 1,
+            "acceleration": 0.00008823039024719037
+          }
+        },
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": -8.65014726514346e-10,
+        "energyResidualJ": -0.005437279778391257,
+        "energyJ": 4587.920536219119,
+        "error": null
+      },
+      "after": {
+        "time": 39.99999999999901,
+        "running": false,
+        "project": "Water transfer laboratory",
+        "readings": {
+          "r3d0z3evuvs": {
+            "voltage": 24,
+            "current": -3.7510757352027753,
+            "currentNC": 0,
+            "contactCurrent": -3.7510757352027753,
+            "power": -90.02581675431995,
+            "voltageValid": true
+          },
+          "syn1mj4fr28": {
+            "voltage": 24,
+            "current": 3.7510757352027766,
+            "currentNC": 0,
+            "contactCurrent": 3.7510757352027766,
+            "power": 90.02581675431999,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "syn1mj4fr28": 24.16586205060748,
+          "ra0q535tmm": 20.000000000000796,
+          "g4zr9f0j5xr": 20.02007647631674
+        },
+        "hydraulics": {
+          "readings": {
+            "pt41xvwmv7": {
+              "flow": 0,
+              "pressure": 64650.14930673205,
+              "inletPressure": 12865.63537805304,
+              "differentialPressure": -51784.51392867901,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 43.437906005661475,
+              "torque": 0.17821859096528145,
+              "efficiency": 0.45499999999999996,
+              "temperature": 293.15
+            },
+            "5vnygj89dy8": {
+              "flow": -2.2737367544323206e-16,
+              "pressure": 64650.14930673206,
+              "inletPressure": 64650.14930673205,
+              "differentialPressure": -1.4210854715202004e-11,
+              "dp": -1.1857967309049915e-10,
+              "velocity": -4.632018480097623e-13,
+              "reynolds": 1.1580046200244058e-8,
+              "frictionFactor": 5526748243.772219,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.15
+            },
+            "i8yja2vsx8h": {
+              "flow": 0,
+              "pressure": 21457.639621862127,
+              "inletPressure": 64650.14930673206,
+              "differentialPressure": 43192.50968486993,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.15
+            },
+            "ra0q535tmm": {
+              "flow": 0,
+              "pressure": 12865.63537805304,
+              "inletPressure": 12865.63537805304,
+              "differentialPressure": 0,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.1500000000008
+            },
+            "g4zr9f0j5xr": {
+              "flow": 0,
+              "pressure": 1844.3396218621274,
+              "inletPressure": 1844.3396218621274,
+              "differentialPressure": 0,
+              "velocity": 0,
+              "reynolds": 0,
+              "frictionFactor": 0,
+              "hydraulicPower": 0,
+              "shaftPower": 0,
+              "torque": 0,
+              "efficiency": 0,
+              "temperature": 293.17007648568074
+            }
+          },
+          "potentials": {
+            "pt41xvwmv7:inlet": 12865.63537805304,
+            "5vnygj89dy8:inlet": 64650.14930673205,
+            "g4zr9f0j5xr:fluid": 21457.639621862127,
+            "i8yja2vsx8h:inlet": 64650.14930673206
+          },
+          "residual": 2.2737367544323206e-16,
+          "pressureResidual": 0,
+          "iterations": 2,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [
+            {
+              "id": "pt41xvwmv7",
+              "from": "pt41xvwmv7:inlet",
+              "to": "5vnygj89dy8:inlet",
+              "flow": 0,
+              "loss": 0,
+              "gain": 51784.51392858303
+            },
+            {
+              "id": "5vnygj89dy8",
+              "from": "5vnygj89dy8:inlet",
+              "to": "i8yja2vsx8h:inlet",
+              "flow": -2.2737367544323206e-16,
+              "loss": 3.2311742677852644e-27,
+              "gain": 0
+            },
+            {
+              "id": "i8yja2vsx8h",
+              "from": "i8yja2vsx8h:inlet",
+              "to": "g4zr9f0j5xr:fluid",
+              "flow": 0,
+              "loss": 0,
+              "gain": 0
+            }
+          ],
+          "tankNodes": {
+            "ra0q535tmm": "pt41xvwmv7:inlet",
+            "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+          },
+          "terminalNodes": {
+            "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+            "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+            "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+            "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+            "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+            "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+            "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+            "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+          }
+        },
+        "tanks": {
+          "ra0q535tmm": {
+            "volume": 0.13119296985263104,
+            "mass": 131.19296985263105,
+            "temperature": 293.1500000000008
+          },
+          "g4zr9f0j5xr": {
+            "volume": 0.018807030146503933,
+            "mass": 18.807030146503934,
+            "temperature": 293.1700764763167
+          }
+        },
+        "motors": {
+          "syn1mj4fr28": {
+            "omega": 243.73386526707816,
+            "current": 3.7510756611156757,
+            "torque": 0.30008605288925405,
+            "load": 0.17821859096528145,
+            "shaftPower": 43.437906005661475,
+            "copperPower": 16.884682338497285,
+            "duty": 1,
+            "acceleration": 0.00008823039024719037
+          }
+        },
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": -8.65014726514346e-10,
+        "energyResidualJ": -0.005437279778391257,
+        "energyJ": 4587.920536219119,
+        "error": null
+      }
+    }
+  },
+  {
+    "name": "replay",
+    "data": {
+      "time": 39.99999999999901,
+      "running": false,
+      "project": "Water transfer laboratory",
+      "readings": {
+        "r3d0z3evuvs": {
+          "voltage": 24,
+          "current": -3.7510757352027753,
+          "currentNC": 0,
+          "contactCurrent": -3.7510757352027753,
+          "power": -90.02581675431995,
+          "voltageValid": true
+        },
+        "syn1mj4fr28": {
+          "voltage": 24,
+          "current": 3.7510757352027766,
+          "currentNC": 0,
+          "contactCurrent": 3.7510757352027766,
+          "power": 90.02581675431999,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "syn1mj4fr28": 24.16586205060748,
+        "ra0q535tmm": 20.000000000000796,
+        "g4zr9f0j5xr": 20.02007647631674
+      },
+      "hydraulics": {
+        "readings": {
+          "pt41xvwmv7": {
+            "flow": 0,
+            "pressure": 64650.14930673205,
+            "inletPressure": 12865.63537805304,
+            "differentialPressure": -51784.51392867901,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 43.437906005661475,
+            "torque": 0.17821859096528145,
+            "efficiency": 0.45499999999999996,
+            "temperature": 293.15
+          },
+          "5vnygj89dy8": {
+            "flow": -2.2737367544323206e-16,
+            "pressure": 64650.14930673206,
+            "inletPressure": 64650.14930673205,
+            "differentialPressure": -1.4210854715202004e-11,
+            "dp": -1.1857967309049915e-10,
+            "velocity": -4.632018480097623e-13,
+            "reynolds": 1.1580046200244058e-8,
+            "frictionFactor": 5526748243.772219,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "i8yja2vsx8h": {
+            "flow": 0,
+            "pressure": 21457.639621862127,
+            "inletPressure": 64650.14930673206,
+            "differentialPressure": 43192.50968486993,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "ra0q535tmm": {
+            "flow": 0,
+            "pressure": 12865.63537805304,
+            "inletPressure": 12865.63537805304,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1500000000008
+          },
+          "g4zr9f0j5xr": {
+            "flow": 0,
+            "pressure": 1844.3396218621274,
+            "inletPressure": 1844.3396218621274,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.17007648568074
+          }
+        },
+        "potentials": {
+          "pt41xvwmv7:inlet": 12865.63537805304,
+          "5vnygj89dy8:inlet": 64650.14930673205,
+          "g4zr9f0j5xr:fluid": 21457.639621862127,
+          "i8yja2vsx8h:inlet": 64650.14930673206
+        },
+        "residual": 2.2737367544323206e-16,
+        "pressureResidual": 0,
+        "iterations": 2,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "pt41xvwmv7",
+            "from": "pt41xvwmv7:inlet",
+            "to": "5vnygj89dy8:inlet",
+            "flow": 0,
+            "loss": 0,
+            "gain": 51784.51392858303
+          },
+          {
+            "id": "5vnygj89dy8",
+            "from": "5vnygj89dy8:inlet",
+            "to": "i8yja2vsx8h:inlet",
+            "flow": -2.2737367544323206e-16,
+            "loss": 3.2311742677852644e-27,
+            "gain": 0
+          },
+          {
+            "id": "i8yja2vsx8h",
+            "from": "i8yja2vsx8h:inlet",
+            "to": "g4zr9f0j5xr:fluid",
+            "flow": 0,
+            "loss": 0,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "ra0q535tmm": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+        },
+        "terminalNodes": {
+          "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+          "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+          "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+          "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+          "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+        }
+      },
+      "tanks": {
+        "ra0q535tmm": {
+          "volume": 0.13119296985263104,
+          "mass": 131.19296985263105,
+          "temperature": 293.1500000000008
+        },
+        "g4zr9f0j5xr": {
+          "volume": 0.018807030146503933,
+          "mass": 18.807030146503934,
+          "temperature": 293.1700764763167
+        }
+      },
+      "motors": {
+        "syn1mj4fr28": {
+          "omega": 243.73386526707816,
+          "current": 3.7510756611156757,
+          "torque": 0.30008605288925405,
+          "load": 0.17821859096528145,
+          "shaftPower": 43.437906005661475,
+          "copperPower": 16.884682338497285,
+          "duty": 1,
+          "acceleration": 0.00008823039024719037
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -8.65014726514346e-10,
+      "energyResidualJ": -0.005437279778391257,
+      "energyJ": 4587.920536219119,
+      "error": null
+    }
+  },
+  {
+    "name": "H03-half-diameter",
+    "data": {
+      "time": 20.000000000000146,
+      "running": false,
+      "project": "Water transfer laboratory",
+      "readings": {
+        "r3d0z3evuvs": {
+          "voltage": 24,
+          "current": -3.751070954845698,
+          "currentNC": 0,
+          "contactCurrent": -3.751070954845698,
+          "power": -90.02570291629675,
+          "voltageValid": true
+        },
+        "syn1mj4fr28": {
+          "voltage": 24,
+          "current": 3.7510709548456975,
+          "currentNC": 0,
+          "contactCurrent": 3.7510709548456975,
+          "power": 90.02570291629674,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "syn1mj4fr28": 22.212895259488867,
+        "ra0q535tmm": 20,
+        "g4zr9f0j5xr": 20
+      },
+      "hydraulics": {
+        "readings": {
+          "pt41xvwmv7": {
+            "flow": 0,
+            "pressure": 66494.51892588423,
+            "inletPressure": 14709.974999999997,
+            "differentialPressure": -51784.54392588424,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 43.43794374918861,
+            "torque": 0.17821869420225991,
+            "efficiency": 0.45499999999999996,
+            "temperature": 293.15
+          },
+          "5vnygj89dy8": {
+            "flow": 2.2737367544323206e-16,
+            "pressure": 66494.51892588362,
+            "inletPressure": 66494.51892588423,
+            "differentialPressure": 6.110667527536862e-10,
+            "dp": 1.8972747694479863e-9,
+            "velocity": 1.852807392039049e-12,
+            "reynolds": 2.3160092400488116e-8,
+            "frictionFactor": 2763374121.8861094,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "i8yja2vsx8h": {
+            "flow": 0,
+            "pressure": 19613.3,
+            "inletPressure": 66494.51892588362,
+            "differentialPressure": 46881.21892588363,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "ra0q535tmm": {
+            "flow": 0,
+            "pressure": 14709.974999999997,
+            "inletPressure": 14709.974999999997,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          },
+          "g4zr9f0j5xr": {
+            "flow": 0,
+            "pressure": 0,
+            "inletPressure": 0,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.15
+          }
+        },
+        "potentials": {
+          "pt41xvwmv7:inlet": 14709.974999999997,
+          "5vnygj89dy8:inlet": 66494.51892588423,
+          "g4zr9f0j5xr:fluid": 19613.3,
+          "i8yja2vsx8h:inlet": 66494.51892588362
+        },
+        "residual": 2.2737367544323206e-16,
+        "pressureResidual": 0,
+        "iterations": 1,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "pt41xvwmv7",
+            "from": "pt41xvwmv7:inlet",
+            "to": "5vnygj89dy8:inlet",
+            "flow": 0,
+            "loss": 0,
+            "gain": 51784.543925884216
+          },
+          {
+            "id": "5vnygj89dy8",
+            "from": "5vnygj89dy8:inlet",
+            "to": "i8yja2vsx8h:inlet",
+            "flow": 2.2737367544323206e-16,
+            "loss": 1.3894049351476637e-25,
+            "gain": 0
+          },
+          {
+            "id": "i8yja2vsx8h",
+            "from": "i8yja2vsx8h:inlet",
+            "to": "g4zr9f0j5xr:fluid",
+            "flow": 0,
+            "loss": 0,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "ra0q535tmm": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr": "g4zr9f0j5xr:fluid"
+        },
+        "terminalNodes": {
+          "pt41xvwmv7:inlet": "pt41xvwmv7:inlet",
+          "pt41xvwmv7:outlet": "5vnygj89dy8:inlet",
+          "ra0q535tmm:fluid": "pt41xvwmv7:inlet",
+          "g4zr9f0j5xr:fluid": "g4zr9f0j5xr:fluid",
+          "5vnygj89dy8:inlet": "5vnygj89dy8:inlet",
+          "5vnygj89dy8:outlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:inlet": "i8yja2vsx8h:inlet",
+          "i8yja2vsx8h:outlet": "g4zr9f0j5xr:fluid"
+        }
+      },
+      "tanks": {
+        "ra0q535tmm": {
+          "volume": 0.15,
+          "mass": 150,
+          "temperature": 293.15
+        },
+        "g4zr9f0j5xr": {
+          "volume": 0,
+          "mass": 0,
+          "temperature": 293.15
+        }
+      },
+      "motors": {
+        "syn1mj4fr28": {
+          "omega": 243.73393567731455,
+          "current": 3.7510709548456975,
+          "torque": 0.3000856763876558,
+          "load": 0.17821869420225991,
+          "shaftPower": 43.43794374918861,
+          "copperPower": 16.884639969944416,
+          "duty": 1,
+          "acceleration": 0
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0.000014739377917294405,
+      "energyJ": 2138.4612099214796,
+      "error": null
+    }
+  },
+  {
+    "name": "H07-60",
+    "data": {
+      "time": 59.999999999997875,
+      "running": false,
+      "project": "Heated circulation loop",
+      "readings": {
+        "vftljiypq3n": {
+          "voltage": 24,
+          "current": -4.631897152658643,
+          "currentNC": 0,
+          "contactCurrent": -4.631897152658643,
+          "power": -111.16581926348101,
+          "voltageValid": true
+        },
+        "xtbntkg4i7": {
+          "voltage": 24,
+          "current": 4.631897152658645,
+          "currentNC": 0,
+          "contactCurrent": 4.631897152658645,
+          "power": 111.16581926348101,
+          "voltageValid": true
+        },
+        "oy9rqtm9wwa": {
+          "voltage": 120,
+          "current": 4.166666666666667,
+          "currentNC": 0,
+          "contactCurrent": 4.166666666666667,
+          "power": 500.00000000000006,
+          "voltageValid": true
+        },
+        "z340jq2sjws": {
+          "voltage": 120,
+          "current": -4.166666666666667,
+          "currentNC": 0,
+          "contactCurrent": -4.166666666666667,
+          "power": -500.00000000000006,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "xtbntkg4i7": 25.84714702577567,
+        "vlniy8nq4s9": 59.0611568281158,
+        "uxbqz91wwx": 43.056372423916805,
+        "oy9rqtm9wwa": 61.822348056905106
+      },
+      "hydraulics": {
+        "readings": {
+          "oqd5dpjnr7": {
+            "flow": 0.0008458365051138072,
+            "pressure": 26614.479430788244,
+            "inletPressure": 8441.048029304498,
+            "differentialPressure": -18173.431401483747,
+            "velocity": 1.723123978706376,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 15.443295641894851,
+            "shaftPower": 58.890239824225844,
+            "torque": 0.2554656322754682,
+            "efficiency": 0.6975120928921685,
+            "temperature": 332.22370815518775,
+            "temperatureValid": true
+          },
+          "57agm43c8lj": {
+            "flow": 0.0008458365051026251,
+            "pressure": 18679.726235320715,
+            "inletPressure": 26614.479430788244,
+            "differentialPressure": 7934.753195467529,
+            "dp": 7934.753195471406,
+            "velocity": 1.723123978683596,
+            "reynolds": 43078.0994670899,
+            "frictionFactor": 0.026723932788615536,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 332.22560642150245,
+            "temperatureValid": true
+          },
+          "9flig9lkb9f": {
+            "flow": 0.0008458365050820545,
+            "pressure": 11172.251970387591,
+            "inletPressure": 18679.726235320715,
+            "differentialPressure": 7507.474264933123,
+            "velocity": 1.7231239786416899,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 332.2274024679773,
+            "temperatureValid": true
+          },
+          "i9l090tk5us": {
+            "flow": 0.0003275499933599803,
+            "pressure": 8441.048029304498,
+            "inletPressure": 11172.251970387591,
+            "differentialPressure": 2731.203941083093,
+            "dp": 2731.2039410815305,
+            "velocity": 0.6672793670778671,
+            "reynolds": 16681.984176946677,
+            "frictionFactor": 0.030669644520500944,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 315.7068429947062,
+            "temperatureValid": true
+          },
+          "vlniy8nq4s9": {
+            "flow": -0.0005182865117538269,
+            "pressure": 8441.048029304498,
+            "inletPressure": 8441.048029304498,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 332.2113994861988
+          },
+          "uxbqz91wwx": {
+            "flow": 0.0005182865117220742,
+            "pressure": 11172.251970387591,
+            "inletPressure": 11172.251970387591,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 316.2058785769884
+          }
+        },
+        "potentials": {
+          "oqd5dpjnr7:inlet": 8441.048029304498,
+          "57agm43c8lj:inlet": 26614.479430788244,
+          "i9l090tk5us:inlet": 11172.251970387591,
+          "9flig9lkb9f:inlet": 18679.726235320715
+        },
+        "residual": 2.0570545267162286e-14,
+        "pressureResidual": 3.877175913657993e-9,
+        "iterations": 2,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "oqd5dpjnr7",
+            "from": "oqd5dpjnr7:inlet",
+            "to": "57agm43c8lj:inlet",
+            "flow": 0.0008458365051138072,
+            "loss": 0.07154393933831926,
+            "gain": 18258.015051995135
+          },
+          {
+            "id": "57agm43c8lj",
+            "from": "57agm43c8lj:inlet",
+            "to": "9flig9lkb9f:inlet",
+            "flow": 0.0008458365051026251,
+            "loss": 6.711503911706141,
+            "gain": 0
+          },
+          {
+            "id": "9flig9lkb9f",
+            "from": "9flig9lkb9f:inlet",
+            "to": "i9l090tk5us:inlet",
+            "flow": 0.0008458365050820545,
+            "loss": 6.350095794244499,
+            "gain": 0
+          },
+          {
+            "id": "i9l090tk5us",
+            "from": "i9l090tk5us:inlet",
+            "to": "oqd5dpjnr7:inlet",
+            "flow": 0.0003275499933599803,
+            "loss": 0.8946058327665192,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "vlniy8nq4s9": "oqd5dpjnr7:inlet",
+          "uxbqz91wwx": "i9l090tk5us:inlet"
+        },
+        "terminalNodes": {
+          "oqd5dpjnr7:inlet": "oqd5dpjnr7:inlet",
+          "oqd5dpjnr7:outlet": "57agm43c8lj:inlet",
+          "vlniy8nq4s9:fluid": "oqd5dpjnr7:inlet",
+          "uxbqz91wwx:fluid": "i9l090tk5us:inlet",
+          "57agm43c8lj:inlet": "57agm43c8lj:inlet",
+          "57agm43c8lj:outlet": "9flig9lkb9f:inlet",
+          "9flig9lkb9f:inlet": "9flig9lkb9f:inlet",
+          "9flig9lkb9f:outlet": "i9l090tk5us:inlet",
+          "i9l090tk5us:inlet": "i9l090tk5us:inlet",
+          "i9l090tk5us:outlet": "oqd5dpjnr7:inlet"
+        }
+      },
+      "tanks": {
+        "vlniy8nq4s9": {
+          "volume": 0.08607257577293956,
+          "mass": 86.07257577293956,
+          "temperature": 332.2111568281158
+        },
+        "uxbqz91wwx": {
+          "volume": 0.11392742422392049,
+          "mass": 113.9274242239205,
+          "temperature": 316.2063724239168
+        }
+      },
+      "motors": {
+        "xtbntkg4i7": {
+          "omega": 230.52112331237947,
+          "current": 4.631921118656361,
+          "torque": 0.37055368949250894,
+          "load": 0.2554656322754682,
+          "shaftPower": 58.89023982422584,
+          "copperPower": 25.745631899345756,
+          "duty": 1,
+          "acceleration": -0.02875573204619286
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -3.1399451927427435e-9,
+      "energyResidualJ": -0.03099741344297513,
+      "energyJ": 36814.435822973406,
+      "error": null
+    }
+  },
+  {
+    "name": "H05-industrial",
+    "data": {
+      "time": 10.000000000000076,
+      "running": false,
+      "project": "Industrial pumping station · 180 V",
+      "readings": {
+        "b4yrof8o91k": {
+          "voltage": 180,
+          "current": -9.693635120740701,
+          "currentNC": 0,
+          "contactCurrent": -9.693635120740701,
+          "power": -1744.8547826090974,
+          "voltageValid": true
+        },
+        "ccpdmkyxkdh": {
+          "voltage": 180,
+          "current": 9.6936351207407,
+          "currentNC": 0,
+          "contactCurrent": 9.6936351207407,
+          "power": 1744.8547826090974,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "ccpdmkyxkdh": 21.6980210536433,
+        "qr024urwv2n": 20.000000000001137,
+        "3f1l976qmov": 20.035657637854957
+      },
+      "hydraulics": {
+        "readings": {
+          "wojt1r9ki2c": {
+            "flow": 0.005134233083750866,
+            "pressure": 180156.3139028274,
+            "inletPressure": 19182.524728247663,
+            "differentialPressure": -160973.7891745797,
+            "velocity": 10.45937375059066,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 829.1129889326922,
+            "shaftPower": 1312.4413136502126,
+            "torque": 4.7829785751446545,
+            "efficiency": 0.7788657939485941,
+            "temperature": 293.17264396927334,
+            "temperatureValid": true
+          },
+          "s95gc29byf": {
+            "flow": 0.005134233083750243,
+            "pressure": 136148.28936040192,
+            "inletPressure": 180156.3139028274,
+            "differentialPressure": 44008.02454242546,
+            "dp": 44008.02454242532,
+            "velocity": 2.6148434376473477,
+            "reynolds": 130742.17188236739,
+            "frictionFactor": 0.02145454149971572,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1831722048098,
+            "temperatureValid": true
+          },
+          "ojkxk2p488": {
+            "flow": 0.005134233083750867,
+            "pressure": 118541.35054350417,
+            "inletPressure": 136148.28936040192,
+            "differentialPressure": 17606.93881689774,
+            "velocity": 2.6148434376476652,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1873843911296,
+            "temperatureValid": true
+          },
+          "qr024urwv2n": {
+            "flow": -0.005134233083750866,
+            "pressure": 19182.524728247663,
+            "inletPressure": 19182.524728247663,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.1500000000011
+          },
+          "3f1l976qmov": {
+            "flow": 0.005134233083750867,
+            "pressure": 861.550543504185,
+            "inletPressure": 861.550543504185,
+            "differentialPressure": 0,
+            "velocity": 0,
+            "reynolds": 0,
+            "frictionFactor": 0,
+            "hydraulicPower": 0,
+            "shaftPower": 0,
+            "torque": 0,
+            "efficiency": 0,
+            "temperature": 293.18565680403646
+          }
+        },
+        "potentials": {
+          "wojt1r9ki2c:inlet": 19182.524728247663,
+          "s95gc29byf:inlet": 180156.3139028274,
+          "3f1l976qmov:fluid": 118541.35054350417,
+          "ojkxk2p488:inlet": 136148.28936040192
+        },
+        "residual": 6.235012506294879e-16,
+        "pressureResidual": 1.382431946694851e-10,
+        "iterations": 3,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [
+          {
+            "id": "wojt1r9ki2c",
+            "from": "wojt1r9ki2c:inlet",
+            "to": "s95gc29byf:inlet",
+            "flow": 0.005134233083750866,
+            "loss": 2.6360349358282065,
+            "gain": 161487.21248295478
+          },
+          {
+            "id": "s95gc29byf",
+            "from": "s95gc29byf:inlet",
+            "to": "ojkxk2p488:inlet",
+            "flow": 0.005134233083750243,
+            "loss": 225.94745555621344,
+            "gain": 0
+          },
+          {
+            "id": "ojkxk2p488",
+            "from": "ojkxk2p488:inlet",
+            "to": "3f1l976qmov:fluid",
+            "flow": 0.005134233083750867,
+            "loss": 90.39812777729371,
+            "gain": 0
+          }
+        ],
+        "tankNodes": {
+          "qr024urwv2n": "wojt1r9ki2c:inlet",
+          "3f1l976qmov": "3f1l976qmov:fluid"
+        },
+        "terminalNodes": {
+          "wojt1r9ki2c:inlet": "wojt1r9ki2c:inlet",
+          "wojt1r9ki2c:outlet": "s95gc29byf:inlet",
+          "qr024urwv2n:fluid": "wojt1r9ki2c:inlet",
+          "3f1l976qmov:fluid": "3f1l976qmov:fluid",
+          "s95gc29byf:inlet": "s95gc29byf:inlet",
+          "s95gc29byf:outlet": "ojkxk2p488:inlet",
+          "ojkxk2p488:inlet": "ojkxk2p488:inlet",
+          "ojkxk2p488:outlet": "3f1l976qmov:fluid"
+        }
+      },
+      "tanks": {
+        "qr024urwv2n": {
+          "volume": 1.956051754486568,
+          "mass": 1956.0517544865681,
+          "temperature": 293.1500000000011
+        },
+        "3f1l976qmov": {
+          "volume": 0.043948245513406405,
+          "mass": 43.948245513406405,
+          "temperature": 293.18565763785494
+        }
+      },
+      "motors": {
+        "ccpdmkyxkdh": {
+          "omega": 274.39832112025994,
+          "current": 9.693640258759615,
+          "torque": 5.331502142317788,
+          "load": 4.7829785751446545,
+          "shaftPower": 1312.4413136502126,
+          "copperPower": 281.8999843987355,
+          "duty": 1,
+          "acceleration": -0.0022757045826438116
+        }
+      },
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": -2.546585164964199e-11,
+      "energyResidualJ": -0.013233160526397114,
+      "energyJ": 25801.457374717254,
+      "error": null
+    }
+  },
+  {
+    "name": "C001",
+    "data": "001\nFirst Light\n3 stars · 93/100"
+  },
+  {
+    "name": "C002-edit-locks",
+    "data": [
+      {
+        "label": "Elevation",
+        "disabled": true,
+        "value": "0"
+      },
+      {
+        "label": "Tank surface area",
+        "disabled": true,
+        "value": "0.1"
+      },
+      {
+        "label": "Water density",
+        "disabled": true,
+        "value": "1000"
+      },
+      {
+        "label": "Pressure rating",
+        "disabled": true,
+        "value": "1000000"
+      },
+      {
+        "label": "Water volume",
+        "disabled": true,
+        "value": "10"
+      },
+      {
+        "label": "Tank capacity",
+        "disabled": true,
+        "value": "20"
+      },
+      {
+        "label": "Initial temperature",
+        "disabled": true,
+        "value": "20"
+      },
+      {
+        "label": "Ambient loss (UA)",
+        "disabled": true,
+        "value": "2.2"
+      },
+      {
+        "label": "Ambient temperature",
+        "disabled": true,
+        "value": "20"
+      }
+    ]
+  },
+  {
+    "name": "C002",
+    "data": {
+      "strip": "002\nHeating Challenge\n3 stars · 90/100",
+      "state": {
+        "time": 1323.449999999125,
+        "running": false,
+        "project": "Water heating experiment",
+        "readings": {
+          "tm26kg4vny9": {
+            "voltage": 240,
+            "current": -8.33044081916153,
+            "currentNC": 0,
+            "contactCurrent": -8.33044081916153,
+            "power": -1999.305796598767,
+            "voltageValid": true
+          },
+          "ywvp9c0z4q": {
+            "voltage": 0.08330440819162277,
+            "current": 8.330440819162277,
+            "currentNC": 0,
+            "contactCurrent": 8.330440819162277,
+            "power": 0.6939624424156506,
+            "voltageValid": true
+          },
+          "rj4z7gm3ix": {
+            "voltage": 239.91669559180838,
+            "current": 8.330440819160012,
+            "currentNC": 0,
+            "contactCurrent": 8.330440819160012,
+            "power": 1998.6118341559875,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "ywvp9c0z4q": 20.69396244241192,
+          "rj4z7gm3ix": 90.83481136689811,
+          "019vwyt27tzm": 80.00047771438173
+        },
+        "hydraulics": {
+          "readings": {},
+          "potentials": {},
+          "residual": 0,
+          "pressureResidual": 0,
+          "iterations": 0,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [],
+          "tankNodes": {},
+          "terminalNodes": {}
+        },
+        "tanks": {
+          "019vwyt27tzm": {
+            "volume": 0.01,
+            "mass": 10,
+            "temperature": 353.15047771438174
+          }
+        },
+        "motors": {},
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": 0,
+        "energyResidualJ": 0.000009254668839275837,
+        "energyJ": 2645981.2565049394,
+        "error": null
+      }
+    }
+  },
+  {
+    "name": "challenge003-BLOCKED",
+    "data": "locator.innerText: Error: Node is not an HTMLElement\nCall log:\n\u001b[2m  - waiting for locator('.tank-number')\u001b[22m\n"
+  }
+]

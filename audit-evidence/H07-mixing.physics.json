@@ -1,0 +1,98 @@
+{
+  "version": 3,
+  "probes": [],
+  "assemblies": [],
+  "id": "923c4460-0301-4bf6-b2e6-a8555ca0068d",
+  "name": "Two tank hot cold gravity mixing",
+  "components": [
+    {
+      "id": "61ee270f-d798-4a39-831f-7102458ad2ba",
+      "kind": "tank",
+      "name": "TK-01",
+      "x": 50,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 1,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 10,
+        "capacity": 20,
+        "initialTemperature": 60,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "b8a64f0f-d56d-480d-bb11-9520a70637fe",
+      "kind": "tank",
+      "name": "TK-02",
+      "x": 650,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 10,
+        "capacity": 20,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "e9496c15-9a94-4ae2-b842-395e4ecb67d9",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 350,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 5,
+        "diameter": 0.025,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "885e079a-4438-4e03-946a-9b8268dab120",
+      "domain": "hydraulic",
+      "from": {
+        "component": "61ee270f-d798-4a39-831f-7102458ad2ba",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "e9496c15-9a94-4ae2-b842-395e4ecb67d9",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "d76ad42c-f3c3-4663-87ef-0dc69099bfad",
+      "domain": "hydraulic",
+      "from": {
+        "component": "e9496c15-9a94-4ae2-b842-395e4ecb67d9",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "b8a64f0f-d56d-480d-bb11-9520a70637fe",
+        "port": "fluid"
+      }
+    }
+  ]
+}

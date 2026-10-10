@@ -1,0 +1,299 @@
+{
+  "version": 3,
+  "id": "gsihqgqunli",
+  "name": "Industrial pumping station · 180 V",
+  "components": [
+    {
+      "id": "b4yrof8o91k",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 40,
+      "y": 70,
+      "rotation": 0,
+      "variant": "motorSupply",
+      "props": {
+        "voltage": 180,
+        "maxCurrent": 80,
+        "ratedVoltage": 240
+      }
+    },
+    {
+      "id": "ccpdmkyxkdh",
+      "kind": "motor",
+      "name": "M-01",
+      "x": 300,
+      "y": 70,
+      "rotation": 0,
+      "variant": "industrial180",
+      "props": {
+        "resistance": 3,
+        "torqueConstant": 0.55,
+        "emfConstant": 0.55,
+        "inertia": 0.12,
+        "friction": 0.002,
+        "loadTorque": 0,
+        "ratedVoltage": 180,
+        "ratedCurrent": 60,
+        "ratedTorque": 33,
+        "ratedPower": 11000,
+        "maxSpeed": 400,
+        "heatCapacity": 6000,
+        "loss": 15,
+        "maxTemperature": 150,
+        "enabled": true,
+        "speedControl": false,
+        "speedCommand": 2500
+      }
+    },
+    {
+      "id": "wojt1r9ki2c",
+      "kind": "pump",
+      "name": "P-01",
+      "x": 300,
+      "y": 330,
+      "rotation": 0,
+      "variant": "industrial",
+      "props": {
+        "ratedSpeed": 300,
+        "ratedFlow": 0.006,
+        "shutoffHead": 35,
+        "efficiency": 0.78,
+        "mechanicalDrag": 0.000012,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "qr024urwv2n",
+      "kind": "tank",
+      "name": "Source reservoir",
+      "x": 30,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 2000,
+        "capacity": 2000,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "3f1l976qmov",
+      "kind": "tank",
+      "name": "Destination tank",
+      "x": 1010,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 12,
+        "surfaceArea": 0.5,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 1000,
+        "initialTemperature": 20,
+        "loss": 2.2,
+        "ambient": 20
+      }
+    },
+    {
+      "id": "s95gc29byf",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 550,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 30,
+        "diameter": 0.05,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "ojkxk2p488",
+      "kind": "valve",
+      "name": "Delivery valve",
+      "x": 780,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.05,
+        "lossCoefficient": 5,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "cce76xs48a6",
+      "domain": "electrical",
+      "from": {
+        "component": "b4yrof8o91k",
+        "port": "a"
+      },
+      "to": {
+        "component": "ccpdmkyxkdh",
+        "port": "a"
+      }
+    },
+    {
+      "id": "nihdxu9yfi",
+      "domain": "electrical",
+      "from": {
+        "component": "ccpdmkyxkdh",
+        "port": "b"
+      },
+      "to": {
+        "component": "b4yrof8o91k",
+        "port": "b"
+      }
+    },
+    {
+      "id": "crc215myy7",
+      "domain": "mechanical",
+      "from": {
+        "component": "ccpdmkyxkdh",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "wojt1r9ki2c",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "e6rrmuz2jin",
+      "domain": "hydraulic",
+      "from": {
+        "component": "qr024urwv2n",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "wojt1r9ki2c",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "plcg3ub7i5d",
+      "domain": "hydraulic",
+      "from": {
+        "component": "wojt1r9ki2c",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "s95gc29byf",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "g9ykg52em4",
+      "domain": "hydraulic",
+      "from": {
+        "component": "s95gc29byf",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "ojkxk2p488",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "zum81vowkm9",
+      "domain": "hydraulic",
+      "from": {
+        "component": "ojkxk2p488",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "3f1l976qmov",
+        "port": "fluid"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "u4k7ww9p5fo",
+      "name": "Destination level",
+      "component": "3f1l976qmov",
+      "measurement": "level",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "kgcsukuzoj",
+      "name": "Delivery flow",
+      "component": "s95gc29byf",
+      "measurement": "flow",
+      "color": "#3ba6d8",
+      "visible": true
+    },
+    {
+      "id": "ubj23l2w1g",
+      "name": "Motor current",
+      "component": "ccpdmkyxkdh",
+      "measurement": "current",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "q1w9g96ayni",
+      "name": "Delivery pressure",
+      "component": "s95gc29byf",
+      "measurement": "pressure",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "iv6p6szzr1i",
+      "name": "Destination water",
+      "component": "3f1l976qmov",
+      "measurement": "fluidTemperature",
+      "color": "#ef9975",
+      "visible": true
+    },
+    {
+      "id": "al3w99804r",
+      "name": "Motor RPM",
+      "component": "ccpdmkyxkdh",
+      "measurement": "rpm",
+      "color": "#c5aaec",
+      "visible": true
+    },
+    {
+      "id": "a26gtpq7rod",
+      "name": "Shaft power",
+      "component": "ccpdmkyxkdh",
+      "measurement": "shaftPower",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "w8ah772ihib",
+      "name": "Hydraulic power",
+      "component": "wojt1r9ki2c",
+      "measurement": "hydraulicPower",
+      "color": "#59b99b",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

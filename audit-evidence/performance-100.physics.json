@@ -1,0 +1,3994 @@
+{
+  "version": 3,
+  "probes": [
+    {
+      "id": "pr",
+      "name": "R01 current",
+      "component": "0f8930dc-c429-4a69-a55b-d40df246923c",
+      "measurement": "current",
+      "visible": true,
+      "color": "#ef9975"
+    }
+  ],
+  "assemblies": [],
+  "id": "4f5814fb-f4f6-4286-98f3-bfc11069a5ff",
+  "name": "100 component parallel network",
+  "components": [
+    {
+      "id": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 30,
+      "y": 30,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 1,
+        "maxCurrent": 20,
+        "ratedVoltage": 240
+      }
+    },
+    {
+      "id": "0f8930dc-c429-4a69-a55b-d40df246923c",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 250,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "f4fb6c2f-31f6-44f6-b96d-903ad137d3fc",
+      "kind": "resistor",
+      "name": "R-02",
+      "x": 470,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "162290dd-7699-4f4f-ade7-773c819623f7",
+      "kind": "resistor",
+      "name": "R-03",
+      "x": 690,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "2e2e6686-977d-4318-a47a-67ef16d5f3a3",
+      "kind": "resistor",
+      "name": "R-04",
+      "x": 910,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a235b7e1-8ad4-4b32-9dbf-d790199eeb97",
+      "kind": "resistor",
+      "name": "R-05",
+      "x": 1130,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "477d65de-b7a6-461f-a782-7d1d990f6131",
+      "kind": "resistor",
+      "name": "R-06",
+      "x": 1350,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "f9971164-3312-486b-9e0c-30f1375ebcaa",
+      "kind": "resistor",
+      "name": "R-07",
+      "x": 1570,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "bfc6f207-65d2-4d82-ac0b-d41422f60f5c",
+      "kind": "resistor",
+      "name": "R-08",
+      "x": 1790,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "55d5a486-32c1-47af-beef-96074935e53e",
+      "kind": "resistor",
+      "name": "R-09",
+      "x": 2010,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "bc12f1f9-2ecd-439a-b269-ad8bba3a1fe1",
+      "kind": "resistor",
+      "name": "R-10",
+      "x": 250,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "96497eb2-2480-4a69-b8a3-4f1eb69d8693",
+      "kind": "resistor",
+      "name": "R-11",
+      "x": 470,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "4adeb336-1196-4393-9d5d-7f2b94a0028e",
+      "kind": "resistor",
+      "name": "R-12",
+      "x": 690,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "11b5d104-19d8-4416-994f-55d4cc2196be",
+      "kind": "resistor",
+      "name": "R-13",
+      "x": 910,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "74ce448a-2bf9-459d-8968-84ea9da07ceb",
+      "kind": "resistor",
+      "name": "R-14",
+      "x": 1130,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "c48aa1e1-406b-4a08-87fe-9e019bba4d86",
+      "kind": "resistor",
+      "name": "R-15",
+      "x": 1350,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "e8c79f66-a8ac-46ad-aad9-d7d2808a7a8c",
+      "kind": "resistor",
+      "name": "R-16",
+      "x": 1570,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8062c1a2-673d-443e-b654-432d63c0fb5d",
+      "kind": "resistor",
+      "name": "R-17",
+      "x": 1790,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "7e9e61af-5647-435b-9bb8-5f320ba691db",
+      "kind": "resistor",
+      "name": "R-18",
+      "x": 2010,
+      "y": 270,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "484dbadf-ad1f-4a3d-8c07-cf895d445eca",
+      "kind": "resistor",
+      "name": "R-19",
+      "x": 250,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "44961011-b8c7-4bbb-aa05-4adfaaa14290",
+      "kind": "resistor",
+      "name": "R-20",
+      "x": 470,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "36668c95-ea53-4cd2-b125-0aca179d96cc",
+      "kind": "resistor",
+      "name": "R-21",
+      "x": 690,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "5aab2ca8-2364-4131-bc82-27ab2579b408",
+      "kind": "resistor",
+      "name": "R-22",
+      "x": 910,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "f3075b43-1532-4d25-8eba-8b3e9cbaa06f",
+      "kind": "resistor",
+      "name": "R-23",
+      "x": 1130,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "f1bf5c7e-0a24-4dc7-a09e-5b96a4e2e1ab",
+      "kind": "resistor",
+      "name": "R-24",
+      "x": 1350,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "e21fbe86-0953-41c7-97df-afcd44158db8",
+      "kind": "resistor",
+      "name": "R-25",
+      "x": 1570,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "bde239ad-f924-4edd-a706-ee090c77a991",
+      "kind": "resistor",
+      "name": "R-26",
+      "x": 1790,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "ac5eb47a-e264-4c6b-971d-3ac9bd24310a",
+      "kind": "resistor",
+      "name": "R-27",
+      "x": 2010,
+      "y": 460,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "10ca9e04-a8c6-4f70-a41d-47ac1cd4eb57",
+      "kind": "resistor",
+      "name": "R-28",
+      "x": 250,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a17f8513-1136-44ce-b338-3f99418fdb91",
+      "kind": "resistor",
+      "name": "R-29",
+      "x": 470,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "21bcbbeb-7a06-4cc9-b462-2438b4c14642",
+      "kind": "resistor",
+      "name": "R-30",
+      "x": 690,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "83e9aacc-8515-42ae-a0fe-70fbfbab1b09",
+      "kind": "resistor",
+      "name": "R-31",
+      "x": 910,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "64278ffd-9a42-49af-95c7-c6d4022e4483",
+      "kind": "resistor",
+      "name": "R-32",
+      "x": 1130,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "d832433c-0618-4a43-87c3-00c371845c78",
+      "kind": "resistor",
+      "name": "R-33",
+      "x": 1350,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "c46c15ce-04d4-452b-bb9c-bfac157c2590",
+      "kind": "resistor",
+      "name": "R-34",
+      "x": 1570,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "c349706b-cb92-4baf-af45-ea723348e73c",
+      "kind": "resistor",
+      "name": "R-35",
+      "x": 1790,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "2f98e7c0-a3c9-4d75-a853-2b8a9ecfd8fe",
+      "kind": "resistor",
+      "name": "R-36",
+      "x": 2010,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8a5387c6-652c-49d8-bcbb-8779d290e0f6",
+      "kind": "resistor",
+      "name": "R-37",
+      "x": 250,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "3c08afd5-a9ba-4729-9a44-b5c655e477f3",
+      "kind": "resistor",
+      "name": "R-38",
+      "x": 470,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "fc9b0184-6f6b-4521-8f11-ef8753d79b28",
+      "kind": "resistor",
+      "name": "R-39",
+      "x": 690,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "7342385d-cdf8-4b18-a7e7-0aa36caccabf",
+      "kind": "resistor",
+      "name": "R-40",
+      "x": 910,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "945c99e0-a5df-4810-91d1-f58b1628a392",
+      "kind": "resistor",
+      "name": "R-41",
+      "x": 1130,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a0c2bc81-c6ce-4b64-8c11-da91f1483fab",
+      "kind": "resistor",
+      "name": "R-42",
+      "x": 1350,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "e1a44690-3b2f-4513-bbec-a3479f3abba9",
+      "kind": "resistor",
+      "name": "R-43",
+      "x": 1570,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "bb331eb2-3ad1-4838-b194-333d760c4735",
+      "kind": "resistor",
+      "name": "R-44",
+      "x": 1790,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "d12215cd-c91c-42a8-b8bc-4d6bb807252d",
+      "kind": "resistor",
+      "name": "R-45",
+      "x": 2010,
+      "y": 840,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "c9efe3d4-9c1c-49d5-a9db-bfcd2ea41d24",
+      "kind": "resistor",
+      "name": "R-46",
+      "x": 250,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "f1f7f355-c92e-490c-a7a8-756ef8349183",
+      "kind": "resistor",
+      "name": "R-47",
+      "x": 470,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "2798d6ca-b41a-4d58-96ea-c60b4eb32cec",
+      "kind": "resistor",
+      "name": "R-48",
+      "x": 690,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "d087eed4-32fb-4b38-b313-5b771cf69ed6",
+      "kind": "resistor",
+      "name": "R-49",
+      "x": 910,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "75e70ed5-4292-4d89-81a8-45e7de43cea2",
+      "kind": "resistor",
+      "name": "R-50",
+      "x": 1130,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "d06d0323-c7d5-4db1-a4ac-01581bc93f07",
+      "kind": "resistor",
+      "name": "R-51",
+      "x": 1350,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "beb06764-c1d2-4fba-a0cd-f380839d907b",
+      "kind": "resistor",
+      "name": "R-52",
+      "x": 1570,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "4ae7e741-9da0-4cec-90d6-38ee307c455f",
+      "kind": "resistor",
+      "name": "R-53",
+      "x": 1790,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "36d6db5d-5036-4741-bcfc-b2bfcac06e11",
+      "kind": "resistor",
+      "name": "R-54",
+      "x": 2010,
+      "y": 1030,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8c2f8d45-a29e-48ab-87b8-d53a65198610",
+      "kind": "resistor",
+      "name": "R-55",
+      "x": 250,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "e905d2d9-d950-4352-9446-2537c711e6bc",
+      "kind": "resistor",
+      "name": "R-56",
+      "x": 470,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8e319351-9740-49f5-8bec-3686606a3364",
+      "kind": "resistor",
+      "name": "R-57",
+      "x": 690,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "af98eb78-3974-41a9-bd6e-e51cb208ee76",
+      "kind": "resistor",
+      "name": "R-58",
+      "x": 910,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "75ba6ed4-646b-488f-a777-f1c35ada8758",
+      "kind": "resistor",
+      "name": "R-59",
+      "x": 1130,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8ac898e0-f3ea-4f18-be16-fdf4d186eb18",
+      "kind": "resistor",
+      "name": "R-60",
+      "x": 1350,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8ed0e382-7f8d-4b2f-adb3-7c051b0d21c4",
+      "kind": "resistor",
+      "name": "R-61",
+      "x": 1570,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "acd4e915-c819-4767-be8b-3dde22a6edfe",
+      "kind": "resistor",
+      "name": "R-62",
+      "x": 1790,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "8213dd6d-62a5-4a92-82a6-794718c54554",
+      "kind": "resistor",
+      "name": "R-63",
+      "x": 2010,
+      "y": 1220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a5f246fd-eaf9-4d7c-b110-380431683890",
+      "kind": "resistor",
+      "name": "R-64",
+      "x": 250,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "cf6c7c57-4805-4523-b218-d24a1a7bc909",
+      "kind": "resistor",
+      "name": "R-65",
+      "x": 470,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "2a29e920-73f1-4f02-bace-ca47dc694286",
+      "kind": "resistor",
+      "name": "R-66",
+      "x": 690,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "7cd50c9e-9d46-4311-b2bd-4d9e77fd5376",
+      "kind": "resistor",
+      "name": "R-67",
+      "x": 910,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "51d0d502-2586-4962-84ab-ed37723dd875",
+      "kind": "resistor",
+      "name": "R-68",
+      "x": 1130,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "0699a2b6-1203-424a-be38-2eead7fa8aa9",
+      "kind": "resistor",
+      "name": "R-69",
+      "x": 1350,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "c071b1a3-7efc-4575-ac32-ab0417b7e4ab",
+      "kind": "resistor",
+      "name": "R-70",
+      "x": 1570,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "b289e6af-646c-40fe-a489-77a18adaa81e",
+      "kind": "resistor",
+      "name": "R-71",
+      "x": 1790,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "1e5bddd5-ed8f-4b5e-86e2-de2944f45d07",
+      "kind": "resistor",
+      "name": "R-72",
+      "x": 2010,
+      "y": 1410,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "cc0aef4e-0d66-4b0f-bc79-8dba41c075f2",
+      "kind": "resistor",
+      "name": "R-73",
+      "x": 250,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a62ae372-2b3b-4ede-bbf3-7276a067e498",
+      "kind": "resistor",
+      "name": "R-74",
+      "x": 470,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "223abe57-c388-4116-baa4-5d66babf90e1",
+      "kind": "resistor",
+      "name": "R-75",
+      "x": 690,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "33adde1d-dc6b-450b-927b-1bb0353d27a2",
+      "kind": "resistor",
+      "name": "R-76",
+      "x": 910,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a2039978-c561-4f20-8e94-0cb5f1351c76",
+      "kind": "resistor",
+      "name": "R-77",
+      "x": 1130,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "e8b6bf60-258d-4fd0-8eca-cb571d2f5ce2",
+      "kind": "resistor",
+      "name": "R-78",
+      "x": 1350,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "1cf3cad5-2ae5-45c9-99b4-dcc45223bd1d",
+      "kind": "resistor",
+      "name": "R-79",
+      "x": 1570,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a5b84573-b4e9-498d-80a3-41322cf69ec6",
+      "kind": "resistor",
+      "name": "R-80",
+      "x": 1790,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "166356ec-e405-4462-91d6-73a2b4c5f7f5",
+      "kind": "resistor",
+      "name": "R-81",
+      "x": 2010,
+      "y": 1600,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "6d7d9ef9-9faa-47f4-a38d-c300e6e11127",
+      "kind": "resistor",
+      "name": "R-82",
+      "x": 250,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "92dd88e7-5210-4a0a-b097-22ad7a201e98",
+      "kind": "resistor",
+      "name": "R-83",
+      "x": 470,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "a9021334-b470-4945-8dbd-26908abcf70d",
+      "kind": "resistor",
+      "name": "R-84",
+      "x": 690,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "5d4b6775-1658-40bd-ab02-45f4b2ea8f85",
+      "kind": "resistor",
+      "name": "R-85",
+      "x": 910,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "287e1c7d-d28b-462f-b1e4-fb7e0f454dbe",
+      "kind": "resistor",
+      "name": "R-86",
+      "x": 1130,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "2984f71b-14ef-41d3-ad2a-d468c1692a7d",
+      "kind": "resistor",
+      "name": "R-87",
+      "x": 1350,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "257c33a9-77ad-481a-a0ad-ba1a619f017e",
+      "kind": "resistor",
+      "name": "R-88",
+      "x": 1570,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "f960bbce-404e-41e9-bd26-9239debd0c7a",
+      "kind": "resistor",
+      "name": "R-89",
+      "x": 1790,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "5a171612-6e1b-4434-8823-3dc7ba5ce56a",
+      "kind": "resistor",
+      "name": "R-90",
+      "x": 2010,
+      "y": 1790,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "caeda8f3-b617-4935-a9b0-324843fad6dd",
+      "kind": "resistor",
+      "name": "R-91",
+      "x": 250,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "dab2fb1a-f818-46a5-940d-8ec1c354f323",
+      "kind": "resistor",
+      "name": "R-92",
+      "x": 470,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "4a8b642d-6486-4c1e-a77b-2b2fa078e12c",
+      "kind": "resistor",
+      "name": "R-93",
+      "x": 690,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "b82bca07-ad14-4e44-b1b6-d23c8f4b1745",
+      "kind": "resistor",
+      "name": "R-94",
+      "x": 910,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "3b233f55-1215-4e4c-8966-13c788814036",
+      "kind": "resistor",
+      "name": "R-95",
+      "x": 1130,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "1c503fd1-7403-4441-8738-4d8b2c24b93e",
+      "kind": "resistor",
+      "name": "R-96",
+      "x": 1350,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "5336fa0e-8f7f-48aa-afc3-ca8edb69008c",
+      "kind": "resistor",
+      "name": "R-97",
+      "x": 1570,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "e9dee7fa-d010-4046-a06f-677a744e8133",
+      "kind": "resistor",
+      "name": "R-98",
+      "x": 1790,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "0a2d7861-a14e-4f65-b245-13cc6ff135a3",
+      "kind": "resistor",
+      "name": "R-99",
+      "x": 2010,
+      "y": 1980,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "df15223c-a92c-4602-a426-03f6ab07e31d",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "0f8930dc-c429-4a69-a55b-d40df246923c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "e9456043-6497-42df-8bdb-8ca12bba2bdf",
+      "domain": "electrical",
+      "from": {
+        "component": "0f8930dc-c429-4a69-a55b-d40df246923c",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "54be73f1-93fb-4fec-bd76-8307ddad8899",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "f4fb6c2f-31f6-44f6-b96d-903ad137d3fc",
+        "port": "a"
+      }
+    },
+    {
+      "id": "bc14bab4-c348-458b-b1e0-2e7d3e60cfec",
+      "domain": "electrical",
+      "from": {
+        "component": "f4fb6c2f-31f6-44f6-b96d-903ad137d3fc",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "bc5153e2-5172-4ad9-b241-1f53ca01b447",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "162290dd-7699-4f4f-ade7-773c819623f7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "ae96742f-308d-431f-b9df-61604aaec1a8",
+      "domain": "electrical",
+      "from": {
+        "component": "162290dd-7699-4f4f-ade7-773c819623f7",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "2a98fb15-cd4c-4273-a184-1b8cfe6409e5",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "2e2e6686-977d-4318-a47a-67ef16d5f3a3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "075ef47b-1379-430a-a274-5a5e5c23cd28",
+      "domain": "electrical",
+      "from": {
+        "component": "2e2e6686-977d-4318-a47a-67ef16d5f3a3",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "0ff8a871-9aec-4018-935f-e45521588d3b",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a235b7e1-8ad4-4b32-9dbf-d790199eeb97",
+        "port": "a"
+      }
+    },
+    {
+      "id": "d238c083-8026-4492-8144-c554d9328e80",
+      "domain": "electrical",
+      "from": {
+        "component": "a235b7e1-8ad4-4b32-9dbf-d790199eeb97",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "226c2a1f-840b-442a-b72f-bc76d8421536",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "477d65de-b7a6-461f-a782-7d1d990f6131",
+        "port": "a"
+      }
+    },
+    {
+      "id": "5c3d2717-5eb3-46b9-a3c9-c587ad50ef4d",
+      "domain": "electrical",
+      "from": {
+        "component": "477d65de-b7a6-461f-a782-7d1d990f6131",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "c2349f0e-78aa-409b-bbbf-824bb9948972",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "f9971164-3312-486b-9e0c-30f1375ebcaa",
+        "port": "a"
+      }
+    },
+    {
+      "id": "7183ecd7-0ab1-4db1-9804-0b551bdd9293",
+      "domain": "electrical",
+      "from": {
+        "component": "f9971164-3312-486b-9e0c-30f1375ebcaa",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "4283ae2a-34fb-4825-a278-5cb8cc9d4e73",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "bfc6f207-65d2-4d82-ac0b-d41422f60f5c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "62b66e2c-abe3-4a5c-bd91-e6befa92fff8",
+      "domain": "electrical",
+      "from": {
+        "component": "bfc6f207-65d2-4d82-ac0b-d41422f60f5c",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "d07436a7-c03a-476f-8e66-2b4b3149f25e",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "55d5a486-32c1-47af-beef-96074935e53e",
+        "port": "a"
+      }
+    },
+    {
+      "id": "e2670463-15bf-4944-af61-abde5c387abf",
+      "domain": "electrical",
+      "from": {
+        "component": "55d5a486-32c1-47af-beef-96074935e53e",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "69dae66f-18f4-4d45-910e-92b966dd3df2",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "bc12f1f9-2ecd-439a-b269-ad8bba3a1fe1",
+        "port": "a"
+      }
+    },
+    {
+      "id": "307e133d-8ea1-4df0-a0bd-0700ddbaab23",
+      "domain": "electrical",
+      "from": {
+        "component": "bc12f1f9-2ecd-439a-b269-ad8bba3a1fe1",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "b416a104-c282-4092-9591-17625dd3fd7b",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "96497eb2-2480-4a69-b8a3-4f1eb69d8693",
+        "port": "a"
+      }
+    },
+    {
+      "id": "08b1abfb-9dac-4f5d-af26-ffee0a202deb",
+      "domain": "electrical",
+      "from": {
+        "component": "96497eb2-2480-4a69-b8a3-4f1eb69d8693",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "94db035c-48af-4e67-91cf-4fddad561fbf",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "4adeb336-1196-4393-9d5d-7f2b94a0028e",
+        "port": "a"
+      }
+    },
+    {
+      "id": "95105268-7422-4418-9a7b-ef5f7b6c753b",
+      "domain": "electrical",
+      "from": {
+        "component": "4adeb336-1196-4393-9d5d-7f2b94a0028e",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "4ff6c4c1-a059-44ab-bb2c-25d912ea641f",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "11b5d104-19d8-4416-994f-55d4cc2196be",
+        "port": "a"
+      }
+    },
+    {
+      "id": "2b22ae2d-97aa-4520-a5b1-31b554cb29b4",
+      "domain": "electrical",
+      "from": {
+        "component": "11b5d104-19d8-4416-994f-55d4cc2196be",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "4d187ee7-676d-4fda-a026-3ac5ecb9d16b",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "74ce448a-2bf9-459d-8968-84ea9da07ceb",
+        "port": "a"
+      }
+    },
+    {
+      "id": "8844f416-b703-4245-8207-61b7345c6f3e",
+      "domain": "electrical",
+      "from": {
+        "component": "74ce448a-2bf9-459d-8968-84ea9da07ceb",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "274b473a-d818-48bd-937a-d179d32786e7",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "c48aa1e1-406b-4a08-87fe-9e019bba4d86",
+        "port": "a"
+      }
+    },
+    {
+      "id": "694caacf-87c1-41c2-9b00-effc109cf980",
+      "domain": "electrical",
+      "from": {
+        "component": "c48aa1e1-406b-4a08-87fe-9e019bba4d86",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "d0bc141d-8f74-41ce-9041-1bbbaaee675d",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "e8c79f66-a8ac-46ad-aad9-d7d2808a7a8c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "d26d3478-5e00-493f-9fa8-1d578b219219",
+      "domain": "electrical",
+      "from": {
+        "component": "e8c79f66-a8ac-46ad-aad9-d7d2808a7a8c",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "08a12747-09af-4c0c-8510-c5588371b97a",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8062c1a2-673d-443e-b654-432d63c0fb5d",
+        "port": "a"
+      }
+    },
+    {
+      "id": "6b8e5584-fdc3-47b7-917b-1bc280b32fa3",
+      "domain": "electrical",
+      "from": {
+        "component": "8062c1a2-673d-443e-b654-432d63c0fb5d",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "4717a1bd-8831-4a4c-8d8d-c09ea9e6f74b",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "7e9e61af-5647-435b-9bb8-5f320ba691db",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9f2e1372-5a6c-4468-b507-3fc3583581c4",
+      "domain": "electrical",
+      "from": {
+        "component": "7e9e61af-5647-435b-9bb8-5f320ba691db",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "2228ccc9-a776-42d8-8b95-c265ec072732",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "484dbadf-ad1f-4a3d-8c07-cf895d445eca",
+        "port": "a"
+      }
+    },
+    {
+      "id": "d0e2b8b0-ed77-44ba-9408-4d31b400ddf0",
+      "domain": "electrical",
+      "from": {
+        "component": "484dbadf-ad1f-4a3d-8c07-cf895d445eca",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "7c121acb-e8f7-49e1-8961-36be5c9f1e15",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "44961011-b8c7-4bbb-aa05-4adfaaa14290",
+        "port": "a"
+      }
+    },
+    {
+      "id": "89160308-0e55-4f30-bccc-23830d72ca75",
+      "domain": "electrical",
+      "from": {
+        "component": "44961011-b8c7-4bbb-aa05-4adfaaa14290",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "2f127526-a7d9-49f5-95d6-773a62f9f8c9",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "36668c95-ea53-4cd2-b125-0aca179d96cc",
+        "port": "a"
+      }
+    },
+    {
+      "id": "3f2b429a-3076-4712-abc0-54202370f5c8",
+      "domain": "electrical",
+      "from": {
+        "component": "36668c95-ea53-4cd2-b125-0aca179d96cc",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "3f37dcea-1d74-433b-a8ef-2e7655d80393",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "5aab2ca8-2364-4131-bc82-27ab2579b408",
+        "port": "a"
+      }
+    },
+    {
+      "id": "69fe0bc2-8b60-47e6-bf74-882f8b0c85e1",
+      "domain": "electrical",
+      "from": {
+        "component": "5aab2ca8-2364-4131-bc82-27ab2579b408",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "d78e9396-b2e0-4e0e-9761-e5ae48b5e68d",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "f3075b43-1532-4d25-8eba-8b3e9cbaa06f",
+        "port": "a"
+      }
+    },
+    {
+      "id": "66501b0a-ca6e-4429-a82f-a5ba98906f75",
+      "domain": "electrical",
+      "from": {
+        "component": "f3075b43-1532-4d25-8eba-8b3e9cbaa06f",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "42133995-4ce2-4c66-bf28-2b09f960925f",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "f1bf5c7e-0a24-4dc7-a09e-5b96a4e2e1ab",
+        "port": "a"
+      }
+    },
+    {
+      "id": "f2373ad1-5e37-4d9d-a4e5-80f7abc7534a",
+      "domain": "electrical",
+      "from": {
+        "component": "f1bf5c7e-0a24-4dc7-a09e-5b96a4e2e1ab",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "df7c5aa0-1ab4-4c43-9cee-92c8301cf9cf",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "e21fbe86-0953-41c7-97df-afcd44158db8",
+        "port": "a"
+      }
+    },
+    {
+      "id": "75843802-1f01-44ee-b46e-a15d1976d5ad",
+      "domain": "electrical",
+      "from": {
+        "component": "e21fbe86-0953-41c7-97df-afcd44158db8",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "cbf09054-a7af-48f5-86c6-e499bf81c65b",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "bde239ad-f924-4edd-a706-ee090c77a991",
+        "port": "a"
+      }
+    },
+    {
+      "id": "d326f533-9765-43a7-9c9b-9735a89a126e",
+      "domain": "electrical",
+      "from": {
+        "component": "bde239ad-f924-4edd-a706-ee090c77a991",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "9d7aba49-7c0f-45a9-833f-e3972bf5a98a",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "ac5eb47a-e264-4c6b-971d-3ac9bd24310a",
+        "port": "a"
+      }
+    },
+    {
+      "id": "1a5dd308-b958-4e92-b218-fc5cad5907d7",
+      "domain": "electrical",
+      "from": {
+        "component": "ac5eb47a-e264-4c6b-971d-3ac9bd24310a",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "f1c71950-f82c-425f-8e41-9e137a3f8625",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "10ca9e04-a8c6-4f70-a41d-47ac1cd4eb57",
+        "port": "a"
+      }
+    },
+    {
+      "id": "337b38ab-4725-4d7b-94a3-9687575a9cfa",
+      "domain": "electrical",
+      "from": {
+        "component": "10ca9e04-a8c6-4f70-a41d-47ac1cd4eb57",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "00ce770f-a4f6-4a7a-82f2-1515bb2fc446",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a17f8513-1136-44ce-b338-3f99418fdb91",
+        "port": "a"
+      }
+    },
+    {
+      "id": "3d1b203c-1e2f-4e03-8766-80a2cff85ead",
+      "domain": "electrical",
+      "from": {
+        "component": "a17f8513-1136-44ce-b338-3f99418fdb91",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "355d0fe4-ae5e-4d3b-9eb7-e73750be566b",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "21bcbbeb-7a06-4cc9-b462-2438b4c14642",
+        "port": "a"
+      }
+    },
+    {
+      "id": "de5fc635-6d7a-46d8-bf84-209127933e5f",
+      "domain": "electrical",
+      "from": {
+        "component": "21bcbbeb-7a06-4cc9-b462-2438b4c14642",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "be3c9cc8-4832-4ebd-8219-44ce0c16fee9",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "83e9aacc-8515-42ae-a0fe-70fbfbab1b09",
+        "port": "a"
+      }
+    },
+    {
+      "id": "126af4b9-e7fa-4e23-9233-9c924a58c844",
+      "domain": "electrical",
+      "from": {
+        "component": "83e9aacc-8515-42ae-a0fe-70fbfbab1b09",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "7e9bd2cc-665a-474f-b675-b73294561ff4",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "64278ffd-9a42-49af-95c7-c6d4022e4483",
+        "port": "a"
+      }
+    },
+    {
+      "id": "84fc2071-7863-40c4-98c0-0b8f79ea08ed",
+      "domain": "electrical",
+      "from": {
+        "component": "64278ffd-9a42-49af-95c7-c6d4022e4483",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "169ee439-632b-4ab7-92d1-68a71420a1d3",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "d832433c-0618-4a43-87c3-00c371845c78",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9efe2487-cc88-453b-9be9-03d99f973896",
+      "domain": "electrical",
+      "from": {
+        "component": "d832433c-0618-4a43-87c3-00c371845c78",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "5880aeb4-cd34-467f-bc8b-c72318a4b72a",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "c46c15ce-04d4-452b-bb9c-bfac157c2590",
+        "port": "a"
+      }
+    },
+    {
+      "id": "96ac815f-7b24-48ae-935f-af0b88012659",
+      "domain": "electrical",
+      "from": {
+        "component": "c46c15ce-04d4-452b-bb9c-bfac157c2590",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "c9f535ac-141c-4335-a5ac-e234ba44d008",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "c349706b-cb92-4baf-af45-ea723348e73c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "2d61ac2d-65fe-49c0-97c6-135435f2a25e",
+      "domain": "electrical",
+      "from": {
+        "component": "c349706b-cb92-4baf-af45-ea723348e73c",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "f14d41cc-504d-49f5-85e1-76171e4c0d1e",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "2f98e7c0-a3c9-4d75-a853-2b8a9ecfd8fe",
+        "port": "a"
+      }
+    },
+    {
+      "id": "ffce29b2-30f1-4903-85f5-1c50e8eb1806",
+      "domain": "electrical",
+      "from": {
+        "component": "2f98e7c0-a3c9-4d75-a853-2b8a9ecfd8fe",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "f6cf3a9f-4b51-4eb9-8da2-561970fd4a17",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8a5387c6-652c-49d8-bcbb-8779d290e0f6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "826c454c-8367-42e3-9ba0-4633264b8f94",
+      "domain": "electrical",
+      "from": {
+        "component": "8a5387c6-652c-49d8-bcbb-8779d290e0f6",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "fde8530c-6715-49ae-abd6-32a9df5d88d1",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "3c08afd5-a9ba-4729-9a44-b5c655e477f3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "efc7291d-b732-410a-98a7-88e0ac3e6c10",
+      "domain": "electrical",
+      "from": {
+        "component": "3c08afd5-a9ba-4729-9a44-b5c655e477f3",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "098933dc-1f0c-488c-a08d-be742b2a40fc",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "fc9b0184-6f6b-4521-8f11-ef8753d79b28",
+        "port": "a"
+      }
+    },
+    {
+      "id": "3bb78420-45e7-4311-8caa-26d02a568559",
+      "domain": "electrical",
+      "from": {
+        "component": "fc9b0184-6f6b-4521-8f11-ef8753d79b28",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "19ffd03a-f232-4887-84a8-d90c2fc06977",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "7342385d-cdf8-4b18-a7e7-0aa36caccabf",
+        "port": "a"
+      }
+    },
+    {
+      "id": "5f8552e4-1ff2-46a4-87eb-0b343d97beef",
+      "domain": "electrical",
+      "from": {
+        "component": "7342385d-cdf8-4b18-a7e7-0aa36caccabf",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "96bb54ae-d33c-426b-bd0a-5b8adfccfda2",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "945c99e0-a5df-4810-91d1-f58b1628a392",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b76d33e3-0d23-46f5-87f8-7ec03dddefec",
+      "domain": "electrical",
+      "from": {
+        "component": "945c99e0-a5df-4810-91d1-f58b1628a392",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "cc5afe09-2a4e-4879-8ec1-9f56dd0642fb",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a0c2bc81-c6ce-4b64-8c11-da91f1483fab",
+        "port": "a"
+      }
+    },
+    {
+      "id": "1206c142-82d7-4ada-8115-cf8f3c42b624",
+      "domain": "electrical",
+      "from": {
+        "component": "a0c2bc81-c6ce-4b64-8c11-da91f1483fab",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "d843594e-20d5-4697-85bd-7247bfd1b386",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "e1a44690-3b2f-4513-bbec-a3479f3abba9",
+        "port": "a"
+      }
+    },
+    {
+      "id": "20031df1-a929-4e28-ab25-fedb48f51931",
+      "domain": "electrical",
+      "from": {
+        "component": "e1a44690-3b2f-4513-bbec-a3479f3abba9",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "07c9039f-5f6d-4255-a3e5-d2936069c26f",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "bb331eb2-3ad1-4838-b194-333d760c4735",
+        "port": "a"
+      }
+    },
+    {
+      "id": "2c15f8b1-7f29-4d29-90ae-338b533c48f1",
+      "domain": "electrical",
+      "from": {
+        "component": "bb331eb2-3ad1-4838-b194-333d760c4735",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "05968580-8f2e-4a6f-8040-0a01fc64253e",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "d12215cd-c91c-42a8-b8bc-4d6bb807252d",
+        "port": "a"
+      }
+    },
+    {
+      "id": "68fe388d-0d22-4e79-9064-079762015ab1",
+      "domain": "electrical",
+      "from": {
+        "component": "d12215cd-c91c-42a8-b8bc-4d6bb807252d",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "481487d8-8672-4f1e-8e39-f2016474cd75",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "c9efe3d4-9c1c-49d5-a9db-bfcd2ea41d24",
+        "port": "a"
+      }
+    },
+    {
+      "id": "a1cdd09e-6ce6-41dd-9665-3db0fdd6a6a0",
+      "domain": "electrical",
+      "from": {
+        "component": "c9efe3d4-9c1c-49d5-a9db-bfcd2ea41d24",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "9872ea94-2d12-4ab7-ae16-b4d5f49ce333",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "f1f7f355-c92e-490c-a7a8-756ef8349183",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b9a6604a-4639-4119-a830-bb67b476e850",
+      "domain": "electrical",
+      "from": {
+        "component": "f1f7f355-c92e-490c-a7a8-756ef8349183",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "47632f15-eb5b-4321-992f-b84e5c2a2458",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "2798d6ca-b41a-4d58-96ea-c60b4eb32cec",
+        "port": "a"
+      }
+    },
+    {
+      "id": "4fb068de-c12d-452a-aeca-dbb28147f160",
+      "domain": "electrical",
+      "from": {
+        "component": "2798d6ca-b41a-4d58-96ea-c60b4eb32cec",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "502d7b14-5241-428d-8d1b-76bc9ca5988c",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "d087eed4-32fb-4b38-b313-5b771cf69ed6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "78423a37-5127-4698-abfc-2d3eb0c96081",
+      "domain": "electrical",
+      "from": {
+        "component": "d087eed4-32fb-4b38-b313-5b771cf69ed6",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "d631932e-7fef-43fc-8b78-66bd41974337",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "75e70ed5-4292-4d89-81a8-45e7de43cea2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "0e59b19a-4658-4828-82c2-cb63eeea4045",
+      "domain": "electrical",
+      "from": {
+        "component": "75e70ed5-4292-4d89-81a8-45e7de43cea2",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "4ce9b894-5dda-4c18-9d52-6662384e9fef",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "d06d0323-c7d5-4db1-a4ac-01581bc93f07",
+        "port": "a"
+      }
+    },
+    {
+      "id": "bf2a0aa0-1451-488f-943f-e00920f96345",
+      "domain": "electrical",
+      "from": {
+        "component": "d06d0323-c7d5-4db1-a4ac-01581bc93f07",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "6f8296df-693d-4264-a7de-937dc8907d6d",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "beb06764-c1d2-4fba-a0cd-f380839d907b",
+        "port": "a"
+      }
+    },
+    {
+      "id": "c4184531-cb4b-4a6f-8af6-1ac10014479f",
+      "domain": "electrical",
+      "from": {
+        "component": "beb06764-c1d2-4fba-a0cd-f380839d907b",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "9b6d24e5-5502-4d5d-bdb9-128b24be8bef",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "4ae7e741-9da0-4cec-90d6-38ee307c455f",
+        "port": "a"
+      }
+    },
+    {
+      "id": "e3127d0c-660d-46c2-8167-288c99bbedf4",
+      "domain": "electrical",
+      "from": {
+        "component": "4ae7e741-9da0-4cec-90d6-38ee307c455f",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "a46a2269-88a4-4a58-b635-0f61e762dd47",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "36d6db5d-5036-4741-bcfc-b2bfcac06e11",
+        "port": "a"
+      }
+    },
+    {
+      "id": "36a1bf8b-bbd1-4ad2-97ec-8f6946062a58",
+      "domain": "electrical",
+      "from": {
+        "component": "36d6db5d-5036-4741-bcfc-b2bfcac06e11",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "4d6f4d0c-2851-4165-8877-f93c9d411791",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8c2f8d45-a29e-48ab-87b8-d53a65198610",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9f05734d-8b2e-416b-9fab-4f58b856a7e2",
+      "domain": "electrical",
+      "from": {
+        "component": "8c2f8d45-a29e-48ab-87b8-d53a65198610",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "3762e544-add1-4ecb-8362-5b4bf1e13757",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "e905d2d9-d950-4352-9446-2537c711e6bc",
+        "port": "a"
+      }
+    },
+    {
+      "id": "aa517c7f-1c2b-4cf7-9efc-66b40ddf5d8d",
+      "domain": "electrical",
+      "from": {
+        "component": "e905d2d9-d950-4352-9446-2537c711e6bc",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "7770ff06-a59c-4de5-9650-ffe13c3f8fb9",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8e319351-9740-49f5-8bec-3686606a3364",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9d3f6dab-9c4f-4686-a30e-51ff5394bd8d",
+      "domain": "electrical",
+      "from": {
+        "component": "8e319351-9740-49f5-8bec-3686606a3364",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "a83c2db6-a63f-4ed4-a4de-586bc19ad1e4",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "af98eb78-3974-41a9-bd6e-e51cb208ee76",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9e227b3b-6426-484a-a433-8e83eb0e37b8",
+      "domain": "electrical",
+      "from": {
+        "component": "af98eb78-3974-41a9-bd6e-e51cb208ee76",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "6fb09adb-7757-42a9-997f-f36ee2ba5161",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "75ba6ed4-646b-488f-a777-f1c35ada8758",
+        "port": "a"
+      }
+    },
+    {
+      "id": "6ae489c3-803a-4803-8cd2-d3a2613fec15",
+      "domain": "electrical",
+      "from": {
+        "component": "75ba6ed4-646b-488f-a777-f1c35ada8758",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "b4485f84-7a42-481e-8b8f-0bf81cb82603",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8ac898e0-f3ea-4f18-be16-fdf4d186eb18",
+        "port": "a"
+      }
+    },
+    {
+      "id": "8706599d-88d5-4fcd-b327-d7e9997f1389",
+      "domain": "electrical",
+      "from": {
+        "component": "8ac898e0-f3ea-4f18-be16-fdf4d186eb18",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "c74f12f8-a74b-4604-84f9-c69d0c3d4156",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8ed0e382-7f8d-4b2f-adb3-7c051b0d21c4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "6a4d5ef4-a625-495f-af61-f85832c69a4e",
+      "domain": "electrical",
+      "from": {
+        "component": "8ed0e382-7f8d-4b2f-adb3-7c051b0d21c4",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "e363930e-e170-4fdd-ab10-4d951b4e7c59",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "acd4e915-c819-4767-be8b-3dde22a6edfe",
+        "port": "a"
+      }
+    },
+    {
+      "id": "5428ad97-24e4-4092-87f0-f4701f782fe4",
+      "domain": "electrical",
+      "from": {
+        "component": "acd4e915-c819-4767-be8b-3dde22a6edfe",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "f4cf7e7a-0deb-4529-8e89-681e15fa6fc7",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "8213dd6d-62a5-4a92-82a6-794718c54554",
+        "port": "a"
+      }
+    },
+    {
+      "id": "cb0bea60-a3f4-4b3d-9118-f8880f7f03c1",
+      "domain": "electrical",
+      "from": {
+        "component": "8213dd6d-62a5-4a92-82a6-794718c54554",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "1ba9d128-ec81-46ad-a5b2-4da4274d235e",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a5f246fd-eaf9-4d7c-b110-380431683890",
+        "port": "a"
+      }
+    },
+    {
+      "id": "352486ce-5195-4667-8758-c2fca8d92e05",
+      "domain": "electrical",
+      "from": {
+        "component": "a5f246fd-eaf9-4d7c-b110-380431683890",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "6bf03952-b70e-4432-ba3c-75389f2d93f8",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "cf6c7c57-4805-4523-b218-d24a1a7bc909",
+        "port": "a"
+      }
+    },
+    {
+      "id": "2ae2f0a0-42af-434b-a50e-ac046b7207fc",
+      "domain": "electrical",
+      "from": {
+        "component": "cf6c7c57-4805-4523-b218-d24a1a7bc909",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "0453d2e5-b838-4390-a0af-ea12ee3279c2",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "2a29e920-73f1-4f02-bace-ca47dc694286",
+        "port": "a"
+      }
+    },
+    {
+      "id": "dcb7dae3-1386-44c7-b466-6006b35e3fd9",
+      "domain": "electrical",
+      "from": {
+        "component": "2a29e920-73f1-4f02-bace-ca47dc694286",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "1641441f-324d-4d7d-bcb5-d8e7a00ab1b0",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "7cd50c9e-9d46-4311-b2bd-4d9e77fd5376",
+        "port": "a"
+      }
+    },
+    {
+      "id": "561e4268-73a4-4711-b72a-f70587bed7af",
+      "domain": "electrical",
+      "from": {
+        "component": "7cd50c9e-9d46-4311-b2bd-4d9e77fd5376",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "0db44995-7ebe-4d34-a9ea-ee339da2c3ab",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "51d0d502-2586-4962-84ab-ed37723dd875",
+        "port": "a"
+      }
+    },
+    {
+      "id": "09cb7f43-8aea-4a74-866a-4da6deb73b28",
+      "domain": "electrical",
+      "from": {
+        "component": "51d0d502-2586-4962-84ab-ed37723dd875",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "0f244ff0-83f7-48bc-9015-984eb450b434",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "0699a2b6-1203-424a-be38-2eead7fa8aa9",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9f58372c-7813-4db3-9f52-c5a9c2cda534",
+      "domain": "electrical",
+      "from": {
+        "component": "0699a2b6-1203-424a-be38-2eead7fa8aa9",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "3eb9f101-46eb-4717-8c21-3c3237a1c47e",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "c071b1a3-7efc-4575-ac32-ab0417b7e4ab",
+        "port": "a"
+      }
+    },
+    {
+      "id": "bf43e4d3-eeb5-448c-8bbf-b5b2ea38aeda",
+      "domain": "electrical",
+      "from": {
+        "component": "c071b1a3-7efc-4575-ac32-ab0417b7e4ab",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "2fb988bb-3039-491a-bf62-10d13194d763",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "b289e6af-646c-40fe-a489-77a18adaa81e",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9accb3f9-7312-4db6-9a7d-146c39fb0500",
+      "domain": "electrical",
+      "from": {
+        "component": "b289e6af-646c-40fe-a489-77a18adaa81e",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "1505fa83-9709-4f44-aac0-222ea366dfd0",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "1e5bddd5-ed8f-4b5e-86e2-de2944f45d07",
+        "port": "a"
+      }
+    },
+    {
+      "id": "0c929111-c9ba-47fa-acf6-53173078e823",
+      "domain": "electrical",
+      "from": {
+        "component": "1e5bddd5-ed8f-4b5e-86e2-de2944f45d07",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "e7f7fa73-cb2d-4e26-85d7-20eac43dcfe7",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "cc0aef4e-0d66-4b0f-bc79-8dba41c075f2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b2fbf38b-85ca-4a81-90a7-ee7a4922de5e",
+      "domain": "electrical",
+      "from": {
+        "component": "cc0aef4e-0d66-4b0f-bc79-8dba41c075f2",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "b4eb9cf0-cda0-4f19-964f-13b565d80be9",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a62ae372-2b3b-4ede-bbf3-7276a067e498",
+        "port": "a"
+      }
+    },
+    {
+      "id": "18731d36-1525-46a8-b686-8db66561a330",
+      "domain": "electrical",
+      "from": {
+        "component": "a62ae372-2b3b-4ede-bbf3-7276a067e498",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "71815517-d051-43dd-8412-4f828dfb90d2",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "223abe57-c388-4116-baa4-5d66babf90e1",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b912355d-a8b7-4ba6-8e81-054cbaf13d32",
+      "domain": "electrical",
+      "from": {
+        "component": "223abe57-c388-4116-baa4-5d66babf90e1",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "948dafd3-817e-4f90-8a8b-348c4581084f",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "33adde1d-dc6b-450b-927b-1bb0353d27a2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "1c7fe4d2-0c0b-4245-ab61-95a9b1d5b5e4",
+      "domain": "electrical",
+      "from": {
+        "component": "33adde1d-dc6b-450b-927b-1bb0353d27a2",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "8358af1b-1af7-42f0-a677-f7de276b5450",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a2039978-c561-4f20-8e94-0cb5f1351c76",
+        "port": "a"
+      }
+    },
+    {
+      "id": "46acac58-4149-4f77-9d61-6ca7f811d090",
+      "domain": "electrical",
+      "from": {
+        "component": "a2039978-c561-4f20-8e94-0cb5f1351c76",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "42012392-7be3-483d-b9ef-38490303cdea",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "e8b6bf60-258d-4fd0-8eca-cb571d2f5ce2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b7fb5439-c056-4a85-9cd4-227454c7ac9f",
+      "domain": "electrical",
+      "from": {
+        "component": "e8b6bf60-258d-4fd0-8eca-cb571d2f5ce2",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "fce0f792-aa20-4593-ab5a-dc37999835f2",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "1cf3cad5-2ae5-45c9-99b4-dcc45223bd1d",
+        "port": "a"
+      }
+    },
+    {
+      "id": "9e5fd57e-a819-4093-94b7-f71f9c34e2ab",
+      "domain": "electrical",
+      "from": {
+        "component": "1cf3cad5-2ae5-45c9-99b4-dcc45223bd1d",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "32e5dcde-3274-4737-b6a7-c8845e73fa29",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a5b84573-b4e9-498d-80a3-41322cf69ec6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "478bfa58-0164-4ca3-bbe5-b00dcc5434ae",
+      "domain": "electrical",
+      "from": {
+        "component": "a5b84573-b4e9-498d-80a3-41322cf69ec6",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "e5a06f03-1a74-428e-bb26-dfc44b8b3543",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "166356ec-e405-4462-91d6-73a2b4c5f7f5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "456a46ea-77aa-40bf-966e-ee62fedec5b2",
+      "domain": "electrical",
+      "from": {
+        "component": "166356ec-e405-4462-91d6-73a2b4c5f7f5",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "946e641a-6fa7-467e-b28b-f0ef199889a9",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "6d7d9ef9-9faa-47f4-a38d-c300e6e11127",
+        "port": "a"
+      }
+    },
+    {
+      "id": "740c81dd-2906-487e-97c9-fc50574846c5",
+      "domain": "electrical",
+      "from": {
+        "component": "6d7d9ef9-9faa-47f4-a38d-c300e6e11127",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "e16fa109-d6a9-4dad-aafc-34ab56d2c661",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "92dd88e7-5210-4a0a-b097-22ad7a201e98",
+        "port": "a"
+      }
+    },
+    {
+      "id": "a564b57a-3db8-495e-ac55-e70285af3a75",
+      "domain": "electrical",
+      "from": {
+        "component": "92dd88e7-5210-4a0a-b097-22ad7a201e98",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "b08ec749-f7ae-4833-8e9c-5b0f9c202292",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "a9021334-b470-4945-8dbd-26908abcf70d",
+        "port": "a"
+      }
+    },
+    {
+      "id": "ab8730fa-9f7c-48d6-a421-26db750f9549",
+      "domain": "electrical",
+      "from": {
+        "component": "a9021334-b470-4945-8dbd-26908abcf70d",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "acc9706e-0278-49ca-a94c-399a1b7cb253",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "5d4b6775-1658-40bd-ab02-45f4b2ea8f85",
+        "port": "a"
+      }
+    },
+    {
+      "id": "47420a0d-ab54-41fb-9bf4-11e504030439",
+      "domain": "electrical",
+      "from": {
+        "component": "5d4b6775-1658-40bd-ab02-45f4b2ea8f85",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "a916eb00-d77f-4595-ad7b-18cc935536b0",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "287e1c7d-d28b-462f-b1e4-fb7e0f454dbe",
+        "port": "a"
+      }
+    },
+    {
+      "id": "2f5a535d-9666-4486-bf49-769cf2de2260",
+      "domain": "electrical",
+      "from": {
+        "component": "287e1c7d-d28b-462f-b1e4-fb7e0f454dbe",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "fe288ecc-baf6-4193-a4f8-ef0d7d35f5dd",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "2984f71b-14ef-41d3-ad2a-d468c1692a7d",
+        "port": "a"
+      }
+    },
+    {
+      "id": "e9e17734-60db-4075-a5d9-f86b2a6bc742",
+      "domain": "electrical",
+      "from": {
+        "component": "2984f71b-14ef-41d3-ad2a-d468c1692a7d",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "e8e1c0a2-d53c-492c-a5a4-d62057972496",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "257c33a9-77ad-481a-a0ad-ba1a619f017e",
+        "port": "a"
+      }
+    },
+    {
+      "id": "2644b2f9-e64c-4c8c-8103-315ec8768050",
+      "domain": "electrical",
+      "from": {
+        "component": "257c33a9-77ad-481a-a0ad-ba1a619f017e",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "bcbefeeb-a85c-4c58-883e-1efda7b4beda",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "f960bbce-404e-41e9-bd26-9239debd0c7a",
+        "port": "a"
+      }
+    },
+    {
+      "id": "4ac1ff16-8f95-42e1-9ad1-1dd7d47be634",
+      "domain": "electrical",
+      "from": {
+        "component": "f960bbce-404e-41e9-bd26-9239debd0c7a",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "aea09e10-1060-4912-a78c-45e5bd494926",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "5a171612-6e1b-4434-8823-3dc7ba5ce56a",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b6acb6aa-37c3-443b-b6b4-b943d891aa99",
+      "domain": "electrical",
+      "from": {
+        "component": "5a171612-6e1b-4434-8823-3dc7ba5ce56a",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "40d6d7f0-e8ff-4924-8ec8-12bbce6b18f6",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "caeda8f3-b617-4935-a9b0-324843fad6dd",
+        "port": "a"
+      }
+    },
+    {
+      "id": "007d2da2-5e9e-4f4b-98a7-0a641e247e8b",
+      "domain": "electrical",
+      "from": {
+        "component": "caeda8f3-b617-4935-a9b0-324843fad6dd",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "cee9f8e3-0ee2-4593-a338-7cccd5e94efc",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "dab2fb1a-f818-46a5-940d-8ec1c354f323",
+        "port": "a"
+      }
+    },
+    {
+      "id": "01e8e9c3-f27b-4082-85ac-20ff0946c211",
+      "domain": "electrical",
+      "from": {
+        "component": "dab2fb1a-f818-46a5-940d-8ec1c354f323",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "42214603-7544-49cb-9efc-f2d8c9c1803c",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "4a8b642d-6486-4c1e-a77b-2b2fa078e12c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b35c6d4e-dbe2-4710-a344-153ce973aff3",
+      "domain": "electrical",
+      "from": {
+        "component": "4a8b642d-6486-4c1e-a77b-2b2fa078e12c",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "16327051-64af-491c-980d-c218a08f9321",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "b82bca07-ad14-4e44-b1b6-d23c8f4b1745",
+        "port": "a"
+      }
+    },
+    {
+      "id": "b01541b6-d140-4af7-a719-3581f2062f49",
+      "domain": "electrical",
+      "from": {
+        "component": "b82bca07-ad14-4e44-b1b6-d23c8f4b1745",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "1a9df98e-1485-461e-b39d-ec036e835af6",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "3b233f55-1215-4e4c-8966-13c788814036",
+        "port": "a"
+      }
+    },
+    {
+      "id": "66ca2179-0806-4de8-8626-17b00ca29fd0",
+      "domain": "electrical",
+      "from": {
+        "component": "3b233f55-1215-4e4c-8966-13c788814036",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "6a16072f-3cae-498a-9c39-3c2fd6adffac",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "1c503fd1-7403-4441-8738-4d8b2c24b93e",
+        "port": "a"
+      }
+    },
+    {
+      "id": "85e438c0-867b-4165-a6fa-d19e160cfdf9",
+      "domain": "electrical",
+      "from": {
+        "component": "1c503fd1-7403-4441-8738-4d8b2c24b93e",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "31e6c2dd-3519-4bb6-8e09-856acffc3b0c",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "5336fa0e-8f7f-48aa-afc3-ca8edb69008c",
+        "port": "a"
+      }
+    },
+    {
+      "id": "ca30027f-014a-4763-9a43-81951bbcc1c4",
+      "domain": "electrical",
+      "from": {
+        "component": "5336fa0e-8f7f-48aa-afc3-ca8edb69008c",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "a506cb7c-09a1-4819-80c9-d88174770fab",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "e9dee7fa-d010-4046-a06f-677a744e8133",
+        "port": "a"
+      }
+    },
+    {
+      "id": "67043a91-e7db-47ff-b116-9c88197a0fe4",
+      "domain": "electrical",
+      "from": {
+        "component": "e9dee7fa-d010-4046-a06f-677a744e8133",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    },
+    {
+      "id": "7b088f3d-3004-4f69-94ae-b504572232d9",
+      "domain": "electrical",
+      "from": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "a"
+      },
+      "to": {
+        "component": "0a2d7861-a14e-4f65-b245-13cc6ff135a3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "311bc934-dbc4-45c8-8eae-5f66684991c6",
+      "domain": "electrical",
+      "from": {
+        "component": "0a2d7861-a14e-4f65-b245-13cc6ff135a3",
+        "port": "b"
+      },
+      "to": {
+        "component": "598f5e2a-a5a4-4740-8145-f1d8ccfc247b",
+        "port": "b"
+      }
+    }
+  ]
+}

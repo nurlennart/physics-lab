@@ -1,0 +1,720 @@
+{
+  "executedAt": "2026-10-10T14:30:41.058Z",
+  "reports": [
+    {
+      "mode": "transfer",
+      "time": 144.31666666667365,
+      "wallMs": 22582.249026999998,
+      "solverMs": 2.3450530000009167,
+      "error": null,
+      "violations": [],
+      "tanks": {
+        "11b53b8f-3ac8-4e78-9ff3-bf29fffdb138": {
+          "volume": 0.049997808035704396,
+          "mass": 49.997808035704395,
+          "temperature": 293.1499999999925,
+          "vessel": 0
+        },
+        "29cac588-21db-4c9c-a2e1-03a2f2741880": {
+          "volume": 0.10000219195414065,
+          "mass": 100.00219195414064,
+          "temperature": 293.16700827467395,
+          "vessel": 0
+        }
+      },
+      "motors": {
+        "c0349031-6f85-4409-bfec-01dfa7d833b5": {
+          "omega": 227.39146662047938,
+          "current": 4.84056915678174,
+          "torque": 0.3872455325425392,
+          "load": 0.2735383612666478,
+          "shaftPower": 62.20028805883501,
+          "copperPower": 28.117331713904022,
+          "duty": 1,
+          "acceleration": 0.0019066586219196324
+        }
+      },
+      "hydraulic": {
+        "5dcab6a7-acb3-493b-b9ef-0ddfdd8391a4": {
+          "flow": 0.0005777454474184608,
+          "pressure": 36825.13235595228,
+          "inletPressure": 4903.346114541401,
+          "differentialPressure": -31921.78624141088,
+          "velocity": 1.1769733607102302,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 18.4426666744404,
+          "impellerPower": 18.476045654641677,
+          "shaftPower": 62.200288058835,
+          "mechanicalLoss": 35.273107364652105,
+          "hydraulicEfficiency": 0.6861485375865239,
+          "efficiency": 0.29650452192432863,
+          "torque": 0.2735383612666478,
+          "temperature": 293.1681192781651,
+          "temperatureValid": true,
+          "npshAvailable": 10.59356462882274
+        },
+        "04973f44-4498-4e91-8a43-ecc6f9b40373": {
+          "flow": 0.0005777454474184654,
+          "pressure": 32940.86915875842,
+          "inletPressure": 36825.13235595228,
+          "differentialPressure": 3884.26319719386,
+          "dp": 3884.263197192039,
+          "velocity": 1.1769733607102395,
+          "reynolds": 29391.77761098529,
+          "frictionFactor": 0.028039830465263316,
+          "viscosity": 0.0010011076705601684,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.16884059853214,
+          "temperatureValid": true
+        },
+        "17619246-76f3-4015-8b9a-b34c61b1a3e6": {
+          "flow": 0.000577745447418461,
+          "pressure": 29419.928884462734,
+          "inletPressure": 32940.86915875842,
+          "differentialPressure": 3520.9402742956827,
+          "velocity": 1.1769733607102304,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1696829287413,
+          "temperatureValid": true
+        },
+        "11b53b8f-3ac8-4e78-9ff3-bf29fffdb138": {
+          "flow": -0.0005777454474184608,
+          "pressure": 4903.346114541401,
+          "inletPressure": 4903.346114541401,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1499999999925
+        },
+        "29cac588-21db-4c9c-a2e1-03a2f2741880": {
+          "flow": 0.000577745447418461,
+          "pressure": 9806.628884462734,
+          "inletPressure": 9806.628884462734,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.16700821177955
+        }
+      },
+      "energyResidual": -0.028699113288212175,
+      "supplied": 16881.5737267587,
+      "massResidual": -1.015496309264563e-8,
+      "metrics": {
+        "inBand": 0,
+        "evaluated": 0,
+        "squaredError": 0,
+        "maxOvershoot": 0,
+        "faultInjected": false,
+        "switches": 1,
+        "previousOn": true,
+        "responseTime": 0,
+        "settledAt": 0,
+        "lowDemandFlow": 0,
+        "highDemandFlow": 0,
+        "lowDemandTime": 0,
+        "highDemandTime": 0
+      },
+      "challenge": {
+        "checks": [
+          {
+            "label": "Powered motor, shared pump shaft and physically transferred water",
+            "ok": true
+          },
+          {
+            "label": "Valid configuration; safe inventory, pressure, power and budget",
+            "ok": true
+          },
+          {
+            "label": "At least 100 L delivered within 300 s",
+            "ok": true
+          }
+        ],
+        "complete": true,
+        "failed": false,
+        "score": 96,
+        "stars": 3,
+        "progress": 1
+      }
+    },
+    {
+      "mode": "pressure",
+      "time": 194.98333333338064,
+      "wallMs": 30937.228718,
+      "solverMs": 1.0504129999972065,
+      "error": null,
+      "violations": [],
+      "tanks": {
+        "52cf2238-b859-46a0-9d5f-4846a50b6474": {
+          "volume": 0.07453789136143125,
+          "mass": 74.53789136143125,
+          "temperature": 293.15913680534976,
+          "vessel": 0
+        },
+        "fe06d0d3-37a4-4f8a-a2e3-87a4f14d96c5": {
+          "volume": 0.07546210863652549,
+          "mass": 75.46210863652549,
+          "temperature": 293.1705091189071,
+          "vessel": 0
+        }
+      },
+      "motors": {
+        "47d8cff0-924f-4476-9233-1599613ad905": {
+          "omega": 227.47060006959225,
+          "current": 4.83529332869385,
+          "torque": 0.386823466295508,
+          "load": 0.2730881534784283,
+          "shaftPower": 62.11952614363499,
+          "copperPower": 28.0560738894135,
+          "duty": 1,
+          "acceleration": 0
+        }
+      },
+      "hydraulic": {
+        "51d52364-c0b4-4780-a4a3-a058110bfaa1": {
+          "flow": 0.0006358046330500014,
+          "pressure": 36493.211605026445,
+          "inletPressure": 7309.670124529318,
+          "differentialPressure": -29183.541480497126,
+          "velocity": 1.2952505624401456,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 18.55503088210697,
+          "impellerPower": 18.595455635247756,
+          "shaftPower": 62.119526143634985,
+          "mechanicalLoss": 35.30994772335899,
+          "hydraulicEfficiency": 0.6936123852355722,
+          "efficiency": 0.29869884775365746,
+          "torque": 0.2730881534784283,
+          "temperature": 293.17552843744113,
+          "temperatureValid": true,
+          "npshAvailable": 10.83883183471275
+        },
+        "3b47ee36-5a94-4325-bf55-997948c0eaef": {
+          "flow": 0.0006358046331304193,
+          "pressure": 31849.72017842312,
+          "inletPressure": 36493.211605026445,
+          "differentialPressure": 4643.491426603326,
+          "dp": 4643.491426604511,
+          "velocity": 1.2952505626039714,
+          "reynolds": 32353.35720828085,
+          "frictionFactor": 0.02767815065056318,
+          "viscosity": 0.001000862564482529,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.17627056467785,
+          "temperatureValid": true
+        },
+        "d4188bae-1230-479f-b275-4c69e8c4d67f": {
+          "flow": 0.0006358046330781366,
+          "pressure": 7400.304875270294,
+          "inletPressure": 31849.72017842312,
+          "differentialPressure": 24449.415303152826,
+          "velocity": 2.49855432580529,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1821197070949,
+          "temperatureValid": true
+        },
+        "7ed54695-0f2e-44a2-a2c6-8cec9a2a72f3": {
+          "flow": 0.0006358013695014506,
+          "pressure": 7309.670124529318,
+          "inletPressure": 7400.304875270294,
+          "differentialPressure": 90.6347507409766,
+          "dp": 90.63475074093688,
+          "velocity": 0.5059546539037624,
+          "reynolds": 20215.793716600183,
+          "frictionFactor": 0.028324453659933097,
+          "viscosity": 0.0010011076705601684,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.17033728530237,
+          "temperatureValid": true
+        },
+        "52cf2238-b859-46a0-9d5f-4846a50b6474": {
+          "flow": -3.263548550868668e-9,
+          "pressure": 7309.670124529318,
+          "inletPressure": 7309.670124529318,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1591364083315
+        },
+        "fe06d0d3-37a4-4f8a-a2e3-87a4f14d96c5": {
+          "flow": 3.2635766860234644e-9,
+          "pressure": 7400.304875270294,
+          "inletPressure": 7400.304875270294,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1705087136736
+        }
+      },
+      "energyResidual": -0.19966789606235125,
+      "supplied": 17789.0192903689,
+      "massResidual": -2.0432651126611745e-9,
+      "metrics": {
+        "inBand": 173.86666666669717,
+        "evaluated": 180.00000000003539,
+        "squaredError": 947882255.5164866,
+        "maxOvershoot": 9758.679000000004,
+        "faultInjected": false,
+        "switches": 1,
+        "previousOn": true,
+        "responseTime": 15.000000000000325,
+        "settledAt": 180.01666666670206,
+        "lowDemandFlow": 0.03561329753872289,
+        "highDemandFlow": 0.04754493909841844,
+        "lowDemandTime": 105.01666666666199,
+        "highDemandTime": 74.98333333333036
+      },
+      "challenge": {
+        "checks": [
+          {
+            "label": "Powered motor, shared pump shaft and physically transferred water",
+            "ok": true
+          },
+          {
+            "label": "Valid configuration; safe inventory, pressure, power and budget",
+            "ok": true
+          },
+          {
+            "label": "Pressure sensor actually feeds motor speed control",
+            "ok": true
+          },
+          {
+            "label": "Both consumer demand phases produced distinct real flow",
+            "ok": true
+          },
+          {
+            "label": "180 s scored; ≥90% in band; RMS ≤3.5 kPa; overshoot ≤25 kPa",
+            "ok": true
+          }
+        ],
+        "complete": true,
+        "failed": false,
+        "score": 95,
+        "stars": 3,
+        "progress": 1
+      }
+    },
+    {
+      "mode": "supply",
+      "time": 719.9999999996738,
+      "wallMs": 114056.59990599999,
+      "solverMs": 1.4262489999819081,
+      "error": null,
+      "violations": [],
+      "tanks": {
+        "8726e4c4-51a9-4750-9ac0-bce1b3a19031": {
+          "volume": 0.10117133368283505,
+          "mass": 101.17133368283505,
+          "temperature": 293.1660441534045,
+          "vessel": 0
+        },
+        "cc834029-92c2-4897-9a7b-eb0e481375fc": {
+          "volume": 0.048828666306057554,
+          "mass": 48.828666306057556,
+          "temperature": 293.16902258680705,
+          "vessel": 0
+        }
+      },
+      "motors": {
+        "5564c59f-dc59-449d-bccf-f9b8f711f8c5": {
+          "omega": 0.000028799860325764473,
+          "current": 0,
+          "torque": 0,
+          "load": 2.4882958643506276e-15,
+          "shaftPower": 7.166257334247546e-20,
+          "copperPower": 0,
+          "duty": 1,
+          "acceleration": 0
+        }
+      },
+      "hydraulic": {
+        "c7db2925-d31d-46c0-b39f-5eb8b7bf1cc6": {
+          "flow": 0,
+          "pressure": 24401.795318314227,
+          "inletPressure": 9921.479680596505,
+          "differentialPressure": -14480.315637717724,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 7.166257334247546e-20,
+          "mechanicalLoss": 7.166257334247546e-20,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 2.4882958643506276e-15,
+          "temperature": 293.15
+        },
+        "81047de6-9c16-49fd-816b-b406ee078c5b": {
+          "flow": 2.2737367544323206e-16,
+          "pressure": 24401.795318314224,
+          "inletPressure": 24401.795318314227,
+          "differentialPressure": 3.552713678800501e-12,
+          "dp": 1.1870375415377613e-10,
+          "velocity": 4.632018480097623e-13,
+          "reynolds": 1.1567941705165992e-8,
+          "frictionFactor": 5532531400.199275,
+          "viscosity": 0.0010010463940407586,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1743155462171,
+          "temperatureValid": true
+        },
+        "7ff3dd2d-66c6-494e-ac12-bb17f1a44510": {
+          "flow": -3.552713678787406e-17,
+          "pressure": 24401.795318314227,
+          "inletPressure": 24401.795318314224,
+          "differentialPressure": -3.552713678800501e-12,
+          "velocity": -7.237528875125859e-14,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.15
+        },
+        "d48f5424-e876-4915-8dfe-42d1aeb0abbe": {
+          "flow": 0.00009523499560888436,
+          "pressure": 9921.479680596505,
+          "inletPressure": 24401.795318314227,
+          "differentialPressure": 14480.315637717724,
+          "velocity": 0.842062239249383,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.17248678056836,
+          "temperatureValid": true
+        },
+        "8726e4c4-51a9-4750-9ac0-bce1b3a19031": {
+          "flow": 0.00009523499560888436,
+          "pressure": 9921.479680596505,
+          "inletPressure": 9921.479680596505,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.16604412952637
+        },
+        "cc834029-92c2-4897-9a7b-eb0e481375fc": {
+          "flow": -0.00009523499560891988,
+          "pressure": 4788.495318314228,
+          "inletPressure": 4788.495318314228,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 293.1690225902244
+        }
+      },
+      "energyResidual": -0.02908464869483396,
+      "supplied": 21771.209678225452,
+      "massResidual": -1.1107374575658469e-8,
+      "metrics": {
+        "inBand": 598.3666666664511,
+        "evaluated": 599.999999999783,
+        "squaredError": 0,
+        "maxOvershoot": 0,
+        "faultInjected": true,
+        "switches": 2,
+        "previousOn": false,
+        "responseTime": 0,
+        "settledAt": 0,
+        "lowDemandFlow": 0,
+        "highDemandFlow": 0,
+        "lowDemandTime": 0,
+        "highDemandTime": 0
+      },
+      "challenge": {
+        "checks": [
+          {
+            "label": "Powered motor, shared pump shaft and physically transferred water",
+            "ok": true
+          },
+          {
+            "label": "Valid configuration; safe inventory, pressure, power and budget",
+            "ok": true
+          },
+          {
+            "label": "Destination feedback and source-level interlock drive motor",
+            "ok": true
+          },
+          {
+            "label": "Independent high-level sensing and fault exercised",
+            "ok": true
+          },
+          {
+            "label": "600 s scored; ≥95% in band; 2–12 switching transitions",
+            "ok": true
+          }
+        ],
+        "complete": true,
+        "failed": false,
+        "score": 100,
+        "stars": 3,
+        "progress": 0.9999999999996383
+      }
+    },
+    {
+      "mode": "circulation",
+      "time": 59.999999999997875,
+      "wallMs": 27499.948997,
+      "solverMs": 5.001707000017632,
+      "error": null,
+      "violations": [],
+      "tanks": {
+        "87cae4fb-14a0-47ef-b760-557429723d68": {
+          "volume": 0.09000700408977447,
+          "mass": 90.00700408977447,
+          "temperature": 330.37620508354587,
+          "vessel": 0
+        },
+        "bb6d333c-77bd-4d2e-b9d8-017508321fd9": {
+          "volume": 0.10999299590922469,
+          "mass": 109.99299590922469,
+          "temperature": 315.35445494586423,
+          "vessel": 0
+        }
+      },
+      "motors": {
+        "a5b697f5-0286-4e50-b233-e15bc7d2afbf": {
+          "omega": 228.9192825528866,
+          "current": 4.738711608779346,
+          "torque": 0.37909692870234774,
+          "load": 0.26476201418743067,
+          "shaftPower": 60.6091418033225,
+          "copperPower": 26.946465253416168,
+          "duty": 1,
+          "acceleration": -0.020791403121620533
+        }
+      },
+      "hydraulic": {
+        "0bd971c9-ba87-434d-8711-f4dcd0694bb7": {
+          "flow": 0.000771341052627128,
+          "pressure": 66398.62708286877,
+          "inletPressure": 44133.56087462391,
+          "differentialPressure": -22265.06620824486,
+          "velocity": 1.5713630890920087,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 17.173959605880288,
+          "impellerPower": 17.233456307827083,
+          "shaftPower": 60.609141803322494,
+          "mechanicalLoss": 35.98890472280344,
+          "hydraulicEfficiency": 0.6999711762102886,
+          "efficiency": 0.2833559277511308,
+          "torque": 0.26476201418743067,
+          "temperature": 330.39015987489057,
+          "temperatureValid": true,
+          "npshAvailable": 13.044923072002758
+        },
+        "e6be15c8-3701-4fe8-9641-02ce89f5a2cd": {
+          "flow": 0.0007713410526137067,
+          "pressure": 60183.02812392853,
+          "inletPressure": 66398.62708286877,
+          "differentialPressure": 6215.598958940241,
+          "dp": 6215.59895894221,
+          "velocity": 1.5713630890646673,
+          "reynolds": 81105.65169262896,
+          "frictionFactor": 0.025172705233903594,
+          "viscosity": 0.00048435821266186007,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 330.77675635657624,
+          "temperatureValid": true
+        },
+        "c0d8ee9d-c87a-45a2-8d82-b5a66cb87bcc": {
+          "flow": 0.0007713410525885358,
+          "pressure": 53932.93912488542,
+          "inletPressure": 60183.02812392853,
+          "differentialPressure": 6250.088999043108,
+          "velocity": 1.5713630890133894,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 330.7782515931789,
+          "temperatureValid": true
+        },
+        "1c83feca-69f1-4c0b-8974-95659df8a63d": {
+          "flow": 0.0006726936533680143,
+          "pressure": 44133.56087462391,
+          "inletPressure": 53932.93912488542,
+          "differentialPressure": 9799.378250261512,
+          "dp": 9799.378250256037,
+          "velocity": 1.3704002575368381,
+          "reynolds": 53995.37021948931,
+          "frictionFactor": 0.026089974984553677,
+          "viscosity": 0.0006345207865664158,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 314.2423009647284,
+          "temperatureValid": true
+        },
+        "87cae4fb-14a0-47ef-b760-557429723d68": {
+          "flow": -0.00009864739925911361,
+          "pressure": 44133.56087462391,
+          "inletPressure": 44133.56087462391,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 330.3766882829432
+        },
+        "bb6d333c-77bd-4d2e-b9d8-017508321fd9": {
+          "flow": 0.00009864739922052143,
+          "pressure": 53932.93912488542,
+          "inletPressure": 53932.93912488542,
+          "differentialPressure": 0,
+          "velocity": 0,
+          "reynolds": 0,
+          "frictionFactor": 0,
+          "hydraulicPower": 0,
+          "impellerPower": 0,
+          "shaftPower": 0,
+          "mechanicalLoss": 0,
+          "hydraulicEfficiency": null,
+          "efficiency": null,
+          "torque": 0,
+          "temperature": 315.35400603062914
+        }
+      },
+      "energyResidual": -0.2241433247875193,
+      "supplied": 36700.42200607403,
+      "massResidual": -1.0008420758822467e-9,
+      "metrics": {
+        "inBand": 0,
+        "evaluated": 0,
+        "squaredError": 0,
+        "maxOvershoot": 0,
+        "faultInjected": false,
+        "switches": 0,
+        "previousOn": false,
+        "responseTime": 0,
+        "settledAt": 0,
+        "lowDemandFlow": 0,
+        "highDemandFlow": 0,
+        "lowDemandTime": 0,
+        "highDemandTime": 0
+      },
+      "challenge": null
+    }
+  ]
+}

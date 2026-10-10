@@ -1,0 +1,85 @@
+{
+  "executedAt": "2026-10-09T15:25:15.459371+00:00",
+  "version": "3.0.0",
+  "regression": {
+    "passed": 111,
+    "total": 111,
+    "report": "validation/phase3a-physics.txt"
+  },
+  "quantitative": {
+    "passed": 87,
+    "total": 87,
+    "report": "validation/latest.json"
+  },
+  "productionBrowser": {
+    "passed": 24,
+    "total": 24,
+    "report": "validation/phase3a-browser.txt",
+    "baseURL": "http://localhost:8080"
+  },
+  "finalDeploymentSmoke": {
+    "passed": 1,
+    "total": 1,
+    "report": "validation/phase3a-browser-smoke.txt"
+  },
+  "mechanicalScenarios": {
+    "passed": 5,
+    "total": 5,
+    "report": "validation/phase3a-scenarios.json"
+  },
+  "legacyCoupled": {
+    "passed": 4,
+    "total": 4,
+    "report": "validation/phase3a-coupled.json"
+  },
+  "longDuration": {
+    "seconds": 599.999999999783,
+    "residualJ": 1.004427078581216,
+    "relativeResidual": 0.0007066713791698909,
+    "report": "validation/phase3a-performance.json"
+  },
+  "browserPerformance": {
+    "report": "validation/phase3a-browser-performance.json",
+    "approximateFPS": [
+      {
+        "bodies": 10,
+        "fps": 53.43162466426653
+      },
+      {
+        "bodies": 50,
+        "fps": 26.31717458813622
+      },
+      {
+        "bodies": 100,
+        "fps": 12.8068303094984
+      }
+    ]
+  },
+  "build": {
+    "passed": true,
+    "report": "validation/phase3a-build.txt"
+  },
+  "docker": {
+    "image": "sha256:d13699a1de0d157c90408d579b42209f835d4715fda7317df1b0641e0e8a86a6",
+    "container": "physics-lab-physics-lab-1",
+    "healthy": true,
+    "httpStatus": 200,
+    "publishedPort": 8080
+  },
+  "knownLimitations": [
+    "100-body browser scenes do not run smoothly; worker isolation remains deferred.",
+    "Engineering housings are static; no moving finite tank/spatial fluid/damage/contact conduction model.",
+    "First-order integration, finite constraint slop, cold trial caches and pinned snapshot internals.",
+    "Same-runtime replay verified; cross-platform bitwise determinism and timeline scrubbing are unsupported."
+  ],
+  "executionNotes": [
+    "An initial overloaded regression test timed out; final complete suite passed without increasing its timeout.",
+    "An initial browser hinge test clicked empty SVG group bounds; selecting actual shape fixed it and the full 24-test suite passed.",
+    "Final production smoke was executed after the shaft-load/output readout refinement."
+  ],
+  "shaftEvents": {
+    "passed": 2,
+    "total": 2,
+    "report": "validation/phase3a-shaft-events.json"
+  }
+}

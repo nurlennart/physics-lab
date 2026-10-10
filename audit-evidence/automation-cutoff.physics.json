@@ -1,0 +1,569 @@
+{
+  "format": "physics-lab-run",
+  "version": 1,
+  "configuration": {
+    "version": 3,
+    "probes": [
+      {
+        "id": "xaq5ortuhgd",
+        "name": "TK-01 water",
+        "component": "r8e5zfrj3s",
+        "measurement": "temperature",
+        "color": "#ef9975",
+        "visible": true
+      },
+      {
+        "id": "jegbzys16s",
+        "name": "H-01 power",
+        "component": "lxxs2rphr5",
+        "measurement": "power",
+        "color": "#e9bd6a",
+        "visible": true
+      },
+      {
+        "id": "8jcts3z51ox",
+        "name": "HC-01 demand",
+        "component": "1ald002zsu1",
+        "measurement": "signal",
+        "color": "#a58ae3",
+        "visible": true
+      }
+    ],
+    "assemblies": [],
+    "id": "bgx9ej9zdxb",
+    "name": "Closed-loop heating laboratory",
+    "components": [
+      {
+        "id": "7xwekvtq4vp",
+        "kind": "source",
+        "name": "PS-01",
+        "x": 40,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "voltage": 240,
+          "maxCurrent": 20,
+          "ratedVoltage": 240
+        }
+      },
+      {
+        "id": "siygc6ii4ih",
+        "kind": "relay",
+        "name": "RY-01",
+        "x": 300,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 0.02,
+          "ratedPower": 14,
+          "heatCapacity": 40,
+          "loss": 1,
+          "maxTemperature": 150,
+          "ratedCurrent": 12,
+          "ratedVoltage": 250
+        }
+      },
+      {
+        "id": "fi1mcnkqibj",
+        "kind": "safety",
+        "name": "ST-01",
+        "x": 560,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "target": "r8e5zfrj3s",
+          "threshold": 90,
+          "resetMargin": 5,
+          "minRange": 0,
+          "maxRange": 120,
+          "resolution": 0.01,
+          "lag": 0,
+          "noise": 0,
+          "failOnSensor": true,
+          "resistance": 0.01,
+          "ratedPower": 10,
+          "heatCapacity": 50,
+          "loss": 1,
+          "maxTemperature": 150,
+          "ratedCurrent": 16,
+          "ratedVoltage": 250
+        }
+      },
+      {
+        "id": "lxxs2rphr5",
+        "kind": "heater",
+        "name": "H-01",
+        "x": 820,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 28.8,
+          "ratedPower": 2000,
+          "heatCapacity": 300,
+          "loss": 0.5,
+          "conductance": 180,
+          "maxTemperature": 150
+        }
+      },
+      {
+        "id": "r8e5zfrj3s",
+        "kind": "tank",
+        "name": "TK-01",
+        "x": 800,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 10,
+          "capacity": 20,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      },
+      {
+        "id": "4fj3naxrw31",
+        "kind": "sensor",
+        "name": "TS-01",
+        "x": 40,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "target": "r8e5zfrj3s",
+          "minRange": 0,
+          "maxRange": 120,
+          "resolution": 0.01,
+          "lag": 0,
+          "noise": 0
+        }
+      },
+      {
+        "id": "1ald002zsu1",
+        "kind": "hysteresis",
+        "name": "HC-01",
+        "x": 300,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "low": 78,
+          "high": 80,
+          "initialOn": false
+        }
+      },
+      {
+        "id": "i2volbffnyh",
+        "kind": "cooler",
+        "name": "CJ-01",
+        "x": 560,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "conductance": 8,
+          "ambient": 20,
+          "enabled": true
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "xh19rwj0zw",
+        "domain": "electrical",
+        "from": {
+          "component": "7xwekvtq4vp",
+          "port": "a"
+        },
+        "to": {
+          "component": "siygc6ii4ih",
+          "port": "a"
+        }
+      },
+      {
+        "id": "n2vorgomib",
+        "domain": "electrical",
+        "from": {
+          "component": "siygc6ii4ih",
+          "port": "b"
+        },
+        "to": {
+          "component": "fi1mcnkqibj",
+          "port": "a"
+        }
+      },
+      {
+        "id": "z7stky4r7im",
+        "domain": "electrical",
+        "from": {
+          "component": "fi1mcnkqibj",
+          "port": "b"
+        },
+        "to": {
+          "component": "lxxs2rphr5",
+          "port": "a"
+        }
+      },
+      {
+        "id": "jx09tph7qrg",
+        "domain": "electrical",
+        "from": {
+          "component": "lxxs2rphr5",
+          "port": "b"
+        },
+        "to": {
+          "component": "7xwekvtq4vp",
+          "port": "b"
+        }
+      },
+      {
+        "id": "lkz29ss3lvs",
+        "domain": "thermal",
+        "from": {
+          "component": "lxxs2rphr5",
+          "port": "heat"
+        },
+        "to": {
+          "component": "r8e5zfrj3s",
+          "port": "heat"
+        }
+      },
+      {
+        "id": "u6spbnps5rf",
+        "domain": "control",
+        "from": {
+          "component": "4fj3naxrw31",
+          "port": "out"
+        },
+        "to": {
+          "component": "1ald002zsu1",
+          "port": "in"
+        }
+      },
+      {
+        "id": "h486h3qntlk",
+        "domain": "control",
+        "from": {
+          "component": "1ald002zsu1",
+          "port": "out"
+        },
+        "to": {
+          "component": "siygc6ii4ih",
+          "port": "in"
+        }
+      },
+      {
+        "id": "zp4tfrai5a",
+        "domain": "thermal",
+        "from": {
+          "component": "i2volbffnyh",
+          "port": "heat"
+        },
+        "to": {
+          "component": "r8e5zfrj3s",
+          "port": "heat"
+        }
+      }
+    ]
+  },
+  "origin": {
+    "version": 3,
+    "probes": [
+      {
+        "id": "xaq5ortuhgd",
+        "name": "TK-01 water",
+        "component": "r8e5zfrj3s",
+        "measurement": "temperature",
+        "color": "#ef9975",
+        "visible": true
+      },
+      {
+        "id": "jegbzys16s",
+        "name": "H-01 power",
+        "component": "lxxs2rphr5",
+        "measurement": "power",
+        "color": "#e9bd6a",
+        "visible": true
+      },
+      {
+        "id": "8jcts3z51ox",
+        "name": "HC-01 demand",
+        "component": "1ald002zsu1",
+        "measurement": "signal",
+        "color": "#a58ae3",
+        "visible": true
+      }
+    ],
+    "assemblies": [],
+    "id": "bgx9ej9zdxb",
+    "name": "Closed-loop heating laboratory",
+    "components": [
+      {
+        "id": "7xwekvtq4vp",
+        "kind": "source",
+        "name": "PS-01",
+        "x": 40,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "voltage": 240,
+          "maxCurrent": 20,
+          "ratedVoltage": 240
+        }
+      },
+      {
+        "id": "siygc6ii4ih",
+        "kind": "relay",
+        "name": "RY-01",
+        "x": 300,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 0.02,
+          "ratedPower": 14,
+          "heatCapacity": 40,
+          "loss": 1,
+          "maxTemperature": 150,
+          "ratedCurrent": 12,
+          "ratedVoltage": 250
+        }
+      },
+      {
+        "id": "fi1mcnkqibj",
+        "kind": "safety",
+        "name": "ST-01",
+        "x": 560,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "target": "r8e5zfrj3s",
+          "threshold": 90,
+          "resetMargin": 5,
+          "minRange": 0,
+          "maxRange": 120,
+          "resolution": 0.01,
+          "lag": 0,
+          "noise": 0,
+          "failOnSensor": true,
+          "resistance": 0.01,
+          "ratedPower": 10,
+          "heatCapacity": 50,
+          "loss": 1,
+          "maxTemperature": 150,
+          "ratedCurrent": 16,
+          "ratedVoltage": 250
+        }
+      },
+      {
+        "id": "lxxs2rphr5",
+        "kind": "heater",
+        "name": "H-01",
+        "x": 820,
+        "y": 100,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "resistance": 28.8,
+          "ratedPower": 2000,
+          "heatCapacity": 300,
+          "loss": 0.5,
+          "conductance": 180,
+          "maxTemperature": 150
+        }
+      },
+      {
+        "id": "r8e5zfrj3s",
+        "kind": "tank",
+        "name": "TK-01",
+        "x": 800,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "elevation": 0,
+          "surfaceArea": 0.1,
+          "density": 1000,
+          "maxPressure": 1000000,
+          "vented": true,
+          "volume": 10,
+          "capacity": 20,
+          "initialTemperature": 20,
+          "loss": 2.2,
+          "ambient": 20
+        }
+      },
+      {
+        "id": "4fj3naxrw31",
+        "kind": "sensor",
+        "name": "TS-01",
+        "x": 40,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "target": "r8e5zfrj3s",
+          "minRange": 0,
+          "maxRange": 120,
+          "resolution": 0.01,
+          "lag": 0,
+          "noise": 0
+        }
+      },
+      {
+        "id": "1ald002zsu1",
+        "kind": "hysteresis",
+        "name": "HC-01",
+        "x": 300,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "low": 78,
+          "high": 80,
+          "initialOn": false
+        }
+      },
+      {
+        "id": "i2volbffnyh",
+        "kind": "cooler",
+        "name": "CJ-01",
+        "x": 560,
+        "y": 390,
+        "rotation": 0,
+        "variant": "standard",
+        "props": {
+          "conductance": 8,
+          "ambient": 20,
+          "enabled": true
+        }
+      }
+    ],
+    "connections": [
+      {
+        "id": "xh19rwj0zw",
+        "domain": "electrical",
+        "from": {
+          "component": "7xwekvtq4vp",
+          "port": "a"
+        },
+        "to": {
+          "component": "siygc6ii4ih",
+          "port": "a"
+        }
+      },
+      {
+        "id": "n2vorgomib",
+        "domain": "electrical",
+        "from": {
+          "component": "siygc6ii4ih",
+          "port": "b"
+        },
+        "to": {
+          "component": "fi1mcnkqibj",
+          "port": "a"
+        }
+      },
+      {
+        "id": "z7stky4r7im",
+        "domain": "electrical",
+        "from": {
+          "component": "fi1mcnkqibj",
+          "port": "b"
+        },
+        "to": {
+          "component": "lxxs2rphr5",
+          "port": "a"
+        }
+      },
+      {
+        "id": "jx09tph7qrg",
+        "domain": "electrical",
+        "from": {
+          "component": "lxxs2rphr5",
+          "port": "b"
+        },
+        "to": {
+          "component": "7xwekvtq4vp",
+          "port": "b"
+        }
+      },
+      {
+        "id": "lkz29ss3lvs",
+        "domain": "thermal",
+        "from": {
+          "component": "lxxs2rphr5",
+          "port": "heat"
+        },
+        "to": {
+          "component": "r8e5zfrj3s",
+          "port": "heat"
+        }
+      },
+      {
+        "id": "u6spbnps5rf",
+        "domain": "control",
+        "from": {
+          "component": "4fj3naxrw31",
+          "port": "out"
+        },
+        "to": {
+          "component": "1ald002zsu1",
+          "port": "in"
+        }
+      },
+      {
+        "id": "h486h3qntlk",
+        "domain": "control",
+        "from": {
+          "component": "1ald002zsu1",
+          "port": "out"
+        },
+        "to": {
+          "component": "siygc6ii4ih",
+          "port": "in"
+        }
+      },
+      {
+        "id": "zp4tfrai5a",
+        "domain": "thermal",
+        "from": {
+          "component": "i2volbffnyh",
+          "port": "heat"
+        },
+        "to": {
+          "component": "r8e5zfrj3s",
+          "port": "heat"
+        }
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "at": 1799.9999999986917,
+      "fault": {
+        "id": "4fj3naxrw31",
+        "type": "sensorFault"
+      }
+    },
+    {
+      "at": 1799.9999999986917,
+      "fault": {
+        "id": "siygc6ii4ih",
+        "type": "stuckClosed"
+      }
+    }
+  ],
+  "duration": 2400.000000002948
+}

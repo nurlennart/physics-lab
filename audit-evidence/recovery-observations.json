@@ -1,0 +1,264 @@
+[
+  {
+    "name": "initial-short",
+    "data": {
+      "time": 0,
+      "running": false,
+      "project": "Untitled experiment",
+      "readings": {
+        "flf8atzbmbp": {
+          "voltage": 12,
+          "current": -2,
+          "currentNC": 0,
+          "contactCurrent": -2,
+          "power": -24,
+          "voltageValid": true
+        },
+        "z7q8hbbzqlk": {
+          "voltage": 12,
+          "current": 2,
+          "currentNC": 0,
+          "contactCurrent": 2,
+          "power": 24,
+          "voltageValid": true
+        },
+        "4muxyaito0l": {
+          "voltage": 12,
+          "current": 0,
+          "power": 0,
+          "voltageValid": true
+        }
+      },
+      "temperatures": {
+        "z7q8hbbzqlk": 20
+      },
+      "hydraulics": {
+        "readings": {},
+        "potentials": {},
+        "residual": 0,
+        "pressureResidual": 0,
+        "iterations": 0,
+        "converged": true,
+        "diagnostics": [],
+        "branches": [],
+        "tankNodes": {},
+        "terminalNodes": {}
+      },
+      "tanks": {},
+      "motors": {},
+      "spatial": {
+        "bodies": {},
+        "joints": {},
+        "contacts": [],
+        "residual": 0,
+        "externalWork": 0,
+        "dampingLoss": 0,
+        "contactLoss": 0,
+        "limitLoss": 0
+      },
+      "massResidualKg": 0,
+      "energyResidualJ": 0,
+      "energyJ": 0,
+      "error": "PS-01: supply terminals are shorted. Remove the short circuit."
+    }
+  },
+  {
+    "name": "undo-0",
+    "data": {
+      "state": {
+        "time": 0,
+        "running": false,
+        "project": "Untitled experiment",
+        "readings": {
+          "flf8atzbmbp": {
+            "voltage": 12,
+            "current": -2,
+            "currentNC": 0,
+            "contactCurrent": -2,
+            "power": -24,
+            "voltageValid": true
+          },
+          "z7q8hbbzqlk": {
+            "voltage": 12,
+            "current": 2,
+            "currentNC": 0,
+            "contactCurrent": 2,
+            "power": 24,
+            "voltageValid": true
+          },
+          "4muxyaito0l": {
+            "voltage": 12,
+            "current": 0,
+            "power": 0,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "z7q8hbbzqlk": 20
+        },
+        "hydraulics": {
+          "readings": {},
+          "potentials": {},
+          "residual": 0,
+          "pressureResidual": 0,
+          "iterations": 0,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [],
+          "tankNodes": {},
+          "terminalNodes": {}
+        },
+        "tanks": {},
+        "motors": {},
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": 0,
+        "energyResidualJ": 0,
+        "energyJ": 0,
+        "error": null
+      },
+      "text": "Engine ready\n3 components\n3 connections\n€53 total\nKCL residual 0.0e+0\n0 FPS\nKeyboard shortcuts",
+      "toast": []
+    }
+  },
+  {
+    "name": "undo-1",
+    "data": {
+      "state": {
+        "time": 0,
+        "running": false,
+        "project": "Untitled experiment",
+        "readings": {
+          "flf8atzbmbp": {
+            "voltage": 12,
+            "current": -2,
+            "currentNC": 0,
+            "contactCurrent": -2,
+            "power": -24,
+            "voltageValid": true
+          },
+          "z7q8hbbzqlk": {
+            "voltage": 12,
+            "current": 2,
+            "currentNC": 0,
+            "contactCurrent": 2,
+            "power": 24,
+            "voltageValid": true
+          },
+          "4muxyaito0l": {
+            "voltage": 0,
+            "current": 0,
+            "power": 0,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "z7q8hbbzqlk": 20
+        },
+        "hydraulics": {
+          "readings": {},
+          "potentials": {},
+          "residual": 0,
+          "pressureResidual": 0,
+          "iterations": 0,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [],
+          "tankNodes": {},
+          "terminalNodes": {}
+        },
+        "tanks": {},
+        "motors": {},
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": 0,
+        "energyResidualJ": 0,
+        "energyJ": 0,
+        "error": null
+      },
+      "text": "Engine ready\n3 components\n2 connections\n€53 total\nKCL residual 0.0e+0\n52 FPS\nKeyboard shortcuts",
+      "toast": [
+        "Project file saved. A recovery copy is available on this device."
+      ]
+    }
+  },
+  {
+    "name": "undo-2",
+    "data": {
+      "state": {
+        "time": 0,
+        "running": false,
+        "project": "Untitled experiment",
+        "readings": {
+          "flf8atzbmbp": {
+            "voltage": 12,
+            "current": -2,
+            "currentNC": 0,
+            "contactCurrent": -2,
+            "power": -24,
+            "voltageValid": true
+          },
+          "z7q8hbbzqlk": {
+            "voltage": 12,
+            "current": 2,
+            "currentNC": 0,
+            "contactCurrent": 2,
+            "power": 24,
+            "voltageValid": true
+          }
+        },
+        "temperatures": {
+          "z7q8hbbzqlk": 20
+        },
+        "hydraulics": {
+          "readings": {},
+          "potentials": {},
+          "residual": 0,
+          "pressureResidual": 0,
+          "iterations": 0,
+          "converged": true,
+          "diagnostics": [],
+          "branches": [],
+          "tankNodes": {},
+          "terminalNodes": {}
+        },
+        "tanks": {},
+        "motors": {},
+        "spatial": {
+          "bodies": {},
+          "joints": {},
+          "contacts": [],
+          "residual": 0,
+          "externalWork": 0,
+          "dampingLoss": 0,
+          "contactLoss": 0,
+          "limitLoss": 0
+        },
+        "massResidualKg": 0,
+        "energyResidualJ": 0,
+        "energyJ": 0,
+        "error": null
+      },
+      "text": "Engine ready\n2 components\n2 connections\n€53 total\nKCL residual 0.0e+0\n52 FPS\nKeyboard shortcuts",
+      "toast": [
+        "Project file saved. A recovery copy is available on this device."
+      ]
+    }
+  }
+]

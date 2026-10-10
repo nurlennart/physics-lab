@@ -1,0 +1,59 @@
+{
+  "scores": [
+    {
+      "category": "Physical correctness",
+      "weight": 20,
+      "score": 8.0,
+      "confidence": "High for sampled DC/thermal; medium overall"
+    },
+    {
+      "category": "Numerical robustness",
+      "weight": 10,
+      "score": 7.0,
+      "confidence": "Medium"
+    },
+    {
+      "category": "Cross-domain integration",
+      "weight": 10,
+      "score": 8.0,
+      "confidence": "Medium\u2013high"
+    },
+    {
+      "category": "Electrical engineering depth",
+      "weight": 10,
+      "score": 4.5,
+      "confidence": "High for catalog scope; medium for all device submodes"
+    },
+    {
+      "category": "Hydraulic / mechanical / thermal depth",
+      "weight": 10,
+      "score": 7.0,
+      "confidence": "Medium"
+    },
+    {
+      "category": "UI/UX and construction workflow",
+      "weight": 15,
+      "score": 6.0,
+      "confidence": "High for reported desktop issues; medium across audiences"
+    },
+    {
+      "category": "Instrumentation and explainability",
+      "weight": 10,
+      "score": 7.0,
+      "confidence": "High for measured paths; medium for complete instrument coverage"
+    },
+    {
+      "category": "Challenges and game design",
+      "weight": 10,
+      "score": 7.5,
+      "confidence": "Medium; no player cohort or exhaustive exploit study"
+    },
+    {
+      "category": "Reliability and performance",
+      "weight": 5,
+      "score": 5.0,
+      "confidence": "High for failures; low\u2013medium for performance generalization"
+    }
+  ],
+  "weighted": 6.85
+}

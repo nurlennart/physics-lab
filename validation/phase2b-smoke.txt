@@ -1,0 +1,9 @@
+
+Running 2 tests using 1 worker
+
+(node:1795732) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/hydraulic.spec.ts:26:1 › hydraulic starter transfers finite inventory, exposes probes, valve response and fault coasting (4.6s)
+  ✓  2 e2e/hydraulic.spec.ts:45:1 › saving a live hydraulic experiment restores fluid, motor and fault state (2.5s)
+
+  2 passed (8.2s)

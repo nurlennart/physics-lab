@@ -1,0 +1,13 @@
+
+Running 6 tests using 1 worker
+
+(node:1863920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 e2e/spatial.spec.ts:8:1 › constructs, transforms, duplicates and undoes spatial geometry (1.3s)
+  ✓  2 e2e/spatial.spec.ts:24:1 › physical and schematic views preserve shared motor, body, thermal and replay state (3.4s)
+  ✓  3 e2e/spatial.spec.ts:40:1 › constructs a hinge with world anchors, inspects limits and undoes deletion (929ms)
+  ✓  4 e2e/spatial.spec.ts:50:62 › mechanical assignment descent scores real dynamics (889ms)
+  ✓  5 e2e/spatial.spec.ts:50:62 › mechanical assignment lift scores real dynamics (11.7s)
+  ✓  6 e2e/spatial.spec.ts:50:62 › mechanical assignment rotation scores real dynamics (17.2s)
+
+  6 passed (36.5s)

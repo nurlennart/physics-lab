@@ -1,0 +1,55 @@
+{
+  "version": 4,
+  "probes": [],
+  "assemblies": [],
+  "id": "2jmgngdpkvj",
+  "name": "Untitled experiment",
+  "components": [
+    {
+      "id": "5du7nlxb5xh",
+      "kind": "rigidBody",
+      "name": "RB-01",
+      "x": 100,
+      "y": 220,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "forceX": 0,
+        "forceY": 0,
+        "appliedTorque": 0,
+        "brakeDamping": 0
+      },
+      "spatial": {
+        "type": "dynamic",
+        "shape": "rectangle",
+        "x": 3,
+        "y": 10,
+        "angle": 0,
+        "width": 1,
+        "height": 1,
+        "depth": 0.05,
+        "material": "aluminum",
+        "mass": 0,
+        "vx": 0,
+        "vy": 0,
+        "omega": 0,
+        "fixedRotation": false,
+        "bullet": true,
+        "collision": true,
+        "category": 1,
+        "mask": 65535,
+        "locked": false,
+        "elevationLinked": false,
+        "elevationOffset": 0
+      }
+    }
+  ],
+  "connections": [],
+  "world": {
+    "gravity": {
+      "x": 0,
+      "y": -9.80665
+    },
+    "joints": []
+  }
+}
