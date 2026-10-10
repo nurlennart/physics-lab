@@ -10,7 +10,7 @@ import { Builder } from './scaling-validation';
 
 const probe = (id: string, measurement: Probe['measurement']) => ({ component: id, measurement } as Probe);
 describe('functional integration regressions', () => {
-  it('standard induction motor needs ~75 A at startup; existing 250 A variant runs 35 Nm load', () => {
+  it('standard induction motor needs ~75 A at startup; both the standard and the 250 A supply run 35 Nm load', () => {
     const p = starter('induction'), motor = p.components.find(c => c.kind === 'inductionMotor')!, source = p.components.find(c => c.kind === 'source3')!;
     const s = new Simulation(parseProject(JSON.parse(serializeProject(p))));
     const start = s.electrical.readings[motor.id];
@@ -24,10 +24,12 @@ describe('functional integration regressions', () => {
     expect(s.electrical.readings[motor.id].current).toBeLessThan(Number(motor.props.ratedCurrent));
     expect(s.multiphysics.motors[motor.id].shaftPower).toBeGreaterThan(5000);
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-4);
+    // The standard 63 A supply tolerates the ~1.2 × In starting surge (thermal-magnetic output protection).
     source.variant = 'standard'; source.props = { ...catalog(source).props };
-    const bad = new Simulation(p); bad.step();
-    expect(bad.failed[source.id]).toBe(true);
-    expect(bad.tripped[source.id]).toMatch(/RMS line.*63 A.*startup/);
+    const standard = new Simulation(p);
+    for (let i = 0; i < 600; i++) expect(standard.step()).toBe(true);
+    expect(standard.failed).toEqual({});
+    expect(readProbe(probe(motor.id, 'rpm'), standard)).toBeGreaterThan(1400);
   });
   it('flow menus include PRV and exchanger branches, exclude tanks and junctions', () => {
     const sensor = makeComponent('flowSensor', 0, 0, []);

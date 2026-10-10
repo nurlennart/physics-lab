@@ -203,6 +203,7 @@ V = m/ρ(T)       P_bottom = ρ_ref·g·z + g·m/A       Φ = g·(z·m + m²/(2�
 - **Single-phase AC (`sourceAC`):** each source has its own phase angle. Three single-phase sources at 0°/−120°/+120° with a common neutral form an explicit, possibly **unbalanced** three-phase system. Neutral current and line-to-line voltages follow from the solution (tested against hand calculation).
 - **Balanced three-phase supply (`source3`):** solved as the per-phase star equivalent (V_LL/√3), powers × 3. It can now also feed inductors, capacitors and induction motors.
 - **In DC networks** an inductor is its winding resistance and a capacitor is open (1 GΩ insulation leakage).
+- **Supply protection:** AC supplies trip like a C-characteristic breaker with In = their current rating (thermal image τ = 60 s, trip at θ ≥ 1.3²; instantaneous at 10 × In). Motor starting surges are tolerated; DC supplies trip instantly above their rating.
 - **Rejected with explanations:** DC and AC sources in one network; different frequencies in one network; a DC motor on AC; a three-phase induction motor without a `source3` supply.
 - **Not modelled:** transients (switching inrush, capacitor charging), harmonics, saturation, core loss, single-phase machines.
 

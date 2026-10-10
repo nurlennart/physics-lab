@@ -115,3 +115,39 @@ describe("three-phase induction motor", () => {
     expect(new Simulation(dc.p).error).toMatch(/three-phase AC supply/);
   });
 });
+describe("AC supply thermal-magnetic output protection", () => {
+  const rig = (ohms: number, props: Record<string, number> = {}) => {
+    const b = new Builder(), src = b.add("source3", { lineVoltage: 400, maxCurrent: 63, maxPower: 1e9, ...props });
+    const load = b.add("resistor", { resistance: ohms, ratedPower: 1e9, heatCapacity: 1e12, tempCoefficient: 0 });
+    b.series(src, load);
+    return { s: new Simulation(b.p), src, current: 400 / Math.sqrt(3) / ohms };
+  };
+  it("sustained 2 × In trips at the thermal-image time τ·ln(x²/(x² − 1.3²))", () => {
+    const { s, src, current } = rig(400 / Math.sqrt(3) / 126);
+    expect(rel(current, 126)).toBeLessThan(1e-12);
+    const expected = 60 * Math.log(4 / (4 - 1.69));
+    while (!s.failed[src.id] && s.time < 100) s.step();
+    expect(Math.abs(s.time - expected)).toBeLessThanOrEqual(DT + 1e-9);
+    expect(s.tripped[src.id]).toMatch(/thermal overload at 2\.00 × the 63 A rating/);
+  });
+  it("1.2 × In for 10 s is tolerated and reported, not tripped", () => {
+    const { s, src } = rig(400 / Math.sqrt(3) / (1.2 * 63));
+    for (let i = 0; i < 10 / DT; i++) s.step();
+    expect(s.failed[src.id]).toBeFalsy();
+    expect(s.events.some((e) => /above its 63 A rating \(tolerated/.test(e.message))).toBe(true);
+  });
+  it("magneticTrip × In trips in the first interval", () => {
+    const { s, src } = rig(400 / Math.sqrt(3) / (11 * 63));
+    s.step();
+    expect(s.failed[src.id]).toBe(true);
+    expect(s.tripped[src.id]).toMatch(/instantaneous limit of 10 × 63 A/);
+  });
+  it("the default 63 A supply starts and runs the default 7.5 kW motor at rated load", () => {
+    const b = new Builder(), src = b.add("source3"), motor = b.add("inductionMotor", { loadTorque: 50 });
+    b.series(src, motor);
+    const s = new Simulation(b.p);
+    for (let i = 0; i < 30 / DT; i++) expect(s.step()).toBe(true);
+    expect(s.failed[src.id]).toBeFalsy();
+    expect(s.multiphysics.motors[motor.id].omega * 30 / Math.PI).toBeGreaterThan(1400);
+  });
+});

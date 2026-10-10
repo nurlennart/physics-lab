@@ -70,7 +70,10 @@ export function temperatureLabel(c: Component): string {
 export function legacyUnavailableMeasurement(c: Component, m: Measurement): boolean {
   return m === "flow" && (c.kind === "tank" || c.kind === "fluidJunction") || m === "hydraulicPower" && (c.kind === "motor" || c.kind === "inductionMotor");
 }
-export function measurementLabel(c: Component, m: Measurement): string {
+/** `ac` (when known, e.g. in the live inspector) selects DC or AC wording for electrical quantities. */
+export function measurementLabel(c: Component, m: Measurement, ac?: boolean): string {
+  if (ac === false && (m === "voltage" || m === "current" || m === "power")) return m;
+  const three = c.kind === "source3" || c.kind === "inductionMotor";
   if (m === "bodyTemperature") return temperatureLabel(c);
   if (m === "temperature") return ["sensor", "thermostat", "safety"].includes(c.kind) ? "sensed temperature" : temperatureLabel(c);
   if (m === "fluidTemperature") return c.kind === "pipe" ? "fluid temperature (pipe inventory mean / zero-volume outlet)" : "fluid temperature";
@@ -78,11 +81,34 @@ export function measurementLabel(c: Component, m: Measurement): string {
   if (m === "inletPressure") return "inlet gauge pressure";
   if (m === "differentialPressure") return "inlet − outlet pressure (pump rise is negative)";
   if (m === "flow") return "signed branch flow (inlet → outlet)";
-  if (m === "voltage") return c.kind === "source3" || c.kind === "inductionMotor" ? "phase-to-neutral RMS voltage" : "voltage (AC: RMS)";
-  if (m === "current") return "current (AC: signed RMS line)";
+  if (m === "voltage") return three ? "phase-to-neutral RMS voltage" : ac ? "RMS voltage" : "voltage (AC: RMS)";
+  if (m === "current") return three ? "RMS line current" : ac ? "RMS current" : "current (AC: signed RMS line)";
   if (m === "angularVelocity") return "body angular speed";
   if (m === "rpm") return c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? "shaft speed" : "body rotational speed";
-  if (m === "power") return "real power (3~: total)";
-  if (m === "reactivePower") return "reactive power (3~: total)";
-  return m;
+  if (m === "power") return three ? "real power (3~ total)" : ac ? "real power" : "real power (3~: total)";
+  if (m === "reactivePower") return three ? "reactive power (3~ total)" : "reactive power";
+  return plainLabels[m] ?? m;
+}
+const plainLabels: Partial<Record<Measurement, string>> = {
+  positionX: "position x", positionY: "position y", displacement: "displacement", linearSpeed: "speed", velocityX: "velocity x", velocityY: "velocity y",
+  acceleration: "acceleration", appliedForce: "applied force", appliedTorque: "applied torque", kineticEnergy: "kinetic energy", potentialEnergy: "potential energy",
+  mechanicalResidual: "mechanical energy residual", contactImpulse: "contact impulse", jointForce: "joint force",
+  level: "level", heatDuty: "heat duty", npsh: "NPSH available", powerFactor: "power factor", impellerPower: "impeller power", mechanicalLoss: "mechanical loss",
+  hydraulicEfficiency: "hydraulic efficiency", overflow: "overflow rate", overflowVolume: "overflow volume", shaftPower: "shaft power", hydraulicPower: "hydraulic power",
+  efficiency: "efficiency", transferredVolume: "transferred volume", massResidual: "mass balance residual", energyResidual: "energy balance residual",
+  velocity: "flow velocity", reynolds: "Reynolds number", frictionFactor: "friction factor", position: "valve position", currentNC: "NC contact current",
+  energy: "energy", state: "state", signal: "signal", nodeVoltage: "node voltage",
+};
+/**
+ * Rows worth showing in a component's live inspector. Charts and sensors keep the full capability
+ * list; the inspector hides AC-only quantities on DC networks, global balance residuals (shown in the
+ * energy panel) and fluid-transport quantities of components with no hydraulic connection.
+ */
+export function inspectorMeasurements(c: Component, ac: boolean, hydraulicConnected: boolean): Measurement[] {
+  return measurements(c).filter((m) => m !== "nodeVoltage"
+    && !(!ac && (m === "reactivePower" || m === "powerFactor"))
+    && m !== "massResidual" && m !== "energyResidual" && m !== "mechanicalResidual"
+    // Thermal masses list the same state as bodyTemperature and temperature; show it once.
+    && !(m === "temperature" && measurements(c).includes("bodyTemperature"))
+    && !(!hydraulicConnected && (m === "transferredVolume" || m === "flow" || m === "inletPressure" || m === "differentialPressure" || m === "overflow" || m === "overflowVolume")));
 }

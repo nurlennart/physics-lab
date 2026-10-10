@@ -4,7 +4,7 @@ This pass repairs supported workflows. It adds no component kinds and does not c
 
 ## Motor diagnosis
 
-The default standard induction motor uses its existing per-phase equivalent circuit. At 400 V line-to-line RMS and 50 Hz, phase voltage is 400/√3 V; the locked-rotor line current is about 74 A. This legitimately exceeds the standard source's 63 A instantaneous current protection. There is no modeled short-time overload allowance in the source. Protection timing was not relaxed.
+The default standard induction motor uses its existing per-phase equivalent circuit. At 400 V line-to-line RMS and 50 Hz, phase voltage is 400/√3 V; the locked-rotor line current is about 74 A. This exceeds the standard source's 63 A rating. *Superseded (supply overload revision):* AC supplies now have thermal-magnetic output protection, so the standard supply starts and runs this motor; see the section below.
 
 The **Loaded induction motor** example uses the existing 400 V / 250 A supply catalog variant, the unchanged standard motor, and 35 N·m external shaft load. After 60 s it runs at approximately 1,468 RPM, 9.89 A line current and 5.38 kW shaft output. Its brief startup excursion above the motor's continuous 15 A rating remains in the event log; winding heating and failure remain active. The 45 kW variant requires its own startup/load assessment. Reduced-voltage starters, VFDs and switching waveforms remain unsupported.
 
@@ -56,3 +56,13 @@ Final validation on 2026-10-10:
 | `git diff --check` | Passed |
 
 No known critical supported-workflow blocker remains. The unsupported model combinations described above remain explicit limitations, not simulated successes. These checks cover the supplied examples and representative workflows; they do not establish correctness for every arbitrary sandbox configuration.
+
+## Supply overload revision
+
+The previous AC supply protection tripped instantly at any current above its rating, so the default 63 A three-phase supply could not start the default 7.5 kW motor (≈ 74 A, 1.17 × In, for a fraction of a second). Real supplies are protected by fuses or breakers that tolerate such surges. AC supplies (`sourceAC`, `source3`) now use the same thermal-magnetic characteristic as the circuit breaker, with In = the current rating:
+
+- thermal image dθ/dt = ((I/In)² − θ)/τ, τ = `thermalTimeConstant` (default 60 s), trip at θ ≥ 1.3²; at 2 × In from cold that is τ·ln(4/(4 − 1.69)) = 32.9 s;
+- instantaneous trip at `magneticTrip` × In (default 10, C characteristic);
+- current above the rating that has not tripped is reported as a warning.
+
+Consequence: a stalled 7.5 kW motor (≈ 1.17 × In) does not trip the 63 A supply, as with a real C63 breaker; the motor's winding temperature or a motor-protective breaker must act. DC supplies keep their instantaneous electronic output protection, so no DC challenge or example changes. Tests: `ac.test.ts` (thermal trip time against the analytic value within one step, tolerated 1.2 × In, magnetic trip, default supply with default motor at rated load).

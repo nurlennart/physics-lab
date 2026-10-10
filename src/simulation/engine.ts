@@ -376,6 +376,8 @@ export class Simulation {
         const x2 = (Math.abs(r.contactCurrent ?? r.current) / prop(c, "ratedCurrent")) ** 2;
         if (x2 > 0.8 * thermalThreshold(c.kind) ** 2) limit = Math.min(limit, thermalTau(c) / 200);
       }
+      if ((c.kind === "sourceAC" || c.kind === "source3") && r && Math.abs(r.current) > 0.8 * prop(c, "maxCurrent"))
+        limit = Math.min(limit, prop(c, "thermalTimeConstant", 60) / 200);
       // Below rating a fuse cannot trip without an event (which restarts at 1/60 s); near it, resolve the trip time.
       if (c.kind === "fuse" && r && Math.abs(r.current) > 0.95 * prop(c, "ratedCurrent")) limit = Math.min(limit, prop(c, "tripTime", 0.1) / 10);
     }
@@ -726,8 +728,22 @@ export class Simulation {
         (isSource(c) ? -(r?.power ?? 0) : (r?.power ?? 0)) * dt;
       if (isSource(c) && r && !this.failed[c.id]) {
         const mode = sourceMode(c);
-        if ((mode === "ideal" || mode === "internal") && Math.abs(r.current) > prop(c, "maxCurrent", 20) * (1 + 1e-9)) {
-          this.tripped[c.id] = `${c.name}: ${Math.abs(r.current).toFixed(2)} A ${r.ac ? "RMS line" : "output"} current exceeded its ${prop(c, "maxCurrent")} A rating — output protection tripped. Use a supply whose current capability covers startup and load${c.kind === "source3" ? " (the 400 V 250 A variant supports the standard induction motor)" : ""}; reset to re-arm.`;
+        const current = Math.abs(r.current), rating = prop(c, "maxCurrent", 20);
+        if (c.kind === "sourceAC" || c.kind === "source3") {
+          // Mains supplies: thermal-magnetic output protection with In = current rating, the same
+          // characteristic as the breaker (thermal image θ, trip at θ ≥ 1.3²; instantaneous trip at
+          // magneticTrip × In). Motor starting surges below the magnetic threshold are tolerated.
+          const b = (this.breakers[c.id] ??= { theta: 0, tripped: false }), x2 = (current / rating) ** 2;
+          b.theta = x2 + (b.theta - x2) * Math.exp(-dt / prop(c, "thermalTimeConstant", 60));
+          const magnetic = current >= rating * prop(c, "magneticTrip", 10);
+          if (magnetic || b.theta >= thermalThreshold("breaker") ** 2) {
+            this.tripped[c.id] = `${c.name}: output protection tripped — ${magnetic ? `${current.toFixed(1)} A RMS line current reached the instantaneous limit of ${prop(c, "magneticTrip", 10)} × ${rating} A` : `thermal overload at ${(current / rating).toFixed(2)} × the ${rating} A rating`}. Reduce the load or use a supply with a higher current rating; reset to re-arm.`;
+            this.fail(c.id, this.tripped[c.id]);
+            changed = true;
+          } else if (current > rating * (1 + 1e-9))
+            this.violation(`${c.name}: line current above its ${rating} A rating (tolerated short-term by the thermal overload characteristic).`);
+        } else if ((mode === "ideal" || mode === "internal") && current > rating * (1 + 1e-9)) {
+          this.tripped[c.id] = `${c.name}: ${current.toFixed(2)} A output current exceeded its ${rating} A rating — electronic output protection tripped. Reduce the load or use a supply with a higher current rating; reset to re-arm.`;
           this.fail(c.id, this.tripped[c.id]);
           changed = true;
         }

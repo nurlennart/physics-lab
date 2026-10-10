@@ -63,7 +63,9 @@
         "ratedVoltage": 400,
         "maxCurrent": 16,
         "maxPower": 3680,
-        "enabled": true
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
       }
     },
     {

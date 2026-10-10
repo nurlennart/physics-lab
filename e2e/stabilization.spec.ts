@@ -71,17 +71,13 @@ test('pipe fluid sensor: select, trace, fault, clear, remove target and reload',
   await page.locator('[data-component="sensor"]').click();
   await expect(target).toHaveValue('');
 });
-test('induction supply trip explains startup and recovers with catalog variant', async ({ page }) => {
+test('standard 63 A supply tolerates the induction-motor starting surge and carries a changed load', async ({ page }) => {
   await page.goto('/'); await openExample(page, 'Loaded induction motor');
   await page.locator('[data-component="source3"]').click();
   await page.getByLabel('Component variant', { exact: true }).selectOption('standard');
-  await page.getByRole('button', { name: 'Single simulation step', exact: true }).click();
-  await expect(page.locator('.inspector')).toContainText('RMS line');
-  await expect(page.locator('.inspector')).toContainText('startup');
-  await page.getByRole('button', { name: 'Reset simulation', exact: true }).click();
-  await page.getByLabel('Component variant', { exact: true }).selectOption('industrial250');
   await advance(page, 10);
-  await expect(page.locator('.inspector')).not.toContainText('Output protection tripped');
+  await expect(page.locator('.inspector')).not.toContainText('protection tripped');
+  await expect(page.locator('.solver-error')).toHaveCount(0);
   await page.locator('[data-component="inductionMotor"]').click();
   const load = page.getByLabel('External shaft load', { exact: true });
   await load.fill('40'); await load.press('Enter'); await advance(page, 10);

@@ -52,7 +52,9 @@
         "internalResistance": 0.005,
         "maxCurrent": 250,
         "maxPower": 173000,
-        "enabled": true
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
       }
     },
     {

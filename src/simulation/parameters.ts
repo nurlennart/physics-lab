@@ -203,7 +203,9 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
   sourceAC: {
     voltage: { label: "RMS voltage", description: "RMS magnitude of the source phasor." },
     ratedVoltage: { label: "Maximum RMS voltage" },
-    maxCurrent: { label: "Current rating", description: "Output protection trips above this RMS current." },
+    maxCurrent: { label: "Current rating", description: "Rated current In of the thermal-magnetic output protection (C characteristic): short-time surges such as motor starts are tolerated; sustained overload trips at θ ≥ 1.3², and magneticTrip × In trips instantly." },
+    magneticTrip: { description: "Instantaneous output trip at this multiple of the current rating (C characteristic: 10)." },
+    thermalTimeConstant: { description: "Time constant τ of the output protection's thermal image θ: dθ/dt = ((I/In)² − θ)/τ; trips at θ ≥ 1.3²." },
     maxPower: { label: "Rated apparent power", unit: "VA", description: "Reported when √(P² + Q²) exceeds it." },
   },
   capacitor: { resistance: { label: "ESR", description: "Equivalent series resistance (dielectric and lead loss)." }, ratedCurrent: { label: "Ripple current rating" } },
@@ -219,7 +221,9 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
   },
   pressureSensor: { quantity: { options: [{ value: "pressure", label: "Outlet / node gauge pressure" }, { value: "inletPressure", label: "Inlet gauge pressure" }, { value: "differentialPressure", label: "Inlet − outlet (pump rise is negative)" }] } },
   source3: {
-    maxCurrent: { label: "Line current rating", description: "Output protection trips above this RMS line current." },
+    maxCurrent: { label: "Line current rating", description: "Rated line current In of the thermal-magnetic output protection (C characteristic): short-time surges such as a direct-on-line motor start are tolerated; sustained overload trips at θ ≥ 1.3², and magneticTrip × In trips instantly." },
+    magneticTrip: { description: "Instantaneous output trip at this multiple of the line current rating (C characteristic: 10)." },
+    thermalTimeConstant: { description: "Time constant τ of the output protection's thermal image θ: dθ/dt = ((I/In)² − θ)/τ; trips at θ ≥ 1.3²." },
     maxPower: { label: "Rated apparent power", unit: "VA", description: "Three-phase rating √3·V_LL·I_L (reported when exceeded)." },
     internalResistance: { label: "Source resistance per phase", description: "Per-phase series resistance of the supply (transformer/cable short-circuit resistance)." },
     enabled: { label: "Output enabled" },

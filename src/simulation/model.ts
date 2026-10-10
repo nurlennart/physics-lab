@@ -288,7 +288,7 @@ export const definitions: Record<Kind, Definition> = {
       { id: "a", domain: "electrical", label: "Phase conductors L1–L3 (single-line)" },
       { id: "b", domain: "electrical", label: "Neutral / star point" },
     ],
-    defaults: { lineVoltage: 400, frequency: 50, internalResistance: 0, maxCurrent: 63, maxPower: 43600, enabled: true },
+    defaults: { lineVoltage: 400, frequency: 50, internalResistance: 0, maxCurrent: 63, maxPower: 43600, enabled: true, magneticTrip: 10, thermalTimeConstant: 60 },
     variants: [
       { id: "industrial250", label: "Industrial 400 V 3~ 250 A", cost: 900, spec: "400 V · 250 A · 173 kVA", overrides: { maxCurrent: 250, maxPower: 173000, internalResistance: 0.005 } },
       { id: "mv690", label: "690 V 3~ 400 A", cost: 1600, spec: "690 V · 400 A · 478 kVA", overrides: { lineVoltage: 690, maxCurrent: 400, maxPower: 478000, internalResistance: 0.003 } },
@@ -305,7 +305,7 @@ export const definitions: Record<Kind, Definition> = {
       { id: "a", domain: "electrical", label: "Line (phase) terminal" },
       { id: "b", domain: "electrical", label: "Neutral terminal" },
     ],
-    defaults: { voltage: 230, frequency: 50, phase: 0, internalResistance: 0, internalReactance: 0, ratedVoltage: 400, maxCurrent: 16, maxPower: 3680, enabled: true },
+    defaults: { voltage: 230, frequency: 50, phase: 0, internalResistance: 0, internalReactance: 0, ratedVoltage: 400, maxCurrent: 16, maxPower: 3680, enabled: true, magneticTrip: 10, thermalTimeConstant: 60 },
   },
   inductor: {
     label: "Inductor / reactor",

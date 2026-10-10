@@ -1,4 +1,4 @@
-import { measurementLabel } from "../simulation/capabilities";
+import { inspectorMeasurements, measurementLabel } from "../simulation/capabilities";
 import { useState } from "react";
 import {
   SlidersHorizontal,
@@ -177,8 +177,7 @@ export default function Inspector() {
                       : "Terminal voltage"}
               </div>
               <div className="measurement-list">
-                {options
-                  .filter((x) => x !== "nodeVoltage")
+                {inspectorMeasurements(c, !!simulation.electrical.readings[c.id]?.ac, s.project.connections.some((w) => w.domain === "hydraulic" && (w.from.component === c.id || w.to.component === c.id)))
                   .map((m) => {
                     const value = readProbe(
                       {
@@ -194,7 +193,7 @@ export default function Inspector() {
                     return (
                       <div key={m}>
                         <span>
-                          {measurementLabel(c, m)}
+                          {measurementLabel(c, m, !!simulation.electrical.readings[c.id]?.ac)}
                         </span>
                         <strong>
                           {value === null
