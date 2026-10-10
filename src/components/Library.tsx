@@ -151,7 +151,7 @@ export default function Library() {
         Physics models & assumptions
       </button>
       <div className="library-version">
-        <span>LAB ENGINE</span>
+        <span>Lab engine</span>
         <span>v3.0.0</span>
       </div>
     </aside>

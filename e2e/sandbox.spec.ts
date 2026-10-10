@@ -79,7 +79,7 @@ test("new protection, thermal, hydraulic, automation and three-phase components 
     await expect(page.locator(".inspector h3").first()).toHaveText(name);
   }
   await page.getByLabel("Search component library").fill("");
-  await expect(page.locator(".inspector")).toContainText("PROTECTION STATE");
+  await expect(page.locator(".inspector")).toContainText("Protection state");
   await expect(page.getByRole("button", { name: "Re-close after trip" })).toBeDisabled();
   await expect(page.locator(".derived-list")).toContainText("Trip time at 3 × In");
   expect(errors).toEqual([]);

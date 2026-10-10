@@ -267,7 +267,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
   if (!(await page.getByLabel("Inject component fault").isVisible()))
     await page
       .locator("summary")
-      .filter({ hasText: "EXPERIMENT FAULTS" })
+      .filter({ hasText: "Experiment faults" })
       .click();
   await page.getByLabel("Inject component fault").selectOption("sensorFault");
   await expect(page.locator('[data-component="relay"]')).toContainText(
@@ -278,7 +278,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
   if (!(await page.getByLabel("Inject component fault").isVisible()))
     await page
       .locator("summary")
-      .filter({ hasText: "EXPERIMENT FAULTS" })
+      .filter({ hasText: "Experiment faults" })
       .click();
   await page.getByLabel("Inject component fault").selectOption("stuckClosed");
   await expect(page.locator('[data-component="relay"]')).toContainText(
@@ -288,7 +288,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
   if (!(await page.getByLabel("Inject component fault").isVisible()))
     await page
       .locator("summary")
-      .filter({ hasText: "EXPERIMENT FAULTS" })
+      .filter({ hasText: "Experiment faults" })
       .click();
   await page.getByLabel("Inject component fault").selectOption("sensorFault");
   await expect(page.locator('[data-component="safety"]')).toContainText(

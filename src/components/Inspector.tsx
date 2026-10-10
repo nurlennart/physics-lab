@@ -149,13 +149,13 @@ export default function Inspector() {
           <>
             <div className="inspector-section">
               <div className="section-label">
-                <span>LIVE MEASUREMENTS</span>
+                <span>Live measurements</span>
                 <span
                   className={
                     status === "healthy" ? "live-badge" : "invalid-badge"
                   }
                 >
-                  {status.toUpperCase()}
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
                 </span>
               </div>
               <div
@@ -221,7 +221,7 @@ export default function Inspector() {
               const omega = rpm * Math.PI / 30, ratio = omega / prop(c, "ratedSpeed"), qMax = prop(c, "ratedFlow") * Math.max(0.01, ratio) * Math.SQRT2;
               const headMax = Math.max(0.1, prop(c, "shutoffHead") * ratio * ratio);
               const points = Array.from({ length: 25 }, (_, i) => { const q = qMax * i / 24; return `${20 + 215 * q / qMax},${115 - 95 * pumpCurve(c, omega, q).head / headMax}`; }).join(" ");
-              return <div className="inspector-section"><div className="section-label">PUMP OPERATING CURVE</div><svg viewBox="0 0 260 145" role="img" aria-label="Pump head versus flow with calculated operating point"><path d="M20 15V115H240" fill="none" stroke={T.n11}/><polyline points={points} fill="none" stroke={T.hydraulicText} strokeWidth="2"/><circle cx={20 + 215 * Math.max(0, h?.flow ?? 0) / qMax} cy={115 - 95 * pumpCurve(c, omega, h?.flow ?? 0).head / headMax} r="4" fill={T.electricalText}/><text x="20" y="137" fill={T.n13} fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text></svg><p className="field-hint">Curve at actual {rpm.toFixed(0)} RPM. Dot shows solved flow and gross impeller head; internal loss reduces net outlet rise.</p></div>;
+              return <div className="inspector-section"><div className="section-label">Pump operating curve</div><svg viewBox="0 0 260 145" role="img" aria-label="Pump head versus flow with calculated operating point"><path d="M20 15V115H240" fill="none" stroke={T.n11}/><polyline points={points} fill="none" stroke={T.hydraulicText} strokeWidth="2"/><circle cx={20 + 215 * Math.max(0, h?.flow ?? 0) / qMax} cy={115 - 95 * pumpCurve(c, omega, h?.flow ?? 0).head / headMax} r="4" fill={T.electricalText}/><text x="20" y="137" fill={T.n13} fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text></svg><p className="field-hint">Curve at actual {rpm.toFixed(0)} RPM. Dot shows solved flow and gross impeller head; internal loss reduces net outlet rise.</p></div>;
             })()}
             <RatingIndicators c={c} />
             <ModelAndPresets c={c} />
@@ -230,7 +230,7 @@ export default function Inspector() {
             {['rigidBody', 'motor', 'pump', 'tank', 'heater', 'cooler'].includes(c.kind) && <div className="inspector-section"><button className="fault-button" disabled={!c.spatial && simulation.time > 0} onClick={() => c.spatial ? actions.workspace('physical') : actions.associate(c.id)}>{c.spatial ? 'Locate same component in Physical view' : 'Place component in Physical view'}</button></div>}
             {c.kind === "safety" && (
               <div className="inspector-section">
-                <div className="section-label">INDEPENDENT PROTECTION</div>
+                <div className="section-label">Independent protection</div>
                 <p className="field-hint">
                   Own sensing path. Trip is latched. Reset below{" "}
                   {(prop(c, "threshold") - prop(c, "resetMargin")).toFixed(1)}
@@ -251,7 +251,7 @@ export default function Inspector() {
             {(c.kind === "breaker" || c.kind === "motorProtector") && (
               <div className="inspector-section">
                 <div className="section-label">
-                  <span>PROTECTION STATE</span>
+                  <span>Protection state</span>
                   <span className={simulation.breakers[c.id]?.tripped ? "invalid-badge" : "live-badge"}>{simulation.breakers[c.id]?.tripped ? "TRIPPED" : c.props.closed === false ? "OPEN" : "CLOSED"}</span>
                 </div>
                 <div className="rating-bar">
@@ -274,7 +274,7 @@ export default function Inspector() {
             )}
             <div className="inspector-section">
               <div className="section-label">
-                <Activity size={13} /> MEASUREMENT PROBES
+                <Activity size={13} /> Measurement probes
               </div>
               <select
                 className="wide-select"
@@ -310,7 +310,7 @@ export default function Inspector() {
             </div>
             {allowedFaults(c).length > 0 && (
               <details className="inspector-section">
-                <summary className="section-label">EXPERIMENT FAULTS</summary>
+                <summary className="section-label">Experiment faults</summary>
                 <p className="field-hint">
                   Faults change actual behavior and are recorded for replay.
                   Reset removes faults.

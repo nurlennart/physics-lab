@@ -11,12 +11,12 @@ import { pumpRatingReadouts } from "../simulation/hydraulic";
 import { formatEngineering, parseEngineering } from "../editor/engineering";
 
 const groupTitles: Record<ParamGroup, string> = {
-  operating: "OPERATING CONTROLS",
-  configuration: "ENGINEERING CONFIGURATION",
-  ratings: "RATINGS & PROTECTION",
-  thermal: "THERMAL PROPERTIES",
-  initial: "INITIAL STATE",
-  advanced: "ADVANCED MODEL",
+  operating: "Operating controls",
+  configuration: "Configuration",
+  ratings: "Ratings & protection",
+  thermal: "Thermal properties",
+  initial: "Initial state",
+  advanced: "Advanced model",
 };
 const groupOrder: ParamGroup[] = ["operating", "configuration", "ratings", "thermal", "initial", "advanced"];
 const challengeEnvironment = (c: Component, field: string) =>
@@ -165,7 +165,7 @@ export function DerivedValues({ c }: { c: Component }) {
   if (!rows.length) return null;
   return (
     <div className="inspector-section">
-      <div className="section-label"><span>CALCULATED FROM CONFIGURATION</span><Info size={12} /></div>
+      <div className="section-label"><span>Calculated from configuration</span><Info size={12} /></div>
       <div className="measurement-list derived-list">
         {rows.map((r) => (
           <div key={r.label} title={r.note}>
@@ -214,7 +214,7 @@ export function RatingIndicators({ c }: { c: Component }) {
   return (
     <div className="inspector-section">
       <div className="section-label">
-        <span><Gauge size={11} /> OPERATION VS RATINGS</span>
+        <span><Gauge size={11} /> Operation vs ratings</span>
         {c.kind === "source" && r && sourceLimit(c) < Infinity && <span className={r.regulation === "cc" ? "invalid-badge" : "live-badge"}>{r.regulation === "cc" ? "CC · CURRENT LIMIT" : "CV · VOLTAGE REGULATION"}</span>}
       </div>
       {bars}
@@ -233,7 +233,7 @@ export function ModelAndPresets({ c }: { c: Component }) {
   const locked = simulation.time > 0 || s.busy;
   return (
     <div className="inspector-section">
-      <div className="section-label"><span>MODEL & PRESETS</span>{cost.estimated && <span className="invalid-badge">CUSTOM</span>}</div>
+      <div className="section-label"><span>Model & presets</span>{cost.estimated && <span className="invalid-badge">Custom</span>}</div>
       <select className="wide-select" aria-label="Component variant" value={c.variant ?? "standard"} disabled={locked} onChange={(e) => actions.variant(c.id, e.target.value)}>
         <option value="standard">Standard · €{d.cost}</option>
         {d.variants?.map((x) => <option key={x.id} value={x.id}>{x.label} · €{x.cost}</option>)}
@@ -273,7 +273,7 @@ export function EnvironmentPanel() {
   useEffect(() => setDraft(String(ambient)), [ambient]);
   return (
     <div className="inspector-section environment-panel">
-      <div className="section-label"><span>EXPERIMENT ENVIRONMENT</span><span className="live-badge">{s.project.challenge ? "CHALLENGE" : "SANDBOX"}</span></div>
+      <div className="section-label"><span>Experiment environment</span><span className="live-badge">{s.project.challenge ? "CHALLENGE" : "SANDBOX"}</span></div>
       <div className="property-row">
         <span className="property-label" title="Ambient temperature of element thermal masses (resistors, heaters, cables, motors, contacts) and their initial temperature at reset. Tanks, pipes and coolers have their own ambient parameter.">Laboratory ambient</span>
         <span className="number-field">

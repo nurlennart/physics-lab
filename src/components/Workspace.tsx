@@ -25,6 +25,7 @@ import {
 import { actions, availableHistory, simulation, useLab } from "../editor/store";
 import {
   definitions,
+  isSource,
   prop,
   type Component,
   type Connection,
@@ -1017,7 +1018,7 @@ export default function Workspace() {
                         : c.kind === "inductionMotor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A line · slip ${((simulation.electrical.readings[c.id]?.machine?.slip ?? 1) * 100).toFixed(1)} % · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(0)} W shaft`
                         : simulation.electrical.readings[c.id]?.ac
-                          ? `${(simulation.electrical.readings[c.id]?.voltage ?? 0).toFixed(1)} V~ · ${(simulation.electrical.readings[c.id]?.power ?? 0).toFixed(0)} W · ${(simulation.electrical.readings[c.id]?.reactivePower ?? 0).toFixed(0)} var`
+                          ? `${(simulation.electrical.readings[c.id]?.voltage ?? 0).toFixed(1)} V~ · ${((isSource(c) ? -1 : 1) * (simulation.electrical.readings[c.id]?.power ?? 0)).toFixed(0)} W · ${((isSource(c) ? -1 : 1) * (simulation.electrical.readings[c.id]?.reactivePower ?? 0)).toFixed(0)} var`
                       : c.kind === "source"
                         ? `${Math.abs(r?.current ?? 0).toFixed(2)} A  ·  ${Math.abs(r?.power ?? 0).toFixed(1)} W`
                         : c.kind === "switch"
@@ -1033,7 +1034,7 @@ export default function Workspace() {
               </g>
             );
           })}
-          {camera.z >= 0.35 && project.connections.map((w) => {
+          {camera.z >= 0.5 && project.connections.map((w) => {
             const value = wireValue(w, project, wireFlow(w)), at = value && chipAnchor(routePoints(w, project.components));
             if (!value || !at) return null;
             // Counter-scale so chips stay about 12 px on screen at any zoom.

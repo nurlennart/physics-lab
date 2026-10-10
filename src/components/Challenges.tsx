@@ -59,7 +59,7 @@ export default function Challenges() {
       >
         <div className="dialog-header">
           <div>
-            <span className="eyebrow">THE ENGINEERING PLAYGROUND</span>
+            <span className="eyebrow">The engineering playground</span>
             <h2>Nine missions. Your inventions.</h2>
           </div>
           <button
@@ -81,7 +81,7 @@ export default function Challenges() {
               return (
                 <article className={`challenge-card ${d.id}`} key={d.id}>
                   <div className="challenge-card-top">
-                    <span className="assignment-id">CHALLENGE {d.number}</span>
+                    <span className="assignment-id">Challenge {d.number}</span>
                     <span className="difficulty">{d.difficulty}</span>
                   </div>
                   <div className="challenge-illustration">

@@ -11,7 +11,7 @@ export default function Models() {
       >
         <div className="dialog-header">
           <div>
-            <span className="eyebrow">LAB REFERENCE</span>
+            <span className="eyebrow">Lab reference</span>
             <h2>Physics you can inspect.</h2>
           </div>
           <button

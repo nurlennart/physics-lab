@@ -1,3 +1,4 @@
+import { niceRange, formatTick } from "./chart-axis";
 import { T } from "../theme/tokens";
 import { measurementLabel } from "../simulation/capabilities";
 import { useState } from "react";
@@ -44,11 +45,7 @@ function Plot({
         .map((p) => s.values[p.id])
         .filter((v): v is number => typeof v === "number"),
     );
-  const min = Math.min(0, ...values),
-    max = Math.max(min + 1, ...values),
-    pad = (max - min) * 0.08,
-    lo = min - pad,
-    hi = max + pad;
+  const { lo, hi } = niceRange(values);
   const sample =
     hover === null
       ? undefined
@@ -101,7 +98,7 @@ function Plot({
               strokeDasharray="3 4"
             />
             <text x="45" y={14 + i * 30} textAnchor="end">
-              {(hi - ((hi - lo) * i) / 2).toPrecision(3)}
+              {formatTick(hi - ((hi - lo) * i) / 2, (hi - lo) / 2)}
             </text>
           </g>
         ))}

@@ -52,7 +52,7 @@ test('hydraulic starter transfers finite inventory, exposes probes, valve respon
   expect(after.hydraulics.readings[valve.id].flow).toBeLessThan(before.hydraulics.readings[valve.id].flow);
   await page.locator('[data-component="pump"]').click(); await expect(page.getByRole('img', { name: /Pump head/ })).toBeVisible();
   await page.locator('[data-component="motor"]').click();
-  await page.locator('summary').filter({ hasText: 'EXPERIMENT FAULTS' }).click();
+  await page.locator('summary').filter({ hasText: 'Experiment faults' }).click();
   await page.getByLabel('Inject component fault').selectOption('powerLoss');
   await page.getByRole('button', { name: 'Single simulation step' }).click();
   const coast = await read(page); expect(coast.motors[motor.id].omega).toBeGreaterThan(0); expect(coast.motors[motor.id].current).toBe(0);

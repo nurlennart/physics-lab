@@ -55,7 +55,7 @@ test('pipe fluid sensor: select, trace, fault, clear, remove target and reload',
   await page.getByRole('button', { name: /Add trace for TS-/ }).click();
   await advance(page, 10);
   await expect(page.locator('.primary-reading')).not.toContainText('—');
-  await page.locator('summary').filter({ hasText: 'EXPERIMENT FAULTS' }).click();
+  await page.locator('summary').filter({ hasText: 'Experiment faults' }).click();
   await page.getByLabel('Inject component fault').selectOption('sensorFault');
   await expect(page.locator('.primary-reading')).toContainText('—');
   await page.getByLabel('Inject component fault').selectOption('');

@@ -3242,7 +3242,7 @@ select option {
   .app-rail .mobile-library-button, .app-rail .mobile-inspector-button { display: inline-flex; }
   /* Library and inspector overlays cover the workspace only, never the rail or run controls. */
   .app-body > .lab-grid { position: relative; }
-  .library, .show-inspector .inspector { position: absolute; top: 0; bottom: 0; }
+  .library, .show-inspector .inspector { position: absolute; top: 0; bottom: 0; grid-area: auto; }
   .status-footer .solver-status, .status-footer > div:last-child > span { display: none; }
 }
 .status-footer .engine-status i { display: none; }
@@ -3298,3 +3298,88 @@ select option {
 .header-transport { flex: 0 0 auto; }
 .header-actions { flex: 1 1 0; display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
 @media (max-width: 850px) { .header-project, .header-actions { flex: 0 1 auto; } .header-project { flex-grow: 1; } }
+
+/* ─── Design overhaul 4/4: panels, dialogs, mobile ─────────────────────────
+   Sentence-case section titles at 13 px, a neutral hero value, metric rows on
+   tiles, readable rating bars and fields. Nothing user-facing below 12 px. */
+.inspector-component { padding: 4px 16px 16px; }
+.inspector-icon { width: 42px; height: 42px; border-radius: var(--r-md); background: var(--n-6); border-color: var(--n-9); color: var(--electrical-text); }
+.inspector-component h3 { font-size: var(--fs-lg); font-weight: 600; color: var(--n-15); margin-bottom: 2px; }
+.inspector-component .mono { font-size: var(--fs-xs); }
+.inspector-tabs { height: 40px; border-color: var(--n-7); }
+.inspector-tabs button { font-size: var(--fs-sm); color: var(--n-13); }
+.inspector-tabs button.active { color: var(--n-15); font-weight: 600; }
+.inspector-tabs button.active:after { background: var(--n-15); }
+.inspector-section { padding: 16px; border-bottom: 1px solid var(--n-7); }
+.section-label { color: var(--n-14); font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0; margin-bottom: 12px; }
+.section-label svg { color: var(--n-13); }
+.live-badge, .paused-badge, .invalid-badge { font: 600 var(--fs-xs) var(--sans); letter-spacing: 0; padding: 2px 8px; border-radius: var(--r-pill); gap: 6px; }
+.live-badge { color: var(--ok-text); background: rgb(var(--ok-rgb) / 0.12); }
+.live-badge:before { width: 6px; height: 6px; background: var(--ok); }
+.invalid-badge { color: var(--warning-text); background: rgb(var(--warning-rgb) / 0.12); }
+.primary-reading, .primary-reading.thermal-text, .primary-reading.electrical-text { color: var(--n-15) !important; font-size: 40px; font-weight: 500; letter-spacing: -0.5px; }
+.primary-reading small { font: 400 var(--fs-lg) var(--sans); color: var(--n-13); }
+.reading-caption { font-size: var(--fs-xs); color: var(--n-13); margin-bottom: 14px; }
+.measurement-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.measurement-list > div { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 4px; padding: 9px 10px; border-radius: var(--r-md); background: var(--n-4); font-size: var(--fs-xs); color: var(--n-13); min-width: 0; }
+.measurement-list > div > span { line-height: 1.3; }
+.measurement-list strong { font: 500 var(--fs-md) var(--mono); color: var(--n-15); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.measurement-list small { font: var(--fs-xs) var(--sans); color: var(--n-13); }
+.rating-bar { margin: 10px 0; font-size: var(--fs-xs); color: var(--n-14); }
+.rating-bar strong { font: 500 var(--fs-xs) var(--mono); }
+.rating-bar i { height: 6px; border-radius: 3px; background: var(--n-8); }
+.rating-bar b { background: var(--ok); border-radius: 3px; }
+.rating-bar.near b { background: var(--warning); }
+.rating-bar.over b { background: var(--fault); }
+.rating-bar.over strong { color: var(--fault-text); }
+.property-row { font-size: var(--fs-sm); color: var(--n-14); margin: 12px 0; }
+.number-field { height: 34px; width: 128px; min-width: 110px; border-color: var(--n-9); background: var(--n-0); border-radius: var(--r-sm); }
+.number-field:focus-within { border-color: var(--n-12); }
+.number-field input { font: 500 var(--fs-sm) var(--mono); padding: 6px 0 6px 10px; }
+.number-field span { font: var(--fs-xs) var(--sans); color: var(--n-13); padding-right: 9px; }
+.property-row select, .wide-select { min-height: 34px; border-radius: var(--r-sm); font-size: var(--fs-sm); }
+.param-badge { font: 500 11px var(--sans); letter-spacing: 0; text-transform: none; border-radius: var(--r-sm); padding: 1px 6px; }
+.field-hint { font-size: var(--fs-xs); color: var(--n-13); line-height: 1.55; }
+.param-group > summary::after { color: var(--n-13); }
+.inspector-footer { height: 40px; padding: 0 16px; font-size: var(--fs-xs); color: var(--n-13); border-top: 1px solid var(--n-7); }
+.inspector-footer strong { font: 500 var(--fs-sm) var(--mono); color: var(--n-15); }
+.panel-heading { font-size: var(--fs-md); }
+.text-link { font-size: var(--fs-sm); }
+/* Physical inspector: hide native spinners that covered the digits. */
+.physical-inspector input[type=number]::-webkit-inner-spin-button, .physical-inspector input[type=number]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.physical-inspector input[type=number] { appearance: textfield; }
+.physical-tool-section h3 { font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0; color: var(--n-14); }
+.challenge-dialog, .model-dialog { background: var(--n-3); border-color: var(--n-9); border-radius: var(--r-lg); padding: 28px; max-width: 980px; }
+.eyebrow { font: 500 var(--fs-xs) var(--sans); letter-spacing: 0; color: var(--n-13); margin-bottom: 6px; }
+.dialog-header h2 { font-size: var(--fs-xxl); font-weight: 600; letter-spacing: -0.2px; }
+.dialog-header > button { width: 36px; height: 36px; border-radius: var(--r-md); border-color: var(--n-9); }
+.dialog-intro { font-size: var(--fs-md); color: var(--n-14); max-width: 70ch; line-height: 1.5; }
+.challenge-cards { gap: 16px; align-items: stretch; max-height: none; overflow: visible; }
+.challenge-card { display: flex; flex-direction: column; background: var(--n-4); border-color: var(--n-9); border-radius: var(--r-lg); padding: 18px; }
+.challenge-card-top { font: 500 var(--fs-xs) var(--sans); letter-spacing: 0; color: var(--n-13); align-items: center; }
+.difficulty::first-letter { text-transform: uppercase; }
+.difficulty { display: inline-block; font-size: var(--fs-xs); text-transform: lowercase; color: var(--n-14); border-color: var(--n-9); border-radius: var(--r-pill); padding: 2px 9px; }
+.challenge-card h3 { font-size: var(--fs-xl); font-weight: 600; }
+.challenge-card > p, .challenge-card li { font-size: var(--fs-sm); line-height: 1.5; color: var(--n-14); }
+.challenge-card .challenge-meta { margin-top: auto; padding-top: 12px; font-size: var(--fs-xs); }
+.challenge-card .primary-button { margin-top: 12px; min-height: 40px; border-radius: var(--r-md); background: var(--ok); color: var(--on-accent); font-weight: 600; border: none; }
+.challenge-card .primary-button:hover { background: var(--ok-text); color: var(--on-accent); }
+/* Telemetry dock */
+.telemetry-tabs button { font-size: var(--fs-sm); }
+.chart-heading { height: auto; min-height: 40px; flex-wrap: wrap; gap: 6px 18px; padding: 8px 20px 4px; font-size: var(--fs-xs); color: var(--n-13); }
+.chart-heading label, .chart-heading select, .chart-heading button { font-size: var(--fs-xs); }
+.chart-heading select { color: var(--n-15); }
+.chart-heading button { color: var(--n-14); }
+.chart-heading input[type="range"] { accent-color: var(--n-14); }
+.trace-readouts { font-size: var(--fs-xs); }
+.trace-plot text { font-family: var(--mono); fill: var(--n-13); }
+
+@media (max-width: 580px) {
+  .transport > button[aria-label="Single simulation step"], .control-divider { display: none; }
+  .transport .run-button, .transport .run-button:hover { min-width: 84px; }
+  .header-transport .simulation-clock { padding: 0 10px; font-size: 0; }
+  .header-transport .simulation-clock strong { margin-left: 0; font-size: var(--fs-md); }
+  .chart-heading > span { flex-basis: 100%; }
+  /* Inspector as a bottom sheet over the workspace. */
+  .show-inspector .inspector { left: 0; right: 0; top: auto; width: auto; height: min(70%, 560px); border-left: 0; border-top: 1px solid var(--n-9); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -12px 40px rgb(0 0 0 / 0.5); }
+}
