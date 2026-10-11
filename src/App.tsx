@@ -43,6 +43,7 @@ import { actions, simulation, useLab, toast, getState } from "./editor/store";
 import { evaluateChallenge } from "./simulation/challenges";
 import { projectCost } from "./simulation/model";
 import { registerLabTools } from "./editor/webmcp";
+import ErrorBoundary from "./components/ErrorBoundary";
 /** Preset files use a transient picker so the project import remains the only file input. */
 function importPresetFile() {
   const input = document.createElement("input");
@@ -381,10 +382,10 @@ export default function App() {
       <div
         className={`lab-grid ${mobileLibrary ? "show-library" : ""} ${mobileInspector ? "show-inspector" : ""}`}
       >
-        {s.workspaceView === 'physical' ? <PhysicalTools /> : <Library />}
+        <ErrorBoundary area="library" label="The component library">{s.workspaceView === 'physical' ? <PhysicalTools /> : <Library />}</ErrorBoundary>
         <main className="engineering-area">
           <ChallengeStrip />
-          {s.workspaceView === 'physical' ? <PhysicalView /> : <Workspace />}
+          <ErrorBoundary area="workspace" label="The workspace">{s.workspaceView === 'physical' ? <PhysicalView /> : <Workspace />}</ErrorBoundary>
           {simulation.error && (
             <div className="solver-error" role="alert">
               <TriangleAlert size={16} />
@@ -398,8 +399,8 @@ export default function App() {
             </div>
           )}
         </main>
-        {s.workspaceView === 'physical' ? <PhysicalInspector /> : <Inspector />}
-        <Telemetry />
+        <ErrorBoundary area="inspector" label="The inspector">{s.workspaceView === 'physical' ? <PhysicalInspector /> : <Inspector />}</ErrorBoundary>
+        <ErrorBoundary area="telemetry" label="Telemetry"><Telemetry /></ErrorBoundary>
       </div>
       </div>
       <footer className="status-footer">
@@ -449,10 +450,12 @@ export default function App() {
           </button>
         </div>
       </footer>
-      {s.view === "challenges" && <Challenges />}
-      {s.view === "models" && <Models />}
-      {s.view === "examples" && <Examples />}
-      {s.view === "guidebook" && <ChallengeGuidebook />}
+      <ErrorBoundary area="dialog" label="This view">
+        {s.view === "challenges" && <Challenges />}
+        {s.view === "models" && <Models />}
+        {s.view === "examples" && <Examples />}
+        {s.view === "guidebook" && <ChallengeGuidebook />}
+      </ErrorBoundary>
       {s.toast && (
         <div className="toast" role="status">
           <span>{s.toast}</span>

@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { Builder } from "./scaling-validation";
 import { Simulation, DT } from "./engine";
-import { thermalTau } from "./parameters";
+import { thermalTau, fuseMeltTime } from "./parameters";
+import type { Project } from "./model";
 import { peakOverInterval } from "./electrical";
 import type { Property } from "./model";
 
@@ -17,23 +18,69 @@ const runUntilTrip = (s: Simulation, id: string, limit: number) => {
   while (s.time < limit && !s.breakers[id]?.tripped) s.step();
   return s.time;
 };
-describe("fuse melting characteristic (gG-type thermal image)", () => {
+describe("gG fuse: element and body thermal images", () => {
   const meltTime = (s: Simulation, id: string, limit: number) => { while (s.time < limit && !s.failed[id]) expect(s.step()).toBe(true); return s.failed[id] ? s.time : Infinity; };
-  it("melts at the analytic inverse time, at the rated time at 10 × In and with constant I²t at high current", () => {
-    for (const x of [2.4, 10, 30]) {
-      const { s, device } = rig("fuse", 10 * x), tau = thermalTau(device), k2 = 1.45 ** 2;
-      expect(meltTime(s, device.id, 30)).toBeCloseTo(tau * Math.log(x * x / (x * x - k2)), 1);
+  const cold = (x: number) => fuseMeltTime({ theta: 0, body: 0 }, x * x, 0.1);
+  // Sets the constant-current source of the rig (the fuse argument only names the rig).
+  const setCurrent = (s: Simulation, _fuse: string, current: number) =>
+    expect(s.refresh({ ...s.project, components: s.project.components.map((c) => c.kind === "source" ? { ...c, props: { ...c.props, current } } : c) } as Project)).toBe(true);
+  const meltedAt = (s: Simulation) => s.events.find((e) => /fuse element melted/.test(e.message))?.time ?? Infinity;
+  it("meets the IEC 60269 gG time-current gates (16 A link, normalized) and the 10 × In melting time", () => {
+    expect(cold(2.06)).toBeGreaterThanOrEqual(10); // 10 s gate: no melting before 10 s at 2.06 × In
+    expect(cold(4.06)).toBeLessThanOrEqual(5); // 5 s gate: melted within 5 s at 4.06 × In
+    expect(cold(5.31)).toBeGreaterThanOrEqual(0.1); // 0.1 s gate, lower current
+    expect(cold(10)).toBeCloseTo(0.1, 9); // tripTime
+    expect(cold(1.25)).toBe(Infinity); // conventional non-fusing current
+    expect(cold(1.6)).toBeLessThan(3600); // conventional fusing current
+    // Inverse time, and ≈ constant pre-arcing I²t at high current.
+    for (const [a, b] of [[2, 3], [3, 5], [5, 10], [10, 30]]) expect(cold(b)).toBeLessThan(cold(a));
+    expect(cold(50) * 50 ** 2 / (cold(30) * 30 ** 2)).toBeCloseTo(1, 1);
+  });
+  it("the engine melts the element at the model's time for overload and short circuit", () => {
+    for (const x of [2.4, 10]) {
+      const { s, device } = rig("fuse", 10 * x);
+      expect(Math.abs(meltTime(s, device.id, 60) - cold(x))).toBeLessThanOrEqual(DT + 1e-9);
       expect(s.electrical.readings[device.id].current).toBe(0);
     }
-    expect(thermalTau(rig("fuse", 1).device) * Math.log(100 / (100 - 1.45 ** 2))).toBeCloseTo(0.1, 12);
+    const short = rig("fuse", 10 * 30);
+    expect(meltTime(short.s, short.device.id, 1)).toBeCloseTo(DT, 12); // 11 ms pre-arcing: within the first step
   });
-  it("carries the conventional non-fusing current 1.25 × In indefinitely and melts at 1.6 × In", () => {
+  it("carries 1.25 × In for hours and melts at 1.6 × In within the conventional hour (adaptive steps)", () => {
     const hold = rig("fuse", 12.5);
     hold.s.advanceAdaptive(3 * 3600);
     expect(hold.s.failed[hold.device.id]).toBeUndefined();
     const melt = rig("fuse", 16);
     melt.s.advanceAdaptive(3600);
     expect(melt.s.failed[melt.device.id]).toBe(true);
+    expect(Math.abs(meltedAt(melt.s) - cold(1.6))).toBeLessThan(0.5);
+  });
+  it("thermal memory: a preloaded fuse melts sooner, and recovers its cold characteristic after cooling", () => {
+    const { s, device } = rig("fuse", 12);
+    s.advanceAdaptive(1800); // 1.2 × In for 30 min warms the body
+    setCurrent(s, device.id, 20);
+    const t0 = s.time, warm = meltTime(s, device.id, t0 + 60) - t0;
+    expect(warm).toBeLessThan(0.6 * cold(2));
+    const cooled = rig("fuse", 12);
+    cooled.s.advanceAdaptive(1800);
+    setCurrent(cooled.s, cooled.device.id, 0);
+    cooled.s.advanceAdaptive(3 * 3600);
+    setCurrent(cooled.s, cooled.device.id, 20);
+    const t1 = cooled.s.time;
+    expect((meltTime(cooled.s, cooled.device.id, t1 + 60) - t1) / cold(2)).toBeCloseTo(1, 1);
+  });
+  it("repeated 3 × In pulses accumulate heat: a later pulse melts the element although one pulse does not", () => {
+    const { s, device } = rig("fuse", 30);
+    expect(cold(3)).toBeGreaterThan(4);
+    let pulses = 0;
+    while (!s.failed[device.id] && pulses < 20) {
+      setCurrent(s, device.id, 30); pulses++;
+      for (let i = 0; i < 4 / DT && !s.failed[device.id]; i++) expect(s.step()).toBe(true);
+      if (s.failed[device.id]) break;
+      setCurrent(s, device.id, 0);
+      for (let i = 0; i < 4 / DT; i++) expect(s.step()).toBe(true);
+    }
+    expect(s.failed[device.id]).toBe(true);
+    expect(pulses).toBeGreaterThan(1);
   });
 });
 describe("thermal-magnetic protection", () => {

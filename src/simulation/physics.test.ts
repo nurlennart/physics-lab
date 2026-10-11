@@ -1,3 +1,4 @@
+import { fuseMeltTime } from "./parameters";
 import { describe, it, expect } from "vitest";
 import { connect, makeComponent, connectionError, type Project } from "./model";
 import { solveElectrical } from "./electrical";
@@ -200,10 +201,11 @@ describe("thermal coupling and energy", () => {
       { component: p.components[1].id, port: "b" },
     );
     const s = new Simulation(q);
-    // 11.8 A through a 5 A fuse (2.35 × In): the element melts after ≈ 2.25 s (gG-type thermal image).
-    advance(s, 2);
+    // 11.8 A through a 5 A fuse (2.35 × In): the element melts at the gG model's time (≈ 14 s).
+    const melt = fuseMeltTime({ theta: 0, body: 0 }, (12 / 1.02 / 5) ** 2, 0.1);
+    advance(s, melt - 0.1);
     expect(s.failed[f.id]).toBeUndefined();
-    advance(s, 0.5);
+    advance(s, 0.2);
     expect(s.failed[f.id]).toBe(true);
     expect(s.electrical.dissipatedPower).toBeCloseTo(0, 6);
     expect(s.events.some((e) => e.level === "error" && e.time > 0)).toBe(true);
@@ -248,7 +250,7 @@ describe("challenges and project validation", () => {
     const p = starter("light");
     p.challenge = "light";
     const s = new Simulation(p);
-    advance(s, 3.1);
+    advance(s, 3.2); // 3 s within rating after the ≈ 0.12 s filament surge
     const r = evaluateChallenge(p, s)!;
     expect(r.complete).toBe(true);
     expect(r.stars).toBe(3);

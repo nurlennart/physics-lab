@@ -1,12 +1,12 @@
 {
-  "recordedAt": "2026-10-11T16:13:22.586Z",
+  "recordedAt": "2026-10-11T17:09:03.044Z",
   "results": {
     "light": {
       "complete": true,
       "failed": false,
       "score": 100,
       "stars": 3,
-      "time": 3,
+      "time": 3.117,
       "error": null,
       "violations": []
     },

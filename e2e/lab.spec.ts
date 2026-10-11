@@ -67,7 +67,7 @@ test("builds a functioning light circuit and completes challenge 001", async ({
     "UNPOWERED",
   );
 });
-test("builds and completes heating challenge 002 using real fixed steps", async ({
+test("builds and completes heating challenge 002 using real fixed steps", { tag: "@slow" }, async ({
   page,
 }) => {
   test.setTimeout(180000);
@@ -362,7 +362,7 @@ test("wires expose movable orthogonal bends and maintain connection endpoints", 
   await page.getByRole("button", { name: "Redo", exact: true }).click();
   await expect(wire).not.toHaveAttribute("d", before!);
 });
-test("plays Thermal Runaway through wiring, physical fault, safety latch and manual recovery", async ({
+test("plays Thermal Runaway through wiring, physical fault, safety latch and manual recovery", { tag: "@slow" }, async ({
   page,
 }) => {
   test.setTimeout(240000);

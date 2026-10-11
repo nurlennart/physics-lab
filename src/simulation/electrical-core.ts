@@ -143,6 +143,8 @@ export interface ElectricalRuntime {
   drives?: Record<string, { running: boolean; frequency: number; voltage: number }>;
   /** Element temperatures (°C) for temperature-dependent resistance. */
   temperatures?: Record<string, number>;
+  /** Lamp filament resistance relative to the configured hot resistance (filament.ts); missing = hot. */
+  filaments?: Record<string, number>;
 }
 export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? c.props.mode : "ideal") as "ideal" | "internal" | "cvcc" | "cc";
 /** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
@@ -226,7 +228,7 @@ export function solveElectricalCore(
     if (resistances[c.id] !== undefined) return resistances[c.id];
     // DC capacitor insulation leakage is distinct from the AC series ESR. Use the
     // same resistance for stamping, readings and thermal power accounting.
-    const r = c.kind === "capacitor" && !ac ? 1e9 : c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20);
+    const r = c.kind === "capacitor" && !ac ? 1e9 : c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20) * (c.kind === "lamp" ? runtime.filaments?.[c.id] ?? 1 : 1);
     if (!Number.isFinite(r) || r <= 0)
       throw Error(`${c.name}: resistance must be positive (temperature-dependent model gives ${r.toPrecision(3)} Ω at ${(runtime.temperatures?.[c.id] ?? 20).toFixed(1)} °C).`);
     return (resistances[c.id] = r);

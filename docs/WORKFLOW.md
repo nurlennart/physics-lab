@@ -11,6 +11,7 @@
 | `npm run check:quick` | Incremental typecheck; Vitest files affected by uncommitted changes (module graph) | Inner development loop |
 | `npm run test:changed` / `npx vitest run --changed main` | Tests affected by uncommitted changes / by the whole branch | Before committing |
 | `npx vitest run <file>` · `scripts/e2e.sh --grep "<title>"` | One unit file · selected browser tests against the production build | Focused regression |
+| `npm run test:e2e:quick` | Browser tests without the `@slow` tag (63 of 76; about 2 min): every UI workflow, starter, save/reload and regression except long scored, rigid-body and drive runs | UI changes |
 | `npm run check:fast` | Release gate without browser tests | Before merging physics changes |
 | `npm run check` | Full release gate | Before tagging (required) |
 
@@ -20,7 +21,7 @@
 2. Unit and integration tests (Vitest, one worker per core).
 3. Physics validation (`validation/latest.md`), scale-validation campaign (`validation/scaling.md`) and challenge score guard (`scripts/check-scores.mjs`, compared with `validation/reference-scores.json`), side by side as three processes.
 4. Production bundle (`vite build`; the typecheck already ran).
-5. Browser tests against the production bundle (`scripts/e2e.sh`).
+5. Browser tests against the production bundle (`scripts/e2e.sh`), including the `@slow` tier (complete scored challenges, rigid-body and drive starters). One Playwright worker: the browser simulations are CPU-bound, and two workers on this two-core host were no faster and timed out under load (`PHYSICS_LAB_E2E_WORKERS` overrides).
 
 Each step prints its duration. Validation reports are only rewritten when a result changes, so re-running the gate leaves a clean tree clean.
 

@@ -3383,3 +3383,20 @@ select option {
   /* Inspector as a bottom sheet over the workspace. */
   .show-inspector .inspector { left: 0; right: 0; top: auto; width: auto; height: min(70%, 560px); border-left: 0; border-top: 1px solid var(--n-9); border-radius: var(--r-lg) var(--r-lg) 0 0; box-shadow: 0 -12px 40px rgb(0 0 0 / 0.5); }
 }
+
+.render-error {
+  margin: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--fault-dim);
+  border-radius: 4px;
+  background: var(--n-8);
+  color: var(--fault-text);
+  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.render-error p { margin: 0; color: var(--n-13); }
+.render-error code { font-size: 11px; opacity: 0.85; overflow-wrap: anywhere; }
+.render-error div { display: flex; flex-wrap: wrap; gap: 8px; }
+.render-error button { color: var(--fault-text); text-decoration: underline; font-size: 11px; }

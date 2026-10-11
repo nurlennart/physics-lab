@@ -87,7 +87,15 @@ export function validateRunArchive(value: unknown): RunArchive {
 }
 /** Yield during long browser restores; every domain is recomputed from validated inputs,
  * so an imported snapshot cannot forge inventory, energy or a challenge score. */
-export async function restoreRunArchive(value: unknown, yieldFrame: () => Promise<void> = () => new Promise(resolve => setTimeout(resolve, 0))) {
+/**
+ * Yield to the browser between computation slices. A MessageChannel task is not subject to the ≥ 4 ms clamp that
+ * browsers apply to nested zero-delay timers (which cost a quarter of every 12 ms slice); Node falls back to a timer.
+ */
+export function yieldToBrowser(): Promise<void> {
+  if (typeof MessageChannel === "undefined") return new Promise((resolve) => setTimeout(resolve, 0));
+  return new Promise((resolve) => { const channel = new MessageChannel(); channel.port1.onmessage = () => { channel.port1.close(); resolve(); }; channel.port2.postMessage(null); });
+}
+export async function restoreRunArchive(value: unknown, yieldFrame: () => Promise<void> = yieldToBrowser) {
   const a = validateRunArchive(value), s = new Simulation(a.origin);
   let chunk = performance.now();
   for (const _ of replaySteps(s, a.inputs, a.duration)) {

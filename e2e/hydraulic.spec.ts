@@ -69,7 +69,7 @@ test('saving a live hydraulic experiment restores fluid, motor and fault state',
   await page.getByRole('button', { name: /Event log/ }).click(); await page.getByRole('button', { name: 'Replay experiment' }).click();
   await expect(page.locator('.event-log')).toContainText('restored by deterministic replay');
 });
-test('challenge 004 is playable through real hydraulic, shaft and electrical terminal wiring', async ({ page }) => {
+test('challenge 004 is playable through real hydraulic, shaft and electrical terminal wiring', { tag: '@slow' }, async ({ page }) => {
   test.setTimeout(180000);
   await page.getByRole('button', { name: /Challenges/ }).click(); await page.getByRole('button', { name: 'Start assignment' }).nth(3).click();
   await addMissionEquipment(page, 'transfer');
@@ -83,7 +83,7 @@ test('challenge 004 is playable through real hydraulic, shaft and electrical ter
 // The supply assignment's 720 s completion is the same engine computation as `scripts/check-scores.mjs`, which
 // checks its completion time and score exactly; the browser path (import, scored advance, challenge strip) is
 // exercised here with the pressure assignment.
-for (const mode of ['pressure'] as const) test(`challenge ${mode} completes under actual demand and sensor-fault conditions`, async ({ page }) => {
+for (const mode of ['pressure'] as const) test(`challenge ${mode} completes under actual demand and sensor-fault conditions`, { tag: '@slow' }, async ({ page }) => {
   test.setTimeout(240000);
   await importExperiment(page, mode, true);
   await advance(page, 195);

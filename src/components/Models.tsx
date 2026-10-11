@@ -79,7 +79,7 @@ export default function Models() {
             source without internal resistance pauses the simulation. Exceeding
             power, current or voltage ratings is reported and the component is
             marked overloaded; failure follows from its modelled temperature.
-            Fuses melt on a gG-type thermal image θ = (I/In)²: they carry 1.25 × In indefinitely, melt at 1.6 × In and, above that, in inverse time (configurable melting time at 10 × In; ≈ constant pre-arcing I²t at high current).
+            Fuses melt on gG-type element and body thermal images: they carry 1.25 × In indefinitely, melt at 1.6 × In and, above that, in inverse time within the IEC 60269 gG gates (configurable melting time at 10 × In); a warm fuse melts sooner. Filament lamps start with a cold filament at 10 % of their hot resistance: the switch-on surge is about ten times the operating current and decays within about 0.1 s.
           </p>
           <h3>Coupled thermal model</h3>
           <div className="formula">

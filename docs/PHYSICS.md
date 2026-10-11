@@ -15,7 +15,7 @@ Ideal DC voltage sources and constant resistances satisfy `V = IR` and `P = VI`.
 
 Every resistive branch stamps conductance `1/R` into G. Voltage-source incidence stamps B. Partial-pivot Gaussian elimination solves the matrix. The reported residual is the largest absolute equation residual; its equations have mixed voltage/current units, so it is a diagnostic rather than a dimensionless accuracy bound.
 
-A closed switch is 0.01 Ω; an open switch contributes no conductance. A fuse is 0.02 Ω until it opens. A voltmeter has 10 MΩ input resistance. Lamp brightness derives from measured electrical power. Lamps omit filament temperature dependence. Element resistance is constant. Ground references merge; independent islands get individual reference potentials.
+A closed switch is 0.01 Ω; an open switch contributes no conductance. A fuse is 0.02 Ω until it opens. A voltmeter has 10 MΩ input resistance. Lamp brightness derives from measured electrical power. Lamps have a thermally inert tungsten filament (see "Filament lamp" below); other element resistances are constant unless a temperature coefficient is set. Ground references merge; independent islands get individual reference potentials.
 
 A wire short across an ideal supply produces an explicit solver error. Redundant/conflicting ideal-source configurations can produce singular matrices; the experiment pauses instead of substituting values. DC ideal/internal supplies trip open above their configured current rating; AC supplies use the thermal-magnetic characteristic described below. Sandbox passive overloads warn; scored assignments fail their checks. Temperature can fail a passive branch open. Fuses open after their configurable delay above rated current. An element exceeding its thermal rating also fails open. These are idealized protection and failure models, not manufacturer-specific fuse curves.
 
@@ -524,10 +524,48 @@ Now the drive is a cascade, as in industrial armature-voltage drives:
 - **Lift reference design.** Its position controller had a 135 RPM feed-forward that only compensated the old drive's load droop: with a stiff speed loop the lift ran into its end stop. The reference design now commands speed = 150 RPM/m × position error (no feed-forward) and completes the assignment in 13.9 s (score 82) instead of 18.1 s (81). Rotation and pressure results are unchanged.
 - **Not modelled:** armature inductance and current-loop dynamics, field weakening, the drive's own losses, four-quadrant braking choppers.
 
-## Fuse melting characteristic (audit 2026-10-11)
+## Fuse melting characteristic (audits 2026-10-11)
 
-- **Before:** a fuse opened after `tripTime` (0.1 s) at any current above 1.0 × In: a 10 A fuse carrying 10.5 A blew in 0.1 s, and a short circuit took the same 0.1 s.
-- **Now:** the fuse element is a thermal image θ = (I/In)² with dθ/dt = ((I/In)² − θ)/τ, updated exactly over each step, melting at θ ≥ 1.45². 1.45 lies between the IEC 60269 gG conventional non-fusing current (1.25 × In, carried indefinitely) and fusing current (1.6 × In, melts). Melting time t = τ·ln(x²/(x² − 1.45²)); at high current t → τ·1.45²/x², a constant pre-arcing I²t = 2.1·τ·In².
-- `tripTime` is the melting time at 10 × In, so τ = tripTime / ln(100/(100 − 1.45²)) = 47·tripTime (4.7 s for the default 0.1 s, pre-arcing I²t ≈ 990 A²s for 10 A).
-- **Limits:** one time constant cannot match a real gG curve everywhere: at 2–3 × In it melts in seconds where real fuses take tens of seconds. No arcing time, current limitation or let-through I²t; no aR/gR/gM classes.
-- Tests: `protection.test.ts` (analytic melting times at 2.4, 10 and 30 × In, 1.25 × In for 3 h, melting at 1.6 × In).
+- **Original:** a fuse opened after `tripTime` (0.1 s) at any current above 1.0 × In.
+- **First correction:** one thermal image θ = (I/In)², melting at θ ≥ 1.45² (between the IEC 60269 gG conventional non-fusing current 1.25 × In and fusing current 1.6 × In). One time constant cannot follow a gG curve: fitted to 0.1 s at 10 × In it melted in 3.2 s at 2.06 × In, where the IEC gate requires ≥ 10 s.
+- **Now: element and body.** Normalized temperature rises with a steady element rise of (I/In)²:
+  - element: C₁·dθ_e/dt = x² − (θ_e − θ_b)/0.15, C₁ = 44.16·T;
+  - body/holder: time constant 400·T to ambient, carrying 85 % of the steady rise;
+  - melting at θ_e ≥ 1.45²; T = `tripTime` = melting time at 10 × In (exactly, by calibration).
+  - Exact update over each step (2 × 2 matrix exponential); adaptive steps are bounded by a tenth of the remaining melting time.
+- **IEC 60269 gG gates (16 A link, normalized), default T = 0.1 s:**
+
+| Current | Gate | Single image | Element + body |
+| --- | --- | --- | --- |
+| 1.25 × In | no melting in 1 h | never | never |
+| 1.6 × In | melts within 1 h | 8.1 s | 70 s |
+| 2.06 × In | ≥ 10 s | 3.2 s ✗ | 24 s |
+| 3 × In | (≈ 5 s typical) | 1.25 s | 5.8 s |
+| 4.06 × In | ≤ 5 s | 0.64 s | 1.1 s |
+| 5.31 × In | ≥ 0.1 s | 0.36 s | 0.45 s |
+| 9.38 × In | ≤ 0.1 s | 0.114 s | 0.115 s |
+| 10 × In | — | 0.100 s | 0.100 s |
+
+  The 9.38 × In gate is missed by 15 ms by both, because the default melting time of 0.1 s at 10 × In sits at the slow edge of the band; lower `tripTime` for a faster link.
+- **Thermal memory:** after 30 min at 1.2 × In the body is warm and 2 × In melts the element in less than 60 % of the cold time; after 3 h without current the cold characteristic is restored. Repeated 4 s pulses at 3 × In (cold melting time 5.8 s) melt the element on a later pulse.
+- **Limits:** no arcing time, current limitation or let-through I²t; one generic gG shape scaled by T (no aM/aR classes, no rating-dependent curve shape).
+- Tests: `protection.test.ts` (gates, engine melting times, conventional currents, memory and cooling, repeated pulses).
+
+## Filament lamp (audit 2026-10-11)
+
+- **Before:** constant resistance; switching on drew the hot current at once.
+- **Now:** a lumped tungsten filament with u = T/T_op (T_op ≈ 2,700 K at rated power), `filament.ts`:
+  - R(u) = R_hot·u^n with n = ln 0.1 / ln(293 K/2,700 K) = 1.04: the cold filament has 10 % of the configured (hot) resistance.
+  - Losses P_r·[0.9·(u⁴ − u_a⁴)/(1 − u_a⁴) + 0.1·(u − u_a)/(1 − u_a)]: radiation plus gas/lead conduction, equal to the rated power at u = 1.
+  - Heat capacity from a 0.08 s time constant linearized at the operating point.
+  - Per step the electrical power (solved with the start-of-step resistance) is held and the losses are implicit. Energy is exact: the electrical energy equals the change of filament energy (counted as stored energy) plus the heat passed to the lamp body. The explicit resistance coupling is stable for any step (perturbation factor → −0.28).
+- **Results (default 6 Ω / 30 W lamp):**
+  - At rated voltage (13.4 V) it settles to exactly 6 Ω and 30 W: the former model is the operating-temperature limit.
+  - Switch-on draws ≈ 10 × the hot current (22 A instead of 2.24 A) and decays to within 10 % in ≈ 0.12 s.
+  - Below rated voltage the lamp is non-ohmic, P ∝ V^1.59: 25.1 W at 12 V instead of 24 W.
+  - A warm filament re-lights with a smaller surge. The filament cools to below 30 % of T_op within about 1 s.
+- **Rating:** a lamp is over its rating when the filament runs above its rated temperature (overvoltage), not during the switch-on surge.
+- **Protection:** a gG fuse and a C-curve breaker (10 × In) sized above the hot current carry the surge; a B-type release at 5 × In sized at 3 A trips magnetically on the 22 A surge, as real B-curve breakers do on large lamp loads.
+- **Challenge 001:** the 3 s of rated operation start after the surge. The reference completes at 3.117 s instead of 3 s, still 100/100 and three stars; re-recorded.
+- **Limits:** the surge is resolved at the fixed step (1/60 s): the first step carries the full cold current, so the surge's I²t is overestimated (up to ≈ 2× for this time constant). No light output spectrum, AC flicker or filament ageing.
+- Tests: `lamp-filament.test.ts`.

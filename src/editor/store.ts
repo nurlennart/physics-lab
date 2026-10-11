@@ -37,7 +37,7 @@ import { propertyError, transitionError, withProperty, editPolicy } from "../sim
 import { Simulation, FixedClock, DT, AdaptiveRun } from "../simulation/engine";
 import { paramSpec } from "../simulation/parameters";
 import { evaluateChallenge } from "../simulation/challenges";
-import { createRunArchive, restoreRunArchive, type RecordedInput } from "../simulation/replay";
+import { createRunArchive, restoreRunArchive, yieldToBrowser, type RecordedInput } from "../simulation/replay";
 import { makeSpatial, defaultWorld, type ShapeKind, type SpatialBody, type MechanicalJoint } from '../simulation/spatial-model';
 import { makeJoint } from '../simulation/spatial-projects';
 import { layoutEquipment } from './spatial-layout';
@@ -643,8 +643,8 @@ export const actions = {
         let painted = 0;
         while (!run.done && state.busy) {
           run.run(12);
-          if (performance.now() - painted > 100) { painted = performance.now(); emit({ progress: run.progress }); }
-          await new Promise((r) => setTimeout(r, 0));
+          if (performance.now() - painted > 250) { painted = performance.now(); emit({ progress: run.progress }); }
+          await yieldToBrowser();
         }
         if (run.steps) {
           recordedInputs.push({ at, adaptive: { duration: seconds, steps: run.steps, tolerance, maxStep } });
@@ -665,8 +665,9 @@ export const actions = {
               break;
             }
           }
-          if (performance.now() - painted > 100) { painted = performance.now(); emit({ progress: count / total }); }
-          await new Promise((r) => setTimeout(r, 0));
+          // Each progress update re-renders the application: four per second (at ten per second they took 14 % of a scored advance).
+          if (performance.now() - painted > 250) { painted = performance.now(); emit({ progress: count / total }); }
+          await yieldToBrowser();
         }
       }
       checkChallenge();

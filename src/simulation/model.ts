@@ -426,7 +426,7 @@ export const definitions: Record<Kind, Definition> = {
   lamp: {
     label: "Filament lamp",
     category: "Electrical",
-    description: "Constant-resistance lamp with measured brightness",
+    description: "Tungsten filament lamp: cold resistance 10 % of hot, switch-on surge, measured brightness",
     spec: "6 Ω · 30 W",
     cost: 15,
     prefix: "L",
@@ -572,7 +572,7 @@ export const definitions: Record<Kind, Definition> = {
   fuse: {
     label: "Protective fuse",
     category: "Electrical",
-    description: "gG-type fuse: element thermal image, carries 1.25 × In, melts at 1.6 × In, inverse-time with ≈ constant I²t at high current",
+    description: "gG-type fuse: element and body thermal images, carries 1.25 × In, melts at 1.6 × In, inverse-time within the IEC gG gates",
     spec: "10 A · 0.02 Ω",
     cost: 5,
     prefix: "F",

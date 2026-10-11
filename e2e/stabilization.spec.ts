@@ -15,7 +15,9 @@ async function add(page: Page, name: string) {
   await page.locator('.library-component').filter({ has: page.getByText(name, { exact: true }) }).click();
   await page.getByLabel('Search component library').fill('');
 }
-for (const example of examples) test(`UI starter: ${example.title} runs, resets and reloads`, async ({ page }) => {
+// Long scored or rigid-body runs (with their full replay on reload) belong to the complete tier only.
+const slowStarters = new Set(['rotor', 'lift', 'rotation', 'starting', 'pressure']);
+for (const example of examples) test(`UI starter: ${example.title} runs, resets and reloads`, { tag: slowStarters.has(example.mode) ? '@slow' : [] }, async ({ page }) => {
   test.setTimeout(120000);
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto('/'); await openExample(page, example.title);
@@ -32,8 +34,8 @@ for (const example of examples) test(`UI starter: ${example.title} runs, resets 
   await expect(page.locator('.trace-readouts')).not.toContainText('invalid');
   const expected = {
     battery: ['State of charge', 62, 64], contactor: ['Coil voltage', 23.9, 24.1], transformer: ['Secondary RMS voltage', 23.9, 24.1], radiator: ['Radiator outlet', 58, 59],
-    acRlc: ['AC-01 power', 90, 110], induction: ['IM-01 rpm', 1400, 1500], starting: ['Motor \\(drive\\) rpm', 1480, 1500], light: ['L-01 power', 20, 25], heat: ['TK-01 water', 22, 24], automated: ['TK-01 water', 77, 83], transfer: ['Delivery flow', 30, 60], pressure: ['Delivery pressure', 0.34, 0.36], supply: ['Destination level', 25, 96], circulation: ['Destination water', 40, 60], industrial: ['Hydraulic power', 500, 1200], exchanger: ['Recovered heat', 100000, 500000], mechanism: ['Spring position', 2, 5], rotor: ['Rotor speed', 100, 140], descent: ['Load height', 1, 1.1], lift: ['Lift height', 2.99, 3.01], rotation: ['Rotor speed', 124, 127],
-  }[example.mode] as [string, number, number];
+    acRlc: ['AC-01 power', 90, 110], induction: ['IM-01 rpm', 1400, 1500], starting: ['Motor \\(drive\\) rpm', 1480, 1500], light: ['L-01 power', 24.5, 26], heat: ['TK-01 water', 22, 24], automated: ['TK-01 water', 77, 83], transfer: ['Delivery flow', 30, 60], pressure: ['Delivery pressure', 0.34, 0.36], supply: ['Destination level', 25, 96], circulation: ['Destination water', 40, 60], industrial: ['Hydraulic power', 500, 1200], exchanger: ['Recovered heat', 100000, 500000], mechanism: ['Spring position', 2, 5], rotor: ['Rotor speed', 100, 140], descent: ['Load height', 1, 1.1], lift: ['Lift height', 2.99, 3.01], rotation: ['Rotor speed', 124, 127],
+  }[example.mode] as [string, number, number]; // light: 25.1 W, a filament lamp at 12 V is non-ohmic (6 Ω hot at 13.4 V)
   const value = parseFloat(await page.locator('.trace-readouts label').filter({ hasText: new RegExp('^' + expected[0] + '\\s*[-0-9]') }).locator('strong').textContent() ?? 'NaN');
   expect(value).toBeGreaterThan(expected[1]); expect(value).toBeLessThan(expected[2]);
   await page.getByRole('button', { name: 'Event log', exact: true }).click();

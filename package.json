@@ -23,6 +23,7 @@
     "check:fast": "scripts/check.sh --no-e2e",
     "check:scores": "node scripts/check-scores.mjs",
     "test:e2e:prod": "scripts/e2e.sh",
+    "test:e2e:quick": "scripts/e2e.sh --grep-invert @slow",
     "deploy": "scripts/deploy.sh",
     "tokens": "UPDATE_TOKENS=1 vitest run src/theme/tokens.test.ts"
   },

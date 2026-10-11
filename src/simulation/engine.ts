@@ -10,7 +10,8 @@ import {
   type ElectricalResult,
   type ElectricalReading,
 } from "./electrical";
-import { warnOnlyTemperature, thermalTau, thermalThreshold } from "./parameters";
+import { FILAMENT_COLD, filamentEnergy, filamentRatio, filamentStep } from "./filament";
+import { warnOnlyTemperature, thermalTau, thermalThreshold, fuseStep, fuseMeltTime } from "./parameters";
 import { inventoryVolume } from "./water";
 import { transitionError } from "./integrity";
 import { Automation, allowedFaults, type FaultType } from "./automation";
@@ -168,7 +169,9 @@ export class Simulation {
   /** Latched protective trips (supply output protection), a subset of `failed`. */
   tripped: Record<string, string> = {};
   /** Thermal image θ = (I/In)² memory and trip state of breakers and motor protectors. */
-  breakers: Record<string, { theta: number; tripped: boolean }> = {};
+  breakers: Record<string, { theta: number; tripped: boolean; body?: number }> = {};
+  /** Lamp filament states u = T/T_op (see filament.ts); missing = cold. */
+  filaments: Record<string, number> = {};
   /** Tanks currently spilling over their rim (for start/stop events). */
   overflowing: Record<string, boolean> = {};
   /** Largest |dT/dt| of any thermal mass in the last step (K/s). */
@@ -239,6 +242,7 @@ export class Simulation {
     this.failed = {};
     this.tripped = {};
     this.breakers = {};
+    this.filaments = {};
     this.overflowing = {};
     this.thermalRate = Infinity;
     this.sampleInterval = 0.25;
@@ -315,6 +319,7 @@ export class Simulation {
       this.automation = new Automation();
       this.automation.pulses = pulses;
       this.breakers = {};
+    this.filaments = {};
       this.devices = new Devices(); this.devices.initialize(this.project);
     }
     for (const c of project.components)
@@ -346,6 +351,7 @@ export class Simulation {
           faults: this.faults,
           disconnected: this.disconnected,
           temperatures: this.temperatures,
+          filaments: this.filamentRatios(),
           open: this.openDevices(),
         });
         this.electricalKey = key;
@@ -373,8 +379,12 @@ export class Simulation {
     return null;
   }
   /** Resistance depends on the simulated temperature (explicit coupling per step). */
+  /** Lamp resistance relative to the configured hot resistance (filament temperature). */
+  filamentRatios() {
+    return Object.fromEntries(this.project.components.filter(c => c.kind === "lamp").map(c => [c.id, filamentRatio(this.filaments[c.id] ?? FILAMENT_COLD)]));
+  }
   temperatureDependent() {
-    return this.project.components.some((c) => prop(c, "tempCoefficient") !== 0);
+    return this.project.components.some((c) => c.kind === "lamp" || prop(c, "tempCoefficient") !== 0);
   }
   /** Null when adaptive stepping is valid for this experiment; otherwise the reason. */
   adaptiveUnavailable(): string | null {
@@ -407,7 +417,13 @@ export class Simulation {
       const overTime = this.overCurrentTime[c.id] ?? 0;
       if (overTime > 0 && overTime <= MOTOR_START_ALLOWANCE) limit = Math.min(limit, MOTOR_START_ALLOWANCE / 100);
       const r = this.electrical.readings[c.id];
-      if ((c.kind === "breaker" || c.kind === "motorProtector" || c.kind === "fuse") && r) {
+      // Fuse: exact integration at constant current; resolve the melting instant if this current melts it.
+      if (c.kind === "fuse" && r) {
+        const b = this.breakers[c.id], x2 = (Math.abs(r.current) / prop(c, "ratedCurrent")) ** 2;
+        const melt = fuseMeltTime({ theta: b?.theta ?? 0, body: b?.body ?? 0 }, x2, prop(c, "tripTime", 0.1));
+        if (Number.isFinite(melt)) limit = Math.min(limit, Math.max(DT, melt / 10));
+      }
+      if ((c.kind === "breaker" || c.kind === "motorProtector") && r) {
         const x2 = (Math.abs(r.contactCurrent ?? r.current) / prop(c, "ratedCurrent")) ** 2;
         if (x2 > 0.8 * thermalThreshold(c.kind) ** 2) limit = Math.min(limit, thermalTau(c) / 200);
       }
@@ -679,10 +695,14 @@ export class Simulation {
           ambient: prop(cooler, "ambient", 20),
         });
     }
+    // Lamp filaments store part of the step's electrical energy; the rest heats the lamp body.
+    const filaments: Record<string, { u: number; heat: number }> = {};
+    for (const c of p.components.filter(c => c.kind === "lamp"))
+      filaments[c.id] = filamentStep(c, this.filaments[c.id] ?? FILAMENT_COLD, this.failed[c.id] ? 0 : this.electrical.readings[c.id]?.power ?? 0, dt);
     thermal.forEach((c, i) => {
       a[i][i] = caps[i] / dt;
       b[i] =
-        (caps[i] / dt) * old[i] + (isMotor(c) ? coupled?.heatPower[c.id] ?? 0 : this.electrical.readings[c.id]?.heatPower ?? this.electrical.readings[c.id]?.power ?? 0);
+        (caps[i] / dt) * old[i] + (isMotor(c) ? coupled?.heatPower[c.id] ?? 0 : filaments[c.id]?.heat ?? this.electrical.readings[c.id]?.heatPower ?? this.electrical.readings[c.id]?.power ?? 0);
       for (const l of losses[i]) {
         a[i][i] += l.ua;
         b[i] += l.ua * l.ambient;
@@ -709,6 +729,11 @@ export class Simulation {
       return false;
     }
     this.storedEnergy += this.devices.chemicalChange - chemicalBefore;
+    for (const [id, f] of Object.entries(filaments)) {
+      const c = p.components.find(c => c.id === id)!;
+      this.storedEnergy += filamentEnergy(c, f.u) - filamentEnergy(c, this.filaments[id] ?? FILAMENT_COLD);
+      this.filaments[id] = f.u;
+    }
     this.ambientEnergy += p.components.filter(c => c.kind === "radiator").reduce((sum, c) => sum + (this.electrical.readings[c.id]?.fanPower ?? 0) * dt, 0);
     this.thermalRate = n ? Math.max(0, ...thermal.map((_, i) => Math.abs(temperatures[i] - old[i]) / dt)) : 0;
     thermal.forEach((c, i) => {
@@ -799,7 +824,8 @@ export class Simulation {
       if (r && !isSource(c)) {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
-        const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
+        // A lamp's rating is its filament temperature at rated power: the cold-filament switch-on surge is not an overload.
+        const overPower = c.kind === "lamp" ? (this.filaments[c.id] ?? FILAMENT_COLD) > 1.001 : (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
           rawOverCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
           overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) * (c.kind === "motor" ? this.multiphysics.motors[c.id]?.duty ?? 1 : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %; a PWM-driven DC armature sees duty × bus voltage
         // Motors draw several times rated current while starting direct-on-line; that is normal operation.
@@ -820,9 +846,10 @@ export class Simulation {
             if (exceeded) this.violation(quantity === "current" && startTolerant ? `${c.name}: above its rated current for more than ${MOTOR_START_ALLOWANCE} s (normal starting current is tolerated). Consequences follow from its modelled temperature.` : `${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
         }
         if (c.kind === "fuse" && !this.failed[c.id]) {
-          // Fuse element as a thermal image θ = (I/In)² (exact update over the interval); it melts at θ ≥ 1.45².
+          // Element and body thermal images (exact update over the interval); the element melts at θ ≥ 1.45².
           const b = (this.breakers[c.id] ??= { theta: 0, tripped: false }), x2 = (Math.abs(r.current) / prop(c, "ratedCurrent")) ** 2;
-          b.theta = x2 + (b.theta - x2) * Math.exp(-dt / thermalTau(c));
+          const next = fuseStep({ theta: b.theta, body: b.body ?? 0 }, x2, dt, prop(c, "tripTime", 0.1));
+          b.theta = next.theta; b.body = next.body;
           if (b.theta >= thermalThreshold("fuse") ** 2) {
             this.fail(c.id, `${c.name}: overcurrent — fuse element melted (${Math.sqrt(x2).toFixed(2)} × In).`);
             changed = true;

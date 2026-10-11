@@ -10,7 +10,8 @@ function completeLight(extraSwitches = 0) {
   const p = starter('light'); p.challenge = 'light';
   for (let i = 0; i < extraSwitches; i++) p.components.push(makeComponent('switch', 0, 0, p.components));
   const s = new Simulation(p);
-  for (let i = 0; i < 180; i++) expect(s.step()).toBe(true);
+  // 3 s of lamp operation within its rating, counted once the filament surge has decayed (≈ 0.12 s).
+  for (let i = 0; i < 200 && !evaluateChallenge(p, s)?.complete; i++) expect(s.step()).toBe(true);
   return { p, s, result: evaluateChallenge(p, s)! };
 }
 
@@ -26,10 +27,10 @@ describe('attainable challenge economy scores', () => {
     expect(economyFactor(id, budget, budget)).toBe(0);
     expect(economyFactor(id, budget + 10, budget)).toBe(0);
   });
-  it('awards 100/100 and three stars to the standard €68 circuit after exactly three seconds', () => {
+  it('awards 100/100 and three stars to the standard €68 circuit after three seconds of rated operation', () => {
     const { p, s, result } = completeLight();
     expect(projectCost(p)).toBe(68);
-    expect(s.time).toBeCloseTo(3, 10);
+    expect(s.time).toBeCloseTo(3.117, 3); // 3 s plus the cold-filament surge (7 steps)
     expect(result.complete).toBe(true);
     expect(result.score).toBe(100);
     expect(result.stars).toBe(3);

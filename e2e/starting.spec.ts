@@ -14,7 +14,7 @@ async function advance(page: Page, seconds: number) {
 }
 const select = (page: Page, kind: string) => page.locator(`[data-component="${kind}"]`).first().click();
 
-test('starting a motor three ways: star-delta, soft starter and drive through the UI', async ({ page }) => {
+test('starting a motor three ways: star-delta, soft starter and drive through the UI', { tag: '@slow' }, async ({ page }) => {
   test.setTimeout(120000);
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
   await openExample(page, 'Starting a motor three ways');

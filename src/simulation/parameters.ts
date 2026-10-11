@@ -504,14 +504,14 @@ export function derivedReadouts(c: Component): Readout[] {
       { label: "Flow at 1 m/s", value: Math.PI * n("diameter") ** 2 / 4 * 60000, unit: "L/min" },
     ];
     case "fuse": {
-      const tau = thermalTau(c), k = thermalThreshold(c.kind);
-      const t = (x: number) => x * x > k * k ? tau * Math.log(x * x / (x * x - k * k)) : Infinity;
+      const t = (x: number) => fuseMeltTime({ theta: 0, body: 0 }, x * x, n("tripTime", 0.1));
       return [
         { label: "Conventional non-fusing current", value: 1.25 * n("ratedCurrent"), unit: "A", note: "carried indefinitely" },
         { label: "Melting time at 1.6 × In (cold)", value: t(1.6), unit: "s" },
+        { label: "Melting time at 2 × In (cold)", value: t(2), unit: "s" },
         { label: "Melting time at 3 × In (cold)", value: t(3), unit: "s" },
         { label: "Melting time at 10 × In (cold)", value: t(10), unit: "s" },
-        { label: "Pre-arcing I²t (high current)", value: tau * k * k * n("ratedCurrent") ** 2, unit: "A²s" },
+        { label: "Pre-arcing I²t at 20 × In", value: t(20) * (20 * n("ratedCurrent")) ** 2, unit: "A²s" },
       ];
     }
     case "breaker": case "motorProtector": {
@@ -530,17 +530,50 @@ export function derivedReadouts(c: Component): Readout[] {
 }
 
 // ---------- Protective thermal image (breaker / motor protector) ----------
+// ---------- gG fuse: element and body thermal images ----------
+/**
+ * Two-body fuse model (normalized temperature rises; steady element rise = (I/In)²). The element (capacity
+ * C₁ = 44.16·T, conductance 1/0.15 to the body) heats the body/holder (time constant 400·T to ambient, 85 % of the
+ * steady rise); T = melting time at 10 × In ("tripTime"). Fitted to the IEC 60269 gG gates of a 16 A link:
+ * ≥ 10 s at 2.06 × In (24 s), ≤ 5 s at 4.06 × In (1.1 s), ≥ 0.1 s at 5.31 × In (0.45 s), conventional currents
+ * 1.25/1.6 × In (melting threshold 1.45² as before). A single time constant melted in 3.2 s at 2.06 × In.
+ */
+const FUSE_ELEMENT_SHARE = 0.15, FUSE_ELEMENT_CAPACITY = 44.162134779, FUSE_BODY_TAU = 400;
+export type FuseState = { theta: number; body: number };
+function fuseSystem(tripTime: number) {
+  const c1 = FUSE_ELEMENT_CAPACITY * tripTime, g1 = 1 / FUSE_ELEMENT_SHARE, g2 = 1 / (1 - FUSE_ELEMENT_SHARE), c2 = FUSE_BODY_TAU * tripTime / (1 - FUSE_ELEMENT_SHARE);
+  const a = -g1 / c1, b = g1 / c1, c = g1 / c2, d = -(g1 + g2) / c2;
+  const mean = (a + d) / 2, root = Math.sqrt(((a - d) / 2) ** 2 + b * c);
+  return { a, b, c, d, l1: mean + root, l2: mean - root };
+}
+/** Exact update of the fuse thermal images over dt at constant (I/In)² = x2. */
+export function fuseStep(state: FuseState, x2: number, dt: number, tripTime: number): FuseState {
+  const { a, b, c, d, l1, l2 } = fuseSystem(tripTime), steadyBody = x2 * (1 - FUSE_ELEMENT_SHARE);
+  const u = state.theta - x2, v = state.body - steadyBody, e1 = Math.exp(l1 * dt), e2 = Math.exp(l2 * dt);
+  // e^{At} = (e^{l1 t}(A − l2 I) − e^{l2 t}(A − l1 I)) / (l1 − l2)
+  const k = 1 / (l1 - l2);
+  const m11 = k * (e1 * (a - l2) - e2 * (a - l1)), m12 = k * (e1 - e2) * b, m21 = k * (e1 - e2) * c, m22 = k * (e1 * (d - l2) - e2 * (d - l1));
+  return { theta: x2 + m11 * u + m12 * v, body: steadyBody + m21 * u + m22 * v };
+}
+/** Time until the element reaches the melting threshold at constant x2 from `state` (Infinity if it never does). */
+export function fuseMeltTime(state: FuseState, x2: number, tripTime: number) {
+  const melt = thermalThreshold("fuse") ** 2;
+  if (state.theta >= melt) return 0;
+  if (x2 <= melt) return Infinity;
+  let lo = 0, hi = 1e-4 * tripTime;
+  while (fuseStep(state, x2, hi, tripTime).theta < melt) { lo = hi; hi *= 2; if (hi > 1e7) return Infinity; }
+  for (let i = 0; i < 60; i++) { const mid = (lo + hi) / 2; if (fuseStep(state, x2, mid, tripTime).theta < melt) lo = mid; else hi = mid; }
+  return hi;
+}
 /**
  * Trip threshold of the thermal image θ = (I/In)² in steady state. Fuses: 1.45, between the IEC 60269 gG
  * conventional non-fusing (1.25 × In) and fusing (1.6 × In) currents.
  */
 export const thermalThreshold = (kind: Kind) => (kind === "motorProtector" ? 1.12 : kind === "fuse" ? 1.45 : 1.3);
 /**
- * Thermal-image time constant: explicit for breakers, derived from the trip class for motor protectors and from
- * the melting time at 10 × In for fuses (t = τ·ln(x²/(x² − k²))).
+ * Thermal-image time constant: explicit for breakers, derived from the trip class for motor protectors.
  */
 export function thermalTau(c: Component) {
-  if (c.kind === "fuse") return num(c.props, "tripTime", 0.1) / Math.log(100 / (100 - thermalThreshold("fuse") ** 2));
   if (c.kind === "motorProtector") {
     const k2 = thermalThreshold(c.kind) ** 2, x2 = 7.2 * 7.2;
     return num(c.props, "tripClass", 10) / Math.log(x2 / (x2 - k2));
