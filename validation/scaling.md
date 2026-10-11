@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-11T10:06:44.122Z. 124/124 checks passed in 25.51 s wall time.
+Executed: 2026-10-11T11:43:50.470Z. 124/124 checks passed in 28.5 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -127,4 +127,4 @@ Executed: 2026-10-11T10:06:44.122Z. 124/124 checks passed in 25.51 s wall time.
 | PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.702e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
 | Adaptive pumping station (269 steps vs 7200): delivered volume | multiphysics | 617.71541 | 617.71483 | 5.749e-4 | 9.307e-7 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
 | Adaptive pumping station: relative energy residual | multiphysics | 0 | 2.965088e-8 | 2.965e-8 | — | ±0.00001 | PASS | 1 |
-| E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 686 boundary cases across every component; none failed |
+| E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 688 boundary cases across every component; none failed |

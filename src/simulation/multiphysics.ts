@@ -325,6 +325,8 @@ export class Multiphysics {
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.count && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
+    // Step readings: currents as RMS over the substeps, powers as averages (not the first substep's sample).
+    const sums: Record<string, { current: number; contact: number; nc: number; reactive: number; apparent: number; sign: number; drive: { input: number; output: number; losses: number; braking: number; current: number } }> = {};
     // Midpoint shaft/electrical/hydraulic solve; 1/240 s bounds head/storage splitting error.
     while (remaining > 1e-12) {
       if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
@@ -423,7 +425,8 @@ export class Multiphysics {
         this.copperEnergy += m.copperPower * h;
         const friction = prop(c, 'friction') * midpoint[i] ** 2;
         this.frictionEnergy += friction * h;
-        heatEnergy[c.id] = (heatEnergy[c.id] ?? 0) + (m.copperPower + friction) * h;
+        // Rectifier harmonic currents in the windings (drives on the same supply) heat the motor too.
+        heatEnergy[c.id] = (heatEnergy[c.id] ?? 0) + (m.copperPower + friction + (r.electrical.readings[c.id]?.harmonicLoss ?? 0)) * h;
         if (c.kind === 'inductionMotor') heatEnergy[c.id] += this.advanceFlux(c, r.electrical.readings[c.id], midpoint[i], h, angleWindow(r.electrical.readings[c.id]));
         // Work exported by the opposing load: loads[i]·ω ≥ 0 while moving, zero while held at rest.
         this.externalShaftWork += loads[i] * midpoint[i] * h;
@@ -480,6 +483,11 @@ export class Multiphysics {
         const braking = v.drive?.braking ?? 0;
         total.power += (v.power - braking) * h / dt;
         ambient += braking * h;
+        const sum = (sums[id] ??= { current: 0, contact: 0, nc: 0, reactive: 0, apparent: 0, sign: 1, drive: { input: 0, output: 0, losses: 0, braking: 0, current: 0 } });
+        sum.current += v.current ** 2 * h; sum.contact += (v.contactCurrent ?? v.current) ** 2 * h; sum.nc += (v.currentNC ?? 0) ** 2 * h;
+        sum.reactive += (v.reactivePower ?? 0) * h; sum.apparent += (v.phases ?? 1) * Math.abs(v.voltage * v.current) * h;
+        if (v.current !== 0) sum.sign = Math.sign(v.current);
+        if (v.drive) { sum.drive.input += v.drive.inputPower * h; sum.drive.output += v.drive.outputPower * h; sum.drive.losses += v.drive.losses * h; sum.drive.braking += braking * h; sum.drive.current += v.drive.outputCurrent ** 2 * h; }
         // Magnetic releases act on the instantaneous current: track its largest value across the substeps.
         if (v.currentPhasor && v.frequency) total.peakCurrent = Math.max(total.peakCurrent ?? 0, peakOverInterval(v.currentPhasor, v.phases ?? 1, ...angleWindow(v)));
       }
@@ -489,6 +497,20 @@ export class Multiphysics {
       this.advanceConverters(s, h, r.electrical, commands);
       this.lastElectrical = r.electrical;
       remaining -= h;
+    }
+    for (const [id, sum] of Object.entries(sums)) {
+      const total = totalElectrical!.readings[id];
+      total.current = sum.sign * Math.sqrt(sum.current / dt);
+      total.contactCurrent = Math.sqrt(sum.contact / dt);
+      total.currentNC = Math.sqrt(sum.nc / dt);
+      if (total.ac) {
+        total.reactivePower = sum.reactive / dt;
+        // Power factor of the step: average real power over average apparent power (includes distortion).
+        // (A drive's own reading: its input power, not its net absorbed losses.)
+        const real = total.drive ? sum.drive.input / dt : total.power;
+        total.powerFactor = sum.apparent > 1e-12 ? Math.min(1, Math.abs(real) / (sum.apparent / dt)) : null;
+      }
+      if (total.drive) total.drive = { ...total.drive, inputPower: sum.drive.input / dt, outputPower: sum.drive.output / dt, losses: sum.drive.losses / dt, braking: sum.drive.braking / dt, outputCurrent: Math.sqrt(sum.drive.current / dt) };
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));

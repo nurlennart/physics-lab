@@ -65,25 +65,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 369316.0458252767,
-    "energyResidual": -9.422656148672104e-7,
+    "suppliedEnergy": 369316.0458680266,
+    "energyResidual": -0.0000010693911463022232,
     "massResidual": 0,
     "probes": [
       {
         "name": "TS3-01 line current",
-        "value": -12.860624146410268
+        "value": -12.916220103822035
       },
       {
         "name": "Motor (star-delta) rpm",
-        "value": 1489.2667474194084
+        "value": 1489.2667474064872
       },
       {
         "name": "Motor (soft starter) rpm",
-        "value": 1489.5034419175547
+        "value": 1489.5034419043247
       },
       {
         "name": "Motor (drive) rpm",
-        "value": 1489.2889491455212
+        "value": 1489.288949145518
       }
     ]
   },

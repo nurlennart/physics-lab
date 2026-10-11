@@ -418,7 +418,7 @@ A delta-wound motor (for example 400 V Δ / 690 V Y on a 400 V supply) starts wi
 - **Open transition:** after the star time both contactors are open for the dead time (default 50 ms, typically 30–80 ms). The motor is an open stator: the rotor flux decays with T0' and the rotor slows under its load.
 - **Delta:** reconnecting at full voltage with residual flux gives the well-known transition surge. For the 7.5 kW motor at 10 N·m: first peak 44 A in star (direct-on-line 131 A), 1472 rpm at the end of the star time, 112 A peak at the delta transition.
 - **Physical limit, not a model limit:** a load above about one third of the locked-rotor torque does not start in star (20 N·m against 18 N·m star torque).
-- The starter feeds exactly one induction motor wired directly to its motor terminal. Its rated current is the AC-3 line current; starting current is tolerated for the motor starting allowance. Rated voltage 690 V (contactor insulation voltage), because an open starter carries line-to-neutral voltage.
+- The starter feeds exactly one induction motor (directly or through series elements, see below). Its rated current is the AC-3 line current; starting current is tolerated for the motor starting allowance. Rated voltage 690 V (contactor insulation voltage), because an open starter carries line-to-neutral voltage.
 
 ### Soft starter
 
@@ -444,7 +444,7 @@ A diode rectifier charges a DC link; a PWM inverter makes a three-phase output a
 - **V/f characteristic:** V_LL = V_r·(b + (1 − b)·f/f_base) with boost b (default 3 %), constant V_r above the base frequency (field weakening).
 - **Ramps:** acceleration and deceleration times from 0 to the base frequency; start/stop frequency (default 0.5 Hz); stop by ramp or coast.
 - **Current limit:** an ideal fast current controller. When the ramped frequency would draw more than the overload current (default 150 % of In) at the motors' present speed, the frequency moves towards zero slip until the steady-state current equals the limit. This applies to motoring (stall prevention, extended acceleration) and to braking (extended deceleration). Measured-current feedback corrects the steady-state model; while the rotor flux builds up at low frequency the dynamic current can exceed the limit by up to about 6 % for a fraction of a second.
-- **Input:** the rectifier draws the output power plus losses, in phase with the supply voltage (power factor 1 for the fundamental). It is a constant-power load P = 3·G·|V|², with G iterated until it is consistent with the solved voltage. A drive needs a balanced three-phase supply; without one the DC link is uncharged and the output is off.
+- **Input:** the rectifier draws the output power plus losses (plus its harmonic emission, see below), with the fundamental in phase with the supply voltage. It is a constant-power load P = 3·G·|V|², with G iterated until it is consistent with the solved voltage. A drive needs a balanced three-phase supply; without one the DC link is uncharged and the output is off.
 - **Regeneration:** a diode rectifier cannot return power. When output power plus losses is negative, the surplus goes to the braking resistor, which is external: its heat goes to ambient, not into the drive's heat sink.
 - **Losses:** P = P₀ + P_r·(0.5·i + 0.5·i²), i = I_out/In: standby, switching (∝ I) and conduction (∝ I²). P_r is the datasheet loss at rated current (default 3 % of rated power). Losses heat the drive's heat sink (thermal mass and cooling), which trips the drive above its trip temperature.
 - **Protection:** I²t image θ = (I/In)² with τ = 60 s / ln(x²/(x² − 1)), so the overload current trips after 60 s from cold (test: 60.2 s with a stalled 75 N·m load). Instantaneous output overcurrent trips above 2.5 × √2·In.
@@ -452,7 +452,40 @@ A diode rectifier charges a DC link; a PWM inverter makes a three-phase output a
   - at 25 Hz the output is 206 V;
   - line current drops from 6.8 A (direct-on-line, power factor 0.70) to 4.9 A (drive, power factor ≈ 1) at the same load, because the DC link supplies the motor's reactive power;
   - starting line peak is 7.7 A against 131 A direct-on-line.
-- **Not modelled:** harmonics on input and output (input RMS current is 10–40 % above the fundamental depending on the DC choke), DC-link voltage dynamics and undervoltage ride-through, overvoltage trip without a braking resistor, vector control and slip compensation, output voltage limited by a low supply voltage. Capacitors on the output are rejected (they would be overloaded by the PWM voltage).
+- **Not modelled:** harmonics on the output (PWM ripple), DC-link voltage dynamics and undervoltage ride-through, overvoltage trip without a braking resistor, vector control and slip compensation, output voltage limited by a low supply voltage. Capacitors on the output are rejected (they would be overloaded by the PWM voltage).
+
+### Elements between starter and motor
+
+The motor terminal of a starter may lead to the motor through series elements without branches: cable, overload relay or motor-protective breaker, meter, switch.
+
+- **Soft starter:** these elements are in the line and carry line current. Their impedance is added to the motor impedance in the soft starter's voltage-ratio and current-limit control.
+- **Star-delta:** they are motor leads in the winding circuit, as in a real six-conductor installation (U1–W1 from the main contactor, U2–W2 to the star/delta contactors). A cable stands for both lead sets, two conductors per winding (n = 2). An overload relay or other device sits in the U1 leads (n = 1).
+  - Star: winding current = line current; n·Z per phase.
+  - Delta: winding current = line current/√3; n·Z per winding, which is n·Z/3 per phase in the star equivalent.
+  - The reading shows one conductor's current and voltage drop; power is the total of all conductors, and a cable's thermal mass and cooling count six conductors. An overload relay in the motor leads therefore sees the winding current and is set to In/√3 ≈ 0.58 × In, as in practice.
+- With the starter open, the leads and motor form a cut-off subnetwork; it is pinned to 0 V (no current) instead of leaving the matrix singular.
+
+### Step readings
+
+With substeps (motor transients, 0.5 ms), the readings of a 1/60 s step are:
+
+- **currents:** RMS over the substeps, √(Σ I²·h / Δt);
+- **power and reactive power:** averages over the substeps;
+- **power factor:** average real power over average apparent power;
+- **drive powers:** averages, output current RMS.
+
+Before, currents were the first substep's sample: the switch-on step of a direct start showed 6 A instead of its RMS of several times rated. The protection thermal images (breakers, motor protectors, supplies) now integrate the RMS current of the step, so their I²t is exact over the substeps. The instantaneous peak for magnetic trips is unchanged.
+
+### Drive input harmonics
+
+A six-pulse diode rectifier draws non-sinusoidal current: harmonics h = 6k ± 1. The model solves the supply network at each harmonic frequency (5th to 25th):
+
+- **Spectrum:** I_h = s·|I₁|/h at phase h·φ₁ (the ideal six-pulse shape), scaled so the total harmonic distortion equals the drive's input THD parameter (default 40 %, typical with a DC choke; about 30 % ideal, 80–120 % without choke).
+- **Network at h·f:** supplies are their internal impedance (no harmonic EMF); induction machines their leakage impedance Rs + Rr + j·h·(X1 + X2)·f/f_rated (slip ≈ 1); inductors, capacitors, cables and contacts their impedance at h·f; motor-lead factors apply. The network is linear, so it is solved once per order and drive for a unit injection and superposed with the actual injections.
+- **Effects:** every element's RMS current is √(I₁² + ΣI_h²), and its harmonic I²R adds to its heat (in motors, to winding heat). Power factor readings are the true power factor P/(3·V·I_RMS); the rectifier's is 1/√(1 + THD²) ≈ 0.93. A power-factor capacitor forms a parallel resonance with the supply inductance at h = √(X_C/X_s) and amplifies the harmonic current (the test shows more than 3× at the 5th).
+- **Energy:** the harmonic power dissipated in the network (including the supply's internal resistance) is emitted by the rectifier, which draws it from the fundamental: input = output + losses + emission, iterated with the constant-power input. Energy closes to about 1e-10.
+- **Example (7.5 kW drive, 40 N·m, 50 m 2.5 mm² cable):** input 9.92 A fundamental, 10.68 A RMS (3.97 A harmonics), true power factor 0.928; 16.3 W harmonic loss in the cable.
+- **Not modelled:** the voltage distortion's effect on other loads beyond their harmonic current, non-characteristic and inter-harmonics, the dependence of THD on load and supply impedance (THD is a fixed parameter), the effect of harmonics on peak current for magnetic trips, harmonics on the drive's output (PWM ripple).
 
 ### Supporting changes
 

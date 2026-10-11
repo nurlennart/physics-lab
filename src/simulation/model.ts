@@ -377,7 +377,7 @@ export const definitions: Record<Kind, Definition> = {
       input("run", "boolean", true),
       input("frequency", "number", true),
     ],
-    defaults: { enabled: true, frequencySetpoint: 50, accelTime: 5, decelTime: 5, stopMode: "ramp", startFrequency: 0.5, baseFrequency: 50, maxFrequency: 60, boost: 3, ratedVoltage: 400, ratedPower: 7500, ratedOutputCurrent: 16.5, overload: 150, overcurrentTrip: 2.5, ratedLoss: 3, standbyLoss: 20, heatCapacity: 3000, loss: 6, maxTemperature: 90 },
+    defaults: { enabled: true, frequencySetpoint: 50, accelTime: 5, decelTime: 5, stopMode: "ramp", startFrequency: 0.5, baseFrequency: 50, maxFrequency: 60, boost: 3, ratedVoltage: 400, ratedPower: 7500, ratedOutputCurrent: 16.5, overload: 150, overcurrentTrip: 2.5, ratedLoss: 3, standbyLoss: 20, inputTHD: 40, heatCapacity: 3000, loss: 6, maxTemperature: 90 },
     variants: [
       { id: "vfd45", label: "Variable-frequency drive 45 kW", cost: 3200, spec: "400 V · 45 kW · 88 A", overrides: { ratedPower: 45000, ratedOutputCurrent: 88, standbyLoss: 60, heatCapacity: 15000, loss: 30 } },
     ],

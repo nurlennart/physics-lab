@@ -103,6 +103,8 @@ describe("soft starter", () => {
     run(dol.s, 3);
     run(s, 3);
     expect(rpm(s, motor)).toBeCloseTo(rpm(dol.s, dol.motor), 2);
+    // The starter is the supply's only load: its line power factor is the supply's.
+    expect(s.electrical.readings[starter!.id].starter!.linePowerFactor!).toBeCloseTo(s.electrical.readings[src.id].powerFactor!, 6);
     closes(s, 1e-8);
   });
   it("soft stop ramps the voltage down over the stop time, then opens", () => {
@@ -139,7 +141,7 @@ describe("soft starter", () => {
 });
 
 describe("variable-frequency drive", () => {
-  it("V/f operation at 25 Hz: output voltage, speed below 750 rpm, input power = output + losses at unity power factor", () => {
+  it("V/f operation at 25 Hz: output voltage, speed below 750 rpm, input power balance, rectifier power factor", () => {
     const { s, motor, src, vfd } = driveRig(10, { frequencySetpoint: 25, accelTime: 2 });
     run(s, 5);
     const r = s.electrical.readings[vfd.id], d = r.drive!;
@@ -148,11 +150,12 @@ describe("variable-frequency drive", () => {
     expect(driveLineVoltage(vfd, 25)).toBeCloseTo(400 * (0.03 + 0.97 * 0.5), 9);
     expect(rpm(s, motor)).toBeGreaterThan(700);
     expect(rpm(s, motor)).toBeLessThan(750);
-    expect(d.inputPower).toBeCloseTo(d.outputPower + d.losses, 6);
-    // Diode rectifier: line current in phase with the voltage, I = P / (3·V_phase).
-    const line = s.electrical.readings[src.id];
-    expect(line.powerFactor!).toBeGreaterThan(0.999999);
-    expect(Math.abs(line.current)).toBeCloseTo(d.inputPower / (3 * 400 / Math.sqrt(3)), 4);
+    expect(d.inputPower).toBeCloseTo(d.outputPower + d.losses + (d.harmonicEmission ?? 0), 6);
+    // Diode rectifier: fundamental in phase with the voltage, I₁ = P/(3·V_phase); with 40 % THD the RMS line
+    // current is I₁·√(1 + 0.4²) and the true power factor 1/√1.16 (stiff supply: every harmonic flows into it).
+    const line = s.electrical.readings[src.id], fundamental = d.inputPower / (3 * 400 / Math.sqrt(3));
+    expect(Math.abs(line.current)).toBeCloseTo(fundamental * Math.sqrt(1.16), 4);
+    expect(line.powerFactor!).toBeCloseTo(1 / Math.sqrt(1.16), 4);
     // Output frequency sets the supply frequency the motor sees.
     expect(s.electrical.readings[motor.id].frequency).toBe(25);
     closes(s);
@@ -238,5 +241,108 @@ describe("variable-frequency drive", () => {
     // Steady current agrees with the equivalent circuit at 60 Hz and the solved speed.
     const z = inductionCircuit(motor, 60, sim.multiphysics.motors[motor.id].omega).impedance;
     expect(d.outputCurrent).toBeCloseTo(400 / Math.sqrt(3) / Math.hypot(z[0], z[1]), 3);
+  });
+});
+
+describe("elements between starter and motor", () => {
+  function leadRig(kind: "starDeltaStarter" | "softStarter", props: Record<string, Property> = {}) {
+    const b = new Builder(), src = b.add("source3", { lineVoltage: 400, maxCurrent: 63, maxPower: 1e7 });
+    const starter = b.add(kind, props), relay = b.add("motorProtector", { ratedCurrent: 9 }), cable = b.add("cable", { length: 50, area: 2.5 }), motor = b.add("inductionMotor", { loadTorque: 10 });
+    b.series(src, starter, relay, cable, motor);
+    return { s: new Simulation(b.p), src, starter, relay, cable, motor };
+  }
+  it("star-delta: motor leads carry line current in star and winding current (line/√3) in delta; a cable there is six conductors", () => {
+    const { s, src, relay, cable, motor } = leadRig("starDeltaStarter", { starTime: 2 });
+    run(s, 1.9);
+    expect(s.electrical.readings[relay.id].current).toBeCloseTo(Math.abs(s.electrical.readings[src.id].current), 9);
+    run(s, 3);
+    const line = Math.abs(s.electrical.readings[src.id].current);
+    expect(s.electrical.readings[relay.id].current).toBeCloseTo(line / Math.sqrt(3), 9);
+    expect(s.electrical.readings[cable.id].current).toBeCloseTo(line / Math.sqrt(3), 9);
+    expect(s.electrical.readings[cable.id].conductors).toBe(6);
+    // Delta: each winding has a lead at both ends: Z_eq + (2/3)·Z_cable + (1/3)·Z_relay per phase (star equivalent).
+    const r = s.electrical.readings[cable.id];
+    expect(r.power).toBeCloseTo(6 * r.resistance! * r.current ** 2, 6);
+    expect(rpm(s, motor)).toBeGreaterThan(1480);
+    expect(s.violations).toEqual([]);
+    closes(s, 1e-8);
+  });
+  it("star-delta: the leads are open with the starter and the motor coasts; the conductor count stays topological", () => {
+    const { s, starter, cable } = leadRig("starDeltaStarter", { starTime: 1 });
+    run(s, 2);
+    setProp(s, starter.id, "enabled", false);
+    run(s, 1, () => { expect(s.electrical.readings[cable.id].current).toBe(0); expect(s.electrical.readings[cable.id].conductors).toBe(6); });
+    closes(s, 1e-8);
+  });
+  it("soft starter: elements behind it carry line current and enter the current-limit control", () => {
+    const { s, src, starter, cable } = leadRig("softStarter", { initialVoltage: 60, currentLimit: 2.5, rampTime: 4 });
+    let worst = 0;
+    run(s, 0.1);
+    run(s, 3, () => {
+      worst = Math.max(worst, Math.abs(s.electrical.readings[src.id].current));
+      expect(s.electrical.readings[cable.id].current).toBeCloseTo(Math.abs(s.electrical.readings[src.id].current), 9);
+    });
+    expect(worst).toBeLessThan(40 * 1.03);
+    expect(worst).toBeGreaterThan(40 * 0.95);
+    run(s, 2);
+    expect(s.multiphysics.starters[starter.id].mode).toBe("bypass");
+    closes(s, 1e-8);
+  });
+  it("rejects a branch between starter and motor", () => {
+    const b = new Builder(), src = b.add("source3"), st = b.add("starDeltaStarter"), m = b.add("inductionMotor"), extra = b.add("resistor", { resistance: 100, ratedPower: 1e6 });
+    b.series(src, st, m);
+    b.wire(st, "b", extra, "a"); b.wire(extra, "b", src, "b");
+    const s = new Simulation(b.p);
+    s.step();
+    expect(s.error).toMatch(/without branches/);
+  });
+});
+
+describe("step readings", () => {
+  it("current is the RMS over the substeps: the switch-on step of a direct start shows the inrush, not the first sample", () => {
+    const { s, src } = starterRig("dol", 0);
+    s.step();
+    // Before: the first 0.5 ms substep (6 A). The RMS over the 1/60 s switch-on step is several times rated.
+    expect(Math.abs(s.electrical.readings[src.id].current)).toBeGreaterThan(40);
+    const steady = starterRig("dol", 10);
+    run(steady.s, 3);
+    const r = steady.s.electrical.readings[steady.src.id];
+    expect(r.powerFactor!).toBeCloseTo(Math.abs(r.power) / (3 * r.voltage * Math.abs(r.current)), 9);
+  });
+});
+
+describe("drive input harmonics", () => {
+  function harmonicRig(extra?: (b: Builder, src: Component, vfd: Component) => void, sourceProps: Record<string, Property> = {}) {
+    const b = new Builder(), src = b.add("source3", { lineVoltage: 400, maxCurrent: 63, maxPower: 1e7, ...sourceProps });
+    const cable = b.add("cable", { length: 50, area: 2.5 }), vfd = b.add("vfd", { accelTime: 2 }), motor = b.add("inductionMotor", { loadTorque: 40 });
+    b.wire(src, "a", cable, "a"); b.wire(cable, "b", vfd, "a"); b.wire(vfd, "b", src, "b"); b.wire(vfd, "oa", motor, "a"); b.wire(motor, "b", vfd, "ob");
+    extra?.(b, src, vfd);
+    return { s: new Simulation(b.p), src, cable, vfd };
+  }
+  it("rectifier harmonics: THD sets the RMS line current; their I²R heats the cable and is drawn from the fundamental", () => {
+    const { s, cable, vfd } = harmonicRig();
+    run(s, 4);
+    const r = s.electrical.readings[vfd.id], fundamental = Math.sqrt(r.current ** 2 - r.harmonicCurrent! ** 2);
+    expect(r.harmonicCurrent! / fundamental).toBeCloseTo(0.4, 9);
+    expect(r.powerFactor!).toBeCloseTo(1 / Math.sqrt(1.16), 4);
+    const c = s.electrical.readings[cable.id];
+    expect(c.harmonicCurrent).toBeCloseTo(r.harmonicCurrent!, 9);
+    // Ideal supply: the cable is the only resistance at the harmonics, so it dissipates the whole emission.
+    expect(c.harmonicLoss!).toBeCloseTo(r.drive!.harmonicEmission!, 9);
+    expect(c.harmonicLoss!).toBeCloseTo(3 * c.resistance! * c.harmonicCurrent! ** 2, 6);
+    closes(s, 1e-8);
+  });
+  it("a power-factor capacitor tuned near the 5th harmonic with the supply inductance amplifies the harmonic current", () => {
+    // X_s = 0.1 Ω at 50 Hz, X_C = 2.5 Ω: parallel resonance at h = √(X_C/X_s) = 5.
+    const { s, vfd, src } = harmonicRig((b, source, drive) => {
+      const cap = b.add("capacitor", { capacitance: 1 / (2 * Math.PI * 50 * 2.5), resistance: 0.01, ratedVoltage: 690, ratedCurrent: 1000 });
+      // Capacitor bank at the supply terminals: the resonant loop is supply inductance ∥ capacitor (lightly damped).
+      void drive; b.wire(source, "a", cap, "a"); b.wire(cap, "b", source, "b");
+    }, { internalReactance: 0.1 });
+    run(s, 4);
+    const cap = s.project.components.find((c) => c.kind === "capacitor")!;
+    expect(s.electrical.readings[cap.id].harmonicCurrent!).toBeGreaterThan(3 * s.electrical.readings[vfd.id].harmonicCurrent!);
+    expect(s.electrical.readings[src.id].harmonicCurrent!).toBeGreaterThan(s.electrical.readings[vfd.id].harmonicCurrent!);
+    closes(s, 1e-8);
   });
 });

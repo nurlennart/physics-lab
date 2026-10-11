@@ -211,7 +211,7 @@ export function RatingIndicators({ c }: { c: Component }) {
   } else if (r) {
     if ("ratedPower" in c.props) bars.push(<Bar key="p" label={isMotor(c) ? "Shaft power" : c.kind === "heater" ? "Power vs nominal" : "Power"} actual={isMotor(c) ? simulation.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power} rated={prop(c, "ratedPower")} unit="W" />);
     if ("ratedCurrent" in c.props) bars.push(<Bar key="i" label="Current" actual={r.contactCurrent ?? r.current} rated={prop(c, "ratedCurrent")} unit="A" />);
-    if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : c.kind === "starDeltaStarter" || c.kind === "softStarter" ? "Voltage across contacts (line-to-line)" : "Voltage"} actual={(c.kind === "inductionMotor" || c.kind === "starDeltaStarter" || c.kind === "softStarter") && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
+    if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : c.kind === "starDeltaStarter" || c.kind === "softStarter" ? "Voltage across a pole" : "Voltage"} actual={c.kind === "inductionMotor" && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
   }
   if (t !== undefined && "maxTemperature" in c.props)
     bars.push(<Bar key="t" label="Temperature rise" actual={t - projectAmbient(simulation.project)} rated={prop(c, "maxTemperature") - projectAmbient(simulation.project)} unit="K" />);

@@ -1,4 +1,4 @@
-import { definitions, isSource, prop, terminalKey, type Component, type Project } from "./model";
+import { definitions, isSource, perPoleKinds, prop, terminalKey, type Component, type Project } from "./model";
 import { actualResistance } from "./parameters";
 import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, type MachineParams } from "./induction";
 type Cx = [number, number];
@@ -66,10 +66,18 @@ export interface ElectricalReading {
   /** AC islands fed by a drive: the drive's id (its output angle is the phasor reference). */
   supply?: string;
   /** Motor starters: contactor state and the soft starter's controlled series reactance (Ω, per phase). */
-  starter?: { mode: StarterMode; reactance: number; ratio?: number };
+  starter?: { mode: StarterMode; reactance: number; ratio?: number; linePowerFactor?: number };
   /** Drives: input/output power (W, three-phase), losses and braking-resistor power, output quantities. */
   drive?: DriveReading;
+  /** Motor leads behind a star-delta starter: conductors this element stands for (two per winding for cables). */
+  conductors?: number;
+  /** Networks with drives: RMS of the rectifier harmonic currents in this element (A) and their I²R (W, in `power`). */
+  harmonicCurrent?: number;
+  harmonicLoss?: number;
 }
+/** Characteristic six-pulse rectifier harmonics 6k ± 1 (to the 25th) and the THD of the 1/h spectrum shape. */
+export const HARMONIC_ORDERS = [5, 7, 11, 13, 17, 19, 23, 25];
+export const HARMONIC_SHAPE = Math.sqrt(HARMONIC_ORDERS.reduce((sum, h) => sum + 1 / (h * h), 0));
 export type StarterMode = "off" | "star" | "open" | "delta" | "ramp" | "bypass";
 export interface DriveReading {
   energized: boolean;
@@ -78,6 +86,8 @@ export interface DriveReading {
   outputPower: number;
   losses: number;
   braking: number;
+  /** Power the rectifier emits at its harmonics (W): dissipated in the supply network, drawn from the fundamental. */
+  harmonicEmission?: number;
   frequency: number;
   /** Output line-to-line voltage (V RMS). */
   outputVoltage: number;
@@ -258,14 +268,52 @@ export function solveElectrical(
   let residual = 0;
   const acIslands = new Set<string>(), phasors: Record<string, Cx> = {}, acReadings: Record<string, ElectricalReading> = {};
   const driveOutputs: Record<string, { voltage: Cx; current: Cx; power: number }> = {};
-  // Each active starter feeds exactly one induction motor wired directly to its motor terminal.
-  const starterOf = new Map<string, Component>(), motorOf = new Map<string, Component>();
-  for (const st of active.filter(isStarter)) {
-    const fed = active.filter((m) => m.kind === "inductionMotor" && node(m.id, "a") === node(st.id, "b"));
-    if (fed.length !== 1) throw Error(`${st.name}: wire its motor terminal directly to terminal a of exactly one induction motor.`);
-    if (starterOf.has(fed[0].id)) throw Error(`${fed[0].name}: only one starter can feed a motor.`);
-    starterOf.set(fed[0].id, st);
-    motorOf.set(st.id, fed[0]);
+  /**
+   * Each starter feeds exactly one induction motor: from its motor terminal through series two-terminal
+   * elements (cable, overload relay, breaker, meter, …) to the motor's terminal a, without branches.
+   */
+  const terminals = (c: Component) => definitions[c.kind].ports.filter((p) => p.domain === "electrical").map((p) => node(c.id, p.id));
+  const structural = cs.filter((c) => c.kind !== "ground" && c.kind !== "junction");
+  const feeder = (st: Component) => {
+    let at = node(st.id, "b"), previous = st;
+    const path: Component[] = [];
+    for (let k = 0; k < 32; k++) {
+      const next = structural.filter((c) => c !== previous && terminals(c).includes(at));
+      if (next.length !== 1) return null;
+      const e = next[0];
+      if (e.kind === "inductionMotor") return node(e.id, "a") === at ? { motor: e, path } : null;
+      if (isSource(e) || isStarter(e) || e.kind === "vfd" || e.kind === "motor" || terminals(e).length !== 2) return null;
+      path.push(e);
+      at = node(e.id, "a") === at ? node(e.id, "b") : node(e.id, "a");
+      previous = e;
+    }
+    return null;
+  };
+  const starterOf = new Map<string, Component>(), motorOf = new Map<string, Component>(), pathOf = new Map<string, Component[]>();
+  /**
+   * Motor leads of a star-delta starter carry winding current: six conductors (U1–W1 and U2–W2 sides), so a
+   * cable stands for two conductors per winding (n = 2) and a relay or other device in the U1 leads for one
+   * (n = 1). Star: winding current = line current, n·Z per phase. Delta: winding current = line/√3 and
+   * n·Z per winding, i.e. n·Z/3 in the per-phase star equivalent.
+   */
+  const leads = new Map<string, { z: number; i: number; conductors: number }>();
+  for (const st of structural.filter(isStarter)) {
+    const f = feeder(st);
+    if (!f) {
+      if (active.includes(st)) throw Error(`${st.name}: its motor terminal must lead, through series elements without branches, to terminal a of exactly one induction motor.`);
+      continue;
+    }
+    if (starterOf.has(f.motor.id)) throw Error(`${f.motor.name}: only one starter can feed a motor.`);
+    starterOf.set(f.motor.id, st);
+    motorOf.set(st.id, f.motor);
+    pathOf.set(st.id, f.path);
+    if (st.kind === "starDeltaStarter") {
+      const star = runtime.starters?.[st.id]?.mode !== "delta";
+      for (const e of f.path) {
+        const n = e.kind === "cable" ? 2 : 1;
+        leads.set(e.id, { z: star ? n : n / 3, i: star ? 1 : 1 / Math.sqrt(3), conductors: 3 * n });
+      }
+    }
   }
   /** Star connection of a delta-wound motor: each winding sees V/√3 (per-phase ideal ratio a = 1/√3). */
   const lineRatio = (m: Component) => {
@@ -281,11 +329,93 @@ export function solveElectrical(
   const starterReactance = (st: Component, frequency: number, phaseVoltage: number) => {
     const state = runtime.starters?.[st.id];
     if (st.kind !== "softStarter" || state?.mode !== "ramp") return 0;
-    const m = motorOf.get(st.id)!, z = inductionCircuit(m, frequency, runtime.inductionMotors?.[m.id]?.omega ?? 0).impedance;
+    const m = motorOf.get(st.id)!, w = 2 * Math.PI * frequency;
+    // Motor impedance plus the series elements between starter and motor (cable, relay): they carry line current.
+    const z = (pathOf.get(st.id) ?? []).reduce<Cx>((sum, e) => cadd(sum, e.kind === "inductor" ? [resistanceOf(e), w * prop(e, "inductance")] : e.kind === "capacitor" ? [resistanceOf(e, true), -1 / (w * prop(e, "capacitance"))] : [resistanceOf(e), 0]), inductionCircuit(m, frequency, runtime.inductionMotors?.[m.id]?.omega ?? 0).impedance);
     const k = Math.max(1e-3, Math.min(1, state.ratio ?? 1)), limit = prop(st, "currentLimit") * prop(st, "ratedCurrent");
     const forRatio = Math.sqrt(Math.max(0, (z[0] ** 2 + z[1] ** 2) / (k * k) - z[0] ** 2)) - z[1];
     const forLimit = Math.sqrt(Math.max(0, (phaseVoltage / limit) ** 2 - z[0] ** 2)) - z[1];
     return Math.max(0, forRatio, forLimit);
+  };
+  /**
+   * A machine whose terminals are not closed through the rest of the network (open starter, open switch
+   * upstream) carries no stator current: it is an open stator (flux decay in the machine model), not a
+   * Thevenin element, which would leave its node floating or ring at the current interruption.
+   */
+  const closedLoopIn = (members: Component[], m: Component, drive?: Component) => {
+    const u = new Union();
+    for (const c of members) if (c !== m) u.join(node(c.id, "a"), node(c.id, end(c)));
+    if (drive) u.join(node(drive.id, "oa"), node(drive.id, "ob"));
+    return u.find(node(m.id, "a")) === u.find(node(m.id, "b"));
+  };
+  /** Series impedance of a passive element at angular frequency w (motor leads scaled; starter: its controlled reactance at w). */
+  const passiveImpedance = (c: Component, w: number, starterX = 0): Cx => {
+    const z: Cx = isStarter(c) ? [resistanceOf(c), starterX] : c.kind === "inductor" ? [resistanceOf(c), w * prop(c, "inductance")] : c.kind === "capacitor" ? [resistanceOf(c, true), -1 / (w * prop(c, "capacitance"))] : [resistanceOf(c), 0];
+    const lead = leads.get(c.id);
+    return lead ? [z[0] * lead.z, z[1] * lead.z] : z;
+  };
+  /**
+   * Subnetworks cut off by an open-stator machine (open starter with its motor leads) carry no current and
+   * have no path to the reference or a source: pin them to 0 V instead of leaving the matrix singular.
+   */
+  const pinFloating = (A: Cx[][], B: Cx[], nodesCount: number) => {
+    const nonzero = (v: Cx) => v[0] !== 0 || v[1] !== 0, grounded = new Set<number>();
+    for (let i = 0; i < nodesCount; i++) {
+      const rowSum = A[i].slice(0, nodesCount).reduce<Cx>((sum, v) => cadd(sum, v), [0, 0]);
+      if (cabs(rowSum) > 1e-12 * Math.max(cabs(A[i][i]), 1e-300) || A[i].slice(nodesCount).some(nonzero) || nonzero(B[i])) grounded.add(i);
+    }
+    for (const queue = [...grounded]; queue.length;) {
+      const i = queue.pop()!;
+      for (let j = 0; j < nodesCount; j++) if (!grounded.has(j) && (nonzero(A[i][j]) || nonzero(A[j][i]))) { grounded.add(j); queue.push(j); }
+    }
+    for (let i = 0; i < nodesCount; i++) if (!grounded.has(i)) { A[i] = A[i].map((_, j) => (j === i ? [1, 0] : [0, 0]) as Cx); B[i] = [0, 0]; }
+  };
+  /**
+   * Harmonic network at order h (frequency h·f) for a supply network with drives: each rectifier draws the
+   * characteristic six-pulse currents I_h = s·|I₁|/h ∠ h·φ₁ (h = 6k ± 1), s set by the drive's input THD.
+   * Supplies are their internal impedance (no harmonic EMF); induction machines their leakage impedance
+   * (slip ≈ 1): Rs + Rr + j·h·(X1 + X2)·f/f_rated; other elements their impedance at h·f.
+   */
+  const solveHarmonic = (ns: string[], ref: string, members: Component[], sources: Component[], frequency: number, order: number, draws: Map<string, Cx>, reactances: Map<string, number>) => {
+    const unknown = ns.filter((n) => n !== ref), size = unknown.length + sources.length, w = 2 * Math.PI * frequency * order;
+    const indices = new Map(unknown.map((n, i) => [n, i]));
+    const A: Cx[][] = Array.from({ length: size }, () => Array.from({ length: size }, () => [0, 0] as Cx)), B: Cx[] = Array.from({ length: size }, () => [0, 0] as Cx);
+    const add = (i: number | undefined, j: number | undefined, v: Cx) => { if (i !== undefined && j !== undefined) A[i][j] = cadd(A[i][j], v); };
+    const impedance = new Map<string, Cx>();
+    for (const c of members.filter((c) => !isSource(c))) {
+      let z: Cx;
+      if (c.kind === "vfd") {
+        const draw = draws.get(c.id), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, "b"));
+        if (draw) { if (p !== undefined) B[p] = csub(B[p], draw); if (q !== undefined) B[q] = cadd(B[q], draw); }
+        continue;
+      }
+      if (c.kind === "inductionMotor") {
+        if (runtime.inductionMotors?.[c.id]?.enabled === false || !closedLoopIn(members, c)) continue;
+        const a = lineRatio(c), scale = frequency * order / prop(c, "ratedFrequency", 50);
+        z = [(prop(c, "statorResistance") + prop(c, "rotorResistance")) / (a * a), scale * (prop(c, "statorReactance") + prop(c, "rotorReactance")) / (a * a)];
+      } else z = passiveImpedance(c, w, (reactances.get(c.id) ?? 0) * order);
+      impedance.set(c.id, z);
+      const y = cdiv([1, 0], z), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, end(c)));
+      add(p, p, y); add(q, q, y); add(p, q, [-y[0], -y[1]]); add(q, p, [-y[0], -y[1]]);
+    }
+    sources.forEach((src, i) => {
+      const k = unknown.length + i, p = indices.get(node(src.id, "a")), q = indices.get(node(src.id, "b"));
+      if (p !== undefined) { A[p][k] = cadd(A[p][k], [1, 0]); A[k][p] = cadd(A[k][p], [1, 0]); }
+      if (q !== undefined) { A[q][k] = cadd(A[q][k], [-1, 0]); A[k][q] = cadd(A[k][q], [-1, 0]); }
+      A[k][k] = cadd(A[k][k], [-prop(src, "internalResistance"), -order * prop(src, "internalReactance")]);
+    });
+    pinFloating(A, B, unknown.length);
+    const x = size ? solveComplex(A, B) : [];
+    const V = (n: string): Cx => (n === ref ? [0, 0] : x[indices.get(n)!] ?? [0, 0]);
+    const result = new Map<string, { current: Cx; across: Cx }>();
+    for (const c of members) {
+      if (isSource(c)) { const i = sources.indexOf(c); result.set(c.id, { current: x[unknown.length + i], across: csub(V(node(c.id, "a")), V(node(c.id, "b"))) }); continue; }
+      const across = csub(V(node(c.id, "a")), V(node(c.id, end(c))));
+      if (c.kind === "vfd") { result.set(c.id, { current: draws.get(c.id) ?? [0, 0], across }); continue; }
+      const z = impedance.get(c.id);
+      if (z) result.set(c.id, { current: cdiv(across, z), across });
+    }
+    return result;
   };
   /** Complex MNA for an AC island (single-phase phasors, or the balanced per-phase model of a three-phase supply). */
   const solveACIsland = (island: string, ns: string[], members: Component[], sources: Component[], drive?: Component, driveLoads?: Map<string, number>) => {
@@ -317,17 +447,7 @@ export function solveElectrical(
     const dynamic = new Map<string, { m: MachineParams; state: NonNullable<ElectricalRuntime["inductionMotors"]>[string]; e?: Cx }>();
     const inject = (p: number | undefined, q: number | undefined, j: Cx) => { if (p !== undefined) B[p] = cadd(B[p], j); if (q !== undefined) B[q] = csub(B[q], j); };
     const reactances = new Map<string, number>();
-    /**
-     * A machine whose terminals are not closed through the rest of the network (open starter, open switch
-     * upstream) carries no stator current: it is an open stator (flux decay in the machine model), not a
-     * Thevenin element, which would leave its node floating or ring at the current interruption.
-     */
-    const closedLoop = (m: Component) => {
-      const u = new Union();
-      for (const c of members) if (c !== m) u.join(node(c.id, "a"), node(c.id, end(c)));
-      if (drive) u.join(node(drive.id, "oa"), node(drive.id, "ob"));
-      return u.find(node(m.id, "a")) === u.find(node(m.id, "b"));
-    };
+    const closedLoop = (m: Component) => closedLoopIn(members, m, drive);
     for (const c of members.filter((c) => !isSource(c))) {
       let z: Cx;
       if (c.kind === "inductionMotor") {
@@ -361,13 +481,10 @@ export function solveElectrical(
         const conductance = driveLoads?.get(c.id) ?? 0;
         if (!(conductance > 0)) continue;
         z = [1 / conductance, 0];
-      } else if (isStarter(c)) {
-        const x = starterReactance(c, frequency, nominal);
-        reactances.set(c.id, x);
-        z = [resistanceOf(c), x];
-      } else if (c.kind === "inductor") z = [resistanceOf(c), w * prop(c, "inductance")];
-      else if (c.kind === "capacitor") z = [resistanceOf(c, true), -1 / (w * prop(c, "capacitance"))];
-      else z = [resistanceOf(c), 0];
+      } else {
+        if (isStarter(c)) reactances.set(c.id, starterReactance(c, frequency, nominal));
+        z = passiveImpedance(c, w, reactances.get(c.id) ?? 0);
+      }
       impedance.set(c.id, z);
       const y = cdiv([1, 0], z), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, end(c)));
       add(p, p, y); add(q, q, y); add(p, q, [-y[0], -y[1]]); add(q, p, [-y[0], -y[1]]);
@@ -387,8 +504,7 @@ export function solveElectrical(
       if (q !== undefined) { A[q][k] = cadd(A[q][k], [-1, 0]); A[k][q] = cadd(A[k][q], [-1, 0]); }
       B[k] = [nominal, 0];
     }
-    // Nodes touched only by open-stator machines carry no current: pin them (open terminal, reads 0 V).
-    for (let i = 0; i < unknown.length; i++) if (A[i].every((v) => v[0] === 0 && v[1] === 0) && B[i][0] === 0 && B[i][1] === 0) A[i][i] = [1, 0];
+    pinFloating(A, B, unknown.length);
     const x = size ? solveComplex(A, B) : [];
     for (let i = 0; i < size; i++) {
       const lhs = A[i].reduce<Cx>((sum, v, j) => cadd(sum, cmul(v, x[j])), [0, 0]);
@@ -435,12 +551,21 @@ export function solveElectrical(
         const airGap = circuit.z2 ? phases * rotorSq * r2 / circuit.slip : 0;
         machine = { torque: circuit.syncSpeed > 0 ? airGap / circuit.syncSpeed : 0, statorCopper: phases * cabs(winding) ** 2 * prop(c, "statorResistance"), rotorCopper: phases * rotorSq * r2, slip: circuit.slip, ...(a !== 1 ? { lineRatio: a } : {}) };
       }
-      const starter = isStarter(c) ? { starter: { mode: runtime.starters?.[c.id]?.mode ?? "off", reactance: reactances.get(c.id) ?? 0, ratio: runtime.starters?.[c.id]?.ratio } } : {};
+      // Line power factor at the starter's supply terminal (motor plus thyristor reactance), not the element's own.
+      const lineSide = V(node(c.id, "a")), lineApparent = cabs(lineSide) * cabs(current);
+      const starter = isStarter(c) ? { starter: { mode: runtime.starters?.[c.id]?.mode ?? "off", reactance: reactances.get(c.id) ?? 0, ratio: runtime.starters?.[c.id]?.ratio, linePowerFactor: lineApparent > 1e-12 ? Math.abs(cmul(lineSide, conj(current))[0]) / lineApparent : undefined } } : {};
       // Power belongs to the conducting contact (a–nc for a de-energized relay).
       // The voltage measurement retains the public a–b terminal convention (a star-connected motor: winding voltage).
       record(c, across, current, { voltage: a * cabs(terminal), voltageValid: islands.find(node(c.id, "a")) === islands.find(node(c.id, "b")), ...(machine ? { machine } : {}), ...starter, ...(resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}) });
       if (c.kind === "relay" && end(c) === "nc") { acReadings[c.id].currentNC = acReadings[c.id].current; acReadings[c.id].current = 0; }
+      const lead = leads.get(c.id);
+      if (lead) {
+        // Report one conductor: lead current and voltage drop; power stays the total of all conductors.
+        const r = acReadings[c.id], k = lead.i;
+        Object.assign(r, { current: r.current * k, contactCurrent: (r.contactCurrent ?? 0) * k, currentNC: (r.currentNC ?? 0) * k, currentPhasor: r.currentPhasor ? [r.currentPhasor[0] * k, r.currentPhasor[1] * k] : undefined, voltage: r.voltage * k / lead.z, ...(perPoleKinds.has(c.kind) ? { conductors: lead.conductors } : {}) });
+      }
     }
+    return { ref, reactances, frequency, phases };
   };
   const driveAt = (ns: string[]) => active.filter((c) => c.kind === "vfd" && ns.includes(node(c.id, "oa")));
   const energized = (d: Component) => active.some((c) => c.kind === "source3" && islands.find(node(c.id, "a")) === islands.find(node(d.id, "a")));
@@ -471,26 +596,62 @@ export function solveElectrical(
         continue;
       }
       // Rectifier inputs are constant-power loads: G = P/(3|V|²), iterated until |V| at each drive is consistent.
-      const demand = new Map(drives.map((d) => [d.id, driveDemand(d)])), loads = new Map<string, number>();
+      // The rectifiers' harmonic currents dissipate I²R in the network; that power is drawn from the fundamental
+      // (input = output + losses + harmonic emission), so it is part of the same iteration.
+      const demand = new Map(drives.map((d) => [d.id, driveDemand(d)])), loads = new Map<string, number>(), emission = new Map(drives.map((d) => [d.id, 0]));
       const nominal = sources[0].kind === "source3" ? prop(sources[0], "lineVoltage") / Math.sqrt(3) : prop(sources[0], "voltage");
       const squared = new Map(drives.map((d) => [d.id, nominal ** 2]));
+      const input = (d: Component) => { const dm = demand.get(d.id)!, base = dm.output + dm.losses; return base > 0 ? base + emission.get(d.id)! : 0; };
+      const across = (d: Component) => csub(phasors[node(d.id, "a")] ?? [0, 0], phasors[node(d.id, "b")] ?? [0, 0]);
+      // The harmonic network does not depend on the iteration: solve it once per order and drive for a unit
+      // injection, then superpose with the actual injections c = s/h·|I₁|∠h·φ₁ (linear network).
+      let unit: Map<string, { current: Cx; across: Cx }>[][] | undefined;
+      const injections = () => HARMONIC_ORDERS.map((h) => drives.map((d) => {
+        const fundamental = cmul([loads.get(d.id)!, 0], across(d)), magnitude = prop(d, "inputTHD", 40) / 100 / HARMONIC_SHAPE / h * cabs(fundamental), angle = h * Math.atan2(fundamental[1], fundamental[0]);
+        return [magnitude * Math.cos(angle), magnitude * Math.sin(angle)] as Cx;
+      }));
+      const superpose = (k: number, id: string, c: Cx[][]) => drives.reduce((sum, d, j) => {
+        const e = unit![k][j].get(id);
+        return e ? { current: cadd(sum.current, cmul(e.current, c[k][j])), across: cadd(sum.across, cmul(e.across, c[k][j])) } : sum;
+      }, { current: [0, 0] as Cx, across: [0, 0] as Cx });
+      let c: Cx[][] = [];
       for (let iteration = 0; ; iteration++) {
-        for (const d of drives) loads.set(d.id, demand.get(d.id)!.input / (3 * Math.max(squared.get(d.id)!, 1e-12)));
-        solveACIsland(island, ns, members, sources, undefined, loads);
+        for (const d of drives) loads.set(d.id, input(d) / (3 * Math.max(squared.get(d.id)!, 1e-12)));
+        const solved = solveACIsland(island, ns, members, sources, undefined, loads);
+        unit ??= HARMONIC_ORDERS.map((h) => drives.map((d) => prop(d, "inputTHD", 40) === 0 ? new Map() : solveHarmonic(ns, solved.ref, members, sources, solved.frequency, h, new Map([[d.id, [1, 0] as Cx]]), solved.reactances)));
+        c = injections();
         let change = 0;
         for (const d of drives) {
-          const v = csub(phasors[node(d.id, "a")] ?? [0, 0], phasors[node(d.id, "b")] ?? [0, 0]), sq = v[0] ** 2 + v[1] ** 2;
-          change = Math.max(change, Math.abs(sq - squared.get(d.id)!) / Math.max(sq, 1e-12));
+          const v = across(d), sq = v[0] ** 2 + v[1] ** 2;
+          // Power the rectifier emits at the harmonics (it draws I_h, so it absorbs −3·Re(V_h·I_h*)).
+          const emitted = -HARMONIC_ORDERS.reduce((sum, _, k) => { const e = superpose(k, d.id, c); return sum + 3 * cmul(e.across, conj(e.current))[0]; }, 0);
+          change = Math.max(change, Math.abs(sq - squared.get(d.id)!) / Math.max(sq, 1e-12), Math.abs(emitted - emission.get(d.id)!) / Math.max(1, input(d)));
           squared.set(d.id, sq);
+          emission.set(d.id, emitted);
         }
         if (change < 1e-13) break;
         if (iteration > 50) throw Error(`${drives[0].name}: input power did not converge; the supply is too weak for the drive load.`);
       }
+      const harmonics = HARMONIC_ORDERS.map((_, k) => new Map(members.map((m) => [m.id, superpose(k, m.id, c)])));
+      // Harmonic currents add to every element's RMS current and their I²R to its heat.
+      const fundamentalPower = new Map(Object.entries(acReadings).map(([id, r]) => [id, r.power]));
+      for (const c of members) {
+        const r = acReadings[c.id];
+        if (!r) continue;
+        let sq = 0, loss = 0;
+        for (const m of harmonics) { const e = m.get(c.id); if (e) { sq += e.current[0] ** 2 + e.current[1] ** 2; loss += 3 * cmul(e.across, conj(e.current))[0]; } }
+        if (sq === 0) continue;
+        const k = leads.get(c.id)?.i ?? 1, rms = Math.sqrt(r.current ** 2 + sq * k * k);
+        Object.assign(r, { current: (Math.sign(r.current) || 1) * rms, contactCurrent: rms, harmonicCurrent: Math.sqrt(sq) * k, harmonicLoss: c.kind === "vfd" ? 0 : loss });
+        if (c.kind !== "vfd") r.power += loss;
+        const real = c.kind === "vfd" ? input(c) : fundamentalPower.get(c.id) ?? r.power, apparent = (r.phases ?? 1) * r.voltage * rms;
+        r.powerFactor = apparent > 1e-12 ? Math.min(1, Math.abs(real) / apparent) : null;
+      }
       for (const d of drives) {
-        const dm = demand.get(d.id)!, out = driveOutputs[d.id];
+        const dm = demand.get(d.id)!, out = driveOutputs[d.id], drawn = input(d);
         acReadings[d.id] = {
-          ...acReadings[d.id], power: dm.input - dm.output,
-          drive: { energized: true, running: !!out, inputPower: dm.input, outputPower: dm.output, losses: dm.losses, braking: dm.braking, frequency: out ? runtime.drives![d.id].frequency : 0, outputVoltage: out ? cabs(out.voltage) * Math.sqrt(3) : 0, outputCurrent: out ? cabs(out.current) : 0, outputCurrentPhasor: out?.current ?? [0, 0] },
+          ...acReadings[d.id], power: drawn - emission.get(d.id)! - dm.output,
+          drive: { energized: true, running: !!out, inputPower: drawn, outputPower: dm.output, losses: dm.losses, braking: dm.braking, harmonicEmission: emission.get(d.id)!, frequency: out ? runtime.drives![d.id].frequency : 0, outputVoltage: out ? cabs(out.voltage) * Math.sqrt(3) : 0, outputCurrent: out ? cabs(out.current) : 0, outputCurrentPhasor: out?.current ?? [0, 0] },
         };
       }
       continue;
@@ -661,6 +822,11 @@ export function solveElectrical(
     };
     if (isSource(c)) sourcePower -= power;
     else dissipatedPower += power;
+  }
+  // Conductor count is topology (thermal mass of the motor leads), independent of the starter's state.
+  for (const [id, lead] of leads) {
+    const c = cs.find((x) => x.id === id);
+    if (c && perPoleKinds.has(c.kind) && readings[id]) readings[id].conductors = lead.conductors;
   }
   const nodes: Record<string, number> = {},
     nodeIds: Record<string, string> = {},

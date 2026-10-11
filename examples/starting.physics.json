@@ -125,6 +125,7 @@
         "overcurrentTrip": 2.5,
         "ratedLoss": 3,
         "standbyLoss": 20,
+        "inputTHD": 40,
         "heatCapacity": 3000,
         "loss": 6,
         "maxTemperature": 90

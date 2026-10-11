@@ -34,12 +34,17 @@ test('starting a motor three ways: star-delta, soft starter and drive through th
   await expect(page.getByTestId('starter-note')).toContainText('Bypass contactor closed');
   await select(page, 'vfd');
   await expect(page.getByTestId('drive-note')).toContainText('Output 50.00 Hz · 400 V');
+  await expect(page.getByTestId('drive-note')).toContainText(/A harmonics \(true power factor 0\.9\d\d\)/);
+  // The supply carries the drive's harmonic currents too.
+  await select(page, 'source3');
+  await expect(page.getByTestId('harmonic-note')).toContainText('Includes rectifier harmonics');
   // All three motors at full speed against the same load.
   const motors = (await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}))).motors as Record<string, { omega: number }>;
   const speeds = Object.values(motors).map(m => m.omega * 30 / Math.PI);
   expect(speeds).toHaveLength(3);
   for (const speed of speeds) expect(speed).toBeGreaterThan(1480);
   // Stop the drive from the inspector: it ramps down and switches its output off.
+  await select(page, 'vfd');
   await page.getByRole('button', { name: 'Run command', exact: true }).click();
   await advance(page, 10);
   await expect(page.getByTestId('drive-note')).toContainText('Output off');
