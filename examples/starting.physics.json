@@ -1,0 +1,349 @@
+{
+  "version": 3,
+  "probes": [
+    {
+      "id": "starting-probe-1",
+      "component": "starting-component-1",
+      "measurement": "current",
+      "name": "TS3-01 line current",
+      "color": "#ef9975",
+      "visible": true
+    },
+    {
+      "id": "starting-probe-2",
+      "component": "starting-component-5",
+      "measurement": "rpm",
+      "name": "Motor (star-delta) rpm",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "starting-probe-3",
+      "component": "starting-component-6",
+      "measurement": "rpm",
+      "name": "Motor (soft starter) rpm",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "starting-probe-4",
+      "component": "starting-component-7",
+      "measurement": "rpm",
+      "name": "Motor (drive) rpm",
+      "color": "#59b99b",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "id": "example-starting",
+  "name": "Starting a motor three ways — star-delta, soft starter, drive",
+  "components": [
+    {
+      "id": "starting-component-1",
+      "kind": "source3",
+      "name": "TS3-01",
+      "x": 40,
+      "y": 360,
+      "rotation": 0,
+      "variant": "industrial250",
+      "props": {
+        "lineVoltage": 400,
+        "frequency": 50,
+        "internalResistance": 0.005,
+        "maxCurrent": 250,
+        "maxPower": 173000,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "starting-component-2",
+      "kind": "starDeltaStarter",
+      "name": "SDS-01",
+      "x": 330,
+      "y": 60,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "enabled": true,
+        "starTime": 4,
+        "transitionTime": 0.05,
+        "ratedCurrent": 16,
+        "ratedVoltage": 690,
+        "resistance": 0.003,
+        "heatCapacity": 400,
+        "loss": 2,
+        "maxTemperature": 120
+      }
+    },
+    {
+      "id": "starting-component-3",
+      "kind": "softStarter",
+      "name": "SS-01",
+      "x": 330,
+      "y": 360,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "enabled": true,
+        "initialVoltage": 40,
+        "rampTime": 6,
+        "stopTime": 0,
+        "currentLimit": 3.5,
+        "ratedCurrent": 16,
+        "maxStartTime": 30,
+        "ratedVoltage": 690,
+        "resistance": 0.004,
+        "heatCapacity": 600,
+        "loss": 3,
+        "maxTemperature": 120
+      }
+    },
+    {
+      "id": "starting-component-4",
+      "kind": "vfd",
+      "name": "VFD-01",
+      "x": 330,
+      "y": 660,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "enabled": true,
+        "frequencySetpoint": 50,
+        "accelTime": 5,
+        "decelTime": 5,
+        "stopMode": "ramp",
+        "startFrequency": 0.5,
+        "baseFrequency": 50,
+        "maxFrequency": 60,
+        "boost": 3,
+        "ratedVoltage": 400,
+        "ratedPower": 7500,
+        "ratedOutputCurrent": 16.5,
+        "overload": 150,
+        "overcurrentTrip": 2.5,
+        "ratedLoss": 3,
+        "standbyLoss": 20,
+        "heatCapacity": 3000,
+        "loss": 6,
+        "maxTemperature": 90
+      }
+    },
+    {
+      "id": "starting-component-5",
+      "kind": "inductionMotor",
+      "name": "Motor (star-delta)",
+      "x": 640,
+      "y": 60,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedVoltage": 400,
+        "ratedFrequency": 50,
+        "poles": 4,
+        "ratedPower": 7500,
+        "ratedCurrent": 15,
+        "ratedTorque": 50,
+        "statorResistance": 0.75,
+        "statorReactance": 1.3,
+        "magnetizingReactance": 48,
+        "rotorResistance": 0.55,
+        "rotorReactance": 1.6,
+        "inertia": 0.045,
+        "friction": 0.002,
+        "loadTorque": 12,
+        "maxSpeed": 330,
+        "heatCapacity": 25000,
+        "loss": 18,
+        "conductance": 30,
+        "maxTemperature": 155,
+        "enabled": true
+      }
+    },
+    {
+      "id": "starting-component-6",
+      "kind": "inductionMotor",
+      "name": "Motor (soft starter)",
+      "x": 640,
+      "y": 360,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedVoltage": 400,
+        "ratedFrequency": 50,
+        "poles": 4,
+        "ratedPower": 7500,
+        "ratedCurrent": 15,
+        "ratedTorque": 50,
+        "statorResistance": 0.75,
+        "statorReactance": 1.3,
+        "magnetizingReactance": 48,
+        "rotorResistance": 0.55,
+        "rotorReactance": 1.6,
+        "inertia": 0.045,
+        "friction": 0.002,
+        "loadTorque": 12,
+        "maxSpeed": 330,
+        "heatCapacity": 25000,
+        "loss": 18,
+        "conductance": 30,
+        "maxTemperature": 155,
+        "enabled": true
+      }
+    },
+    {
+      "id": "starting-component-7",
+      "kind": "inductionMotor",
+      "name": "Motor (drive)",
+      "x": 640,
+      "y": 660,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedVoltage": 400,
+        "ratedFrequency": 50,
+        "poles": 4,
+        "ratedPower": 7500,
+        "ratedCurrent": 15,
+        "ratedTorque": 50,
+        "statorResistance": 0.75,
+        "statorReactance": 1.3,
+        "magnetizingReactance": 48,
+        "rotorResistance": 0.55,
+        "rotorReactance": 1.6,
+        "inertia": 0.045,
+        "friction": 0.002,
+        "loadTorque": 12,
+        "maxSpeed": 330,
+        "heatCapacity": 25000,
+        "loss": 18,
+        "conductance": 30,
+        "maxTemperature": 155,
+        "enabled": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "starting-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "starting-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "starting-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "starting-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "starting-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-5",
+        "port": "b"
+      },
+      "to": {
+        "component": "starting-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "starting-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "starting-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "starting-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "starting-component-6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "starting-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-6",
+        "port": "b"
+      },
+      "to": {
+        "component": "starting-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "starting-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "starting-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "starting-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "starting-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "starting-connection-9",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-4",
+        "port": "oa"
+      },
+      "to": {
+        "component": "starting-component-7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "starting-connection-10",
+      "domain": "electrical",
+      "from": {
+        "component": "starting-component-7",
+        "port": "b"
+      },
+      "to": {
+        "component": "starting-component-4",
+        "port": "ob"
+      }
+    }
+  ]
+}

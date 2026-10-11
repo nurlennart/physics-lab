@@ -161,7 +161,9 @@
         "lossCoefficient": 5,
         "laminarK": 500,
         "maxPressure": 1000000,
-        "elevation": 0
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
       }
     },
     {
@@ -292,7 +294,9 @@
         "lossCoefficient": 5,
         "laminarK": 500,
         "maxPressure": 1000000,
-        "elevation": 0
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
       }
     }
   ],

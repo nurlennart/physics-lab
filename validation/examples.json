@@ -60,6 +60,34 @@
     ]
   },
   {
+    "mode": "starting",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 369316.0458252767,
+    "energyResidual": -9.422656148672104e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "TS3-01 line current",
+        "value": -12.860624146410268
+      },
+      {
+        "name": "Motor (star-delta) rpm",
+        "value": 1489.2667474194084
+      },
+      {
+        "name": "Motor (soft starter) rpm",
+        "value": 1489.5034419175547
+      },
+      {
+        "name": "Motor (drive) rpm",
+        "value": 1489.2889491455212
+      }
+    ]
+  },
+  {
     "mode": "light",
     "simulatedSeconds": 60,
     "error": null,

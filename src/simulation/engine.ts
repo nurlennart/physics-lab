@@ -432,7 +432,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "inductionMotor", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -598,6 +598,7 @@ export class Simulation {
         overflowed: { ...state.overflowed }, overflowRate: { ...state.overflowRate }, removedMass: state.removedMass, removedEnergy: state.removedEnergy,
         hydraulic: state.hydraulic, transferred: { ...state.transferred }, copperEnergy: state.copperEnergy, frictionEnergy: state.frictionEnergy,
         pumpWork: state.pumpWork, hydraulicWork: state.hydraulicWork, dissipation: state.dissipation, externalShaftWork: state.externalShaftWork, dryLoss: state.dryLoss,
+        starters: structuredClone(state.starters), drives: structuredClone(state.drives),
       };
       const temperaturesBefore = { ...this.temperatures };
       const spatialBefore = this.spatial.hasMovingBodies ? this.spatial.checkpoint() : undefined;
@@ -778,12 +779,13 @@ export class Simulation {
         // outside rating and fail only through their modelled temperature.
         const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
           rawOverCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
-          overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * (c.kind === "inductionMotor" && r.phases === 3 ? Math.sqrt(3) : 1) > prop(c, "ratedVoltage", Infinity) * (1 + 1e-9);
+          overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd" || c.kind === "starDeltaStarter" || c.kind === "softStarter") && r.phases === 3 ? Math.sqrt(3) : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %
         // Motors draw several times rated current while starting direct-on-line; that is normal operation.
         // Current above rating is reported only once it persists beyond the starting allowance; winding
         // temperature still decides failure.
         this.overCurrentTime[c.id] = rawOverCurrent ? (this.overCurrentTime[c.id] ?? 0) + dt : 0;
-        const overCurrent = isMotor(c) ? this.overCurrentTime[c.id] > MOTOR_START_ALLOWANCE : rawOverCurrent;
+        // Starters carry the motor's starting current by design (AC-3 rating), with the same allowance.
+        const overCurrent = isMotor(c) || c.kind === "starDeltaStarter" || c.kind === "softStarter" ? this.overCurrentTime[c.id] > MOTOR_START_ALLOWANCE : rawOverCurrent;
         const protective = c.kind === "fuse" || c.kind === "breaker" || c.kind === "motorProtector";
         const over = protective ? overCurrent : overPower || overCurrent || overVoltage;
         this.overload[c.id] = over ? (this.overload[c.id] ?? 0) + dt : 0;
@@ -791,7 +793,7 @@ export class Simulation {
           this.automation.status[c.id] = "overloaded";
         if (over && !protective && !this.failed[c.id]) {
           for (const [quantity, exceeded] of [["power", overPower], ["current", overCurrent], ["voltage", overVoltage]] as const)
-            if (exceeded) this.violation(quantity === "current" && isMotor(c) ? `${c.name}: above its rated current for more than ${MOTOR_START_ALLOWANCE} s (normal starting current is tolerated). Consequences follow from its modelled temperature.` : `${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
+            if (exceeded) this.violation(quantity === "current" && (isMotor(c) || c.kind === "starDeltaStarter" || c.kind === "softStarter") ? `${c.name}: above its rated current for more than ${MOTOR_START_ALLOWANCE} s (normal starting current is tolerated). Consequences follow from its modelled temperature.` : `${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
         }
         if (c.kind === "fuse" && this.overload[c.id] >= prop(c, "tripTime", 0.1) - 1e-12 && !this.failed[c.id]) {
           this.fail(c.id, `${c.name}: overcurrent — fuse opened.`);

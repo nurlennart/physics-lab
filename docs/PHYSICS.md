@@ -405,3 +405,60 @@ Breaker and motor-protector curves (IEC 60898, IEC 60947-2) state the instantane
 - **Previously** the magnetic check compared the RMS phasor magnitude of the step's first substep. During a motor start that missed the half-cycle maximum: the 7.5 kW start showed 6.1 A in the switch-on step and at most 85 A RMS (equivalent to a 121 A peak), against a true first peak of 130 A.
 - **Example** (`protection.test.ts`): a 16 A breaker set to 5.5 × In (88 A RMS, 124.5 A peak) trips magnetically in the first step of the 7.5 kW start; at 6 × In (135.8 A peak) the motor starts.
 - DC releases compare |i| with k·In directly. The thermal image still uses the step's first-substep RMS current.
+
+## Motor starters and variable-frequency drive
+
+Three components start and run the induction motor in ways other than direct-on-line. All of them work with the dynamic machine model, so starting currents, transients and run-up times follow from the machine equations, not from fixed factors.
+
+### Star-delta starter
+
+A delta-wound motor (for example 400 V Δ / 690 V Y on a 400 V supply) starts with its windings in star, so each winding sees V/√3. In the per-phase star-equivalent model this is an ideal ratio a = 1/√3 between line and machine: the terminals see Z/a² = 3Z and E/a, the line current is a·i_winding, and the winding voltage is a·v_line.
+
+- **Star:** line current and torque are one third of direct-on-line. The tests confirm the ratio against direct-on-line at locked rotor, to within the supply's internal voltage drop.
+- **Open transition:** after the star time both contactors are open for the dead time (default 50 ms, typically 30–80 ms). The motor is an open stator: the rotor flux decays with T0' and the rotor slows under its load.
+- **Delta:** reconnecting at full voltage with residual flux gives the well-known transition surge. For the 7.5 kW motor at 10 N·m: first peak 44 A in star (direct-on-line 131 A), 1472 rpm at the end of the star time, 112 A peak at the delta transition.
+- **Physical limit, not a model limit:** a load above about one third of the locked-rotor torque does not start in star (20 N·m against 18 N·m star torque).
+- The starter feeds exactly one induction motor wired directly to its motor terminal. Its rated current is the AC-3 line current; starting current is tolerated for the motor starting allowance. Rated voltage 690 V (contactor insulation voltage), because an open starter carries line-to-neutral voltage.
+
+### Soft starter
+
+Antiparallel thyristors delay the firing angle and reduce the motor's fundamental voltage. On the fundamental, a phase-controlled AC switch absorbs reactive power but no real power (apart from its conduction loss). It is therefore modelled as a controlled lossless series reactance X ≥ 0 plus the path resistance:
+
+```
+|Z| / |Z + jX| = k(t)                  k: target voltage ratio, Z = R + jXm: steady motor impedance at the present speed
+|V| / |Z + jX| ≤ I_lim = limit × In    current limit
+X = max(0, √(|Z|²/k² − R²) − Xm, √((V/I_lim)² − R²) − Xm)
+```
+
+- **Ramp:** k rises from the initial voltage (default 40 %) to 100 % over the ramp time. Starting torque scales with k².
+- **Bypass:** once the ramp is at 100 % and no reactance is needed for the current limit, the bypass contactor closes (X = 0). If that does not happen within the maximum start time, the starter trips.
+- **Soft stop:** with a stop time > 0, k ramps down to the initial voltage, then the starter opens (pumps: limits pressure surges).
+- **What this reproduces:** current held at the limit (40 A ± 3 % in the test), and low line power factor while ramping (below 0.35, because the thyristors draw reactive power).
+- **Not modelled:** harmonics (motor heating by harmonic currents, line distortion), thyristor conduction loss (seconds at a few watts per ampere), torque pulsations from asymmetric firing. The reactance is computed from the steady motor impedance at the present speed: a feed-forward controller that knows the motor, where a real starter measures over half cycles.
+
+### Variable-frequency drive
+
+A diode rectifier charges a DC link; a PWM inverter makes a three-phase output at a commanded frequency. The model works at the fundamental frequency:
+
+- **Output network:** a separate AC network whose frequency is the drive's output frequency, fed by a stiff voltage source (the inverter's current-controlled modulation). Its phasors are referred to the drive's output angle θ = ∫2πf dt. The induction machine's dq frame rotates with it; the machine equations hold for a time-varying frame speed, so energy stays exact while the frequency changes.
+- **V/f characteristic:** V_LL = V_r·(b + (1 − b)·f/f_base) with boost b (default 3 %), constant V_r above the base frequency (field weakening).
+- **Ramps:** acceleration and deceleration times from 0 to the base frequency; start/stop frequency (default 0.5 Hz); stop by ramp or coast.
+- **Current limit:** an ideal fast current controller. When the ramped frequency would draw more than the overload current (default 150 % of In) at the motors' present speed, the frequency moves towards zero slip until the steady-state current equals the limit. This applies to motoring (stall prevention, extended acceleration) and to braking (extended deceleration). Measured-current feedback corrects the steady-state model; while the rotor flux builds up at low frequency the dynamic current can exceed the limit by up to about 6 % for a fraction of a second.
+- **Input:** the rectifier draws the output power plus losses, in phase with the supply voltage (power factor 1 for the fundamental). It is a constant-power load P = 3·G·|V|², with G iterated until it is consistent with the solved voltage. A drive needs a balanced three-phase supply; without one the DC link is uncharged and the output is off.
+- **Regeneration:** a diode rectifier cannot return power. When output power plus losses is negative, the surplus goes to the braking resistor, which is external: its heat goes to ambient, not into the drive's heat sink.
+- **Losses:** P = P₀ + P_r·(0.5·i + 0.5·i²), i = I_out/In: standby, switching (∝ I) and conduction (∝ I²). P_r is the datasheet loss at rated current (default 3 % of rated power). Losses heat the drive's heat sink (thermal mass and cooling), which trips the drive above its trip temperature.
+- **Protection:** I²t image θ = (I/In)² with τ = 60 s / ln(x²/(x² − 1)), so the overload current trips after 60 s from cold (test: 60.2 s with a stalled 75 N·m load). Instantaneous output overcurrent trips above 2.5 × √2·In.
+- **Results for the 7.5 kW motor:**
+  - at 25 Hz the output is 206 V;
+  - line current drops from 6.8 A (direct-on-line, power factor 0.70) to 4.9 A (drive, power factor ≈ 1) at the same load, because the DC link supplies the motor's reactive power;
+  - starting line peak is 7.7 A against 131 A direct-on-line.
+- **Not modelled:** harmonics on input and output (input RMS current is 10–40 % above the fundamental depending on the DC choke), DC-link voltage dynamics and undervoltage ride-through, overvoltage trip without a braking resistor, vector control and slip compensation, output voltage limited by a low supply voltage. Capacitors on the output are rejected (they would be overloaded by the PWM voltage).
+
+### Supporting changes
+
+- A machine whose terminals are not closed through the rest of the network (open starter, open switch) is an open stator, not a Thevenin element. This avoids a floating node in paused re-solves and midpoint ringing at the current interruption.
+- Switching detection for the 0.5 ms substeps compares the discrete electrical configuration (contactors, protection, starter modes, drive run states) with the last accepted substep. Starter timers end substeps exactly on their transition times.
+- Motor overvoltage is reported above 105 % of rated voltage (IEC 60034-1 zone A) instead of any excess: a reconnection transient lifted the terminal voltage by 0.007 %.
+- Example "Starting a motor three ways" runs all three methods from one supply.
+
+Tests: `motor-starting.test.ts` covers the star current and torque ratio, transition timing and surge, non-starting in star, the soft-starter current limit, reactive power, bypass, soft stop and start-time trip, and for the drive V/f, power balance and unity power factor at the input, starting current, current limit while accelerating and braking, braking energy outside the heat sink, the I²t trip time, output short circuit, missing supply and output capacitor errors, the wired frequency command and field weakening.

@@ -13,7 +13,7 @@ import {
   type Component,
 } from "./model";
 export function starter(
-  mode: "induction" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode = "heat",
+  mode: "induction" | "starting" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode = "heat",
   challenge = false,
 ): Project {
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
@@ -49,6 +49,24 @@ export function starter(
     p.components.push(c);
     return c;
   };
+  if (mode === "starting") {
+    // One 400 V supply, three ways to start the same 7.5 kW motor against 12 N·m.
+    p.name = "Starting a motor three ways — star-delta, soft starter, drive";
+    const source = add("source3", 40, 360);
+    source.variant = "industrial250";
+    source.props = { ...catalog(source).props };
+    const starDelta = add("starDeltaStarter", 330, 60, { starTime: 4 }), soft = add("softStarter", 330, 360, { rampTime: 6 }), drive = add("vfd", 330, 660, { accelTime: 5 });
+    const motors = [add("inductionMotor", 640, 60, { loadTorque: 12 }), add("inductionMotor", 640, 360, { loadTorque: 12 }), add("inductionMotor", 640, 660, { loadTorque: 12 })];
+    motors.forEach((m, i) => { m.name = ["Motor (star-delta)", "Motor (soft starter)", "Motor (drive)"][i]; });
+    const wire = (a: Component, ap: string, b: Component, bp: string) => { p = connect(p, { component: a.id, port: ap }, { component: b.id, port: bp }); };
+    for (const [st, m] of [[starDelta, motors[0]], [soft, motors[1]]] as const) { wire(source, "a", st, "a"); wire(st, "b", m, "a"); wire(m, "b", source, "b"); }
+    wire(source, "a", drive, "a"); wire(drive, "b", source, "b"); wire(drive, "oa", motors[2], "a"); wire(motors[2], "b", drive, "ob");
+    p.probes = [
+      { id: uid(), component: source.id, measurement: "current", name: `${source.name} line current`, color: "#ef9975", visible: true },
+      ...motors.map((m, i) => ({ id: uid(), component: m.id, measurement: "rpm" as const, name: `${m.name} rpm`, color: ["#e9bd6a", "#a58ae3", "#59b99b"][i], visible: true })),
+    ];
+    return p;
+  }
   if (mode === "induction" || mode === "acRlc") {
     p.name = mode === "induction" ? "Loaded induction motor — compatible 250 A supply" : "AC RLC measurement laboratory";
     const source = add(mode === "induction" ? "source3" : "sourceAC", 50, 140);

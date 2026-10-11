@@ -203,10 +203,15 @@ export function RatingIndicators({ c }: { c: Component }) {
   } else if (c.kind === "source" && r) {
     bars.push(<Bar key="i" label="Output current" actual={r.current} rated={sourceMode(c) === "cc" ? prop(c, "current") : prop(c, "maxCurrent")} unit="A" />);
     bars.push(<Bar key="p" label="Output power" actual={r.power} rated={prop(c, "maxPower", Infinity)} unit="W" />);
+  } else if (c.kind === "vfd" && r) {
+    const d = r.drive;
+    bars.push(<Bar key="i" label="Output current" actual={d?.outputCurrent ?? 0} rated={prop(c, "ratedOutputCurrent")} unit="A" />);
+    bars.push(<Bar key="p" label="Output power" actual={Math.max(0, d?.outputPower ?? 0)} rated={prop(c, "ratedPower")} unit="W" />);
+    bars.push(<Bar key="v" label="Input line voltage RMS" actual={r.voltage * Math.sqrt(3)} rated={prop(c, "ratedVoltage")} unit="V" />);
   } else if (r) {
     if ("ratedPower" in c.props) bars.push(<Bar key="p" label={isMotor(c) ? "Shaft power" : c.kind === "heater" ? "Power vs nominal" : "Power"} actual={isMotor(c) ? simulation.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power} rated={prop(c, "ratedPower")} unit="W" />);
     if ("ratedCurrent" in c.props) bars.push(<Bar key="i" label="Current" actual={r.contactCurrent ?? r.current} rated={prop(c, "ratedCurrent")} unit="A" />);
-    if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : "Voltage"} actual={c.kind === "inductionMotor" && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
+    if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : c.kind === "starDeltaStarter" || c.kind === "softStarter" ? "Voltage across contacts (line-to-line)" : "Voltage"} actual={(c.kind === "inductionMotor" || c.kind === "starDeltaStarter" || c.kind === "softStarter") && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
   }
   if (t !== undefined && "maxTemperature" in c.props)
     bars.push(<Bar key="t" label="Temperature rise" actual={t - projectAmbient(simulation.project)} rated={prop(c, "maxTemperature") - projectAmbient(simulation.project)} unit="K" />);

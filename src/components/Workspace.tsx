@@ -298,6 +298,42 @@ function CircuitSymbol({ c }: { c: Component }) {
         </text>
       </g>
     );
+  if (c.kind === "starDeltaStarter" || c.kind === "softStarter") {
+    const st = simulation.multiphysics.starters[c.id], mode = st?.mode ?? "off", live = mode !== "off" && mode !== "open";
+    const label = c.kind === "softStarter" ? (mode === "ramp" ? `${st?.stopping ? "STOP" : "RAMP"} ${((st?.ratio ?? 1) * 100).toFixed(0)} %` : mode === "bypass" ? "BYPASS" : "OFF") : mode.toUpperCase();
+    return (
+      <g>
+        <path d="M0 66H50M124 66H174" stroke={live ? T.electrical : T.n13} strokeWidth="2" />
+        <rect x="50" y="44" width="74" height="44" rx="3" fill={T.n4} stroke={live ? T.electricalText : T.n11} />
+        {c.kind === "starDeltaStarter" ? (
+          <g stroke={T.n14} strokeWidth="1.6" fill="none">
+            <path d="M70 54V66M70 66L61 74M70 66L79 74" stroke={mode === "star" ? T.electricalText : T.n12} />
+            <path d="M104 53L95 75H113Z" stroke={mode === "delta" ? T.electricalText : T.n12} />
+          </g>
+        ) : (
+          <g stroke={T.n14} strokeWidth="1.6" fill="none">
+            <path d="M66 74L74 58M74 58V74M74 66H68" stroke={mode === "ramp" ? T.electricalText : T.n12} />
+            <path d="M92 74L100 58M100 58V74M100 66H94" stroke={mode === "ramp" ? T.electricalText : T.n12} />
+            <path d="M58 82H116" stroke={mode === "bypass" ? T.electricalText : T.n11} />
+          </g>
+        )}
+        <text x="87" y="110" textAnchor="middle" className="component-state">{prop(c, "ratedCurrent")} A · {label}</text>
+      </g>
+    );
+  }
+  if (c.kind === "vfd") {
+    const d = simulation.multiphysics.drives[c.id];
+    return (
+      <g>
+        <path d="M0 40H40M0 92H40M134 40H174M134 92H174" stroke={d?.running ? T.electrical : T.n13} strokeWidth="2" />
+        <rect x="40" y="28" width="94" height="76" rx="3" fill={T.n4} stroke={d?.running ? T.electricalText : T.n11} />
+        <path d="M50 76H70M50 70H70" stroke={T.n12} strokeWidth="1.4" />
+        <path d="M84 66C90 52 96 52 102 66S114 80 120 66" fill="none" stroke={d?.running ? T.electricalText : T.n12} strokeWidth="1.8" />
+        <path d="M78 34V98" stroke={T.n9} strokeDasharray="3 3" />
+        <text x="87" y="122" textAnchor="middle" className="component-state">{d?.running ? `${d.frequency.toFixed(1)} Hz` : "STOPPED"} · {(prop(c, "ratedPower") / 1000).toFixed(1)} kW</text>
+      </g>
+    );
+  }
   if (c.kind === "breaker" || c.kind === "motorProtector") {
     const tripped = simulation.breakers[c.id]?.tripped, open = tripped || c.props.closed === false;
     return (
@@ -1023,6 +1059,10 @@ export default function Workspace() {
                           ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
                         : c.kind === "motor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A armature · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
+                        : c.kind === "vfd"
+                          ? (() => { const d = simulation.electrical.readings[c.id]?.drive; return d?.running ? `${d.frequency.toFixed(1)} Hz · ${d.outputCurrent.toFixed(1)} A out · ${d.inputPower.toFixed(0)} W in` : d?.energized ? "Output off · DC link charged" : "No supply"; })()
+                        : c.kind === "starDeltaStarter" || c.kind === "softStarter"
+                          ? `${Math.abs(simulation.electrical.readings[c.id]?.current ?? 0).toFixed(1)} A line · ${(simulation.multiphysics.starters[c.id]?.mode ?? "off").toUpperCase()}`
                         : c.kind === "inductionMotor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A line · slip ${((simulation.electrical.readings[c.id]?.machine?.slip ?? 1) * 100).toFixed(1)} % · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(0)} W shaft`
                         : simulation.electrical.readings[c.id]?.ac

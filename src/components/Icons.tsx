@@ -1,5 +1,5 @@
 import {
-  Waves, Fan, Gauge, GitBranch, Pipette,
+  Waves, Fan, Gauge, GitBranch, Pipette, Star, TrendingUp,
   BatteryCharging,
   Zap,
   Lightbulb,
@@ -58,6 +58,9 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   inductor: Activity,
   capacitor: Activity,
   inductionMotor: Fan,
+  starDeltaStarter: Star,
+  softStarter: TrendingUp,
+  vfd: Waves,
 };
 export function ComponentIcon({
   kind,

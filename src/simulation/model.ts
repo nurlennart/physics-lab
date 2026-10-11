@@ -8,6 +8,9 @@ export type Kind =
   | "inductor"
   | "capacitor"
   | "inductionMotor"
+  | "starDeltaStarter"
+  | "softStarter"
+  | "vfd"
   | "resistor"
   | "switch"
   | "lamp"
@@ -337,6 +340,46 @@ export const definitions: Record<Kind, Definition> = {
     defaults: { ratedVoltage: 400, ratedFrequency: 50, poles: 4, ratedPower: 7500, ratedCurrent: 15, ratedTorque: 50, statorResistance: 0.75, statorReactance: 1.3, magnetizingReactance: 48, rotorResistance: 0.55, rotorReactance: 1.6, inertia: 0.045, friction: 0.002, loadTorque: 0, maxSpeed: 330, heatCapacity: 25000, loss: 18, conductance: 30, maxTemperature: 155, enabled: true },
     variants: [
       { id: "im45", label: "Induction motor 45 kW", cost: 2200, spec: "400 V 3~ · 45 kW · 4-pole", overrides: { ratedPower: 45000, ratedCurrent: 82, ratedTorque: 290, statorResistance: 0.07, statorReactance: 0.27, magnetizingReactance: 9, rotorResistance: 0.06, rotorReactance: 0.33, inertia: 0.38, friction: 0.01, heatCapacity: 150000, loss: 90 } },
+    ],
+  },
+  starDeltaStarter: {
+    label: "Star-delta starter",
+    category: "Electrical",
+    description: "Contactor combination for a delta-wound motor: starts in star (each winding at V/√3, line current and torque ÷ 3), switches to delta after the star time with an open transition (dead time); feeds one induction motor wired directly to its motor terminal",
+    spec: "16 A · 5 s star · 50 ms transition",
+    cost: 160,
+    prefix: "SDS",
+    ports: [{ id: "a", domain: "electrical", label: "Line (from supply)" }, { id: "b", domain: "electrical", label: "Motor (to motor terminal a)" }, input("start", "boolean", true)],
+    defaults: { enabled: true, starTime: 5, transitionTime: 0.05, ratedCurrent: 16, ratedVoltage: 690, resistance: 0.003, heatCapacity: 400, loss: 2, maxTemperature: 120 },
+  },
+  softStarter: {
+    label: "Soft starter",
+    category: "Electrical",
+    description: "Thyristor voltage controller: ramps the motor's fundamental voltage from an initial value with a current limit, then closes its bypass contactor; optional soft stop. Fundamental-frequency model: the thyristors act as a lossless controlled series reactance (low line power factor while ramping); harmonics are not modelled",
+    spec: "16 A · 40 % → 100 % in 10 s · 3.5 × In limit",
+    cost: 280,
+    prefix: "SS",
+    ports: [{ id: "a", domain: "electrical", label: "Line (from supply)" }, { id: "b", domain: "electrical", label: "Motor (to motor terminal a)" }, input("start", "boolean", true)],
+    defaults: { enabled: true, initialVoltage: 40, rampTime: 10, stopTime: 0, currentLimit: 3.5, ratedCurrent: 16, maxStartTime: 30, ratedVoltage: 690, resistance: 0.004, heatCapacity: 600, loss: 3, maxTemperature: 120 },
+  },
+  vfd: {
+    label: "Variable-frequency drive",
+    category: "Electrical",
+    description: "Diode rectifier, DC link and PWM inverter: three-phase output at a commanded frequency with V/f control and boost, acceleration/deceleration ramps, current limit (stall prevention), I²t overload, braking resistor for regenerated power, current-dependent losses into its heat sink. Fundamental-frequency model: input current in phase with the voltage, harmonics and DC-link dynamics not modelled",
+    spec: "400 V · 7.5 kW · 16.5 A · 0–60 Hz",
+    cost: 650,
+    prefix: "VFD",
+    ports: [
+      { id: "a", domain: "electrical", label: "Line input (phase)" },
+      { id: "b", domain: "electrical", label: "Line input (neutral)" },
+      { id: "oa", domain: "electrical", label: "Motor output (phase)" },
+      { id: "ob", domain: "electrical", label: "Motor output (star point)" },
+      input("run", "boolean", true),
+      input("frequency", "number", true),
+    ],
+    defaults: { enabled: true, frequencySetpoint: 50, accelTime: 5, decelTime: 5, stopMode: "ramp", startFrequency: 0.5, baseFrequency: 50, maxFrequency: 60, boost: 3, ratedVoltage: 400, ratedPower: 7500, ratedOutputCurrent: 16.5, overload: 150, overcurrentTrip: 2.5, ratedLoss: 3, standbyLoss: 20, heatCapacity: 3000, loss: 6, maxTemperature: 90 },
+    variants: [
+      { id: "vfd45", label: "Variable-frequency drive 45 kW", cost: 3200, spec: "400 V · 45 kW · 88 A", overrides: { ratedPower: 45000, ratedOutputCurrent: 88, standbyLoss: 60, heatCapacity: 15000, loss: 30 } },
     ],
   },
   resistor: {

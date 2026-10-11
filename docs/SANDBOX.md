@@ -230,6 +230,6 @@ The six follow-up items from the first version of this list are now implemented 
 ## 11. Remaining deferred items, by priority
 
 1. *Done in the engineering-depth revision:* AC phasor solver with reactance and power factor, unbalanced three-phase from single-phase sources, induction motor; see [PHYSICS.md](PHYSICS.md).
-2. **Medium:** variable-frequency drives and single-phase machines; breaker selectivity plots and time-current curve displays; cavitation head-loss model; water hammer (needs compressible pipe dynamics).
+2. **Medium:** single-phase machines; breaker selectivity plots and time-current curve displays; water hammer (needs compressible pipe dynamics). *Done since:* variable-frequency drive, star-delta and soft starters, cavitation head drop.
 3. **Medium:** distributed 1-D wall conduction; fouling and phase change in heat exchangers.
 4. **Low:** lead-lag, dead-band and lookup-table blocks; sealed vessels with a gas headspace; evaporation above about 80 °C; Monte-Carlo tolerance studies.

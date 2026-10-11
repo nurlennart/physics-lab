@@ -1,5 +1,6 @@
 import { prop, isMotor, type Component, type Project } from './model';
-import { peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
+import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
+import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
 import { machineParams, magneticEnergy, openStatorFlux, openStatorStep, currents, cabs, type Cx } from './induction';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
@@ -40,6 +41,12 @@ export class Multiphysics {
   overflowRate: Record<string, number> = {};
   residual = 0;
   couplingIterations = 0;
+  /** Motor starters and drives: contactor modes, soft-starter ratio, drive frequency and output angle. */
+  starters: Record<string, StarterState> = {};
+  drives: Record<string, DriveState> = {};
+  /** Discrete electrical configuration of the last accepted substep (switching detection). */
+  private acceptedKey = '';
+  private lastElectrical?: ElectricalResult;
   /** Last electromechanical Jacobian (chord Newton), valid for one substep length and motor count. */
   private chord?: { h: number; n: number; key: string; jac: number[][] };
   initialize(p: Project) {
@@ -75,6 +82,81 @@ export class Multiphysics {
       return [c.id, { enabled: enabled && (command === null || command > 0), duty }];
     }));
   }
+  /** Start/run commands (wired inputs override the property) and drive frequency setpoints. */
+  private converterCommands(s: Simulation) {
+    const has = (c: Component, port: string) => s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);
+    const run = (c: Component, port: string) => {
+      if (s.failed[c.id]) return false;
+      const input = s.automation.input(c, port, s);
+      return has(c, port) ? input.valid && input.value === true : Boolean(c.props.enabled);
+    };
+    return Object.fromEntries(s.project.components.filter(c => isStarter(c) || c.kind === 'vfd').map(c => {
+      if (c.kind !== 'vfd') return [c.id, { run: run(c, 'start'), setpoint: 0 }];
+      const input = s.automation.input(c, 'frequency', s);
+      const setpoint = has(c, 'frequency') ? (input.valid && typeof input.value === 'number' ? input.value : 0) : prop(c, 'frequencySetpoint');
+      return [c.id, { run: run(c, 'run'), setpoint: Math.max(0, Math.min(prop(c, 'maxFrequency'), setpoint)) }];
+    }));
+  }
+  /** Command edges at the start of a substep (start, stop, coast; a drive needs an energised input). */
+  private applyCommands(s: Simulation, commands: ReturnType<Multiphysics['converterCommands']>) {
+    for (const c of s.project.components) {
+      const command = commands[c.id];
+      if (!command) continue;
+      if (isStarter(c)) this.starters[c.id] = starterCommand(c, this.starters[c.id] ?? newStarter(), command.run);
+      else this.drives[c.id] = driveCommand(c, this.drives[c.id] ?? newDrive(), command.run, command.setpoint, this.lastElectrical?.readings[c.id]?.drive?.energized === true && !s.failed[c.id]);
+    }
+  }
+  /** Timers, ramps, drive frequency and protection after an accepted substep. */
+  private advanceConverters(s: Simulation, h: number, electrical: ElectricalResult, commands: ReturnType<Multiphysics['converterCommands']>) {
+    for (const c of s.project.components) {
+      const command = commands[c.id];
+      if (!command || s.failed[c.id]) continue;
+      const result = isStarter(c)
+        ? advanceStarter(c, this.starters[c.id] ?? newStarter(), h, electrical.readings[c.id])
+        : advanceDrive(c, this.drives[c.id] ?? newDrive(), h, electrical.readings[c.id], command.run, command.setpoint, this.driveLimiter(s, c, electrical));
+      if (isStarter(c)) this.starters[c.id] = result.state as StarterState; else this.drives[c.id] = result.state as DriveState;
+      if (result.trip) { s.tripped[c.id] = result.trip; s.fail(c.id, result.trip); }
+    }
+  }
+  /** Steady-state output current of the motors on a drive's output network at their present speeds. */
+  private driveLimiter(s: Simulation, c: Component, electrical: ElectricalResult): DriveLimiter | undefined {
+    const fed = s.project.components.filter(m => m.kind === 'inductionMotor' && electrical.readings[m.id]?.supply === c.id);
+    if (!fed.length) return undefined;
+    const pairs = prop(fed[0], 'poles', 4) / 2;
+    return {
+      rotorFrequency: Math.max(0, pairs * (this.motors[fed[0].id]?.omega ?? 0) / (2 * Math.PI)),
+      currentAt: (f: number) => {
+        const v = driveLineVoltage(c, f) / Math.sqrt(3);
+        const total = fed.reduce<[number, number]>((sum, m) => {
+          const z = inductionCircuit(m, f, this.motors[m.id]?.omega ?? 0).impedance, d = z[0] ** 2 + z[1] ** 2;
+          return [sum[0] + v * z[0] / d, sum[1] - v * z[1] / d];
+        }, [0, 0]);
+        return Math.hypot(total[0], total[1]);
+      },
+    };
+  }
+  /** Substep limit so starter timers (star time, transition, ramp end) fall on substep boundaries. */
+  private converterEventLimit(s: Simulation) {
+    let limit = Infinity;
+    for (const c of s.project.components.filter(isStarter)) {
+      const t = starterEvent(c, this.starters[c.id] ?? newStarter());
+      if (t > 1e-12) limit = Math.min(limit, t);
+    }
+    return limit;
+  }
+  private converterRuntime(s: Simulation) {
+    return {
+      starters: Object.fromEntries(s.project.components.filter(isStarter).map(c => [c.id, { mode: this.starters[c.id]?.mode ?? 'off', ratio: this.starters[c.id]?.ratio }])),
+      drives: Object.fromEntries(s.project.components.filter(c => c.kind === 'vfd').map(c => {
+        const d = this.drives[c.id] ?? newDrive();
+        return [c.id, { running: d.running, frequency: d.frequency, voltage: driveLineVoltage(c, d.frequency) / Math.sqrt(3) }];
+      })),
+    };
+  }
+  /** Contactors, protection, starter modes and drive run states: a change is a switching event. */
+  private discreteKey(s: Simulation, controls: ReturnType<Multiphysics['controls']>) {
+    return JSON.stringify([Object.values(controls).map(c => c.enabled), Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running), [...s.openDevices()], s.failed, s.automation.contacts]);
+  }
   /**
    * `loads`: signed external shaft load per motor (N·m, positive opposes positive rotation). The
    * "External shaft load" property is a magnitude that always resists motion (advance() chooses the
@@ -86,6 +168,7 @@ export class Multiphysics {
       contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(),
       motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
       inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? [0, 0], h }]] : [])),
+      ...this.converterRuntime(s),
     });
     const speeds: Record<string, number> = {};
     const pairs: Record<string, string> = {};
@@ -156,7 +239,7 @@ export class Multiphysics {
    * rotor flux decays; interrupting a winding current dumps the stator-side field energy at once
    * (contact arc, booked as heat in the motor). Returns the extra heat (J) of the open-stator path.
    */
-  private advanceFlux(c: Component, reading: ElectricalReading | undefined, omega: number, h: number, time: number) {
+  private advanceFlux(c: Component, reading: ElectricalReading | undefined, omega: number, h: number, window: [number, number]) {
     const state = this.motors[c.id], psiS0 = state.psiS ?? [0, 0], psiR0 = state.psiR ?? [0, 0];
     const mid = reading?.machine?.psiS && reading.machine.psiR ? { s: reading.machine.psiS, r: reading.machine.psiR } : undefined;
     const frequency = reading?.frequency ?? state.frequency ?? prop(c, 'ratedFrequency', 50), m = machineParams(c, frequency);
@@ -164,7 +247,9 @@ export class Multiphysics {
     if (mid) {
       psiS = [2 * mid.s[0] - psiS0[0], 2 * mid.s[1] - psiS0[1]];
       psiR = [2 * mid.r[0] - psiR0[0], 2 * mid.r[1] - psiR0[1]];
-      peak = Math.max(state.energized ? peak : 0, peakOverInterval(currents(m, mid.s, mid.r).is, 3, m.ws * (time - h / 2), m.ws * (time + h / 2)));
+      // Line current: a star-connected winding carries i_line/a.
+      const is = currents(m, mid.s, mid.r).is, a = reading?.machine?.lineRatio ?? 1;
+      peak = Math.max(state.energized ? peak : 0, peakOverInterval([a * is[0], a * is[1]], 3, window[0], window[1]));
     } else {
       const interrupted = magneticEnergy(m, psiS0, psiR0) - magneticEnergy(m, openStatorFlux(m, psiR0), psiR0);
       const step = openStatorStep(m, psiR0, h, omega);
@@ -185,12 +270,15 @@ export class Multiphysics {
    */
   electricalStepLimit(s: Simulation, controls = this.controls(s)) {
     let limit = Infinity;
+    // A change of contactors, protection, starter mode or drive run state since the last accepted substep.
+    const switching = this.discreteKey(s, controls) !== this.acceptedKey;
     for (const c of s.project.components) {
       if (c.kind !== 'inductionMotor') continue;
       const state = this.motors[c.id];
       if (!state) continue;
-      const switching = controls[c.id]?.enabled !== state.energized, fluxing = (state.fluxRate ?? 0) > 1;
-      if (switching || fluxing) limit = Math.min(limit, 1 / (40 * (state.frequency ?? prop(c, 'ratedFrequency', 50))));
+      const fluxing = (state.fluxRate ?? 0) > 1;
+      // Drive-fed machines at low frequency: at most 1/40 of a 1 Hz period.
+      if (switching || fluxing) limit = Math.min(limit, 1 / (40 * Math.max(1, state.frequency ?? prop(c, 'ratedFrequency', 50))));
     }
     return limit;
   }
@@ -219,6 +307,7 @@ export class Multiphysics {
     // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
     transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells);
     this.updateNpsh(s, this.hydraulic);
+    this.lastElectrical = r.electrical;
     ms.forEach((c, i) => {
       const m = r.state[i];
       if (shaftBody(s.project, c.id)) {
@@ -232,7 +321,7 @@ export class Multiphysics {
   advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number } {
     s.spatial.stepMs = 0;
     this.lastProject = s.project;
-    const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {};
+    const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {}, commands = this.converterCommands(s);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.count && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
@@ -241,11 +330,12 @@ export class Multiphysics {
       if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
       // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit;
       // fixed steps keep the 1/240 s head/storage splitting bound.
-      let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining, this.electricalStepLimit(s, controls));
+      this.applyCommands(s, commands);
+      let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining, this.electricalStepLimit(s, controls), this.converterEventLimit(s));
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
       const { loads, held } = this.opposingLoads(s, old, controls, linked, h);
-      const discrete = motors.map((c, i) => `${controls[c.id].enabled ? 1 : 0}${Math.sign(loads[i])}${held[i] ? 'h' : ''}`).join('|');
+      const discrete = motors.map((c, i) => `${controls[c.id].enabled ? 1 : 0}${Math.sign(loads[i])}${held[i] ? 'h' : ''}`).join('|') + JSON.stringify([Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running)]);
       const snapshot = linked.some(Boolean) ? s.spatial.checkpoint() : undefined;
       let accepted: ReturnType<Multiphysics['solve']> | undefined;
       let acceptedTrial: ReturnType<typeof s.spatial.trial> | undefined;
@@ -305,6 +395,12 @@ export class Multiphysics {
       }
       if (!accepted) throw Error('Tank boundary event failed to converge.');
       const r = accepted;
+      // Supply angle over the substep: mains θ = ωt; a drive-fed network uses the drive's output angle.
+      const start = s.time + (dt - remaining);
+      const angleWindow = (v?: ElectricalReading): [number, number] => {
+        const w = 2 * Math.PI * (v?.frequency ?? 50), drive = v?.supply ? this.drives[v.supply] : undefined;
+        return drive ? [drive.angle, drive.angle + w * h] : [w * start, w * (start + h)];
+      };
       if (s.spatial.hasMovingBodies) {
         const torques = torqueMap(r, midpoint);
         s.spatial.accept(acceptedTrial ?? s.spatial.trial(s, h, torques), s, torques);
@@ -328,7 +424,7 @@ export class Multiphysics {
         const friction = prop(c, 'friction') * midpoint[i] ** 2;
         this.frictionEnergy += friction * h;
         heatEnergy[c.id] = (heatEnergy[c.id] ?? 0) + (m.copperPower + friction) * h;
-        if (c.kind === 'inductionMotor') heatEnergy[c.id] += this.advanceFlux(c, r.electrical.readings[c.id], midpoint[i], h, s.time + (dt - remaining) + h / 2);
+        if (c.kind === 'inductionMotor') heatEnergy[c.id] += this.advanceFlux(c, r.electrical.readings[c.id], midpoint[i], h, angleWindow(r.electrical.readings[c.id]));
         // Work exported by the opposing load: loads[i]·ω ≥ 0 while moving, zero while held at rest.
         this.externalShaftWork += loads[i] * midpoint[i] * h;
         if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);
@@ -378,13 +474,20 @@ export class Multiphysics {
       if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0 }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
-      const start = s.time + (dt - remaining), turn = (f: number) => 2 * Math.PI * f;
       for (const [id, v] of Object.entries(r.electrical.readings)) {
         const total = totalElectrical.readings[id];
-        total.power += v.power * h / dt;
+        // A drive's braking resistor is external: its heat goes to ambient, not into the drive's heat sink.
+        const braking = v.drive?.braking ?? 0;
+        total.power += (v.power - braking) * h / dt;
+        ambient += braking * h;
         // Magnetic releases act on the instantaneous current: track its largest value across the substeps.
-        if (v.currentPhasor && v.frequency) total.peakCurrent = Math.max(total.peakCurrent ?? 0, peakOverInterval(v.currentPhasor, v.phases ?? 1, turn(v.frequency) * start, turn(v.frequency) * (start + h)));
+        if (v.currentPhasor && v.frequency) total.peakCurrent = Math.max(total.peakCurrent ?? 0, peakOverInterval(v.currentPhasor, v.phases ?? 1, ...angleWindow(v)));
       }
+      // The configuration this substep ran with; a timer transition below is a switching event for the next one.
+      this.acceptedKey = this.discreteKey(s, controls);
+      // Drive and starter states advance last: the angle window above used the substep's start angle.
+      this.advanceConverters(s, h, r.electrical, commands);
+      this.lastElectrical = r.electrical;
       remaining -= h;
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);

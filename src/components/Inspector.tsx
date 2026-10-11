@@ -215,6 +215,16 @@ export default function Inspector() {
                   })}
               </div>
               {c.kind === "inductionMotor" && started && <p className="field-hint" data-testid="inrush-note">Dynamic electromagnetic model (stator and rotor flux transients). Largest instantaneous phase current since switch-on: {(simulation.multiphysics.motors[c.id]?.inrushPeak ?? 0).toFixed(1)} A.</p>}
+              {(c.kind === "starDeltaStarter" || c.kind === "softStarter") && started && (() => {
+                const st = simulation.multiphysics.starters[c.id], r = simulation.electrical.readings[c.id];
+                const label = { off: "Off (contactors open)", star: "Star: windings at V/√3, line current and torque ÷ 3", open: "Open transition (dead time)", delta: "Delta: full voltage", ramp: st?.stopping ? "Soft stop: ramping down" : "Ramping", bypass: "Bypass contactor closed: full voltage" }[st?.mode ?? "off"];
+                return <p className="field-hint" data-testid="starter-note">{label}{st?.mode === "ramp" ? ` — target ${((st.ratio ?? 1) * 100).toFixed(0)} % of line voltage, thyristor reactance ${(r?.starter?.reactance ?? 0).toFixed(2)} Ω per phase, line power factor ${r?.powerFactor?.toFixed(2) ?? "—"}.` : "."}</p>;
+              })()}
+              {c.kind === "vfd" && started && (() => {
+                const d = simulation.electrical.readings[c.id]?.drive, state = simulation.multiphysics.drives[c.id];
+                if (!d?.energized) return <p className="field-hint warn" data-testid="drive-note">No three-phase supply at the input: the DC link is not charged, output off.</p>;
+                return <p className="field-hint" data-testid="drive-note">{d.running ? `Output ${d.frequency.toFixed(2)} Hz · ${d.outputVoltage.toFixed(0)} V · ${d.outputCurrent.toFixed(2)} A` : "Output off"} · input {d.inputPower.toFixed(0)} W (power factor ≈ 1) · output {d.outputPower.toFixed(0)} W · losses {d.losses.toFixed(0)} W{d.braking > 0.5 ? ` · braking resistor ${d.braking.toFixed(0)} W` : ""} · overload image {((state?.thermal ?? 0) * 100).toFixed(0)} % of trip.</p>;
+              })()}
               {!started && <p className="field-hint" data-testid="not-started-hint">Ready. Operating values (current, power, flow, speed) appear once the experiment runs.</p>}
               {sensor && !sensor.valid && <p className="field-hint">{sensor.reason}</p>}
               {v && !v.valid && <p className="field-hint">{v.reason}</p>}
