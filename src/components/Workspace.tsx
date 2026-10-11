@@ -486,6 +486,11 @@ export default function Workspace() {
   const wrapper = useRef<HTMLDivElement>(null);
   const [camera, setCamera] = useState({ x: 20, y: 20, z: 1 });
   const [pending, setPending] = useState<Terminal | null>(null);
+  // The terminal a wire was started from can disappear (Delete, undo, loading a project): drop the pending wire.
+  const pendingComponent = pending ? project.components.find((c) => c.id === pending.component) : undefined;
+  useEffect(() => {
+    if (pending && !pendingComponent) setPending(null);
+  }, [pending, pendingComponent]);
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
   const [context, setContext] = useState<{ x: number; y: number } | null>(null);
   const [marquee, setMarquee] = useState<{
@@ -919,9 +924,9 @@ export default function Workspace() {
               </g>
             );
           })}
-          {pending && (
+          {pendingComponent && pending && (
             <path
-              d={`M${portPoint(project.components.find((c) => c.id === pending.component)!, pending.port).x},${portPoint(project.components.find((c) => c.id === pending.component)!, pending.port).y}H${cursor.x}V${cursor.y}`}
+              d={`M${portPoint(pendingComponent, pending.port).x},${portPoint(pendingComponent, pending.port).y}H${cursor.x}V${cursor.y}`}
               stroke={T.n14}
               strokeDasharray="5 5"
               fill="none"

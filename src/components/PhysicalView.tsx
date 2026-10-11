@@ -82,6 +82,8 @@ export default function PhysicalView() {
   const [camera, setCamera] = useState<Camera>({ x: 80, y: 420, scale: 55 }), [tool, setTool] = useState<'select' | 'pan' | 'measure'>('select'), [snap, setSnap] = useState(true), [grid, setGrid] = useState(true);
   const [overlay, setOverlay] = useState<Record<OverlayName, boolean>>({ centers: false, velocity: false, forces: false, joints: true, limits: false, contacts: false, bounds: false, identifiers: false, collision: false });
   const [pending, setPending] = useState<{ kind: Exclude<JointKind, 'gear'>; a: string; b: string; first?: Point } | null>(null), [measurement, setMeasurement] = useState<{ a: Point; b?: Point } | null>(null), [selectionBox, setSelectionBox] = useState<{ a: Point; b: Point } | null>(null), [cursor, setCursor] = useState<Point>({ x: 0, y: 0 });
+  // Bodies chosen for a joint can be deleted before its anchors are placed: cancel the pending joint.
+  useEffect(() => { if (pending && ![pending.a, pending.b].every(id => s.project.components.some(c => c.id === id))) setPending(null); }, [pending, s.project.components]);
   const locked = simulation.time > 0 || s.busy;
   // Existing running saves and scored challenges get a layout-only representation
   // for unmounted equipment. This never inserts bodies into the live solver.

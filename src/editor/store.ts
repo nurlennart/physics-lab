@@ -340,6 +340,7 @@ export const actions = {
   remove() {
     if (state.workspaceView === 'physical' && state.selectedJoint) { actions.joint(state.selectedJoint, null); return; }
     if (!state.selected.length && !state.selectedWire) return;
+    const removed = new Set(state.selected);
     edit({
       ...state.project,
       components: state.project.components
@@ -362,7 +363,8 @@ export const actions = {
       ),
       ...(state.project.world ? { world: { ...state.project.world, joints: state.project.world.joints.filter(j => !state.selected.includes(j.a) && !state.selected.includes(j.b)).filter((j, _, all) => j.kind !== 'gear' || all.some(x => x.id === j.joint1) && all.some(x => x.id === j.joint2)) } } : {}),
     });
-    emit({ selected: [], selectedWire: null });
+    // A node-voltage reference on a deleted component would dangle.
+    emit({ selected: [], selectedWire: null, ...(state.reference && removed.has(state.reference.component) ? { reference: null } : {}) });
   },
   rotate() {
     if (state.workspaceView === 'physical') { edit({ ...state.project, components: state.project.components.map(c => state.selected.includes(c.id) && c.spatial && !c.spatial.locked ? { ...c, spatial: { ...c.spatial, angle: c.spatial.angle + Math.PI / 12 } } : c) }); return; }
