@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-10T23:12:58.664Z",
-  "wallSeconds": 23.23,
+  "executedAt": "2026-10-11T01:14:07.806Z",
+  "wallSeconds": 23.18,
   "passed": 124,
   "total": 124,
   "results": [
@@ -959,14 +959,14 @@
       "relativeError": null,
       "tolerance": "pass/fail",
       "pass": true,
-      "assumptions": "litres after 60 s; no solver error (value 4495.26)"
+      "assumptions": "litres after 60 s; no solver error (value 4494.69)"
     },
     {
       "name": "D: mass residual",
       "domain": "hydraulic",
       "expected": 0,
-      "measured": 6.002665031701326e-11,
-      "absoluteError": 6.002665031701326e-11,
+      "measured": -2.546585164964199e-11,
+      "absoluteError": 2.546585164964199e-11,
       "relativeError": null,
       "tolerance": "±0.000001",
       "pass": true,
@@ -976,10 +976,10 @@
       "name": "D: coupled energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": -2.783449940616265,
-      "absoluteError": 2.783449940616265,
+      "measured": -2.785899987531593,
+      "absoluteError": 2.785899987531593,
       "relativeError": null,
-      "tolerance": "±3553.616514479855",
+      "tolerance": "±3568.675620482902",
       "pass": true,
       "assumptions": "J"
     },
@@ -992,7 +992,7 @@
       "relativeError": null,
       "tolerance": "pass/fail",
       "pass": true,
-      "assumptions": "W peak ≤ 440 V × 250 A (value 105923)"
+      "assumptions": "W peak ≤ 440 V × 250 A (value 105856)"
     },
     {
       "name": "Motor standard: no-load speed",
@@ -1336,12 +1336,12 @@
       "assumptions": "Integral pilot action, 20 kPa band, 5 s stroke, after 60 s"
     },
     {
-      "name": "Adaptive pumping station (270 steps vs 7200): delivered volume",
+      "name": "Adaptive pumping station (269 steps vs 7200): delivered volume",
       "domain": "multiphysics",
-      "expected": 616.7803766483446,
-      "measured": 616.7798001579666,
-      "absoluteError": 0.0005764903779663655,
-      "relativeError": 9.346769122245432e-7,
+      "expected": 617.7154074464064,
+      "measured": 617.7148325308561,
+      "absoluteError": 0.0005749155502599024,
+      "relativeError": 9.30712660441099e-7,
       "tolerance": "0.10%",
       "pass": true,
       "assumptions": "Mid-step tank levels; motor midpoint coupling"
@@ -1350,8 +1350,8 @@
       "name": "Adaptive pumping station: relative energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": 2.9514860958985585e-8,
-      "absoluteError": 2.9514860958985585e-8,
+      "measured": 2.9650879740051028e-8,
+      "absoluteError": 2.9650879740051028e-8,
       "relativeError": null,
       "tolerance": "±0.00001",
       "pass": true,

@@ -287,3 +287,50 @@ An induction machine on an unpowered island has zero excitation/current/torque a
 Free-overfall overflow cannot drive water into a drain whose piezometric pressure exceeds the tank free surface. Such routes now stop with an explicit unsupported-backpressure error, rather than moving water uphill and assigning negative dissipation. Submerged weirs and drain backpressure require a different hydraulic boundary model.
 
 Tank inspector mass, sensible heat and cooling time use the same initial temperature-dependent inventory density as the engine. Empty vessels continue to exchange configured heat; this remains a single lumped vessel model, without a distinct wet/dry contact coefficient.
+
+## Pump losses and cavitation (sourced revision)
+
+### Mechanical loss: bearings and shaft seals
+
+- **Parameter:** mechanical loss at rating, a share s of shaft input at rated speed and flow. It replaces the former drag coefficient k·ω³.
+- **What the old coefficient got wrong:** it lumped disc friction with bearing friction. Per DIN EN 12723, as summarised by KSB, disc friction and leakage belong to the *internal* efficiency (here the curve efficiency η_h). Only bearing and seal friction is mechanical loss.
+- **Model:**
+  - P_m,r = s/(1−s)·P_internal,r, where P_internal,r = ρ·g·H(Q_r, ω_r)·Q_r/η_r;
+  - P_m(ω) = P_m,r·(ω/ω_r)^1.6.
+- **Speed law:** in the SKF rolling-bearing friction model, rolling friction torque scales as (νn)^0.6, so power scales with n^1.6. Seal friction is folded into the same law.
+- **Sizes:** KSB gives 0.5–2 % of power input, smaller for more powerful pumps. Catalog defaults interpolate log-linearly from 2 % at ≤ 1 kW to 0.5 % at 1 MW internal power; these endpoints are an assumption within that range.
+
+| Model | Internal power at rating | Mechanical loss |
+| --- | --- | --- |
+| Laboratory pump | 56 W | 2.0 % (1.14 W) |
+| Industrial transfer pump | 1.32 kW | 1.9 % |
+| High-capacity process pump | 9.0 kW | 1.5 % |
+| Preset: circulator 20 L/min | 15 W | 2.0 % |
+| Preset: process pump 6,000 L/min | 26 kW | 1.3 % |
+
+- **Migration:** files carrying `mechanicalDrag` load with the catalog mechanical loss of their pump model. The old coefficient cannot be converted, because it included disc friction.
+- **Score change:** challenge transfer 125.533 s → 125.233 s, still 100 points. The laboratory pump's loss at rated speed fell from 2.7 W (the previous revision's estimate) to 1.14 W (2 % of shaft input). The other scores are unchanged.
+
+### Cavitation head drop
+
+- **Anchor:** the Hydraulic Institute defines NPSHR as NPSH3, the NPSH available at which head has dropped by 3 %.
+- **Model:** with NPSH3 at the operating point = NPSH3,rated·(Q/Q_r)², the positive pump head is multiplied by f = 1 − 0.03·(NPSH3/NPSHA)⁵, limited to [0, 1].
+- **What is sourced and what isn't:**
+  - f(NPSH3) = 0.97 is the standard definition.
+  - The exponent 5 is a **model choice**, not a measured breakdown curve. It gives a steep collapse: −9 % at 0.8·NPSH3, −39 % at 0.6·NPSH3, head lost at 0.5·NPSH3.
+- **Numerics:**
+  - NPSH3 is evaluated at the solved flow inside the pump curve, so cavitation acts as a flow limit: head collapses where NPSH3(Q) reaches NPSHA.
+  - NPSHA comes from the previous accepted step (≤ 1/240 s lag).
+  - An earlier variant that also lagged NPSH3 oscillated between full head and none every step in deep cavitation.
+  - Only positive head is reduced, so the branch characteristic stays monotone and a stopped pump cannot cavitate.
+- **Energy:** shaft power follows the reduced impeller power at the curve efficiency; readings and the energy ledger use the same head.
+- **Not modelled:** the extra losses, noise and erosion of cavitation; the rise of NPSH3 at part load due to recirculation.
+- **Tests:** `pump-losses.test.ts` checks the exact rated share, the ω^1.6 law, the 3 % point, and a cavitating suction lift that settles without oscillation and conserves energy.
+
+Sources:
+- [KSB centrifugal pump lexicon: mechanical efficiency](https://ksb.com/en-global/centrifugal-pump-lexicon/article/mechanical-efficiency-1117904)
+- [KSB: internal efficiency (DIN EN 12723)](https://www.ksb.com/en-global/centrifugal-pump-lexicon/article/internal-efficiency-1117912)
+- [SKF: using a friction model as an engineering tool](https://evolution.skf.com/us/using-a-friction-model-as-an-engineering-tool-2/)
+- [Hydraulic Institute: the basics of NPSH](https://www.pumps.org/2022/12/07/the-basics-of-npsh-pump-operating-regions/)
+
+The earlier sections "Pump catalog drag" and "Catalog drag (revised)" describe the superseded k·ω³ model.

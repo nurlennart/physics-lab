@@ -125,29 +125,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 5029.76215187398,
-    "energyResidual": 0.0011286018965961375,
-    "massResidual": -1.8189894035458565e-11,
+    "suppliedEnergy": 4990.739960016901,
+    "energyResidual": 0.0011505426878670733,
+    "massResidual": -1.6399326341343112e-11,
     "probes": [
       {
         "name": "Destination level",
-        "value": 42.30370475049889
+        "value": 42.385536025453106
       },
       {
         "name": "Delivery flow",
-        "value": 48.41653081701558
+        "value": 48.52481785823511
       },
       {
         "name": "Motor current",
-        "value": 3.314125880676991
+        "value": 3.2861521527848314
       },
       {
         "name": "Delivery pressure",
-        "value": 0.31435553529523613
+        "value": 0.3146994908666763
       },
       {
         "name": "Destination water",
-        "value": 20.00666250469891
+        "value": 20.006495866171008
       }
     ]
   },
@@ -157,29 +157,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 8413.185315340279,
-    "energyResidual": -0.012571573890795662,
-    "massResidual": 1.1456506854301551e-9,
+    "suppliedEnergy": 8366.878299451462,
+    "energyResidual": -0.005316824056535552,
+    "massResidual": 1.0122960247826995e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 62.624336537245625
+        "value": 62.62419196555439
       },
       {
         "name": "Delivery flow",
-        "value": 20.25004916896682
+        "value": 20.2252925803363
       },
       {
         "name": "Motor current",
-        "value": 1.5350675719943896
+        "value": 1.3757487612516894
       },
       {
         "name": "Delivery pressure",
-        "value": 0.34990683972127556
+        "value": 0.3492334644004527
       },
       {
         "name": "Destination water",
-        "value": 20.008135070102128
+        "value": 20.008058855985382
       }
     ]
   },
@@ -189,13 +189,13 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 12905.302472197072,
-    "energyResidual": 0.015258118057545289,
-    "massResidual": 3.418620053707855e-9,
+    "suppliedEnergy": 12814.034613567872,
+    "energyResidual": 0.015403651353381065,
+    "massResidual": 3.4206948384962743e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 38.95928326787878
+        "value": 39.17187365071354
       },
       {
         "name": "Delivery flow",
@@ -207,11 +207,11 @@
       },
       {
         "name": "Delivery pressure",
-        "value": 0.24230646406304565
+        "value": 0.24258155314044103
       },
       {
         "name": "Destination water",
-        "value": 20.007380012731744
+        "value": 20.007182270964734
       }
     ]
   },
@@ -221,33 +221,33 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 173526.65763128846,
-    "energyResidual": 0.18583546095942438,
-    "massResidual": -2.0314416815381264e-9,
+    "suppliedEnergy": 173325.44725545542,
+    "energyResidual": 0.1783776890174522,
+    "massResidual": -2.051308456429979e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 57.20295070330285
+        "value": 57.22649428564516
       },
       {
         "name": "Delivery flow",
-        "value": 49.17959620669092
+        "value": 49.262315457830525
       },
       {
         "name": "Motor current",
-        "value": 3.300353182784421
+        "value": 3.2727505598184843
       },
       {
         "name": "Delivery pressure",
-        "value": 0.6252291428927268
+        "value": 0.625693626034319
       },
       {
         "name": "Destination water",
-        "value": 48.59531425116336
+        "value": 48.595808539629445
       },
       {
         "name": "Source water",
-        "value": 48.73130269952321
+        "value": 48.73013922149079
       }
     ]
   },
@@ -257,41 +257,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 101554.2315583859,
-    "energyResidual": 0.00034717076414381154,
-    "massResidual": -8.731149137020111e-11,
+    "suppliedEnergy": 101030.15675657123,
+    "energyResidual": 0.00028701062547042966,
+    "massResidual": -8.481038094032556e-11,
     "probes": [
       {
         "name": "Destination level",
-        "value": 30.857805723639352
+        "value": 30.903241349933264
       },
       {
         "name": "Delivery flow",
-        "value": 311.7909231679899
+        "value": 312.26752300275797
       },
       {
         "name": "Motor current",
-        "value": 8.625812213780998
+        "value": 8.57419807455677
       },
       {
         "name": "Delivery pressure",
-        "value": 1.4174618377541146
+        "value": 1.4181445717392784
       },
       {
         "name": "Destination water",
-        "value": 20.024442593894946
+        "value": 20.02413605494496
       },
       {
         "name": "Motor RPM",
-        "value": 2675.918633639035
+        "value": 2678.610314353503
       },
       {
         "name": "Shaft power",
-        "value": 1172.62188665416
+        "value": 1165.6815006499605
       },
       {
         "name": "Hydraulic power",
-        "value": 884.5511325366692
+        "value": 886.9817108144418
       }
     ]
   },

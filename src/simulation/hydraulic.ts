@@ -31,6 +31,8 @@ export interface HydraulicReading {
   duty?: number;
   /** Net positive suction head available at a pump inlet (m). */
   npshAvailable?: number;
+  /** Pump head factor from cavitation (1 = none), used for this solution's head and power. */
+  cavitation?: number;
 }
 export interface HydraulicResult {
   readings: Record<string, HydraulicReading>; potentials: Record<string, number>;
@@ -143,18 +145,57 @@ export const VALVE_REGULARIZATION = 1e5;
  * Losses P_shaft − P_net heat the pumped water when it flows; at zero flow they leave as heat
  * to ambient (zero-volume pump, no deadhead temperature rise).
  */
-export function pumpCurve(c: Component, omega: number, q: number) {
+/**
+ * Cavitation head factor H_cav/H from the available NPSH and NPSH3 (the NPSH at which head has dropped
+ * 3 %, the Hydraulic Institute definition of NPSHR): f = 1 − 0.03·(NPSH3/NPSHA)^5, limited to [0, 1].
+ * It passes exactly through the standard 3 % point; the exponent (steep breakdown, head lost near
+ * NPSHA ≈ 0.5·NPSH3) is a model choice, not a measured breakdown curve.
+ */
+export function cavitationFactor(npshAvailable: number, npsh3: number) {
+  if (!(npsh3 > 0) || !Number.isFinite(npshAvailable)) return 1;
+  if (npshAvailable <= 0) return 0;
+  return Math.max(0, Math.min(1, 1 - 0.03 * (npsh3 / npshAvailable) ** 5));
+}
+const topologyPumps = (cs: Component[]) => cs.filter(c => c.kind === 'pump');
+/** NPSH3 at the operating point: the rated value scaled with (Q/Q_rated)² (affinity-similar points scale with ω²). */
+export const npsh3At = (c: Component, q: number) => prop(c, 'npshRequired') * (Math.max(0, q) / prop(c, 'ratedFlow')) ** 2;
+/** Internal (hydraulic) shaft power at the rated point, without mechanical loss. */
+function ratedInternalPower(c: Component) {
+  const omega = prop(c, 'ratedSpeed'), q = prop(c, 'ratedFlow'), head = Math.max(0, pumpHead(c, omega, q));
+  const efficiency = Math.max(0.15, prop(c, 'efficiency'));
+  return RHO * G * head * q / efficiency;
+}
+/**
+ * Bearing and seal friction: share s of shaft input at the rated point, P_m,r = s/(1−s)·P_internal,r,
+ * scaled with speed as (ω/ω_r)^1.6 (rolling-bearing friction torque ∝ (νn)^0.6).
+ */
+export function mechanicalLossPower(c: Component, omega: number) {
+  const share = Math.min(0.2, Math.max(0, prop(c, 'mechanicalLoss') / 100));
+  return share / (1 - share) * ratedInternalPower(c) * (Math.max(0, omega) / prop(c, 'ratedSpeed')) ** 1.6;
+}
+/**
+ * Head with cavitation: the positive (pumping) part of the curve is multiplied by the cavitation factor
+ * at this flow, with NPSH3 evaluated at q. Applying it only to positive head keeps the branch
+ * characteristic monotone; a stopped or beyond-curve pump is a passive restriction and cannot cavitate.
+ */
+export function cavitatingHead(c: Component, omega: number, q: number, npshAvailable?: number) {
+  const head = pumpHead(c, omega, q), running = Math.max(0, omega) / prop(c, 'ratedSpeed') > 1e-6;
+  const factor = running && head > 0 && npshAvailable !== undefined ? cavitationFactor(npshAvailable, npsh3At(c, q)) : 1;
+  return { head: head > 0 ? head * factor : head, factor };
+}
+export function pumpCurve(c: Component, omega: number, q: number, npshAvailable?: number) {
   const ratio = Math.max(0, omega) / prop(c, 'ratedSpeed');
-  const signedHead = pumpHead(c, omega, q), head = Math.max(0, signedHead);
+  const cavitated = cavitatingHead(c, omega, q, npshAvailable);
+  const signedHead = cavitated.head, head = Math.max(0, signedHead);
   const reducedFlow = ratio > 1e-8 ? q / (prop(c, 'ratedFlow') * ratio) : 0;
   const curveEfficiency = Math.max(0.15, prop(c, 'efficiency') * (1 - 0.35 * (reducedFlow - 1) ** 2));
   const impellerPower = RHO * G * head * Math.max(0, q);
-  const mechanicalLoss = prop(c, 'mechanicalDrag') * Math.max(0, omega) ** 3;
+  const mechanicalLoss = mechanicalLossPower(c, omega);
   const shaftPower = impellerPower / curveEfficiency + mechanicalLoss;
   const pressureRise = RHO * G * signedHead - PUMP_INTERNAL_RESISTANCE * q;
   const netHydraulicPower = pressureRise * Math.max(0, q);
   return {
-    head, pressureRise, reducedFlow, impellerPower, mechanicalLoss, shaftPower, netHydraulicPower,
+    head, pressureRise, reducedFlow, impellerPower, mechanicalLoss, shaftPower, netHydraulicPower, cavitation: cavitated.factor,
     hydraulicEfficiency: impellerPower > 0 ? curveEfficiency : null,
     efficiency: shaftPower > 1e-9 && netHydraulicPower >= 0 ? netHydraulicPower / shaftPower : null,
     torque: omega > 1e-8 ? shaftPower / omega : 0,
@@ -169,8 +210,8 @@ export function pumpRatingReadouts(c: Component) {
     { label: "Impeller head at rated flow", value: op.head, unit: "m" },
     { label: "Impeller power at rating", value: op.impellerPower, unit: "W", note: "ρ·g·H_imp·Q" },
     { label: "Net hydraulic power at rating", value: op.netHydraulicPower, unit: "W", note: "Δp·Q after internal resistance" },
-    { label: "Mechanical loss at rated speed", value: op.mechanicalLoss, unit: "W", note: "k·ω³" },
-    { label: "Shaft power at rating", value: op.shaftPower, unit: "W", note: "P_imp/η_h + k·ω³" },
+    { label: "Mechanical loss at rated speed", value: op.mechanicalLoss, unit: "W", note: "bearings + seals, ∝ ω^1.6" },
+    { label: "Shaft power at rating", value: op.shaftPower, unit: "W", note: "P_imp/η_h + P_mech" },
     { label: "Internal hydraulic efficiency", value: pct(op.hydraulicEfficiency), unit: "%" },
     { label: "Overall efficiency at rating", value: pct(op.efficiency), unit: "%", note: "P_net / P_shaft" },
   ];
@@ -275,12 +316,19 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       mu,
     };
   };
+  // Cavitation: NPSH available from the last accepted solution (one coupled step of lag, ≤ 1/240 s;
+  // fixed within a step so readings and energy use the same curve). NPSH3 is evaluated at the solved
+  // flow inside the curve, so cavitation acts as the flow limit where NPSH3(Q) reaches NPSHA.
+  const npshAvailable = new Map(topologyPumps(cs).flatMap(c => {
+    const prev = previous?.readings[c.id]?.npshAvailable;
+    return prop(c, 'npshRequired') > 0 && prev !== undefined ? [[c.id, prev] as const] : [];
+  }));
   const loss = (br: Branch, q: number) => {
     const c = br.c;
     if (c.kind === 'pipe') return pipeLoss(c, q, pipeTemperatures(br, q)).dp;
     if (c.kind === 'pump') {
       // Descending head curve continued as passive quadratic resistance past zero head.
-      return PUMP_INTERNAL_RESISTANCE * q - RHO * G * pumpHead(c, Math.max(0, speeds[c.id] ?? 0), q);
+      return PUMP_INTERNAL_RESISTANCE * q - RHO * G * cavitatingHead(c, Math.max(0, speeds[c.id] ?? 0), q, npshAvailable.get(c.id)).head;
     }
     const t = valveTerms(br, q >= 0);
     return t.linear * q + t.quadratic * q * Math.abs(q) + t.offset;
@@ -296,7 +344,8 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const oneWay = c.kind === 'checkValve' || c.kind === 'pump' || c.kind === 'pressureReducingValve';
     const allowPositive = !blocked(a, true) && !blocked(to, false), allowNegative = !oneWay && !blocked(to, true) && !blocked(a, false);
     const atZero = actualLoss(0);
-    const closedForm = c.kind !== 'pipe' && !(c.kind === 'pump' && pumpPoints(c));
+    // Cavitating pumps (head depends on Q through NPSH3) use the bracketed numeric inverse.
+    const closedForm = c.kind !== 'pipe' && !(c.kind === 'pump' && (pumpPoints(c) || npshAvailable.has(c.id)));
     const difference = dp - atZero, magnitude = Math.abs(difference);
     // Closed form of linear·q + quadratic·q|q| = difference (pump curve or two-K valve).
     const terms = !closedForm ? { linear: 1e5, quadratic: 0 } : c.kind === 'pump'
@@ -409,7 +458,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       const mu = valveTerms(b, q >= 0).mu;
       return { velocity, reynolds: RHO * Math.abs(velocity) * prop(c, 'diameter') / mu, frictionFactor: 0, viscosity: mu };
     })();
-    const curve = c.kind === 'pump' ? pumpCurve(c, speeds[c.id] ?? 0, q) : null;
+    const curve = c.kind === 'pump' ? pumpCurve(c, speeds[c.id] ?? 0, q, npshAvailable.get(c.id)) : null;
     const gain = curve ? RHO * G * curve.head : 0;
     if (Math.abs(q) > 1e-14) {
       const modeled = loss(b, q);
@@ -421,6 +470,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       flow: q, pressure: p[to] * 1000 - RHO * G * prop(c, 'elevation'), inletPressure: p[a] * 1000 - RHO * G * prop(c, 'elevation'), differentialPressure: dp, ...pipe,
       hydraulicPower: curve ? curve.netHydraulicPower : 0, impellerPower: curve?.impellerPower ?? 0, shaftPower: curve?.shaftPower ?? 0, mechanicalLoss: curve?.mechanicalLoss ?? 0,
       hydraulicEfficiency: curve?.hydraulicEfficiency ?? null, efficiency: curve ? curve.efficiency : null, torque: curve?.torque ?? 0, temperature: 293.15,
+      ...(curve ? { cavitation: curve.cavitation } : {}),
     };
     if (curve && curve.reducedFlow > Math.SQRT2 + 1e-6) result.diagnostics.push(`${c.name}: beyond positive-head pump curve; acting as passive restriction. Turbine operation unsupported.`);
     if (c.kind === 'pump' && (!primed.has(groups.find(a)) || blocked(a, true))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
@@ -579,7 +629,9 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const enthalpy = (t.mass * CP + vessel) * t.temperature + (energyRate[id] ?? 0) * dt;
     t.mass = Math.abs(mass) < 1e-10 ? 0 : mass;
     if (t.mass > 1e-10 || vessel > 0) t.temperature = enthalpy / (t.mass * CP + vessel);
-    t.volume = inventoryVolume(t.mass, t.temperature);
+    // Round-off at an emptiness event can leave a few 10⁻¹⁰ kg negative. The mass ledger keeps it (exact
+    // closure); the reported volume does not go below zero, and outflow is blocked below 10⁻⁹ kg.
+    t.volume = inventoryVolume(Math.max(0, t.mass), t.temperature);
   }
   nodes.forEach((n, i) => (result.nodeTemperatures[n] = temperatures[i]));
   return { ambient, heat, spills };

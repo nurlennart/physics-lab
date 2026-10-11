@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-10T23:12:58.664Z. 124/124 checks passed in 23.23 s wall time.
+Executed: 2026-10-11T01:14:07.806Z. 124/124 checks passed in 23.18 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -90,10 +90,10 @@ Executed: 2026-10-10T23:12:58.664Z. 124/124 checks passed in 23.23 s wall time.
 | C: stage 1 switches off at its 60 °C setpoint | control | 60 | 60.116176 | 1.162e-1 | 1.936e-3 | 1.0% | PASS | Adaptive step ≤ 0.05 K per step; checked at a 600 s chunk boundary |
 | C: remaining stages after stage 1 off | electrical | 23927.445 | 23927.445 | 6.876e-10 | 2.874e-14 | 1.0e-7% | PASS | Stages 2 and 3 still demand heat; bus sag recomputed for two branches |
 | C: energy residual | thermal | 0 | 0.0006013005 | 6.013e-4 | — | ±343.53670070944327 | PASS | J |
-| D: water delivered to the upper reservoir | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | litres after 60 s; no solver error (value 4495.26) |
-| D: mass residual | hydraulic | 0 | 6.002665e-11 | 6.003e-11 | — | ±0.000001 | PASS | kg |
-| D: coupled energy residual | multiphysics | 0 | -2.7834499 | 2.783e+0 | — | ±3553.616514479855 | PASS | J |
-| D: start-up current limited by CV/CC bus | electrical | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | W peak ≤ 440 V × 250 A (value 105923) |
+| D: water delivered to the upper reservoir | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | litres after 60 s; no solver error (value 4494.69) |
+| D: mass residual | hydraulic | 0 | -2.5465852e-11 | 2.547e-11 | — | ±0.000001 | PASS | kg |
+| D: coupled energy residual | multiphysics | 0 | -2.7859 | 2.786e+0 | — | ±3568.675620482902 | PASS | J |
+| D: start-up current limited by CV/CC bus | electrical | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | W peak ≤ 440 V × 250 A (value 105856) |
 | Motor standard: no-load speed | mechanical | 274.28571 | 274.19413 | 9.159e-2 | 3.339e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
 | Motor traction48: no-load speed | mechanical | 303.79747 | 303.6961 | 1.014e-1 | 3.337e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
 | Motor industrial180: no-load speed | mechanical | 320.90762 | 320.79977 | 1.079e-1 | 3.361e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
@@ -125,6 +125,6 @@ Executed: 2026-10-10T23:12:58.664Z. 124/124 checks passed in 23.23 s wall time.
 | Induction motor rated-load speed within 1400–1490 rpm | multiphysics | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | 4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1452.2) |
 | Induction motor run-up: relative energy residual | multiphysics | 0 | 6.5207195e-12 | 6.521e-12 | — | ±0.00001 | PASS | 1 |
 | PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.702e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
-| Adaptive pumping station (270 steps vs 7200): delivered volume | multiphysics | 616.78038 | 616.7798 | 5.765e-4 | 9.347e-7 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
-| Adaptive pumping station: relative energy residual | multiphysics | 0 | 2.9514861e-8 | 2.951e-8 | — | ±0.00001 | PASS | 1 |
+| Adaptive pumping station (269 steps vs 7200): delivered volume | multiphysics | 617.71541 | 617.71483 | 5.749e-4 | 9.307e-7 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
+| Adaptive pumping station: relative energy residual | multiphysics | 0 | 2.965088e-8 | 2.965e-8 | — | ±0.00001 | PASS | 1 |
 | E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 608 boundary cases across every component; none failed |

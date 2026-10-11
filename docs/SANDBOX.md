@@ -102,7 +102,7 @@ All constants are editable in the sandbox. kₑ is derived from kₜ. Inertia an
 ### 3.7 Hydraulics
 
 - **Pipes:** length, diameter, roughness, pressure rating and UA are live. Material applies its roughness. Presets run from DN15 to DN200.
-- **Pumps:** rated speed, flow, shutoff head, efficiency and drag are live. Pump size families run from 20 to 6,000 L/min. Flow and pressure are never editable.
+- **Pumps:** rated speed, flow, shutoff head, efficiency, mechanical loss and NPSH3 are live. Pump size families run from 20 to 6,000 L/min. Flow and pressure are never editable.
 - **Valves:** opening, K, diameter, cracking pressure, response time and fail position.
 - **Tanks:** up to 10⁹ L.
 

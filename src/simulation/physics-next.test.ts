@@ -50,12 +50,16 @@ describe("weir overflow routed into a drain network", () => {
     expect(s.multiphysics.hydraulic.diagnostics.some((d) => /backs up/.test(d))).toBe(false);
   });
 });
-describe("revised pump catalog drag", () => {
-  it("maps legacy challenge files to the current catalog and keeps sandbox values", () => {
-    const challenge = hydraulicStarter("transfer", true), sandbox = hydraulicStarter("transfer");
-    for (const p of [challenge, sandbox]) p.components.find((c) => c.kind === "pump")!.props.mechanicalDrag = 0.000003;
-    expect(parseProject(challenge).components.find((c) => c.kind === "pump")!.props.mechanicalDrag).toBe(0.0000001);
-    expect(parseProject(sandbox).components.find((c) => c.kind === "pump")!.props.mechanicalDrag).toBe(0.000003);
+describe("superseded pump drag coefficient", () => {
+  it("files with mechanicalDrag load with the catalog mechanical loss of their pump model", () => {
+    for (const [variant, share] of [["standard", 2], ["industrial", 1.9]] as const) {
+      const p = hydraulicStarter("transfer"), pump = p.components.find((c) => c.kind === "pump")!;
+      pump.variant = variant;
+      delete pump.props.mechanicalLoss; pump.props.mechanicalDrag = 0.000003;
+      const loaded = parseProject(JSON.parse(JSON.stringify(p))).components.find((c) => c.kind === "pump")!;
+      expect("mechanicalDrag" in loaded.props).toBe(false);
+      expect(loaded.props.mechanicalLoss).toBe(share);
+    }
   });
 });
 

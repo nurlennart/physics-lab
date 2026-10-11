@@ -5,7 +5,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { iapwsViscosity, waterViscosity, kellDensity } from "./water";
-import { pipeLoss, pumpCurve, pumpRatingReadouts } from "./hydraulic";
+import { pipeLoss, pumpCurve, pumpRatingReadouts, mechanicalLossPower } from "./hydraulic";
 import { hydraulicStarter, heatExchangerStarter } from "./hydraulic-projects";
 import { Builder } from "./scaling-validation";
 import { Simulation, DT } from "./engine";
@@ -114,7 +114,10 @@ describe("explicit tank overflow", () => {
     expect(v(source.id)).toBeGreaterThanOrEqual(0);
     expect(v(source.id)).toBeLessThan(1e-9);
     // Mass closes exactly; volumes to the thermal expansion from viscous heating (~1e-6).
-    expect(s.multiphysics.tanks[dest.id].mass + s.multiphysics.removedMass).toBeCloseTo(s.multiphysics.initialMass, 9);
+    // Exact up to double-precision accumulation over thousands of steps (~10⁻¹² relative); the source
+    // keeps ±10⁻¹⁰ kg of round-off after its emptiness event.
+    const closure = s.multiphysics.tanks[dest.id].mass + s.multiphysics.tanks[source.id].mass + s.multiphysics.removedMass - s.multiphysics.initialMass;
+    expect(Math.abs(closure) / s.multiphysics.initialMass).toBeLessThan(1e-11);
     expect(Math.abs((v(dest.id) + s.multiphysics.overflowed[dest.id]) / 0.15 - 1)).toBeLessThan(1e-5);
     // After the inflow stops the surcharge drains back towards the rim.
     expect(v(dest.id) - 0.12).toBeLessThan(2e-4);
@@ -164,9 +167,9 @@ describe("pump power and efficiency definitions", () => {
   const pump = () => makeComponent("pump", 0, 0);
   it("nominal rating includes mechanical loss and matches an independent hand calculation", () => {
     const rows = Object.fromEntries(pumpRatingReadouts(pump()).map((r) => [r.label, r.value]));
-    // Hs 8 m, Qr 1 L/s, ω 300 rad/s, η 0.7, k 1e-7 (revised catalog), R_int 1e5 Pa·s/m³.
-    const impeller = 1000 * 9.80665 * 4 * 0.001, mech = 1e-7 * 300 ** 3, shaft = impeller / 0.7 + mech, net = impeller - 1e5 * 0.001 ** 2;
-    expect(mech).toBeCloseTo(2.7, 9);
+    // Hs 8 m, Qr 1 L/s, ω 300 rad/s, η 0.7, mechanical loss 2 % of shaft input, R_int 1e5 Pa·s/m³.
+    const impeller = 1000 * 9.80665 * 4 * 0.001, mech = 0.02 / 0.98 * impeller / 0.7, shaft = impeller / 0.7 + mech, net = impeller - 1e5 * 0.001 ** 2;
+    expect(mech / shaft).toBeCloseTo(0.02, 12);
     expect(rows["Impeller power at rating"]).toBeCloseTo(impeller, 9);
     expect(rows["Mechanical loss at rated speed"]).toBeCloseTo(mech, 9);
     expect(rows["Shaft power at rating"]).toBeCloseTo(shaft, 9);
@@ -176,9 +179,10 @@ describe("pump power and efficiency definitions", () => {
   it("live readings satisfy the power identities and agree across API, UI probes and export", { timeout: 60000 }, () => {
     const s = run(new Simulation(hydraulicStarter("transfer")), 60), c = s.project.components.find((c) => c.kind === "pump")!;
     const r = s.multiphysics.hydraulic.readings[c.id], omega = s.multiphysics.motors[s.project.components.find((c) => c.kind === "motor")!.id].omega;
-    const k = c.props.mechanicalDrag as number;
-    // Readings are evaluated at the coupled step's midpoint speed; ω here is the end-of-step speed.
-    expect(rel(r.mechanicalLoss, k * omega ** 3)).toBeLessThan(1e-5);
+    // Bearing/seal loss scales as (ω/ω_r)^1.6 from its rated share. Readings use the coupled step's
+    // midpoint speed; ω here is the end-of-step speed.
+    const rated = pumpRatingReadouts(c).find((x) => x.label === "Mechanical loss at rated speed")!.value;
+    expect(rel(r.mechanicalLoss, rated * (omega / (c.props.ratedSpeed as number)) ** 1.6)).toBeLessThan(1e-5);
     expect(r.shaftPower).toBeCloseTo(r.impellerPower / r.hydraulicEfficiency! + r.mechanicalLoss, 6);
     // Net power from the solved pressures: (outlet − inlet) × flow.
     // Agreement to the hydraulic solver's pressure residual (~1e-6 relative).
@@ -198,7 +202,7 @@ describe("pump power and efficiency definitions", () => {
     const stopped = pumpCurve(c, 0, 0);
     expect([stopped.shaftPower, stopped.efficiency, stopped.hydraulicEfficiency]).toEqual([0, null, null]);
     const deadhead = pumpCurve(c, 300, 0);
-    expect(deadhead.shaftPower).toBeCloseTo(2.7, 9);
+    expect(deadhead.shaftPower).toBeCloseTo(mechanicalLossPower(c, 300), 12); // bearing/seal loss only
     expect(deadhead.efficiency).toBe(0);
     expect(deadhead.hydraulicEfficiency).toBeNull();
     const restriction = pumpCurve(c, 300, 0.002);

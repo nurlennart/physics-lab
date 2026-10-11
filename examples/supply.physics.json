@@ -64,7 +64,7 @@
         "ratedFlow": 0.001,
         "shutoffHead": 8,
         "efficiency": 0.7,
-        "mechanicalDrag": 1e-7,
+        "mechanicalLoss": 2,
         "maxPressure": 1000000,
         "elevation": 0,
         "curvePoints": "",

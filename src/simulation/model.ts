@@ -124,7 +124,6 @@ export const DEFAULT_AMBIENT = 20;
  * 1.2e-5 (industrial), i.e. 81 W and 324 W at 300 rad/s — more than the rated hydraulic output.
  * Saved challenge files carrying the old catalog values are mapped to the current catalog.
  */
-export const LEGACY_PUMP_DRAG: Record<string, [number, number]> = { standard: [0.000003, 0.0000001], industrial: [0.000012, 0.0000015] };
 export const projectAmbient = (p: Pick<Project, "environment">) => p.environment?.ambient ?? DEFAULT_AMBIENT;
 export interface Port {
   unit?: string;
@@ -211,9 +210,9 @@ export const definitions: Record<Kind, Definition> = {
     { id: "industrial180", label: "Industrial DC 180 V", cost: 480, spec: "180 V · 60 A limit · 33 N·m torque limit", overrides: { resistance: 3, torqueConstant: 0.55, emfConstant: 0.55, inertia: 0.12, friction: 0.002, ratedVoltage: 180, ratedCurrent: 60, ratedTorque: 33, ratedPower: 11000, heatCapacity: 6000, loss: 15, maxTemperature: 150 } },
     { id: "industrial440", label: "Industrial DC 440 V · 75 kW", cost: 6800, spec: "440 V · 190 A · 437 N·m · 1,750 RPM", overrides: { resistance: 0.1, torqueConstant: 2.3, emfConstant: 2.3, inertia: 1.2, friction: 0.02, ratedVoltage: 440, ratedCurrent: 190, ratedTorque: 437, ratedPower: 84000, maxSpeed: 230, heatCapacity: 60000, loss: 60, maxTemperature: 155, speedCommand: 1500 } },
   ] },
-  pump: { label: "Centrifugal pump", category: "Hydraulic", description: "Shaft-driven quadratic head curve with affinity scaling and built-in reverse-flow check; zero-volume wetted inventory", spec: "8 m shutoff · 60 L/min · 2,865 RPM", cost: 70, prefix: "P", ports: [...fluid, shaft], defaults: { ratedSpeed: 300, ratedFlow: 0.001, shutoffHead: 8, efficiency: 0.7, mechanicalDrag: 0.0000001, maxPressure: 1000000, elevation: 0, curvePoints: "", npshRequired: 2 }, variants: [
-    { id: "industrial", label: "Industrial transfer pump", cost: 360, spec: "35 m shutoff · 360 L/min reference flow · 2,865 RPM", overrides: { ratedFlow: 0.006, shutoffHead: 35, efficiency: 0.78, mechanicalDrag: 0.0000015 } },
-    { id: "highCapacity", label: "High-capacity process pump", cost: 2400, spec: "30 m shutoff · 3,000 L/min reference flow · 1,475 RPM", overrides: { ratedSpeed: 154.5, ratedFlow: 0.05, shutoffHead: 30, efficiency: 0.82, mechanicalDrag: 0.00002, maxPressure: 1600000 } },
+  pump: { label: "Centrifugal pump", category: "Hydraulic", description: "Shaft-driven quadratic head curve with affinity scaling and built-in reverse-flow check; zero-volume wetted inventory", spec: "8 m shutoff · 60 L/min · 2,865 RPM", cost: 70, prefix: "P", ports: [...fluid, shaft], defaults: { ratedSpeed: 300, ratedFlow: 0.001, shutoffHead: 8, efficiency: 0.7, mechanicalLoss: 2, maxPressure: 1000000, elevation: 0, curvePoints: "", npshRequired: 2 }, variants: [
+    { id: "industrial", label: "Industrial transfer pump", cost: 360, spec: "35 m shutoff · 360 L/min reference flow · 2,865 RPM", overrides: { ratedFlow: 0.006, shutoffHead: 35, efficiency: 0.78, mechanicalLoss: 1.9 } },
+    { id: "highCapacity", label: "High-capacity process pump", cost: 2400, spec: "30 m shutoff · 3,000 L/min reference flow · 1,475 RPM", overrides: { ratedSpeed: 154.5, ratedFlow: 0.05, shutoffHead: 30, efficiency: 0.82, mechanicalLoss: 1.5, maxPressure: 1600000 } },
   ] },
   pipe: { label: "Pipe", category: "Hydraulic", description: "Darcy–Weisbach pipe with laminar/transition/turbulent friction, explicit physical length and water inventory in mixing cells (thermal transport delay)", spec: "5 m · Ø25 mm", cost: 12, prefix: "PL", ports: fluid, defaults: { length: 5, diameter: 0.025, roughness: 0.000045, maxPressure: 1000000, material: "steel", conductivity: 45, insulation: 0, thermalUA: 0, ambient: 20, elevation: 0, inventory: true, segments: 4, initialTemperature: 20 } },
   heatExchanger: { label: "Heat exchanger", category: "Hydraulic", description: "Two-stream ε-NTU heat exchanger (counter- or parallel-flow); each stream is a hydraulic branch with quadratic pressure loss; no wetted inventory", spec: "2 kW/K · counterflow", cost: 160, prefix: "HX", ports: [

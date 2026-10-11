@@ -85,6 +85,6 @@ describe("pump data curves and NPSH", () => {
     const s = run(new Simulation(b.p), 10);
     const r = s.multiphysics.hydraulic.readings[pump.id];
     expect([s.error, r.flow > 1e-5, r.npshAvailable! < 6 * (r.flow / 0.001) ** 2]).toEqual([null, true, true]);
-    expect(s.events.some((e) => /cavitation risk/.test(e.message))).toBe(true);
+    expect(s.events.some((e) => /cavitating/.test(e.message))).toBe(true);
   });
 });

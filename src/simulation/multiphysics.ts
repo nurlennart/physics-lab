@@ -1,6 +1,6 @@
 import { prop, isMotor, type Project } from './model';
 import { solveElectrical, solveLinear, type ElectricalResult } from './electrical';
-import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, type TankState } from './hydraulic';
+import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
 import type { Simulation } from './engine';
@@ -115,9 +115,10 @@ export class Multiphysics {
       const reading = hydraulic.readings[c.id];
       if (!reading?.temperatureValid) continue;
       const available = (101325 + reading.inletPressure - vaporPressure(U.kToCelsius(reading.temperature))) / (RHO * G);
-      const required = prop(c, 'npshRequired') * (reading.flow / prop(c, 'ratedFlow')) ** 2;
+      const required = npsh3At(c, reading.flow);
       reading.npshAvailable = available;
-      if (reading.flow > 1e-9 && available < required) hydraulic.diagnostics.push(`${c.name}: cavitation risk — NPSH available ${available.toFixed(2)} m < required ${required.toFixed(2)} m (head loss from cavitation is not modelled).`);
+      // Head reduction itself is applied in the hydraulic solve (cavitationFactor); report it here.
+      if (reading.flow > 1e-9 && available < required) hydraulic.diagnostics.push(`${c.name}: cavitating — NPSH available ${available.toFixed(2)} m < NPSH3 ${required.toFixed(2)} m; head reduced by ${((1 - (reading.cavitation ?? 1)) * 100).toFixed(1)} %.`);
     }
   }
   /**
