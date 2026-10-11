@@ -547,7 +547,7 @@ export default function Workspace() {
       return;
     }
     const routes = project.connections.flatMap((w) =>
-      routePoints(w, project.components),
+      routePoints(w, project.components, project.connections),
     );
     const minX =
         Math.min(
@@ -891,7 +891,7 @@ export default function Workspace() {
         {grid && <rect width="100%" height="100%" fill="url(#grid)" />}
         <g transform={`translate(${camera.x},${camera.y}) scale(${camera.z})`}>
           {project.connections.map((w) => {
-            const path = wirePath(w, project.components),
+            const path = wirePath(w, project.components, project.connections),
               from = project.components.find((c) => c.id === w.from.component),
               r = from && simulation.electrical.readings[from.id];
             const fluidFlow = wireFlow(w);
@@ -921,7 +921,7 @@ export default function Workspace() {
                   opacity={simulation.disconnected.has(w.id) ? 0.25 : 1}
                 />
                 {state.selectedWire === w.id &&
-                  routePoints(w, project.components)
+                  routePoints(w, project.components, project.connections)
                     .slice(1, -1)
                     .map((pt, i) => (
                       <circle
@@ -936,7 +936,7 @@ export default function Workspace() {
                           bend.current = {
                             id: w.id,
                             index: i,
-                            route: routePoints(w, project.components).slice(
+                            route: routePoints(w, project.components, project.connections).slice(
                               1,
                               -1,
                             ),
@@ -1114,8 +1114,23 @@ export default function Workspace() {
               </g>
             );
           })}
+          {/* Wires drawn again, clipped to the module bodies: a wire that still crosses a module (hand-placed bends,
+              or no free route) stays visible instead of disappearing behind it. */}
+          <clipPath id="module-bodies">
+            {project.components.map((c) => {
+              const { w, h } = dimensions(c);
+              return <rect key={c.id} x={c.x} y={c.y} width={w} height={h} transform={`rotate(${c.rotation},${c.x + w / 2},${c.y + h / 2})`} />;
+            })}
+          </clipPath>
+          <g clipPath="url(#module-bodies)" pointerEvents="none" className="wire-overlay">
+            {project.connections.map((w) => (
+              <g key={w.id} className={`connection ${w.domain} ${state.selectedWire === w.id ? "selected-wire" : ""}`}>
+                <path d={wirePath(w, project.components, project.connections)} className="wire-line" opacity={simulation.disconnected.has(w.id) ? 0.25 : 1} />
+              </g>
+            ))}
+          </g>
           {camera.z >= 0.5 && hasStarted() && project.connections.map((w) => {
-            const value = wireValue(w, project, wireFlow(w)), at = value && chipAnchor(routePoints(w, project.components));
+            const value = wireValue(w, project, wireFlow(w)), at = value && chipAnchor(routePoints(w, project.components, project.connections));
             if (!value || !at) return null;
             // Counter-scale so chips stay about 12 px on screen at any zoom.
             const k = Math.min(2.2, Math.max(0.9, 1 / camera.z)), width = value.length * 7.4 + 14;
