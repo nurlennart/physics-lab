@@ -1,4 +1,4 @@
-import { definitions, prop, terminalKey, type Component, type Project } from './model';
+import { definitions, prop, textProp, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
 import { viscosityK, inventoryVolume } from './water';
@@ -132,6 +132,23 @@ export function pipeLoss(c: Component, q: number, temperatures: readonly number[
 }
 /** Linear internal flow resistance of the pump (Pa per m³/s); also regularises the Newton solve. */
 export const PUMP_INTERNAL_RESISTANCE = 1e5;
+/**
+ * Inherent flow characteristic φ = Kv(x)/Kvs at relative travel x = opening/100 and constant Δp
+ * (Seborg, Edgar, Mellichamp & Doyle, Process Dynamics and Control, ch. 9; terms per IEC 60534-1):
+ *   linear φ = x,  quick opening φ = √x,  equal percentage φ = R^(x−1), R = rangeability (typically 20–50).
+ * The installed characteristic follows from the network solve. Zero travel is the seat (exact isolation),
+ * so an equal-percentage valve steps from φ = 1/R to shut, as real trims do below their rangeability.
+ */
+export function relativeFlowCoefficient(c: Component, opening: number) {
+  const x = Math.max(0, Math.min(1, opening / 100));
+  if (!valveCharacteristicKinds.has(c.kind)) return x;
+  const characteristic = textProp(c, 'characteristic', 'linear');
+  if (characteristic === 'equalPercentage') return x > 0 ? prop(c, 'rangeability', 50) ** (x - 1) : 0;
+  if (characteristic === 'quickOpening') return Math.sqrt(x);
+  return x;
+}
+/** Valves with a selectable inherent characteristic. */
+export const valveCharacteristicKinds = new Set(['valve', 'actuatedValve', 'pressureReducingValve']);
 /** Small linear resistance of valve-type branches (Pa per m³/s) that keeps their flow inverse smooth at Q = 0. */
 export const VALVE_REGULARIZATION = 1e5;
 /**
@@ -302,12 +319,13 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    * Valve-type branches (valves, regulators, heat-exchanger streams): two-K loss (Hooper 1981),
    * K(Re) = K₁/Re + K∞ with K∞ the turbulent coefficient. The K₁/Re part equals K₁·μ·v/(2d), i.e. a
    * term linear in flow, evaluated with the viscosity of the upstream water for each direction.
-   * Both parts scale with 1/opening². A stuck-open fault means full bore and no cracking pressure.
+   * Both parts scale with 1/φ², φ = Kv/Kvs the valve's inherent characteristic at its opening
+   * (K ∝ 1/Kv²). A stuck-open fault means full bore and no cracking pressure.
    */
   const valveTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
     const opening = c.kind === 'heatExchanger' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
-    const fraction = Math.max(0.00001, opening / 100), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
+    const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
       linear: VALVE_REGULARIZATION + prop(c, 'laminarK') * mu / (2 * d * area) / fraction ** 2,

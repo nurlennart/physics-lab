@@ -244,6 +244,8 @@ export function parseProject(input: unknown): Project {
     if (!c.props || typeof c.props !== "object")
       throw Error("Missing component properties.");
     if (input && (input as Project).version < 4 && c.kind === 'pid' && !('feedforward' in c.props)) c.props.feedforward = 0;
+    // Valve characteristics: files written before them used Kv ∝ opening; they keep that behaviour.
+    if (["valve", "actuatedValve", "pressureReducingValve"].includes(c.kind) && c.props.characteristic === undefined) c.props.characteristic = "linear";
     if (migrated) c.props = { ...catalog(c).props, ...c.props };
     if (
       ![c.x, c.y, c.rotation].every(Number.isFinite) ||

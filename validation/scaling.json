@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-11T01:39:42.534Z",
-  "wallSeconds": 21.64,
+  "executedAt": "2026-10-11T08:46:36.534Z",
+  "wallSeconds": 23.98,
   "passed": 124,
   "total": 124,
   "results": [
@@ -1366,7 +1366,7 @@
       "relativeError": null,
       "tolerance": "",
       "pass": true,
-      "assumptions": "608 boundary cases across every component; none failed"
+      "assumptions": "614 boundary cases across every component; none failed"
     }
   ]
 }

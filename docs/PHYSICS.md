@@ -149,6 +149,28 @@ Because Re = ρvd/μ, the K₁ term equals K₁·μ·v/(2d): a pressure drop lin
 
 Effect, for a 25 mm valve with K∞ = 5: at 2 m/s and 20 °C (Re ≈ 50,000) K₁/Re adds 0.2 % (ball, K₁ = 500) to 0.6 % (globe, 1500). At 0.05 m/s and 10 °C (Re ≈ 950) it adds 10 % and 32 %, and the loss is no longer purely quadratic in flow.
 
+*Superseded in part:* the opening fraction x above is now the inherent characteristic φ(x), next section.
+
+### Inherent valve characteristics
+
+The opening of a valve is its relative travel x. What the travel does to the flow capacity is the valve's inherent characteristic φ(x) = Kv(x)/Kvs at constant pressure drop (terms per IEC 60534-1; forms from Seborg, Edgar, Mellichamp & Doyle, *Process Dynamics and Control*, ch. 9):
+
+```
+linear            φ = x
+equal percentage  φ = R^(x − 1)       R = rangeability, typically 20–50 (default 50)
+quick opening     φ = √x
+```
+
+Since K ∝ 1/Kv², both two-K terms scale with 1/φ²: Δp = (K₁/Re + K∞)·ρv²/2 / φ².
+
+- **Defaults:** the actuated valve is a control valve with equal-percentage trim, R = 50, the usual choice for process control. Manual valves and pressure-reducing valves default to linear, which is the behaviour all valves had before. Check valves and heat-exchanger streams have no travel.
+- **Saved files** written before this revision have no characteristic. They load as linear and behave exactly as saved. The challenges' consumer-demand valves are manual valves, so challenge scores are unchanged.
+- **The installed characteristic is not a parameter.** It follows from the network solve: with a long supply pipe (low valve authority) an equal-percentage valve behaves nearly linearly, and a linear valve behaves like quick opening. In the test with 60 m of 25 mm pipe, equal-percentage trim at 50 % travel gives more than twice its inherent flow ratio of 1/√50 = 0.14.
+- **Closure:** 0 % travel is the seat and isolates exactly. An equal-percentage trim therefore steps from φ = 1/R to zero at the seat, as real trims do below their rangeability.
+- **Not modelled:** measured manufacturer Kv curves, the modified-parabolic and hyperbolic trims, choked flow and cavitation in the valve, valve-type defaults for K∞ and K₁ (they remain explicit parameters).
+
+Tests: `valve-characteristics.test.ts` covers the three forms, exact K/φ² in the solve, flow ratios at constant Δp, the installed characteristic, migration of saved files, and mass and energy closure while an actuated valve strokes.
+
 ### Weir overflow and routed spill
 
 A full tank's free surface rises a surcharge h above the rim and discharges over a sharp-crested weir (free overfall):
