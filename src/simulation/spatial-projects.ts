@@ -46,7 +46,7 @@ export function mechanicalStarter(mode: MechanicalMode = 'mechanism', challenge 
     const guide = joint('prismatic', floor, load, { x: 6, y: 1 }); guide.limits = true; guide.lower = -0.5; guide.upper = 2.5;
     const rack = makeJoint(p, 'gear', rotor, load, { x: 3, y: 1 }, { x: 6, y: 1 }); rack.joint1 = bearing.id; rack.joint2 = guide.id; rack.ratio = -50; rack.name = 'Rack transmission · 20 mm/rad'; p.world!.joints.push(rack);
     sensor.props.target = load.id;
-    const pi = add('pid', 780, 70, { reference: 3, feedforward: 135, kp: 70, ki: 0, maxOutput: 400 });
+    const pi = add('pid', 780, 70, { reference: 3, feedforward: 0, kp: 150, ki: 0, maxOutput: 400 });
     wire(sensor, 'out', pi, 'in'); wire(pi, 'out', motor, 'speed');
     p.probes = [{ id: uid(), name: 'Lift height', component: load.id, measurement: 'positionY', color: '#59b99b', visible: true }, { id: uid(), name: 'Lift velocity', component: load.id, measurement: 'velocityY', color: '#3ba6d8', visible: true }];
   } else if (mode === 'rotation') {

@@ -13,6 +13,8 @@ export interface MotorState {
   omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number; angle: number;
   /** Induction machines: stator/rotor flux linkages (Wb, RMS phasors in the supply frame), supply frequency, largest instantaneous phase current since energisation (A), flux change rate (1/s). */
   psiS?: Cx; psiR?: Cx; frequency?: number; inrushPeak?: number; energized?: boolean; fluxRate?: number;
+  /** Speed-controlled DC drive: integral part of the armature current reference (A). */
+  speedIntegral?: number;
 }
 /** Below this speed (rad/s) a rotor counts as at rest for the opposing load. */
 const OMEGA_REST = 1e-9;
@@ -78,10 +80,46 @@ export class Multiphysics {
       const enable = s.automation.input(c, 'enable', s), speed = s.automation.input(c, 'speed', s);
       const enabled = !s.failed[c.id] && !['failedOpen', 'powerLoss', 'motorFailure', 'controlLost'].includes(s.faults[c.id]) && (has('enable') ? enable.valid && enable.value === true : Boolean(c.props.enabled));
       const command = has('speed') ? (speed.valid && typeof speed.value === 'number' ? Math.max(0, U.rpmToRad(speed.value)) : 0) : c.props.speedControl ? U.rpmToRad(prop(c, 'speedCommand')) : null;
-      // Induction machines run direct-on-line (no drive); the DC motor's ideal PWM drive follows the speed command.
-      const duty = c.kind === 'inductionMotor' || command === null ? 1 : Math.max(0.001, Math.min(1, prop(c, 'emfConstant') * command / prop(c, 'ratedVoltage') + 0.02 * (command - (this.motors[c.id]?.omega ?? 0))));
-      return [c.id, { enabled: enabled && (command === null || command > 0), duty }];
+      // Induction machines run direct-on-line (no drive); the DC motor's PWM drive follows the speed command
+      // (duty from the speed controller at the solved speed, see dcDuty).
+      return [c.id, { enabled: enabled && (command === null || command > 0), duty: 1, command: c.kind === 'motor' ? command : null }];
     }));
+  }
+  /**
+   * Speed-controlled DC drive (cascade, as in thyristor/PWM armature drives): a PI speed controller sets the
+   * armature current reference, limited to ±1.5·I_rated; the inner current loop is taken as ideal (much faster
+   * than the mechanics), so the converter applies V = R·I* + kₑ·ω and duty = V/V_supply ∈ [0, 1]. Speed-loop
+   * bandwidth ω_c = 20 rad/s on the rotor's own inertia (Kp = J·ω_c/kₜ), integral corner ω_c/4.
+   */
+  private dcSpeedGains(c: Component) {
+    const bandwidth = 20;
+    return { kp: prop(c, 'inertia') * bandwidth / prop(c, 'torqueConstant'), corner: bandwidth / 4, limit: 1.5 * prop(c, 'ratedCurrent') };
+  }
+  private dcCurrentReference(c: Component, command: number, omega: number) {
+    const g = this.dcSpeedGains(c);
+    return Math.max(-g.limit, Math.min(g.limit, g.kp * (command - omega) + (this.motors[c.id]?.speedIntegral ?? 0)));
+  }
+  private dcDuty(c: Component, command: number | null, omega: number) {
+    if (command === null) return 1;
+    const supply = Math.abs(this.lastElectrical?.readings[c.id]?.voltage ?? 0) > 1e-9 ? Math.abs(this.lastElectrical!.readings[c.id].voltage) : prop(c, 'ratedVoltage');
+    const voltage = prop(c, 'resistance') * this.dcCurrentReference(c, command, omega) + prop(c, 'emfConstant') * omega;
+    return Math.max(0.001, Math.min(1, voltage / supply));
+  }
+  /**
+   * PI integral after an accepted step, from the step's midpoint speed and armature current (backward Euler on
+   * the integral mode). Conditional integration against windup: the integral is held while the converter does
+   * not deliver the reference in the error's direction — current limit, full or minimum duty, or a supply that
+   * cannot source the current (e.g. a CV/CC supply in current limit).
+   */
+  private advanceSpeedIntegral(c: Component, command: number | null, enabled: boolean, omega: number, current: number, h: number) {
+    const state = this.motors[c.id];
+    if (!state || c.kind !== 'motor') return;
+    if (command === null || !enabled) { this.motors[c.id] = { ...state, speedIntegral: 0 }; return; }
+    const g = this.dcSpeedGains(c), error = command - omega, integral = state.speedIntegral ?? 0;
+    const reference = this.dcCurrentReference(c, command, omega), unclamped = g.kp * error + integral, tolerance = 0.01 * g.limit;
+    const short = unclamped > g.limit || current < reference - tolerance, excess = unclamped < -g.limit || current > reference + tolerance;
+    if ((error > 0 && short) || (error < 0 && excess)) return;
+    this.motors[c.id] = { ...state, speedIntegral: Math.max(-g.limit, Math.min(g.limit, integral + g.corner * h * g.kp * error / (1 + g.corner * h))) };
   }
   /** Start/run commands (wired inputs override the property) and drive frequency setpoints. */
   private converterCommands(s: Simulation) {
@@ -168,7 +206,7 @@ export class Multiphysics {
     const electrical = solveElectrical(s.project, s.failed, {
       ...s.devices.runtime(h),
       contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(),
-      motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
+      motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { enabled: controls[c.id].enabled, duty: this.dcDuty(c, controls[c.id].command, omega[i]), emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
       inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? [0, 0], h }]] : [])),
       ...this.converterRuntime(s),
     });
@@ -180,7 +218,7 @@ export class Multiphysics {
     }
     const hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells);
     const state = motors.map((c, i) => {
-      const ctrl = controls[c.id], r = electrical.readings[c.id];
+      const ctrl = { ...controls[c.id], duty: this.dcDuty(c, controls[c.id].command, omega[i]) }, r = electrical.readings[c.id];
       const running = ctrl.enabled && !s.failed[c.id];
       const machine = c.kind === 'inductionMotor' && running ? r?.machine : undefined;
       // DC: armature current from back EMF. Induction: line current and air-gap torque from the equivalent circuit.
@@ -194,12 +232,17 @@ export class Multiphysics {
     });
     return { electrical, hydraulic, state, speeds };
   }
+  /**
+   * Tank inventories predicted at mid-step from the last flows (second-order head/storage coupling). A tank
+   * that the step would drain by more than half keeps its start-of-step inventory: the emptying instant is
+   * then resolved by the boundary split (boundaryTime), which needs the flow of the still-wet tank.
+   */
   private midpointTanks(s: Simulation, h: number): Record<string, TankState> {
+    void s;
     return Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => {
-      const c = s.project.components.find((c) => c.id === id);
       // Tanks may surcharge above their rim (weir overflow), so only emptiness bounds the estimate.
-      void c;
-      const mass = Math.max(0, t.mass + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0) * RHO);
+      const mass = t.mass + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0) * RHO;
+      if (mass < 0.5 * t.mass) return [id, t];
       return [id, { ...t, mass, volume: inventoryVolume(mass, t.temperature) }];
     }));
   }
@@ -284,6 +327,23 @@ export class Multiphysics {
     }
     return limit;
   }
+  /**
+   * Fixed-step substep bound without moving rigid bodies. Storage (as engine.adaptiveLimit): at most 1 % of a
+   * tank's height (≥ 5 mm) per substep, and a surcharged weir's explicit level update well inside its time
+   * constant A/(dQ/dh), dQ/dh = 1.5·Q/h. Induction machines: 1/240 s. Their decaying stator-flux offset rotates
+   * at the supply frequency in the phasor frame, and the implicit midpoint rule damps that mode at only
+   * σ/(1 + (ωh/2)²) of its true rate (σ/1.4 at 1/240 s, σ/7.8 at 1/60 s).
+   */
+  private fixedStepLimit(s: Simulation) {
+    let limit = s.project.components.some(c => c.kind === 'inductionMotor') ? 1 / 240 : Infinity;
+    for (const c of s.project.components) {
+      if (c.kind !== 'tank') continue;
+      const reading = this.hydraulic.readings[c.id], area = prop(c, 'surfaceArea'), q = Math.abs(reading?.flow ?? 0);
+      if (q > 1e-12) limit = Math.min(limit, Math.max(0.005, 0.01 * prop(c, 'capacity') / 1000 / area) * area / q);
+      if ((reading?.surcharge ?? 0) > 1e-9 && (reading?.overflow ?? 0) > 0) limit = Math.min(limit, 0.3 * area / (1.5 * reading!.overflow! / reading!.surcharge!));
+    }
+    return limit;
+  }
   /** Magnetic energy stored in induction machines (J). */
   magneticEnergy(p?: Project) {
     return (p ?? this.lastProject)?.components.filter(c => c.kind === 'inductionMotor').reduce((sum, c) => {
@@ -315,8 +375,8 @@ export class Multiphysics {
       if (shaftBody(s.project, c.id)) {
         // Shaft output excludes acceleration of the motor's own rotor inertia.
         const load = m.torque - prop(c, 'friction') * m.omega - prop(c, 'inertia') * m.acceleration;
-        this.motors[c.id] = { ...m, load, shaftPower: load * m.omega };
-      } else this.motors[c.id] = held[i] ? { ...m, acceleration: 0 } : m;
+        this.motors[c.id] = { ...m, load, shaftPower: load * m.omega, speedIntegral: this.motors[c.id]?.speedIntegral };
+      } else this.motors[c.id] = { ...m, ...(held[i] ? { acceleration: 0 } : {}), speedIntegral: this.motors[c.id]?.speedIntegral };
     });
     return r.electrical;
   }
@@ -325,17 +385,17 @@ export class Multiphysics {
     this.lastProject = s.project;
     const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {}, commands = this.converterCommands(s);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
-    const adaptive = !s.spatial.count && dt > 0.1 + 1e-12;
+    const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
     // Step readings: currents as RMS over the substeps, powers as averages (not the first substep's sample).
     const sums: Record<string, { current: number; contact: number; nc: number; reactive: number; apparent: number; sign: number; secondary?: { current: number; voltage: number }; coil?: { current: number; voltage: number; power: number; currentSign: number; voltageSign: number }; drive: { input: number; output: number; losses: number; braking: number; current: number } }> = {};
     // Midpoint shaft/electrical/hydraulic solve; 1/240 s bounds head/storage splitting error.
     while (remaining > 1e-12) {
       if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
-      // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit;
-      // fixed steps keep the 1/240 s head/storage splitting bound.
+      // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit; rigid bodies keep
+      // their contact/gravity substep; other fixed steps are bounded by the storage time scales.
       this.applyCommands(s, commands);
-      let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining, this.electricalStepLimit(s, controls), this.converterEventLimit(s));
+      let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s));
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
       const { loads, held } = this.opposingLoads(s, old, controls, linked, h);
@@ -348,9 +408,9 @@ export class Multiphysics {
       for (let event = 0; event < 32; event++) {
         // Predictor: start the midpoint speed from the last acceleration (exact for steady acceleration).
         midpoint = old.map((w, i) => w + 0.5 * h * (this.motors[motors[i].id]?.acceleration ?? 0));
-        // Adaptive macro steps solve the network at predicted mid-step tank levels (second order in
-        // the head/storage coupling); fixed steps keep start-of-step levels.
-        const levels = adaptive ? this.midpointTanks(s, h) : this.tanks;
+        // The network is solved at predicted mid-step tank levels: second order in the head/storage
+        // coupling (start-of-step levels were first order and needed 1/240 s substeps).
+        const levels = this.midpointTanks(s, h);
         const residualAt = (x: number[]) => {
           const r = this.solve(s, x, controls, levels, loads, h);
           const trial = snapshot ? s.spatial.trial(s, h, torqueMap(r, x), snapshot) : undefined;
@@ -422,8 +482,9 @@ export class Multiphysics {
         const acceleration = (next - old[i]) / h;
         const load = linked[i] ? m.torque - prop(c, 'friction') * midpoint[i] - prop(c, 'inertia') * acceleration : m.load;
         const previous = this.motors[c.id];
-        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration, angle: (previous?.angle ?? 0) + midpoint[i] * h,
+        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration, angle: (previous?.angle ?? 0) + midpoint[i] * h, speedIntegral: previous?.speedIntegral,
           ...(c.kind === 'inductionMotor' ? { psiS: previous?.psiS, psiR: previous?.psiR, frequency: previous?.frequency, inrushPeak: previous?.inrushPeak, energized: previous?.energized, fluxRate: previous?.fluxRate } : {}) };
+        this.advanceSpeedIntegral(c, controls[c.id].command, controls[c.id].enabled && !s.failed[c.id], midpoint[i], m.current, h);
         this.copperEnergy += m.copperPower * h;
         const friction = prop(c, 'friction') * midpoint[i] ** 2;
         this.frictionEnergy += friction * h;

@@ -380,7 +380,7 @@ export class Simulation {
   adaptiveUnavailable(): string | null {
     if (this.project.components.some(c => c.kind === "battery" || c.kind === "contactor")) return "Battery charge and powered contactors require fixed simulation steps.";
     if (this.project.challenge) return "Scored challenges always use the fixed 1/60 s step.";
-    if (this.spatial.count > 0) return "Rigid-body dynamics use the fixed 1/60 s step with contact substeps.";
+    if (this.spatial.hasMovingBodies) return "Rigid-body dynamics use the fixed 1/60 s step with contact substeps.";
     return null;
   }
   /** Step bound from controller, protection and thermal time scales. */
@@ -393,16 +393,16 @@ export class Simulation {
       if (c.kind === "pid") limit = Math.min(limit, 0.5, prop(c, "kd") ? prop(c, "derivativeFilter") / 2 : Infinity);
       if (c.kind === "filter") limit = Math.min(limit, Math.max(DT, prop(c, "timeConstant") / 5));
       if (prop(c, "lag") > 0) limit = Math.min(limit, Math.max(DT, prop(c, "lag") * 2));
-      if ((this.overload[c.id] ?? 0) > 0) return DT;
+      // A starting allowance in progress: resolve its end (the over-current report).
+      const overTime = this.overCurrentTime[c.id] ?? 0;
+      if (overTime > 0 && overTime <= MOTOR_START_ALLOWANCE) limit = Math.min(limit, MOTOR_START_ALLOWANCE / 100);
       const r = this.electrical.readings[c.id];
-      if ((c.kind === "breaker" || c.kind === "motorProtector") && r) {
+      if ((c.kind === "breaker" || c.kind === "motorProtector" || c.kind === "fuse") && r) {
         const x2 = (Math.abs(r.contactCurrent ?? r.current) / prop(c, "ratedCurrent")) ** 2;
         if (x2 > 0.8 * thermalThreshold(c.kind) ** 2) limit = Math.min(limit, thermalTau(c) / 200);
       }
       if ((c.kind === "sourceAC" || c.kind === "source3") && r && Math.abs(r.current) > 0.8 * prop(c, "maxCurrent"))
         limit = Math.min(limit, prop(c, "thermalTimeConstant", 60) / 200);
-      // Below rating a fuse cannot trip without an event (which restarts at 1/60 s); near it, resolve the trip time.
-      if (c.kind === "fuse" && r && Math.abs(r.current) > 0.95 * prop(c, "ratedCurrent")) limit = Math.min(limit, prop(c, "tripTime", 0.1) / 10);
     }
     // Hydraulic storage: at most 1% of a tank's height (≥ 5 mm) per step; explicit level update.
     for (const c of this.project.components) {
@@ -809,9 +809,14 @@ export class Simulation {
           for (const [quantity, exceeded] of [["power", overPower], ["current", overCurrent], ["voltage", overVoltage]] as const)
             if (exceeded) this.violation(quantity === "current" && startTolerant ? `${c.name}: above its rated current for more than ${MOTOR_START_ALLOWANCE} s (normal starting current is tolerated). Consequences follow from its modelled temperature.` : `${c.name}: operated outside its ${quantity} rating. Consequences follow from its modelled temperature.`);
         }
-        if (c.kind === "fuse" && this.overload[c.id] >= prop(c, "tripTime", 0.1) - 1e-12 && !this.failed[c.id]) {
-          this.fail(c.id, `${c.name}: overcurrent — fuse opened.`);
-          changed = true;
+        if (c.kind === "fuse" && !this.failed[c.id]) {
+          // Fuse element as a thermal image θ = (I/In)² (exact update over the interval); it melts at θ ≥ 1.45².
+          const b = (this.breakers[c.id] ??= { theta: 0, tripped: false }), x2 = (Math.abs(r.current) / prop(c, "ratedCurrent")) ** 2;
+          b.theta = x2 + (b.theta - x2) * Math.exp(-dt / thermalTau(c));
+          if (b.theta >= thermalThreshold("fuse") ** 2) {
+            this.fail(c.id, `${c.name}: overcurrent — fuse element melted (${Math.sqrt(x2).toFixed(2)} × In).`);
+            changed = true;
+          }
         }
         if ((c.kind === "breaker" || c.kind === "motorProtector") && !this.failed[c.id]) {
           const b = (this.breakers[c.id] ??= { theta: 0, tripped: false });

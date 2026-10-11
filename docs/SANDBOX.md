@@ -70,7 +70,7 @@ New parameters: `mode`, `internalResistance`, `current`, `maxPower` (reported on
 - New `tolerance` (%): the part uses a reproducible deviation inside the band, derived from its identity (FNV hash).
 - `resistance` is **live**: changing R creates no energy, so a resistor works as a rheostat.
 - The current is a measurement, never an editable property.
-- Fuse `tripTime`: definite-time characteristic (default 0.1 s, the previous behaviour).
+- Fuse `tripTime`: melting time at 10 × In (default 0.1 s). Until 2026-10-11 it was a definite-time delay above 1.0 × In; the fuse is now a gG-type thermal image (see PHYSICS.md, "Fuse melting characteristic").
 
 ### 3.3 Heaters
 
@@ -132,7 +132,7 @@ Ranges, resolution, lag, noise, the new sampling interval, thresholds, setpoints
 
 - `AdaptiveRun` (in `engine.ts`) is available when the experiment has no hydraulics, motors or rigid bodies and is not a challenge.
 - The thermal network was already backward-Euler implicit and its energy ledger uses the implicit values. Conservation therefore holds exactly for any step size; the step size affects only accuracy.
-- **Step bound** = min(30 s, 2 × previous step, 0.05 K / max|dT/dt|, timer delay/20, sampling interval, 2 × sensor lag, 0.5 s with a PI controller, fuse trip time/10 near rating), with a minimum of 1/60 s.
+- **Step bound** = min(30 s, 2 × previous step, 0.05 K / max|dT/dt|, timer delay/20, sampling interval, 2 × sensor lag, 0.5 s with a PI controller, τ/200 for a breaker, motor protector or fuse above 0.8 of its trip level), with a minimum of 1/60 s.
 - **Event handling:** any discrete change (contacts, failures, Boolean signals, CV/CC regulation) restarts the step at 1/60 s. Pending pulses and active overloads force 1/60 s.
 - **Replay:** each advance is recorded as `{ at, adaptive: { duration, steps, tolerance, maxStep } }` and replays bit-identically (tested). Fixed-step portions replay as before.
 - **UI:** advance horizons of +1 s, +10 s, +1 min, +10 min, +1 h, +6 h and +24 h; progress percentage with Stop (the state reached so far is kept and recorded); speeds up to 60×; an ADAPTIVE/FIXED indicator with the reason as tooltip.

@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 const bundle = await build({
   stdin: { contents: 'export { runValidation } from "./src/simulation/validation"; export { runHydraulicValidation } from "./src/simulation/hydraulic-validation"; export { runSpatialValidation } from "./src/simulation/spatial-validation";', resolveDir: process.cwd() },
   bundle: true,
@@ -20,6 +20,10 @@ const report = {
   results: rows,
 };
 await mkdir("validation", { recursive: true });
+// Unchanged results keep the committed report (and its timestamp), so re-running the gate leaves the tree clean.
+const previous = await readFile("validation/latest.json", "utf8").then(JSON.parse, () => null);
+const unchanged = previous && JSON.stringify(previous.results) === JSON.stringify(JSON.parse(JSON.stringify(rows)));
+if (unchanged) { report.executedAt = previous.executedAt; if ("wallSeconds" in previous) report.wallSeconds = previous.wallSeconds; }
 await writeFile(
   "validation/latest.json",
   JSON.stringify(report, null, 2) + "\n",

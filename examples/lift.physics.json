@@ -240,8 +240,8 @@
       "variant": "standard",
       "props": {
         "reference": 3,
-        "feedforward": 135,
-        "kp": 70,
+        "feedforward": 0,
+        "kp": 150,
         "ki": 0,
         "kd": 0,
         "derivativeFilter": 1,

@@ -6,3 +6,7 @@ dist
 *.tar.gz
 playwright-report
 test-results
+scripts/.tmp
+validation
+docs
+e2e

@@ -6,7 +6,7 @@ import { peakOverInterval } from "./electrical";
 import type { Property } from "./model";
 
 /** Constant-current source through a breaker into a 1 Ω load. */
-function rig(kind: "breaker" | "motorProtector", current: number, props: Record<string, Property> = {}, variant = "standard") {
+function rig(kind: "breaker" | "motorProtector" | "fuse", current: number, props: Record<string, Property> = {}, variant = "standard") {
   const b = new Builder();
   const source = b.add("source", { mode: "cc", current, voltage: 1e4, ratedVoltage: 1e4, maxCurrent: 1e6, maxPower: 1e12 });
   const device = b.add(kind, props, variant), load = b.add("resistor", { resistance: 1, ratedPower: 1e9, heatCapacity: 1e12, maxTemperature: 1e4 });
@@ -17,6 +17,25 @@ const runUntilTrip = (s: Simulation, id: string, limit: number) => {
   while (s.time < limit && !s.breakers[id]?.tripped) s.step();
   return s.time;
 };
+describe("fuse melting characteristic (gG-type thermal image)", () => {
+  const meltTime = (s: Simulation, id: string, limit: number) => { while (s.time < limit && !s.failed[id]) expect(s.step()).toBe(true); return s.failed[id] ? s.time : Infinity; };
+  it("melts at the analytic inverse time, at the rated time at 10 × In and with constant I²t at high current", () => {
+    for (const x of [2.4, 10, 30]) {
+      const { s, device } = rig("fuse", 10 * x), tau = thermalTau(device), k2 = 1.45 ** 2;
+      expect(meltTime(s, device.id, 30)).toBeCloseTo(tau * Math.log(x * x / (x * x - k2)), 1);
+      expect(s.electrical.readings[device.id].current).toBe(0);
+    }
+    expect(thermalTau(rig("fuse", 1).device) * Math.log(100 / (100 - 1.45 ** 2))).toBeCloseTo(0.1, 12);
+  });
+  it("carries the conventional non-fusing current 1.25 × In indefinitely and melts at 1.6 × In", () => {
+    const hold = rig("fuse", 12.5);
+    hold.s.advanceAdaptive(3 * 3600);
+    expect(hold.s.failed[hold.device.id]).toBeUndefined();
+    const melt = rig("fuse", 16);
+    melt.s.advanceAdaptive(3600);
+    expect(melt.s.failed[melt.device.id]).toBe(true);
+  });
+});
 describe("thermal-magnetic protection", () => {
   it("trips thermally at the analytic I²t time and not below the conventional current", () => {
     const { s, device } = rig("breaker", 32);

@@ -1,5 +1,5 @@
 import { build } from "esbuild";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 const bundle = await build({
   stdin: { contents: 'export { runScalingValidation } from "./src/simulation/scaling-validation";', resolveDir: process.cwd() },
   bundle: true,
@@ -26,6 +26,11 @@ const report = {
   results: rows,
 };
 await mkdir("validation", { recursive: true });
+// Unchanged results keep the committed report (and its timestamp), so re-running the gate leaves the tree clean.
+const measuredWall = report.wallSeconds;
+const previous = await readFile("validation/scaling.json", "utf8").then(JSON.parse, () => null);
+const unchanged = previous && JSON.stringify(previous.results) === JSON.stringify(JSON.parse(JSON.stringify(rows)));
+if (unchanged) { report.executedAt = previous.executedAt; if ("wallSeconds" in previous) report.wallSeconds = previous.wallSeconds; }
 await writeFile("validation/scaling.json", JSON.stringify(report, null, 2) + "\n");
 await writeFile(
   "validation/scaling.md",
@@ -33,5 +38,5 @@ await writeFile(
     rows.map((r) => `| ${r.name} | ${r.domain} | ${Number(r.expected.toPrecision(8))} | ${Number(r.measured.toPrecision(8))} | ${r.absoluteError.toExponential(3)} | ${r.relativeError === null ? "—" : r.relativeError.toExponential(3)} | ${r.tolerance} | ${r.pass ? "PASS" : "FAIL"} | ${r.assumptions} |`).join("\n") + "\n",
 );
 for (const r of rows) console.log(`${r.pass ? "PASS" : "FAIL"} ${r.name}: measured ${Number(r.measured.toPrecision(8))}, expected ${Number(r.expected.toPrecision(8))}`);
-console.log(`${report.passed}/${report.total} passed in ${report.wallSeconds} s`);
+console.log(`${report.passed}/${report.total} passed in ${measuredWall} s${unchanged ? " (results unchanged; report kept)" : ""}`);
 if (report.passed !== report.total) process.exitCode = 1;

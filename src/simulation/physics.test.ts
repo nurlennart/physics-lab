@@ -200,7 +200,10 @@ describe("thermal coupling and energy", () => {
       { component: p.components[1].id, port: "b" },
     );
     const s = new Simulation(q);
-    advance(s, 0.2);
+    // 11.8 A through a 5 A fuse (2.35 × In): the element melts after ≈ 2.25 s (gG-type thermal image).
+    advance(s, 2);
+    expect(s.failed[f.id]).toBeUndefined();
+    advance(s, 0.5);
     expect(s.failed[f.id]).toBe(true);
     expect(s.electrical.dissipatedPower).toBeCloseTo(0, 6);
     expect(s.events.some((e) => e.level === "error" && e.time > 0)).toBe(true);

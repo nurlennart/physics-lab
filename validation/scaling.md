@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-11T14:52:52.276Z. 124/124 checks passed in 34.85 s wall time.
+Executed: 2026-10-11T16:13:47.444Z. 124/124 checks passed in 20.25 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -90,33 +90,33 @@ Executed: 2026-10-11T14:52:52.276Z. 124/124 checks passed in 34.85 s wall time.
 | C: stage 1 switches off at its 60 °C setpoint | control | 60 | 60.116176 | 1.162e-1 | 1.936e-3 | 1.0% | PASS | Adaptive step ≤ 0.05 K per step; checked at a 600 s chunk boundary |
 | C: remaining stages after stage 1 off | electrical | 23927.445 | 23927.445 | 1.710e-10 | 7.146e-15 | 1.0e-7% | PASS | Stages 2 and 3 still demand heat; bus sag recomputed for two branches |
 | C: energy residual | thermal | 0 | -0.00083499821 | 8.350e-4 | — | ±343.536700708017 | PASS | J |
-| D: water delivered to the upper reservoir | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | litres after 60 s; no solver error (value 4494.69) |
+| D: water delivered to the upper reservoir | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | litres after 60 s; no solver error (value 4494.7) |
 | D: mass residual | hydraulic | 0 | -2.5465852e-11 | 2.547e-11 | — | ±0.000001 | PASS | kg |
-| D: coupled energy residual | multiphysics | 0 | -2.7859 | 2.786e+0 | — | ±3568.675620482902 | PASS | J |
-| D: start-up current limited by CV/CC bus | electrical | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | W peak ≤ 440 V × 250 A (value 105856) |
-| Motor standard: no-load speed | mechanical | 274.28571 | 274.19413 | 9.159e-2 | 3.339e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
-| Motor traction48: no-load speed | mechanical | 303.79747 | 303.6961 | 1.014e-1 | 3.337e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
-| Motor industrial180: no-load speed | mechanical | 320.90762 | 320.79977 | 1.079e-1 | 3.361e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
-| Motor industrial440: no-load speed | mechanical | 191.23205 | 191.23205 | 1.137e-13 | 5.945e-16 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
-| Pipe Ø10 mm: mass conservation | hydraulic | 0 | 3.6379788e-12 | 3.638e-12 | — | ±0.000001 | PASS | kg |
-| Pipe Ø10 mm: Darcy pressure consistency | hydraulic | 0 | 2.1827873e-11 | 2.183e-11 | — | ±0.001 | PASS | Pa |
-| Pipe Ø50 mm: mass conservation | hydraulic | 0 | -3.6379788e-12 | 3.638e-12 | — | ±0.000001 | PASS | kg |
-| Pipe Ø50 mm: Darcy pressure consistency | hydraulic | 0 | 7.2759576e-12 | 7.276e-12 | — | ±0.001 | PASS | Pa |
-| Pipe Ø200 mm: mass conservation | hydraulic | 0 | 1.4551915e-11 | 1.455e-11 | — | ±0.000001 | PASS | kg |
-| Pipe Ø200 mm: Darcy pressure consistency | hydraulic | 0 | 0 | 0.000e+0 | — | ±0.001 | PASS | Pa |
-| Pipe Ø500 mm: mass conservation | hydraulic | 0 | -1.8189894e-12 | 1.819e-12 | — | ±0.000001 | PASS | kg |
-| Pipe Ø500 mm: Darcy pressure consistency | hydraulic | 0 | 0 | 0.000e+0 | — | ±0.001 | PASS | Pa |
+| D: coupled energy residual | multiphysics | 0 | -0.00046339602 | 4.634e-4 | — | ±3568.7069781847904 | PASS | J |
+| D: start-up current limited by CV/CC bus | electrical | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | W peak ≤ 440 V × 250 A (value 105849) |
+| Motor standard: no-load speed | mechanical | 274.28571 | 274.19414 | 9.157e-2 | 3.339e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
+| Motor traction48: no-load speed | mechanical | 303.79747 | 303.69611 | 1.014e-1 | 3.336e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
+| Motor industrial180: no-load speed | mechanical | 320.90762 | 320.79978 | 1.078e-1 | 3.360e-4 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
+| Motor industrial440: no-load speed | mechanical | 191.23205 | 191.23205 | 2.842e-14 | 1.486e-16 | 0.20% | PASS | First-order electromechanical response, 8 time constants |
+| Pipe Ø10 mm: mass conservation | hydraulic | 0 | 0 | 0.000e+0 | — | ±0.000001 | PASS | kg |
+| Pipe Ø10 mm: Darcy pressure consistency | hydraulic | 0 | 3.6379788e-11 | 3.638e-11 | — | ±0.001 | PASS | Pa |
+| Pipe Ø50 mm: mass conservation | hydraulic | 0 | -7.2759576e-12 | 7.276e-12 | — | ±0.000001 | PASS | kg |
+| Pipe Ø50 mm: Darcy pressure consistency | hydraulic | 0 | 1.4551915e-11 | 1.455e-11 | — | ±0.001 | PASS | Pa |
+| Pipe Ø200 mm: mass conservation | hydraulic | 0 | -1.8189894e-12 | 1.819e-12 | — | ±0.000001 | PASS | kg |
+| Pipe Ø200 mm: Darcy pressure consistency | hydraulic | 0 | 1.4551915e-11 | 1.455e-11 | — | ±0.001 | PASS | Pa |
+| Pipe Ø500 mm: mass conservation | hydraulic | 0 | 7.2759576e-12 | 7.276e-12 | — | ±0.000001 | PASS | kg |
+| Pipe Ø500 mm: Darcy pressure consistency | hydraulic | 0 | 7.2759576e-12 | 7.276e-12 | — | ±0.001 | PASS | Pa |
 | Thermostat 1 L/1 kW: adaptive vs fixed final T | control | 50.368443 | 50.395754 | 2.731e-2 | 5.422e-4 | ±0.15 | PASS | °C |
 | Thermostat 1 L/1 kW: within band + element overshoot | control | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | °C after 1.5 heat-up times; band 48–50 °C (value 50.3684) |
-| Thermostat 2000 L/30 kW: within band + element overshoot | control | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | °C after 1.5 heat-up times; band 48–50 °C (value 50.001) |
+| Thermostat 2000 L/30 kW: within band + element overshoot | control | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | °C after 1.5 heat-up times; band 48–50 °C (value 50.0122) |
 | breaker trip time at 2 × In | protection | 32.94281 | 32.95 | 7.190e-3 | 2.183e-4 | 0.20% or ±0.016666666666666666 | PASS | Thermal image θ' = ((I/In)² − θ)/τ from cold; detection at the 1/60 s step |
 | breaker trip time at 4 × In | protection | 6.6978077 | 6.7 | 2.192e-3 | 3.273e-4 | 0.20% or ±0.016666666666666666 | PASS | Thermal image θ' = ((I/In)² − θ)/τ from cold; detection at the 1/60 s step |
 | motorProtector trip time at 7.2 × In | protection | 10 | 10 | 7.638e-14 | 7.638e-15 | 0.20% or ±0.016666666666666666 | PASS | Thermal image θ' = ((I/In)² − θ)/τ from cold; detection at the 1/60 s step |
 | Thermal port: resistor temperature on heat sink | thermal | 40.564407 | 40.564406 | 9.689e-9 | 2.389e-10 | 0.010% | PASS | 40 W; series port conductances 4 and 50 W/K; sink 3.3 W/K to air |
-| Heat exchanger duty (counterflow ε-NTU) | hydraulic | 308331.77 | 308331.77 | 0.000e+0 | 0.000e+0 | 0.00010% | PASS | Inlets 80 °C / 10 °C plus feed-pipe dissipation; zero-volume pipes |
-| Heat exchanger hot outlet | hydraulic | 71.75391 | 71.75391 | 9.237e-13 | 1.287e-14 | 0.00010% | PASS | T_out = T_in − Q/C + viscous dissipation heating |
+| Heat exchanger duty (counterflow ε-NTU) | hydraulic | 308331.99 | 308331.99 | 0.000e+0 | 0.000e+0 | 0.00010% | PASS | Inlets 80 °C / 10 °C plus feed-pipe dissipation; zero-volume pipes |
+| Heat exchanger hot outlet | hydraulic | 71.753954 | 71.753954 | 4.547e-13 | 6.338e-15 | 0.00010% | PASS | T_out = T_in − Q/C + viscous dissipation heating |
 | Hot (80 °C) stream flows faster than cold (10 °C) through identical feeds | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | IAPWS 2008 μ(T) in pipe friction; flow ratio (value 1.01751) |
-| Heat exchanger energy residual | hydraulic | 0 | -0.032249828 | 3.225e-2 | — | ±0.5 | PASS | J |
+| Heat exchanger energy residual | hydraulic | 0 | 0.000001523299 | 1.523e-6 | — | ±0.5 | PASS | J |
 | Three-phase 30 kW bank at 400 V: total power | electrical | 30000 | 30000 | 7.276e-12 | 2.425e-16 | 1.0e-7% | PASS | P = 3·(V_LL/√3)²/R = V_LL²/R |
 | Three-phase line current | electrical | 43.30127 | 43.30127 | 7.105e-15 | 1.641e-16 | 1.0e-7% | PASS | I_L = P/(√3·V_LL) |
 | AC R–L load: RMS current | electrical | 12.351673 | 12.351673 | 1.776e-15 | 1.438e-16 | 1.0e-7% | PASS | I = V/√(R² + (ωL)²), 10 Ω + 50 mH at 50 Hz |
@@ -125,6 +125,6 @@ Executed: 2026-10-11T14:52:52.276Z. 124/124 checks passed in 34.85 s wall time.
 | Induction motor rated-load speed within 1400–1490 rpm | multiphysics | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | 4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1452.2) |
 | Induction motor run-up: relative energy residual | multiphysics | 0 | 1.3021559e-11 | 1.302e-11 | — | ±0.00001 | PASS | 1 |
 | PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.702e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
-| Adaptive pumping station (269 steps vs 7200): delivered volume | multiphysics | 617.71541 | 617.71483 | 5.749e-4 | 9.307e-7 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
-| Adaptive pumping station: relative energy residual | multiphysics | 0 | 2.965088e-8 | 2.965e-8 | — | ±0.00001 | PASS | 1 |
+| Adaptive pumping station (270 steps vs 7200): delivered volume | multiphysics | 617.71401 | 617.71398 | 2.883e-5 | 4.667e-8 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
+| Adaptive pumping station: relative energy residual | multiphysics | 0 | 4.2062239e-8 | 4.206e-8 | — | ±0.00001 | PASS | 1 |
 | E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 782 boundary cases across every component; none failed |

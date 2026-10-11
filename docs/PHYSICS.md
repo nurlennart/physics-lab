@@ -105,7 +105,7 @@ Where viscosity is used:
   - Zero-volume pipes: the upstream node temperature, chosen by flow direction.
 
   Laminar (Hagen–Poiseuille), transitional (linear blend 2300–4000) and turbulent (Swamee–Jain) regimes are evaluated per segment.
-- **Feedback** from temperature to flow uses the node temperatures of the previous transport substep (1/240 s lag; for an adaptive macro step, one macro step). There is no nested temperature–flow iteration. At t = 0 a zero-length transport mixes the inventories and the network is re-solved once, so the first reading already uses the correct viscosities.
+- **Feedback** from temperature to flow uses the node temperatures of the previous transport substep (one coupled substep of lag: 1/60 s for hydraulic/DC-motor systems, 1/240 s with induction machines, 1/480 s with moving rigid bodies; for an adaptive macro step, one macro step). There is no nested temperature–flow iteration. At t = 0 a zero-length transport mixes the inventories and the network is re-solved once, so the first reading already uses the correct viscosities.
 - **Valves, regulators and heat-exchanger streams** use the two-K loss below, so they are viscosity-dependent too. Pump internals keep a constant internal resistance.
 
 **Density and heat capacity.** c_p = 4180 J/kg·K stays constant (real variation 1 % over 1–95 °C). Density is variable for tank inventories (thermal expansion, below); flow, pipe inventories and pump heads still use ρ_ref = 1000 kg/m³.
@@ -342,7 +342,7 @@ Tank inspector mass, sensible heat and cooling time use the same initial tempera
   - The exponent 5 is a **model choice**, not a measured breakdown curve. It gives a steep collapse: −9 % at 0.8·NPSH3, −39 % at 0.6·NPSH3, head lost at 0.5·NPSH3.
 - **Numerics:**
   - NPSH3 is evaluated at the solved flow inside the pump curve, so cavitation acts as a flow limit: head collapses where NPSH3(Q) reaches NPSHA.
-  - NPSHA comes from the previous accepted step (≤ 1/240 s lag).
+  - NPSHA comes from the previous accepted substep (one coupled substep of lag).
   - An earlier variant that also lagged NPSH3 oscillated between full head and none every step in deep cavitation.
   - Only positive head is reduced, so the branch characteristic stays monotone and a stopped pump cannot cavitate.
 - **Energy:** shaft power follows the reduced impeller power at the curve efficiency; readings and the energy ledger use the same head.
@@ -499,3 +499,35 @@ Tests: `motor-starting.test.ts` covers the star current and torque ratio, transi
 ## Finite batteries, powered contactors, transformers and radiators
 
 See [DEVICES.md](DEVICES.md) for equations, physical state, terminal conventions, source/chemical energy accounting, solver corrections and explicit limitations. These components are available in Free Sandbox; earlier model-limit paragraphs describe their historical revision, rather than overriding the current component inventory.
+
+## Coupled substeps and the speed-controlled DC drive (audit 2026-10-11)
+
+### Head/storage coupling: second order, no blanket 1/240 s substep
+
+- The hydraulic network is now solved at **mid-step tank inventories** predicted from the previous flows (m + ½·h·Q·ρ), in fixed steps as it already was in adaptive macro steps. Start-of-step levels were first-order in the head/storage splitting, which is why every fixed 1/60 s step was cut into four 1/240 s substeps.
+- Without moving rigid bodies or induction machines, a fixed step is now one coupled substep, bounded only by storage time scales (≤ 1 % of a tank's height per substep, and a surcharged weir's explicit level update inside 0.3·A/(dQ/dh)). Static housings no longer force substeps or block adaptive advance.
+- A tank that a step would drain by more than half keeps its start-of-step inventory in the solve; the empty instant is resolved by the boundary split as before.
+- **Evidence (transfer starter, 120 s against a 1/960 s reference):** start-of-step levels at 1/240 s: tank masses within 0.3 g, energy residual −3.2·10⁻² J; mid-step levels at 1/60 s: masses identical to 0.1 g, energy residual −5.6·10⁻⁶ J, 3× less computation. Every hydraulic challenge reference (completion time, score) is unchanged.
+- **Induction machines keep 1/240 s.** In the supply-frame phasors the decaying stator-flux offset rotates at ω_s, and the energy-conserving implicit midpoint rule damps that mode at σ/(1 + (ω_s·h/2)²) of its true rate: σ/1.4 at 1/240 s, σ/7.8 at 1/60 s. While the flux is changing (switching, run-up), substeps are 1/(40·f) as before (σ/1.006).
+
+### Speed-controlled DC drive
+
+The former "ideal PWM drive" used duty = kₑ·ω*/V_rated + 0.02·(ω* − ω): a fixed proportional gain in 1/(rad/s) regardless of motor size, no integral action and no current limit. Under load it settled with a droop of I·R/(kₑ + 0.02·V) (≈ 135 RPM for the 48 V traction motor holding 13 A), and a speed step on the 440 V / 75 kW motor applied full voltage to its 0.1 Ω armature: about 4,400 A, 23 × rated.
+
+Now the drive is a cascade, as in industrial armature-voltage drives:
+
+- **Speed controller (PI):** current reference I* = Kp·(ω* − ω) + I_int, limited to ±1.5·I_rated. Kp = J·ω_c/kₜ with speed-loop bandwidth ω_c = 20 rad/s on the rotor's own inertia; integral corner ω_c/4.
+- **Current loop:** ideal (much faster than the mechanics), so the converter applies V = R·I* + kₑ·ω and duty d = V/V_supply ∈ [0.001, 1]. The duty is evaluated at the solved midpoint speed inside the electromechanical Newton iteration, so the proportional path is implicit.
+- **Integral:** backward Euler on the integral mode after each accepted substep. It is held while the converter does not deliver the reference in the error's direction: current limit, full or minimum duty, or a supply that cannot source the current (CV/CC supply in current limit). The response after saturation therefore does not depend on how long the drive was saturated.
+- **Regeneration:** duty below kₑ·ω/V drives current back into the supply; at minimum duty the braking current is limited to kₑ·ω/R, as for a converter without a braking chopper.
+- **Results:** 440 V motor, 1,500 RPM command against 400 N·m: starts at 285 A (150 %), reaches 1,500.00 RPM with I = (T_L + b·ω)/kₜ; a load step is rejected to zero steady-state error. Tests: `dc-drive.test.ts`.
+- **Lift reference design.** Its position controller had a 135 RPM feed-forward that only compensated the old drive's load droop: with a stiff speed loop the lift ran into its end stop. The reference design now commands speed = 150 RPM/m × position error (no feed-forward) and completes the assignment in 13.9 s (score 82) instead of 18.1 s (81). Rotation and pressure results are unchanged.
+- **Not modelled:** armature inductance and current-loop dynamics, field weakening, the drive's own losses, four-quadrant braking choppers.
+
+## Fuse melting characteristic (audit 2026-10-11)
+
+- **Before:** a fuse opened after `tripTime` (0.1 s) at any current above 1.0 × In: a 10 A fuse carrying 10.5 A blew in 0.1 s, and a short circuit took the same 0.1 s.
+- **Now:** the fuse element is a thermal image θ = (I/In)² with dθ/dt = ((I/In)² − θ)/τ, updated exactly over each step, melting at θ ≥ 1.45². 1.45 lies between the IEC 60269 gG conventional non-fusing current (1.25 × In, carried indefinitely) and fusing current (1.6 × In, melts). Melting time t = τ·ln(x²/(x² − 1.45²)); at high current t → τ·1.45²/x², a constant pre-arcing I²t = 2.1·τ·In².
+- `tripTime` is the melting time at 10 × In, so τ = tripTime / ln(100/(100 − 1.45²)) = 47·tripTime (4.7 s for the default 0.1 s, pre-arcing I²t ≈ 990 A²s for 10 A).
+- **Limits:** one time constant cannot match a real gG curve everywhere: at 2–3 × In it melts in seconds where real fuses take tens of seconds. No arcing time, current limitation or let-through I²t; no aR/gR/gM classes.
+- Tests: `protection.test.ts` (analytic melting times at 2.4, 10 and 30 × In, 1.25 × In for 3 h, melting at 1.6 × In).

@@ -109,7 +109,7 @@ const base: Record<string, Base> = {
   conductance: { label: "Contact conductance (UA)", description: "Thermal conductance through the thermal port.", unit: "W/K", group: "thermal", policy: "live", domain: [0, 1e8], positive: true, limitReason: POSITIVE },
   maxTemperature: temperature("Temperature limit", "Maximum operating temperature. Above it the element fails open (overtemperature).", "ratings"),
   closed: { label: "Switch state", description: "Contact closed (conducting) or open.", group: "operating", policy: "live" },
-  tripTime: { label: "Trip delay", description: "Definite-time characteristic: the fuse opens after the current exceeds its rating continuously for this long.", unit: "s", group: "ratings", policy: "live", domain: [0, 1e4], positive: true, limitReason: POSITIVE },
+  tripTime: { label: "Melting time at 10 × In", description: "Pre-arcing time at ten times the rated current (cold). Sets the time constant of the fuse element's thermal image; the element carries 1.25 × In indefinitely and melts at 1.6 × In (IEC 60269 gG conventional currents), inverse-time in between and ≈ constant I²t at high current.", unit: "s", group: "ratings", policy: "live", domain: [0, 1e4], positive: true, limitReason: POSITIVE },
   // — Pipe inventory, heat exchanger, regulator, pump data —
   inventory: { label: "Water inventory", description: "Pipe holds its water (ρ·A·L) in well-mixed cells: thermal transport delay and stored heat. Off = ideal zero-volume pipe.", group: "configuration", policy: "reset" },
   segments: { label: "Mixing cells", description: "Number of well-mixed cells along the pipe. More cells approach plug flow (sharper delay).", unit: "1", group: "advanced", policy: "reset", domain: [1, 50], limitReason: "Solver cost grows with cells; 50 approximates plug flow closely." },
@@ -192,8 +192,8 @@ const base: Record<string, Base> = {
   loadTorque: { label: "External shaft load", description: "Constant opposing torque that exports work from the shaft.", unit: "N·m", group: "operating", policy: "live", domain: [0, 1e7], limitReason: NUMERIC },
   ratedTorque: { label: "Rated torque", description: "Continuous torque rating (overload is reported).", unit: "N·m", group: "ratings", policy: "live", domain: [0, 1e8], positive: true, limitReason: POSITIVE },
   maxSpeed: { label: "Maximum speed", description: "Mechanical speed limit (exceeding it is reported).", unit: "rad/s", group: "ratings", policy: "live", domain: [0, 1e5], positive: true, limitReason: POSITIVE, display: { unit: "RPM", scale: 30 / Math.PI } },
-  speedControl: { label: "Enable speed command", description: "Ideal PWM drive follows the speed command.", group: "operating", policy: "live" },
-  speedCommand: { label: "Motor speed command", description: "Speed command of the ideal PWM drive.", unit: "RPM", group: "operating", policy: "live", domain: [0, 1e6], limitReason: NUMERIC },
+  speedControl: { label: "Enable speed command", description: "PWM speed drive follows the speed command: PI speed controller, armature current limited to 150 % of rated.", group: "operating", policy: "live" },
+  speedCommand: { label: "Motor speed command", description: "Speed command of the PWM speed drive (zero steady-state error within the current and voltage limits).", unit: "RPM", group: "operating", policy: "live", domain: [0, 1e6], limitReason: NUMERIC },
   // — Sensors & automation —
   stream: { label: "Exchanger stream", description: "For heat-exchanger targets: A is the hot stream, B is the cold stream. Other targets ignore this selector.", group: "configuration", policy: "reset", options: [{ value: "hot", label: "A / hot stream" }, { value: "cold", label: "B / cold stream" }] },
   quantity: { label: "Measured quantity", description: "Choose the modeled state and measurement point; pressure is gauge pressure, differential is inlet minus outlet (negative for a pump pressure rise).", group: "configuration", policy: "reset", options: [{ value: "auto", label: "Modeled temperature (body/winding or fluid)" }, { value: "temperature", label: "Body / winding (tank: mixed water + vessel)" }, { value: "fluidTemperature", label: "Fluid temperature" }] },
@@ -283,7 +283,7 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
   },
   motor: {
     resistance: { label: "Armature resistance", description: "Winding resistance; I²R heats the winding thermal mass." },
-    ratedVoltage: { description: "Nominal armature voltage; also the reference of the ideal PWM speed drive." },
+    ratedVoltage: { description: "Nominal armature voltage." },
     heatCapacity: { label: "Winding thermal mass" },
     maxTemperature: { label: "Winding temperature limit", description: "Insulation class limit; above it the motor fails open." },
     ratedPower: { description: "Continuous electrical input rating (overload is reported; heating follows from I²R)." },
@@ -503,7 +503,17 @@ export function derivedReadouts(c: Component): Readout[] {
       { label: "Relative roughness", value: n("roughness") / n("diameter"), unit: "1" },
       { label: "Flow at 1 m/s", value: Math.PI * n("diameter") ** 2 / 4 * 60000, unit: "L/min" },
     ];
-    case "fuse": return [{ label: "Trip current", value: n("ratedCurrent"), unit: "A", note: `after ${n("tripTime", 0.1)} s` }];
+    case "fuse": {
+      const tau = thermalTau(c), k = thermalThreshold(c.kind);
+      const t = (x: number) => x * x > k * k ? tau * Math.log(x * x / (x * x - k * k)) : Infinity;
+      return [
+        { label: "Conventional non-fusing current", value: 1.25 * n("ratedCurrent"), unit: "A", note: "carried indefinitely" },
+        { label: "Melting time at 1.6 × In (cold)", value: t(1.6), unit: "s" },
+        { label: "Melting time at 3 × In (cold)", value: t(3), unit: "s" },
+        { label: "Melting time at 10 × In (cold)", value: t(10), unit: "s" },
+        { label: "Pre-arcing I²t (high current)", value: tau * k * k * n("ratedCurrent") ** 2, unit: "A²s" },
+      ];
+    }
     case "breaker": case "motorProtector": {
       const tau = thermalTau(c), k = thermalThreshold(c.kind);
       const t = (x: number) => x * x > k * k ? tau * Math.log(x * x / (x * x - k * k)) : Infinity;
@@ -520,10 +530,17 @@ export function derivedReadouts(c: Component): Readout[] {
 }
 
 // ---------- Protective thermal image (breaker / motor protector) ----------
-/** Trip threshold of the thermal image θ = (I/In)² in steady state. */
-export const thermalThreshold = (kind: Kind) => (kind === "motorProtector" ? 1.12 : 1.3);
-/** Thermal-image time constant: explicit for breakers, derived from the trip class for motor protectors. */
+/**
+ * Trip threshold of the thermal image θ = (I/In)² in steady state. Fuses: 1.45, between the IEC 60269 gG
+ * conventional non-fusing (1.25 × In) and fusing (1.6 × In) currents.
+ */
+export const thermalThreshold = (kind: Kind) => (kind === "motorProtector" ? 1.12 : kind === "fuse" ? 1.45 : 1.3);
+/**
+ * Thermal-image time constant: explicit for breakers, derived from the trip class for motor protectors and from
+ * the melting time at 10 × In for fuses (t = τ·ln(x²/(x² − k²))).
+ */
 export function thermalTau(c: Component) {
+  if (c.kind === "fuse") return num(c.props, "tripTime", 0.1) / Math.log(100 / (100 - thermalThreshold("fuse") ** 2));
   if (c.kind === "motorProtector") {
     const k2 = thermalThreshold(c.kind) ** 2, x2 = 7.2 * 7.2;
     return num(c.props, "tripClass", 10) / Math.log(x2 / (x2 - k2));

@@ -79,7 +79,7 @@ export default function Models() {
             source without internal resistance pauses the simulation. Exceeding
             power, current or voltage ratings is reported and the component is
             marked overloaded; failure follows from its modelled temperature.
-            Fuses open after their configurable trip delay above rated current.
+            Fuses melt on a gG-type thermal image θ = (I/In)²: they carry 1.25 × In indefinitely, melt at 1.6 × In and, above that, in inverse time (configurable melting time at 10 × In; ≈ constant pre-arcing I²t at high current).
           </p>
           <h3>Coupled thermal model</h3>
           <div className="formula">

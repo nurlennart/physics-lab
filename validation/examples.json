@@ -529,29 +529,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 12813.344130535077,
-    "energyResidual": -6.603737290333811e-7,
+    "suppliedEnergy": 15206.525163966362,
+    "energyResidual": -0.0000018613584700233332,
     "massResidual": 0,
     "probes": [
       {
         "name": "Lift height",
-        "value": 3.0001824628016385
+        "value": 2.9999453463494956
       },
       {
         "name": "Lift velocity",
-        "value": 0.000006593384149350405
+        "value": 0.00001799271134664027
       },
       {
         "name": "Rotor speed",
-        "value": 0.00032966920746752026
+        "value": 0.0008996355673320135
       },
       {
         "name": "Motor current",
-        "value": 4.274134793695107
+        "value": 4.274113752214488
       },
       {
         "name": "Mechanical energy",
-        "value": 1.9363825733209316e-8
+        "value": 1.4420078729311104e-7
       }
     ]
   },
