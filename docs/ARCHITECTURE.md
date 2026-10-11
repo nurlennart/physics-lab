@@ -65,3 +65,7 @@ New conserved hydraulic quantities can use the same simulation-clock sensor/cont
 ## Phase 2B extension
 
 The existing engine now owns `Multiphysics` runtime beside temperatures and automation. `hydraulic.ts` separates terminal topology, monotone branch laws, damped pressure solve, inventory events and enthalpy transport from rendering. `multiphysics.ts` solves motor back EMF through existing MNA and pump torque through implicit midpoint shaft equations. `units.ts` centralizes new SI/display conversion. The outer clock, editor, automation DAG and probes are shared across all domains. Version 3 scenarios migrate older configurations; separate run archives restore dynamic state through validated replay. See [Phase 2B model and scheduling documentation](PHASE2B.md).
+
+## Additional electrical and cooling devices
+
+`electrical.ts` preserves the public API while `electrical-core.ts` assembles circuit equations. `linear-algebra.ts` provides shared scaled dense solves. `device-circuits.ts` expands finite batteries, separate contactor coils and radiator fan loads into those equations; transformer windings are coupled directly in MNA. `devices.ts` owns accepted battery charge and contactor timing beside `Multiphysics`. Charge boundary events share the coupled event loop, and chemical storage participates in the existing energy ledger. See [models and limitations](DEVICES.md).

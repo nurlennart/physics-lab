@@ -1,5 +1,105 @@
 [
   {
+    "mode": "battery",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0,
+    "energyResidual": 7.015614755800925e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "State of charge",
+        "value": 62.79736996450814
+      },
+      {
+        "name": "Chemical energy",
+        "value": 5257.484397750115
+      },
+      {
+        "name": "Load power",
+        "value": 24.868831771808132
+      }
+    ]
+  },
+  {
+    "mode": "contactor",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1678.883792633228,
+    "energyResidual": 1.4381384971784428e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Coil voltage",
+        "value": 23.99833344906604
+      },
+      {
+        "name": "Main contact",
+        "value": 1
+      },
+      {
+        "name": "Load power",
+        "value": 23.98001249305917
+      }
+    ]
+  },
+  {
+    "mode": "transformer",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1597.3880042000774,
+    "energyResidual": 4.581579560181126e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Secondary RMS voltage",
+        "value": 23.978188103735313
+      },
+      {
+        "name": "Load power",
+        "value": 23.95639603075474
+      },
+      {
+        "name": "Transformer temperature",
+        "value": 20.102501183970126
+      }
+    ]
+  },
+  {
+    "mode": "radiator",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1800.0000000000002,
+    "energyResidual": 0.019087048905930715,
+    "massResidual": 2.2737367544323206e-13,
+    "probes": [
+      {
+        "name": "Radiator outlet",
+        "value": 58.7691660218066
+      },
+      {
+        "name": "Heat rejected",
+        "value": 3937.851929022309
+      },
+      {
+        "name": "Fan power",
+        "value": 30.000000000000004
+      },
+      {
+        "name": "Water flow",
+        "value": 45.7134032852172
+      }
+    ]
+  },
+  {
     "mode": "acRlc",
     "simulatedSeconds": 60,
     "error": null,

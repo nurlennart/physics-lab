@@ -50,7 +50,7 @@ describe('example shelf', () => {
     if (example.mode === 'induction') expect(s.electrical.readings[p.components.find(c => c.kind === 'inductionMotor')!.id].current).toBeLessThan(15);
     expect(Object.keys(s.failed)).toEqual([]);
     expect(p.probes?.length).toBeGreaterThan(0);
-    if (example.mode !== 'mechanism' && example.mode !== 'descent' && example.mode !== 'exchanger') expect(s.suppliedEnergy).toBeGreaterThan(0);
+    if (example.mode !== 'mechanism' && example.mode !== 'descent' && example.mode !== 'exchanger' && example.mode !== 'battery') expect(s.suppliedEnergy).toBeGreaterThan(0);
   });
 });
 

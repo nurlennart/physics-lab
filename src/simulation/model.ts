@@ -2,6 +2,7 @@ export type Kind =
   | "rigidBody" | "positionSensor" | "speedSensor" | "forceActuator"
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
+  | "battery" | "contactor" | "transformer" | "radiator"
   | "source"
   | "source3"
   | "sourceAC"
@@ -81,6 +82,7 @@ export type Measurement =
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
+  | "stateOfCharge" | "chemicalEnergy" | "coilVoltage" | "coilCurrent" | "secondaryVoltage" | "secondaryCurrent" | "fanPower"
   | "voltage"
   | "current"
   | "currentNC"
@@ -239,6 +241,10 @@ export const definitions: Record<Kind, Definition> = {
   filter: { label: "First-order filter", category: "Automation", description: "Low-pass y' = (x − y)/τ integrated exactly on the simulation clock", spec: "τ = 5 s", cost: 6, prefix: "FLT", ports: [input("in", "number"), output("number")], defaults: { timeConstant: 5 } },
   rateLimiter: { label: "Rate limiter", category: "Automation", description: "Limits the output slew rate |dy/dt| ≤ rate (ramps setpoints and commands)", spec: "10 units/s", cost: 6, prefix: "RL", ports: [input("in", "number"), output("number")], defaults: { rate: 10 } },
   selector: { label: "Signal selector", category: "Automation", description: "Minimum, maximum or Boolean-switched selection of two numeric signals (override and fallback logic)", spec: "min · max · switch", cost: 6, prefix: "SEL", ports: [input("in", "number"), input("in2", "number"), input("select", "boolean", true), output("number")], defaults: { mode: "max" } },
+  battery: { label: "Battery", category: "Electrical", description: "Rechargeable DC battery: finite charge, linear open-circuit voltage versus SOC, internal loss and charge-boundary protection", spec: "12 V · 20 Ah · 20 mΩ", cost: 65, prefix: "BAT", ports: [...electric, heat], defaults: { capacityAh: 20, initialSOC: 80, emptyVoltage: 11, fullVoltage: 13, internalResistance: 0.02, maxCurrent: 100, maxPower: 1500, enabled: true, heatCapacity: 5000, loss: 2, conductance: 20, maxTemperature: 60 } },
+  contactor: { label: "Powered contactor", category: "Electrical", description: "Normally-open power contact operated by a separately wired 24 V DC coil; coil power, delays and undervoltage dropout", spec: "24 V DC coil · 25 A contact", cost: 35, prefix: "KM", ports: [...electric, { id: "ca", domain: "electrical", label: "Coil A1 (+)" }, { id: "cb", domain: "electrical", label: "Coil A2 (−)" }, heat], defaults: { coilVoltage: 24, coilResistance: 144, pickupRatio: 0.8, dropoutRatio: 0.3, pickupTime: 0.02, dropoutTime: 0.02, resistance: 0.01, ratedVoltage: 690, ratedCurrent: 25, ratedPower: 20, heatCapacity: 150, loss: 1, conductance: 10, maxTemperature: 120 } },
+  transformer: { label: "Transformer", category: "Electrical", description: "Isolated AC transformer with primary-referred winding impedance, magnetizing inductance and core-loss resistance; no saturation or switching inrush", spec: "230 / 24 V · 250 VA", cost: 80, prefix: "TR", ports: [...electric, { id: "sa", domain: "electrical", label: "Secondary S1 (dot)" }, { id: "sb", domain: "electrical", label: "Secondary S2" }, heat], defaults: { turnsRatio: 230 / 24, windingResistance: 2, leakageInductance: 0.015, magnetizingInductance: 20, coreResistance: 20000, ratedVoltage: 230, ratedPower: 250, ratedCurrent: 1.1, heatCapacity: 1500, loss: 2, conductance: 20, maxTemperature: 120 } },
+  radiator: { label: "Fan-cooled radiator", category: "Hydraulic", description: "Zero-inventory water-to-ambient radiator with hydraulic loss, natural cooling and separately wired DC fan; fan heat goes to ambient", spec: "24 V / 30 W fan · 100 W/K", cost: 100, prefix: "RAD", ports: [...electric, ...fluid], defaults: { ratedVoltage: 24, fanRatedPower: 30, naturalUA: 5, forcedUA: 95, ambient: 20, diameter: 0.02, lossCoefficient: 8, laminarK: 1500, maxPressure: 1000000, elevation: 0 } },
   source: {
     label: "DC power supply",
     category: "Electrical",
@@ -1016,11 +1022,11 @@ export const terminalKey = (t: Terminal) => `${t.component}:${t.port}`;
 export const isElectrical = (c: Component) =>
   definitions[c.kind].ports.some((p) => p.domain === "electrical") &&
   !["ground", "junction"].includes(c.kind);
-export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3" || c.kind === "sourceAC";
+export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3" || c.kind === "sourceAC" || c.kind === "battery";
 /** Machines with a rotating shaft driven by the electrical network. */
 export const isMotor = (c: Component) => c.kind === "motor" || c.kind === "inductionMotor";
 export const isThermalMass = (c: Component) =>
-  c.kind === "tank" || c.kind === "thermalMass" || (isElectrical(c) && !isSource(c));
+  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || (isElectrical(c) && !isSource(c) && c.kind !== "radiator");
 /** Components whose catalog data describe one pole/conductor; a three-phase island has three. */
 export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter", "inductor", "capacitor"]);
 /** Contact conductance of a thermal port (W/K); a well-mixed tank's own side is ideal. */

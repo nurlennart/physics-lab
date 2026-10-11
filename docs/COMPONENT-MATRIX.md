@@ -1,9 +1,13 @@
 # Complete component inventory — Phase 3A + sandbox freedom
 
-All 55 component kinds are connected to a solver or to the existing automation graph. **E** = MNA electrical; **T** = lumped thermal; **H** = hydraulic/enthalpy; **M** = mechanical midpoint; **C** = simulation-time control; **S** = Planck spatial rigid bodies. Validation references: **legacy** = physics/automation/integrity tests and quantitative report; **hydraulic** = hydraulic tests and coupled reference runs; **browser** = construction, probes, saves, faults and playable challenges. These are coverage categories, not a claim that every combination has been exhaustively tested.
+All 62 component kinds are connected to a solver or to the existing automation graph. **E** = MNA electrical; **T** = lumped thermal; **H** = hydraulic/enthalpy; **M** = mechanical midpoint; **C** = simulation-time control; **S** = Planck spatial rigid bodies. Validation references: **legacy** = physics/automation/integrity tests and quantitative report; **hydraulic** = hydraulic tests and coupled reference runs; **browser** = construction, probes, saves, faults and playable challenges. These are coverage categories, not a claim that every combination has been exhaustively tested.
 
 | Component | Status / integration | Physical model / simplification | Validation | Missing functionality / priority |
 | --- | --- | --- | --- | --- |
+| Battery | Implemented E/T, finite chemical storage | Rechargeable linear OCV(SOC), internal resistance, midpoint charge/energy, directional full/empty protection and current/temperature trips | components-next, replay, examples | Chemistry-specific OCV, polarization, ageing: medium |
+| Electrically powered contactor | Implemented E/T, timed mechanical state | Separate DC coil and normally-open power path, coil/contact heat, pickup/dropout hysteresis and delay | components-next, examples, browser | AC coils, inductive flyback, bounce: medium |
+| Transformer | Implemented E/T, fundamental and harmonic MNA | Isolated coupled windings, load reflection, primary-referred copper/leakage and core/magnetizing branches, thermal loss | components-next, examples, browser | Saturation, switching inrush, vector groups: medium |
+| Fan-cooled radiator | Implemented E/H, signed ambient heat | Two-K water restriction, exponential zero-inventory heat transfer, actual-voltage-dependent fan UA and electrical demand | components-next, examples, browser | Fin/water/air storage and calibrated airflow maps: medium |
 | DC supply | Implemented E; 30 V lab CV/CC to 800 V / 250 A bus | Ideal (protective trip), internal resistance, CV/CC active-set regulation, constant current with compliance; output enable; power rating reported | legacy, sandbox source tests, scaling campaign | Supply thermal model, ripple: low |
 | Resistor | Implemented E/T | R₂₀ with linear α at simulated temperature, reproducible tolerance sample, I²R heat | legacy, sandbox | Nonlinear (NTC exponential) model: low |
 | Variable resistor | Configurable resistor; resistance is a live parameter | Live R change is conservation-safe | sandbox live-edit tests | Dedicated wiper/three-terminal potentiometer: low |
@@ -67,8 +71,10 @@ Spatial representations are available for motor, pump, tank, heater, cooler, sou
 | Requested foundation / extension | Actual status | Rationale / recommended priority |
 | --- | --- | --- |
 | Dedicated current-source component | No separate catalog entry | The DC supply already supports constant-current regulation with voltage compliance. |
-| Radiator | Pipe UA supports simple zero-volume heat rejection | No separate spatial radiator/fin/fan model. Medium |
+| Distributed radiator / finite air circuit | The fan-cooled radiator above uses zero fluid/body inventory and an ideal ambient boundary | Fin/body storage, explicit airflow and calibrated fan curves remain deferred. Medium |
 | Hydraulic pressure boundary / infinite reservoir | No catalog entry | Finite tanks provide supported boundaries; infinite supplies are not disguised as tanks. Low |
 | In-line flow meter | Branch probe/sensor implemented | Ideal measurement has no resistance; explicit calibrated meter loss deferred. Low |
 | Generic safety interlock | Existing Boolean gates, sensors and motor enable; independent thermal contact | Actual source/high-level logic works. Separate hydraulic latched hardware cutoff and common-cause fault studies remain medium priority |
 | Turbine, dedicated generator, semiconductors, steam, structural failure | Unsupported | AC phasors and induction machines are implemented above; these extensions require separate models. |
+
+Current additional-device equations, terminal conventions, energy boundaries and scope are documented in [DEVICES.md](DEVICES.md).

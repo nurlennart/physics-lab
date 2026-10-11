@@ -52,7 +52,7 @@ export default function Library() {
           const entries = Object.entries(definitions).filter(
             ([kind, d]) =>
               d.category === name &&
-              (!s.project.challenge || challengePolicies[s.project.challenge].allowed.includes(kind)) &&
+              (!s.project.challenge || challengePolicies[s.project.challenge].allowed.includes(kind) && !["battery", "contactor", "transformer", "radiator"].includes(kind)) &&
               matches(d),
           );
           if (!entries.length) return null;
@@ -106,7 +106,7 @@ export default function Library() {
             </section>
           );
         })}
-        {!Object.entries(definitions).some(([kind, d]) => matches(d) && (!s.project.challenge || challengePolicies[s.project.challenge].allowed.includes(kind))) && <p className="no-results">No matching components.</p>}
+        {!Object.entries(definitions).some(([kind, d]) => matches(d) && (!s.project.challenge || challengePolicies[s.project.challenge].allowed.includes(kind) && !["battery", "contactor", "transformer", "radiator"].includes(kind))) && <p className="no-results">No matching components.</p>}
       </div>
       <div className="assembly-tools">
         {s.selected.length > 0 && (

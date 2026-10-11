@@ -1,0 +1,102 @@
+{
+  "version": 3,
+  "id": "example-battery",
+  "name": "Finite battery discharge",
+  "components": [
+    {
+      "id": "battery-component-1",
+      "kind": "battery",
+      "name": "BAT-01",
+      "x": 70,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "capacityAh": 0.2,
+        "initialSOC": 80,
+        "emptyVoltage": 11,
+        "fullVoltage": 13,
+        "internalResistance": 0.02,
+        "maxCurrent": 100,
+        "maxPower": 1500,
+        "enabled": true,
+        "heatCapacity": 5000,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60
+      }
+    },
+    {
+      "id": "battery-component-2",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 420,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 6,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "battery-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "battery-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "battery-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "battery-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "battery-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "battery-component-1",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "battery-probe-1",
+      "component": "battery-component-1",
+      "measurement": "stateOfCharge",
+      "name": "State of charge",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "battery-probe-2",
+      "component": "battery-component-1",
+      "measurement": "chemicalEnergy",
+      "name": "Chemical energy",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "battery-probe-3",
+      "component": "battery-component-2",
+      "measurement": "power",
+      "name": "Load power",
+      "color": "#f59e0b",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

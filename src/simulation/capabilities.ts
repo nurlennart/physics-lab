@@ -14,7 +14,7 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.spatial ? ['rpm', 'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce'] as Measurement[] : []),
     ...(c.kind === 'forceActuator' ? ['appliedForce', 'appliedTorque', 'energy'] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic") ? ["pressure", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
-    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "pressureReducingValve", "heatExchanger"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
+    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "pressureReducingValve", "heatExchanger", "radiator"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic" && p.id === "inlet") || c.kind === "heatExchanger" ? ["flow", "inletPressure"] as Measurement[] : []),
     ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
     ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
@@ -27,6 +27,10 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(isElectrical(c)
       ? (["voltage", "current", "power", "energy"] as Measurement[])
       : []),
+    ...(c.kind === "battery" ? ["stateOfCharge", "chemicalEnergy"] as Measurement[] : []),
+    ...(c.kind === "contactor" ? ["coilVoltage", "coilCurrent"] as Measurement[] : []),
+    ...(c.kind === "transformer" ? ["secondaryVoltage", "secondaryCurrent"] as Measurement[] : []),
+    ...(c.kind === "radiator" ? ["fanPower", "heatDuty"] as Measurement[] : []),
     ...(c.kind === "relay" ? ["currentNC" as const] : []),
     ...(isThermalMass(c) ? ["bodyTemperature"] as Measurement[] : []),
     ...(isThermalMass(c) || ["sensor", "thermostat", "safety"].includes(c.kind)
@@ -85,11 +89,13 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   if (m === "current") return three ? "RMS line current" : ac ? "RMS current" : "current (AC: signed RMS line)";
   if (m === "angularVelocity") return "body angular speed";
   if (m === "rpm") return c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? "shaft speed" : "body rotational speed";
+  if (m === "power" && c.kind === "transformer") return "transformer loss power";
   if (m === "power") return three ? "real power (3~ total)" : ac ? "real power" : "real power (3~: total)";
   if (m === "reactivePower") return three ? "reactive power (3~ total)" : "reactive power";
   return plainLabels[m] ?? m;
 }
 const plainLabels: Partial<Record<Measurement, string>> = {
+  stateOfCharge: "state of charge", chemicalEnergy: "stored chemical energy", coilVoltage: "DC coil voltage", coilCurrent: "DC coil current", secondaryVoltage: "secondary RMS voltage", secondaryCurrent: "secondary RMS current", fanPower: "fan electrical power",
   positionX: "position x", positionY: "position y", displacement: "displacement", linearSpeed: "speed", velocityX: "velocity x", velocityY: "velocity y",
   acceleration: "acceleration", appliedForce: "applied force", appliedTorque: "applied torque", kineticEnergy: "kinetic energy", potentialEnergy: "potential energy",
   mechanicalResidual: "mechanical energy residual", contactImpulse: "contact impulse", jointForce: "joint force",
@@ -119,7 +125,7 @@ export function inspectorMeasurements(c: Component, ac: boolean, hydraulicConnec
  * state quantities (temperatures, levels, positions, residuals) stay visible.
  */
 export const operatingMeasurements = new Set<Measurement>([
-  "voltage", "current", "currentNC", "power", "reactivePower", "powerFactor", "energy", "nodeVoltage",
+  "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower", "voltage", "current", "currentNC", "power", "reactivePower", "powerFactor", "energy", "nodeVoltage",
   "flow", "velocity", "reynolds", "frictionFactor", "differentialPressure", "inletPressure", "heatDuty", "npsh",
   "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "hydraulicPower", "shaftPower", "efficiency", "rpm",
   "overflow", "transferredVolume", "signal",

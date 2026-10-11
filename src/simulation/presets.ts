@@ -35,6 +35,11 @@ const pipe = (dn: number, length: number, family: Family) =>
   preset("pipe", family, `DN${dn} · ${length} m steel`, { diameter: dn / 1000, length, roughness: 0.000045, material: "steel", maxPressure: dn >= 100 ? 1600000 : 1000000 });
 
 export const builtinPresets: ComponentPreset[] = [
+  preset("battery", "Laboratory", "12 V rechargeable · 20 Ah", {}),
+  preset("battery", "Industrial", "48 V rechargeable · 100 Ah", { capacityAh: 100, emptyVoltage: 44, fullVoltage: 52, internalResistance: 0.03, maxCurrent: 200, maxPower: 10000, heatCapacity: 30000, loss: 8 }),
+  preset("contactor", "General-purpose", "24 V DC coil · 25 A contact", {}),
+  preset("transformer", "Laboratory", "230 / 24 V · 250 VA", {}),
+  preset("radiator", "Laboratory", "24 V fan · 100 W/K radiator", {}),
   heater("Laboratory", "Lab element 100 W / 24 V", 24, 100),
   heater("Laboratory", "Lab element 500 W / 230 V", 230, 500),
   heater("General-purpose", "Immersion 1 kW / 230 V", 230, 1000),
@@ -45,7 +50,7 @@ export const builtinPresets: ComponentPreset[] = [
   heater("High-capacity", "Heating bank 100 kW / 690 V", 690, 100000, equivalent),
   preset("source", "Laboratory", "Bench CV/CC 30 V / 3 A", { mode: "cvcc", voltage: 12, ratedVoltage: 30, maxCurrent: 3, maxPower: 90, internalResistance: 0 }),
   preset("source", "Laboratory", "Constant-current 2 A / 60 V", { mode: "cc", voltage: 60, ratedVoltage: 60, current: 2, maxCurrent: 2, maxPower: 120, internalResistance: 0 }),
-  preset("source", "General-purpose", "Battery 12 V · 20 mΩ", { mode: "internal", voltage: 12.6, ratedVoltage: 14.4, maxCurrent: 600, maxPower: 7500, internalResistance: 0.02 }),
+  preset("source", "General-purpose", "Battery 12 V · 20 mΩ", { mode: "internal", voltage: 12.6, ratedVoltage: 14.4, maxCurrent: 600, maxPower: 7500, internalResistance: 0.02 }, "Fixed-voltage equivalent with unlimited stored energy. Use the Battery component for finite charge and discharge."),
   preset("source", "Industrial", "DC supply 400 V / 100 A CV/CC", { mode: "cvcc", voltage: 400, ratedVoltage: 450, maxCurrent: 100, maxPower: 45000, internalResistance: 0.005 }),
   preset("source", "High-capacity", "DC bus 690 V / 400 A CV/CC", { mode: "cvcc", voltage: 690, ratedVoltage: 750, maxCurrent: 400, maxPower: 300000, internalResistance: 0.002 }),
   preset("resistor", "Laboratory", "Precision 1 kΩ · 0.25 W", { resistance: 1000, ratedPower: 0.25, heatCapacity: 0.2, loss: 0.004, maxTemperature: 155, tolerance: 1, tempCoefficient: 0.0001 }),

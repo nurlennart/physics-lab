@@ -1,5 +1,7 @@
 # Validation record
 
+Current battery, powered-contactor, transformer, radiator and solver-correction evidence is in [DEVICES-RESULTS.md](DEVICES-RESULTS.md), including the complete 344-test / 76-browser-workflow contribution gate.
+
 Current Phase 3A evidence is in [the executed results](PHASE3A-RESULTS.md), [raw quantitative results](../validation/latest.md), and `validation/phase3a-*`. Earlier phase results below are historical evidence.
 
 Validated on 2026-10-09 with Node 22.23.3.

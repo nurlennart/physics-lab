@@ -1,3 +1,4 @@
+import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
 import { updateScenario, recordFeedbackTransitions } from "./challenges";
@@ -148,6 +149,7 @@ export class Simulation {
   private acceptedProject!: Project;
   private lockedChallenge?: ChallengeId;
   hydraulicChallenge = { inBand: 0, evaluated: 0, squaredError: 0, maxOvershoot: 0, faultInjected: false, switches: 0, previousOn: false, responseTime: 0, settledAt: 0, lowDemandFlow: 0, highDemandFlow: 0, lowDemandTime: 0, highDemandTime: 0 };
+  devices = new Devices();
   multiphysics = new Multiphysics();
   spatial = new SpatialDynamics();
   mechanicalChallenge = { hold: 0, evaluated: 0, inBand: 0, squaredError: 0, peakError: 0, loadChanges: 0, lastLoadPhase: -1 };
@@ -256,6 +258,7 @@ export class Simulation {
     this.multiphysics = new Multiphysics();
     this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project);
     this.multiphysics.initialize(this.project);
+    this.devices = new Devices(); this.devices.initialize(this.project);
     this.mechanicalChallenge = { hold: 0, evaluated: 0, inBand: 0, squaredError: 0, peakError: 0, loadChanges: 0, lastLoadPhase: -1 };
     this.hydraulicChallenge = { inBand: 0, evaluated: 0, squaredError: 0, maxOvershoot: 0, faultInjected: false, switches: 0, previousOn: false, responseTime: 0, settledAt: 0, lowDemandFlow: 0, highDemandFlow: 0, lowDemandTime: 0, highDemandTime: 0 };
     this.runaway = {
@@ -312,6 +315,7 @@ export class Simulation {
       this.automation = new Automation();
       this.automation.pulses = pulses;
       this.breakers = {};
+      this.devices = new Devices(); this.devices.initialize(this.project);
     }
     for (const c of project.components)
       if (isThermalMass(c) && (this.time === 0 || this.temperatures[c.id] === undefined))
@@ -337,6 +341,7 @@ export class Simulation {
         this.electricalKey = "";
       } else if (key !== this.electricalKey || this.temperatureDependent()) {
         this.electrical = solveElectrical(this.project, this.failed, {
+          ...this.devices.runtime(dt),
           contacts: this.automation.contacts,
           faults: this.faults,
           disconnected: this.disconnected,
@@ -373,6 +378,7 @@ export class Simulation {
   }
   /** Null when adaptive stepping is valid for this experiment; otherwise the reason. */
   adaptiveUnavailable(): string | null {
+    if (this.project.components.some(c => c.kind === "battery" || c.kind === "contactor")) return "Battery charge and powered contactors require fixed simulation steps.";
     if (this.project.challenge) return "Scored challenges always use the fixed 1/60 s step.";
     if (this.spatial.count > 0) return "Rigid-body dynamics use the fixed 1/60 s step with contact substeps.";
     return null;
@@ -432,7 +438,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -587,6 +593,8 @@ export class Simulation {
       if (demand) this.multiphysics.positions[demand.id] = Math.floor(this.time / 60) % 2 ? 80 : 40;
     }
     if (!this.solve(true, dt)) return false;
+    const chemicalBefore = this.devices.chemicalChange;
+    const devicesBefore = this.devices.active ? structuredClone({ batteries: this.devices.batteries, contactors: this.devices.contactors, chemicalChange: chemicalBefore }) : undefined;
     recordFeedbackTransitions(this, oldContacts, oldHeaterPower);
 
     let coupled: ReturnType<Multiphysics["advance"]> | undefined;
@@ -609,7 +617,7 @@ export class Simulation {
         this.ambientEnergy += coupled.ambient;
         this.storedEnergy += coupled.thermalGain;
         this.waterStored += coupled.thermalGain;
-      } catch (e) { Object.assign(this.multiphysics, checkpoint); if (spatialBefore) this.spatial.restore(spatialBefore); Object.assign(this.spatial, spatialLedger); this.temperatures = temperaturesBefore; this.error = (e as Error).message; this.log(this.error, "error"); return false; }
+      } catch (e) { Object.assign(this.devices, devicesBefore); Object.assign(this.multiphysics, checkpoint); if (spatialBefore) this.spatial.restore(spatialBefore); Object.assign(this.spatial, spatialLedger); this.temperatures = temperaturesBefore; this.error = (e as Error).message; this.log(this.error, "error"); return false; }
     }
     const p = this.project,
       thermal = p.components.filter(c => isThermalMass(c) && (c.kind !== "tank" || (this.multiphysics.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, "vesselHeatCapacity") > 0)),
@@ -664,7 +672,7 @@ export class Simulation {
     thermal.forEach((c, i) => {
       a[i][i] = caps[i] / dt;
       b[i] =
-        (caps[i] / dt) * old[i] + (isMotor(c) ? coupled?.heatPower[c.id] ?? 0 : this.electrical.readings[c.id]?.power ?? 0);
+        (caps[i] / dt) * old[i] + (isMotor(c) ? coupled?.heatPower[c.id] ?? 0 : this.electrical.readings[c.id]?.heatPower ?? this.electrical.readings[c.id]?.power ?? 0);
       for (const l of losses[i]) {
         a[i][i] += l.ua;
         b[i] += l.ua * l.ambient;
@@ -690,6 +698,8 @@ export class Simulation {
       this.error = `Thermal solver: ${(e as Error).message}`;
       return false;
     }
+    this.storedEnergy += this.devices.chemicalChange - chemicalBefore;
+    this.ambientEnergy += p.components.filter(c => c.kind === "radiator").reduce((sum, c) => sum + (this.electrical.readings[c.id]?.fanPower ?? 0) * dt, 0);
     this.thermalRate = n ? Math.max(0, ...thermal.map((_, i) => Math.abs(temperatures[i] - old[i]) / dt)) : 0;
     thermal.forEach((c, i) => {
       this.temperatures[c.id] = temperatures[i];
@@ -707,7 +717,7 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "pressureReducingValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
       }
@@ -775,10 +785,11 @@ export class Simulation {
         this.error = `${c.name}: water left the supported liquid range (1–95°C). Simulation paused.`;
         this.violation(this.error, "error");
       }
+      if (c.kind === "battery" && temp > prop(c, "maxTemperature") && !this.failed[c.id]) { this.fail(c.id, `${c.name}: battery overtemperature; protection disconnected the pack.`); changed = true; }
       if (r && !isSource(c)) {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
-        const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
+        const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
           rawOverCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
           overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %
         // Motors draw several times rated current while starting direct-on-line; that is normal operation.

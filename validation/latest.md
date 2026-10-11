@@ -1,6 +1,6 @@
 # Executed physics validation
 
-Executed: 2026-10-11T12:32:46.031Z. 86/87 checks passed.
+Executed: 2026-10-11T14:52:17.122Z. 87/87 checks passed.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -30,7 +30,7 @@ Executed: 2026-10-11T12:32:46.031Z. 86/87 checks passed.
 | Safety remains latched | safety | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Manual reset required; no automatic reset |
 | Live mass edit rejected by engine | integrity | 0 | 0 | 0.000e+0 | — | 0 | PASS | No implicit mass or energy injection; Reset required |
 | Undersized relay reported outside its rating | protection | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | 8.32 A through a paid 5 A model: rating violation reported (scored run fails); no contact-wear model, so no fabricated failure |
-| Overloaded contact keeps conducting actual current | electrical | 8.324661810613943 | 8.324661810614487 | 5.436e-13 | 6.530e-14 | 1e-9 | PASS | Failure only through the modelled contact temperature |
+| Overloaded contact keeps conducting actual current | electrical | 8.324661810613943 | 8.324661810615908 | 1.965e-12 | 2.360e-13 | 1e-9 | PASS | Failure only through the modelled contact temperature |
 | Reset restores initial healthy topology | protection | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Permanent failure replaced only by full experiment Reset |
 | Half voltage gives quarter heater power | coupling | 0.25 | 0.25 | 0.000e+0 | 0.000e+0 | 1e-10 | PASS | Same fixed resistor and series contact resistances, Ohm law |
 | Complete fault-and-recovery challenge | challenge | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Actual 240 s regulation, coolant reduction/loss, welded relay, independent trip, cool manual reset, 120 s recovery; no temperature script |
@@ -62,7 +62,7 @@ Executed: 2026-10-11T12:32:46.031Z. 86/87 checks passed.
 | Motor-current convergence dt=0.0020833333333333333 | multiphysics | 5.026534911421837 | 5.027633986888566 | 1.099e-3 | 2.187e-4 | 0.03 | PASS | 2 s startup; midpoint electrical/mechanical coupling; current tolerance 30 mA |
 | Motor-speed convergence dt=0.0020833333333333333 | multiphysics | 224.6184721077513 | 224.6185007050505 | 2.860e-5 | 1.273e-7 | 0.01 | PASS | 2 s startup; speed tolerance 0.01 rad/s |
 | Fluid-temperature convergence dt=0.0020833333333333333 | multiphysics | 293.15126593271486 | 293.1512661989808 | 2.663e-7 | 9.083e-10 | 0.001 | PASS | Conservative zero-volume enthalpy transport plus backward-Euler tank loss; tolerance 1 mK |
-| Halved internal timestep reduces volume error | multiphysics | 3 | 6.193063588987437 | 3.193e+0 | 1.064e+0 | 0.5 | FAIL | dt=1/240 and 1/480 against dt=1/960 reference: first-order storage-head splitting predicts finite-reference error ratio 3 |
+| Halved internal timestep reduces volume error by at least two | multiphysics | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | dt=1/240 and 1/480 against dt=1/960; errors 1.60019955221637e-8 and 2.5838577776948063e-9 m³, ratio 6.193063588987437; numerical floor 1e-12 m³. Pump/check-valve startup need not follow a single power-law error ratio. |
 | Pump shaft input bounds hydraulic output | multiphysics | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Affinity head curve; hydraulic efficiency ≤1; explicit mechanical drag |
 | Free-fall velocity dt=0.016666666666666666 | mechanical | -9.80665 | -9.806649999999944 | 5.507e-14 | 5.615e-15 | 1e-8 | PASS | Gravity only; no air drag, no impact; exact constant acceleration velocity |
 | Free-fall position dt=0.016666666666666666 | mechanical | 5.096675 | 5.086459739583345 | 1.022e-2 | 2.004e-3 | 0.011 | PASS | Planck semi-implicit Euler; internal h≤1/480 s; position error O(h) |

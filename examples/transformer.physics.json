@@ -1,0 +1,148 @@
+{
+  "version": 3,
+  "id": "example-transformer",
+  "name": "Isolated AC conversion",
+  "components": [
+    {
+      "id": "transformer-component-1",
+      "kind": "sourceAC",
+      "name": "AC-01",
+      "x": 50,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "transformer-component-2",
+      "kind": "transformer",
+      "name": "TR-01",
+      "x": 350,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "turnsRatio": 9.583333333333334,
+        "windingResistance": 2,
+        "leakageInductance": 0.015,
+        "magnetizingInductance": 20,
+        "coreResistance": 20000,
+        "ratedVoltage": 230,
+        "ratedPower": 250,
+        "ratedCurrent": 1.1,
+        "heatCapacity": 1500,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 120
+      }
+    },
+    {
+      "id": "transformer-component-3",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 650,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 24,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "transformer-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "transformer-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "transformer-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "transformer-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "transformer-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "transformer-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "transformer-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "transformer-component-2",
+        "port": "sa"
+      },
+      "to": {
+        "component": "transformer-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "transformer-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "transformer-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "transformer-component-2",
+        "port": "sb"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "transformer-probe-1",
+      "component": "transformer-component-2",
+      "measurement": "secondaryVoltage",
+      "name": "Secondary RMS voltage",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "transformer-probe-2",
+      "component": "transformer-component-3",
+      "measurement": "power",
+      "name": "Load power",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "transformer-probe-3",
+      "component": "transformer-component-2",
+      "measurement": "bodyTemperature",
+      "name": "Transformer temperature",
+      "color": "#ef4444",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

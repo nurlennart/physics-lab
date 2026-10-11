@@ -27,6 +27,9 @@ export function portLocal(c: Component, port: string): Point {
     );
     return { x: -12, y: 48 + inputs.findIndex((p) => p.id === port) * 36 };
   }
+  if (c.kind === "contactor" && (port === "ca" || port === "cb")) return { x: port === "ca" ? w * 0.3 : w * 0.7, y: h + 12 };
+  if (c.kind === "radiator" && p?.domain === "electrical") return { x: port === "a" ? w * 0.3 : w * 0.7, y: h + 12 };
+  if (c.kind === "transformer" && p?.domain === "electrical") return { x: port === "a" || port === "b" ? -12 : w + 12, y: port === "a" || port === "sa" ? h * 0.3 : h * 0.7 };
   // Drive: line input on the left (phase, neutral), motor output on the right.
   if (c.kind === "vfd") return { x: port === "a" || port === "b" ? -12 : w + 12, y: port === "a" || port === "oa" ? h * 0.3 : h * 0.7 };
   return {

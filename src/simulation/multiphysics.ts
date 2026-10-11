@@ -1,3 +1,4 @@
+import { radiatorUA } from './devices';
 import { prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
@@ -155,7 +156,7 @@ export class Multiphysics {
   }
   /** Contactors, protection, starter modes and drive run states: a change is a switching event. */
   private discreteKey(s: Simulation, controls: ReturnType<Multiphysics['controls']>) {
-    return JSON.stringify([Object.values(controls).map(c => c.enabled), Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running), [...s.openDevices()], s.failed, s.automation.contacts]);
+    return JSON.stringify([Object.values(controls).map(c => c.enabled), Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running), [...s.openDevices()], s.failed, s.automation.contacts, s.devices.contactors]);
   }
   /**
    * `loads`: signed external shaft load per motor (N·m, positive opposes positive rotation). The
@@ -165,6 +166,7 @@ export class Multiphysics {
   solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks, loads?: number[], h = 0) {
     const motors = s.project.components.filter(isMotor);
     const electrical = solveElectrical(s.project, s.failed, {
+      ...s.devices.runtime(h),
       contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(),
       motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
       inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? [0, 0], h }]] : [])),
@@ -299,13 +301,13 @@ export class Multiphysics {
     if (!Object.keys(r.hydraulic.nodeTemperatures).length && Object.keys(r.hydraulic.potentials).length) {
       // First solve: no transported temperatures yet. A zero-length transport mixes the current
       // inventories into node temperatures, then the network is re-solved with their viscosities.
-      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells);
+      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
       r = this.solve(s, speeds(), controls, this.tanks, loads);
       this.hydraulic = r.hydraulic;
     }
     // Re-solving hydraulics rebuilds readings. Resolve current fluid temperatures without
     // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
-    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells);
+    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
     this.updateNpsh(s, this.hydraulic);
     this.lastElectrical = r.electrical;
     ms.forEach((c, i) => {
@@ -326,7 +328,7 @@ export class Multiphysics {
     const adaptive = !s.spatial.count && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
     // Step readings: currents as RMS over the substeps, powers as averages (not the first substep's sample).
-    const sums: Record<string, { current: number; contact: number; nc: number; reactive: number; apparent: number; sign: number; drive: { input: number; output: number; losses: number; braking: number; current: number } }> = {};
+    const sums: Record<string, { current: number; contact: number; nc: number; reactive: number; apparent: number; sign: number; secondary?: { current: number; voltage: number }; coil?: { current: number; voltage: number; power: number; currentSign: number; voltageSign: number }; drive: { input: number; output: number; losses: number; braking: number; current: number } }> = {};
     // Midpoint shaft/electrical/hydraulic solve; 1/240 s bounds head/storage splitting error.
     while (remaining > 1e-12) {
       if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
@@ -343,7 +345,7 @@ export class Multiphysics {
       let acceptedTrial: ReturnType<typeof s.spatial.trial> | undefined;
       const torqueMap = (r: ReturnType<Multiphysics['solve']>, x: number[]) => Object.fromEntries(motors.flatMap((c, i) => linked[i] ? [[linked[i]!, r.state[i].torque - r.state[i].load - prop(c, 'friction') * x[i]]] : []));
       let midpoint = [...old];
-      for (let event = 0; event < 12; event++) {
+      for (let event = 0; event < 32; event++) {
         // Predictor: start the midpoint speed from the last acceleration (exact for steady acceleration).
         midpoint = old.map((w, i) => w + 0.5 * h * (this.motors[motors[i].id]?.acceleration ?? 0));
         // Adaptive macro steps solve the network at predicted mid-step tank levels (second order in
@@ -381,7 +383,7 @@ export class Multiphysics {
         }
         if (!converged) throw Error('Electromechanical midpoint coupling failed to converge.');
         accepted = accepted ?? this.solve(s, midpoint, controls, levels, loads, h);
-        const safe = boundaryTime(s.project, this.tanks, accepted.hydraulic, h);
+        const safe = Math.min(boundaryTime(s.project, this.tanks, accepted.hydraulic, h), s.devices.boundaryTime(s.project, accepted.electrical, h));
         if (safe < h * (1 - 1e-9)) { h = Math.max(1e-10, safe); accepted = undefined; acceptedTrial = undefined; continue; }
         // A loaded rotor that would pass through zero speed stops within this step: split the step at
         // the stopping instant (linear in ω) so the load never drives it backwards.
@@ -440,7 +442,7 @@ export class Multiphysics {
         if (Math.abs(reading.flow) < 1e-14 && reading.shaftPower > 0) { this.dryLoss += reading.shaftPower * h; ambient += reading.shaftPower * h; }
       }
       this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
-      const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells);
+      const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
       this.updateNpsh(s, r.hydraulic);
       ambient += transported.ambient;
       thermalGain += transported.heat - transported.ambient;
@@ -474,7 +476,7 @@ export class Multiphysics {
         const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
         if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
       }
-      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0 }])) };
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}) }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
       for (const [id, v] of Object.entries(r.electrical.readings)) {
@@ -482,9 +484,23 @@ export class Multiphysics {
         // A drive's braking resistor is external: its heat goes to ambient, not into the drive's heat sink.
         const braking = v.drive?.braking ?? 0;
         total.power += (v.power - braking) * h / dt;
+        if (v.inputPower !== undefined) total.inputPower = (total.inputPower ?? 0) + v.inputPower * h / dt;
+        if (v.chemicalPower !== undefined) total.chemicalPower = (total.chemicalPower ?? 0) + v.chemicalPower * h / dt;
+        if (v.heatPower !== undefined) total.heatPower = (total.heatPower ?? 0) + v.heatPower * h / dt;
+        if (v.fanPower !== undefined) total.fanPower = (total.fanPower ?? 0) + v.fanPower * h / dt;
         ambient += braking * h;
         const sum = (sums[id] ??= { current: 0, contact: 0, nc: 0, reactive: 0, apparent: 0, sign: 1, drive: { input: 0, output: 0, losses: 0, braking: 0, current: 0 } });
         sum.current += v.current ** 2 * h; sum.contact += (v.contactCurrent ?? v.current) ** 2 * h; sum.nc += (v.currentNC ?? 0) ** 2 * h;
+        if (v.secondaryCurrent !== undefined) {
+          const secondary = sum.secondary ??= { current: 0, voltage: 0 };
+          secondary.current += v.secondaryCurrent ** 2 * h; secondary.voltage += (v.secondaryVoltage ?? 0) ** 2 * h;
+        }
+        if (v.coilCurrent !== undefined) {
+          const coil = sum.coil ??= { current: 0, voltage: 0, power: 0, currentSign: 1, voltageSign: 1 };
+          coil.current += v.coilCurrent ** 2 * h; coil.voltage += (v.coilVoltage ?? 0) ** 2 * h; coil.power += (v.coilPower ?? 0) * h;
+          if (v.coilCurrent) coil.currentSign = Math.sign(v.coilCurrent);
+          if (v.coilVoltage) coil.voltageSign = Math.sign(v.coilVoltage);
+        }
         sum.reactive += (v.reactivePower ?? 0) * h; sum.apparent += (v.phases ?? 1) * Math.abs(v.voltage * v.current) * h;
         if (v.current !== 0) sum.sign = Math.sign(v.current);
         if (v.drive) { sum.drive.input += v.drive.inputPower * h; sum.drive.output += v.drive.outputPower * h; sum.drive.losses += v.drive.losses * h; sum.drive.braking += braking * h; sum.drive.current += v.drive.outputCurrent ** 2 * h; }
@@ -495,6 +511,7 @@ export class Multiphysics {
       this.acceptedKey = this.discreteKey(s, controls);
       // Drive and starter states advance last: the angle window above used the substep's start angle.
       this.advanceConverters(s, h, r.electrical, commands);
+      s.devices.advance(s.project, r.electrical, h);
       this.lastElectrical = r.electrical;
       remaining -= h;
     }
@@ -507,10 +524,12 @@ export class Multiphysics {
         total.reactivePower = sum.reactive / dt;
         // Power factor of the step: average real power over average apparent power (includes distortion).
         // (A drive's own reading: its input power, not its net absorbed losses.)
-        const real = total.drive ? sum.drive.input / dt : total.power;
+        const real = total.drive ? sum.drive.input / dt : total.inputPower ?? total.power;
         total.powerFactor = sum.apparent > 1e-12 ? Math.min(1, Math.abs(real) / (sum.apparent / dt)) : null;
       }
       if (total.drive) total.drive = { ...total.drive, inputPower: sum.drive.input / dt, outputPower: sum.drive.output / dt, losses: sum.drive.losses / dt, braking: sum.drive.braking / dt, outputCurrent: Math.sqrt(sum.drive.current / dt) };
+      if (sum.secondary) { total.secondaryCurrent = Math.sqrt(sum.secondary.current / dt); total.secondaryVoltage = Math.sqrt(sum.secondary.voltage / dt); }
+      if (sum.coil) { total.coilCurrent = sum.coil.currentSign * Math.sqrt(sum.coil.current / dt); total.coilVoltage = sum.coil.voltageSign * Math.sqrt(sum.coil.voltage / dt); total.coilPower = sum.coil.power / dt; }
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));

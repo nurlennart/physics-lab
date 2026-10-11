@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-11T12:33:16.337Z. 124/124 checks passed in 29.96 s wall time.
+Executed: 2026-10-11T14:52:52.276Z. 124/124 checks passed in 34.85 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -57,39 +57,39 @@ Executed: 2026-10-11T12:33:16.337Z. 124/124 checks passed in 29.96 s wall time.
 | Scale 10 L × 30 kW: ΔT vs two-node analytic | thermal | 26.103131 | 26.103131 | 8.988e-13 | 3.443e-14 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 10 L × 100 kW: ΔT vs energy | thermal | 19.905861 | 19.905861 | 2.167e-13 | 1.089e-14 | 1.0e-7% | PASS | 0.00 h adaptive; no losses |
 | Scale 10 L × 100 kW: ΔT vs two-node analytic | thermal | 19.905853 | 19.905861 | 8.701e-6 | 4.371e-7 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
-| Scale 100 L × 0.1 kW: ΔT vs energy | thermal | 5.1761754 | 5.1761754 | 1.066e-14 | 2.059e-15 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
-| Scale 100 L × 0.1 kW: ΔT vs two-node analytic | thermal | 5.1761754 | 5.1761754 | 1.066e-14 | 2.059e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
+| Scale 100 L × 0.1 kW: ΔT vs energy | thermal | 5.1761754 | 5.1761754 | 2.309e-14 | 4.461e-15 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
+| Scale 100 L × 0.1 kW: ΔT vs two-node analytic | thermal | 5.1761754 | 5.1761754 | 2.487e-14 | 4.805e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 100 L × 3 kW: ΔT vs energy | thermal | 29.955723 | 29.955723 | 7.461e-14 | 2.491e-15 | 1.0e-7% | PASS | 1.16 h adaptive; no losses |
 | Scale 100 L × 3 kW: ΔT vs two-node analytic | thermal | 29.955723 | 29.955723 | 8.527e-14 | 2.846e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 100 L × 30 kW: ΔT vs energy | thermal | 29.562616 | 29.562616 | 5.684e-14 | 1.923e-15 | 1.0e-7% | PASS | 0.12 h adaptive; no losses |
 | Scale 100 L × 30 kW: ΔT vs two-node analytic | thermal | 29.562616 | 29.562616 | 8.527e-14 | 2.884e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 100 L × 100 kW: ΔT vs energy | thermal | 28.586735 | 28.586735 | 6.040e-14 | 2.113e-15 | 1.0e-7% | PASS | 0.03 h adaptive; no losses |
 | Scale 100 L × 100 kW: ΔT vs two-node analytic | thermal | 28.586735 | 28.586735 | 2.487e-14 | 8.699e-16 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
-| Scale 2000 L × 0.1 kW: ΔT vs energy | thermal | 0.25881761 | 0.25881761 | 1.335e-12 | 5.157e-12 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
-| Scale 2000 L × 0.1 kW: ΔT vs two-node analytic | thermal | 0.25881761 | 0.25881761 | 1.335e-12 | 5.157e-12 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
-| Scale 2000 L × 3 kW: ΔT vs energy | thermal | 7.7641235 | 7.7641235 | 1.963e-13 | 2.528e-14 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
-| Scale 2000 L × 3 kW: ΔT vs two-node analytic | thermal | 7.7641235 | 7.7641235 | 1.963e-13 | 2.528e-14 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
+| Scale 2000 L × 0.1 kW: ΔT vs energy | thermal | 0.25881761 | 0.25881761 | 1.491e-12 | 5.761e-12 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
+| Scale 2000 L × 0.1 kW: ΔT vs two-node analytic | thermal | 0.25881761 | 0.25881761 | 1.491e-12 | 5.761e-12 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
+| Scale 2000 L × 3 kW: ΔT vs energy | thermal | 7.7641235 | 7.7641235 | 2.718e-13 | 3.500e-14 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
+| Scale 2000 L × 3 kW: ΔT vs two-node analytic | thermal | 7.7641235 | 7.7641235 | 2.709e-13 | 3.489e-14 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 2000 L × 30 kW: ΔT vs energy | thermal | 29.977846 | 29.977846 | 1.350e-13 | 4.503e-15 | 1.0e-7% | PASS | 2.32 h adaptive; no losses |
 | Scale 2000 L × 30 kW: ΔT vs two-node analytic | thermal | 29.977846 | 29.977846 | 1.528e-13 | 5.096e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 2000 L × 100 kW: ΔT vs energy | thermal | 29.926272 | 29.926272 | 2.380e-13 | 7.954e-15 | 1.0e-7% | PASS | 0.70 h adaptive; no losses |
 | Scale 2000 L × 100 kW: ΔT vs two-node analytic | thermal | 29.926272 | 29.926272 | 2.629e-13 | 8.785e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
-| Scale 10000 L × 0.1 kW: ΔT vs energy | thermal | 0.051763596 | 0.051763596 | 2.418e-13 | 4.671e-12 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
-| Scale 10000 L × 0.1 kW: ΔT vs two-node analytic | thermal | 0.051763596 | 0.051763596 | 2.418e-13 | 4.671e-12 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
-| Scale 10000 L × 3 kW: ΔT vs energy | thermal | 1.5528917 | 1.5528917 | 6.504e-13 | 4.188e-13 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
+| Scale 10000 L × 0.1 kW: ΔT vs energy | thermal | 0.051763596 | 0.051763596 | 2.844e-13 | 5.495e-12 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
+| Scale 10000 L × 0.1 kW: ΔT vs two-node analytic | thermal | 0.051763596 | 0.051763596 | 2.844e-13 | 5.495e-12 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
+| Scale 10000 L × 3 kW: ΔT vs energy | thermal | 1.5528917 | 1.5528917 | 6.506e-13 | 4.190e-13 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
 | Scale 10000 L × 3 kW: ΔT vs two-node analytic | thermal | 1.5528917 | 1.5528917 | 6.504e-13 | 4.188e-13 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 10000 L × 30 kW: ΔT vs energy | thermal | 15.52741 | 15.52741 | 1.085e-12 | 6.990e-14 | 1.0e-7% | PASS | 6.00 h adaptive; no losses |
 | Scale 10000 L × 30 kW: ΔT vs two-node analytic | thermal | 15.52741 | 15.52741 | 1.087e-12 | 7.001e-14 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
 | Scale 10000 L × 100 kW: ΔT vs energy | thermal | 29.985227 | 29.985227 | 2.025e-13 | 6.753e-15 | 1.0e-7% | PASS | 3.48 h adaptive; no losses |
 | Scale 10000 L × 100 kW: ΔT vs two-node analytic | thermal | 29.985227 | 29.985227 | 2.842e-13 | 9.479e-15 | 2.0% | PASS | Element thermal mass Cₑ = 0.15 J/K per W and UA = 0.09 W/K per W; backward-Euler adaptive integration |
-| B: 30 kW bank electrical power at start | electrical | 29715.423 | 29715.423 | 2.110e-10 | 7.101e-15 | 1.0e-7% | PASS | 400 V bus with 10 mΩ internal R, 0.5 mΩ fuse, 0.2 mΩ contactor, 35 mm² × 30 m Cu feeder at 20 °C |
+| B: 30 kW bank electrical power at start | electrical | 29715.423 | 29715.423 | 2.146e-10 | 7.223e-15 | 1.0e-7% | PASS | 400 V bus with 10 mΩ internal R, 0.5 mΩ fuse, 0.2 mΩ contactor, 35 mm² × 30 m Cu feeder at 20 °C |
 | B: 30 kW nominal vs actual power | electrical | 30000 | 29715.423 | 2.846e+2 | 9.486e-3 | 1.5% | PASS | Actual power is below nominal because of real series drops — not forced to the rating |
 | B: time to 80 °C (2,000 L, 30 kW, insulated) | thermal | 17232.652 | 17305.736 | 7.308e+1 | 4.241e-3 | 1.0% | PASS | C = water + 150 kJ/K steel; UA from 100 mm mineral wool; element stored heat neglected in expectation |
-| B: energy residual over heat-up | thermal | 0 | -0.000040303916 | 4.030e-5 | — | ±515.642468187114 | PASS | J |
+| B: energy residual over heat-up | thermal | 0 | -0.000042248517 | 4.225e-5 | — | ±515.6424681871134 | PASS | J |
 | B: no protection trip or failure | electrical | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | 75 A in 125 A fuse, 250 A contactor, 124 A feeder (value 0) |
-| C: three stages combined heater power | electrical | 35837.472 | 35837.472 | 3.056e-10 | 8.527e-15 | 1.0e-7% | PASS | 3 × 13.33 Ω elements + 0.2 mΩ contactors behind the bus' 10 mΩ internal resistance |
+| C: three stages combined heater power | electrical | 35837.472 | 35837.472 | 3.856e-10 | 1.076e-14 | 1.0e-7% | PASS | 3 × 13.33 Ω elements + 0.2 mΩ contactors behind the bus' 10 mΩ internal resistance |
 | C: stage 1 switches off at its 60 °C setpoint | control | 60 | 60.116176 | 1.162e-1 | 1.936e-3 | 1.0% | PASS | Adaptive step ≤ 0.05 K per step; checked at a 600 s chunk boundary |
-| C: remaining stages after stage 1 off | electrical | 23927.445 | 23927.445 | 6.876e-10 | 2.874e-14 | 1.0e-7% | PASS | Stages 2 and 3 still demand heat; bus sag recomputed for two branches |
-| C: energy residual | thermal | 0 | 0.0006013005 | 6.013e-4 | — | ±343.53670070944327 | PASS | J |
+| C: remaining stages after stage 1 off | electrical | 23927.445 | 23927.445 | 1.710e-10 | 7.146e-15 | 1.0e-7% | PASS | Stages 2 and 3 still demand heat; bus sag recomputed for two branches |
+| C: energy residual | thermal | 0 | -0.00083499821 | 8.350e-4 | — | ±343.536700708017 | PASS | J |
 | D: water delivered to the upper reservoir | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | litres after 60 s; no solver error (value 4494.69) |
 | D: mass residual | hydraulic | 0 | -2.5465852e-11 | 2.547e-11 | — | ±0.000001 | PASS | kg |
 | D: coupled energy residual | multiphysics | 0 | -2.7859 | 2.786e+0 | — | ±3568.675620482902 | PASS | J |
@@ -127,4 +127,4 @@ Executed: 2026-10-11T12:33:16.337Z. 124/124 checks passed in 29.96 s wall time.
 | PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.702e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
 | Adaptive pumping station (269 steps vs 7200): delivered volume | multiphysics | 617.71541 | 617.71483 | 5.749e-4 | 9.307e-7 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
 | Adaptive pumping station: relative energy residual | multiphysics | 0 | 2.965088e-8 | 2.965e-8 | — | ±0.00001 | PASS | 1 |
-| E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 688 boundary cases across every component; none failed |
+| E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 782 boundary cases across every component; none failed |

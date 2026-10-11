@@ -50,6 +50,33 @@ function CircuitSymbol({ c }: { c: Component }) {
     r = simulation.electrical.readings[c.id],
     power = hasStarted() ? r?.power ?? 0 : 0;
   const failed = simulation.failed[c.id];
+  if (c.kind === "battery") return <g>
+    <path d="M0 66H65M109 66H174M65 45V87M77 53V79M97 45V87M109 53V79" stroke={T.electricalText} strokeWidth="3" />
+    <text x="87" y="110" textAnchor="middle" className="scale-label">{((simulation.devices.batteries[c.id] ?? prop(c, 'initialSOC') / 100) * 100).toFixed(1)} % charge</text>
+  </g>;
+  if (c.kind === "contactor") {
+    const closed = !failed && (simulation.faults[c.id] === 'stuckClosed' || simulation.faults[c.id] !== 'stuckOpen' && simulation.devices.contactors[c.id]?.closed);
+    return <g>
+      <path d={closed ? "M0 66H174" : "M0 66H65L106 44M110 66H174"} stroke={T.electricalText} strokeWidth="3" fill="none" />
+      <rect x="59" y="92" width="56" height="22" fill={T.n4} stroke={T.electricalText} />
+      <path d="M52 132V103H59M115 103H122V132M87 92V72" stroke={T.electricalText} fill="none" />
+      <text x="87" y="108" textAnchor="middle" className="scale-label">DC coil</text>
+      <text x="87" y="37" textAnchor="middle" className="scale-label">{closed ? 'CLOSED' : 'OPEN'}</text>
+    </g>;
+  }
+  if (c.kind === "transformer") return <g>
+    <path d="M0 40H55V49Q75 49 75 57Q75 65 55 65Q75 65 75 73Q75 81 55 81V92H0M174 40H119V49Q99 49 99 57Q99 65 119 65Q99 65 99 73Q99 81 119 81V92H174M83 43V89M91 43V89" stroke={T.electricalText} strokeWidth="2" fill="none" />
+    <circle cx="55" cy="40" r="3" fill={T.electricalText} /><circle cx="119" cy="40" r="3" fill={T.electricalText} />
+    <text x="87" y="115" textAnchor="middle" className="scale-label">{prop(c, 'turnsRatio').toPrecision(3)} : 1 · isolated AC</text>
+  </g>;
+  if (c.kind === "radiator") return <g>
+    <path d="M0 66H39M135 66H174" stroke={T.hydraulicText} strokeWidth="3" />
+    <rect x="39" y="40" width="96" height="51" fill={T.n4} stroke={T.hydraulicText} />
+    {[49, 61, 73, 85, 97, 109, 121].map(x => <path key={x} d={`M${x} 44V87`} stroke={T.hydraulicText} />)}
+    <circle cx="87" cy="65" r="18" fill={T.n4} stroke={T.electricalText} />
+    <path d="M74 65H100M87 52V78M52 132V102H122V132" stroke={T.electricalText} />
+    <text x="87" y="119" textAnchor="middle" className="scale-label">{hasStarted() ? (r?.fanPower ?? 0).toFixed(1) : '—'} W fan</text>
+  </g>;
   if (c.kind === "tank") {
     const temp = simulation.temperatures[c.id] ?? 20,
       fill = Math.min(1, (simulation.multiphysics.tanks[c.id]?.volume ?? prop(c, "volume") / 1000) * 1000 / prop(c, "capacity"));
@@ -1022,7 +1049,7 @@ export default function Workspace() {
                             p.domain === "control" &&
                             ["relay", "safety", "cooler"].includes(c.kind)
                               ? `M${x} ${y}V${h}`
-                              : p.id === "heat"
+                              : (p.id === "heat" || c.kind === "contactor" && ["ca", "cb"].includes(p.id) || c.kind === "radiator" && ["a", "b"].includes(p.id))
                                 ? `M${x} ${y}V${c.kind === "tank" ? 0 : h}`
                                 : `M${x} ${y}H${x < 0 ? 0 : w}`
                           }

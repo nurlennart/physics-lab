@@ -1,3 +1,4 @@
+import { batteryEnergy } from "./devices";
 import {
   definitions,
   isSource,
@@ -8,6 +9,7 @@ import {
 import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
+  stateOfCharge: "%", chemicalEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
   inletPressure: "bar", pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
   rpm: "RPM", reactivePower: "var", powerFactor: "1", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
@@ -30,6 +32,13 @@ export function readProbe(p: Probe, s: Simulation): number | null {
   const r = s.electrical.readings[c.id];
   const h = s.multiphysics.hydraulic.readings[c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id], motor = s.multiphysics.motors[c.id];
   switch (p.measurement) {
+    case "stateOfCharge": return (s.devices.batteries[c.id] ?? 0) * 100;
+    case "chemicalEnergy": return batteryEnergy(c, s.devices.batteries[c.id] ?? 0);
+    case "coilVoltage": return r?.coilVoltage ?? null;
+    case "coilCurrent": return r?.coilCurrent ?? null;
+    case "secondaryVoltage": return r?.secondaryVoltage ?? null;
+    case "secondaryCurrent": return r?.secondaryCurrent ?? null;
+    case "fanPower": return r?.fanPower ?? null;
     case 'positionX': return s.spatial.readings[c.id]?.x ?? null;
     case 'positionY': return s.spatial.readings[c.id]?.y ?? null;
     case 'displacement': { const b = s.spatial.readings[c.id]; return b && c.spatial ? Math.hypot(b.x - c.spatial.x, b.y - c.spatial.y) : null; }
@@ -83,6 +92,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
       if (c.kind === 'forceActuator') return s.spatial.brakeEnergy[c.id] ?? 0;
       return s.componentEnergy[c.id] ?? 0;
     case "state": {
+      if (c.kind === "contactor") return s.failed[c.id] ? 0 : s.faults[c.id] === "stuckClosed" ? 1 : s.faults[c.id] === "stuckOpen" ? 0 : Number(s.devices.contactors[c.id]?.closed ?? false);
       if (c.kind === "checkValve") return h ? Number(h.flow > 1e-12) : null;
       if (["valve", "actuatedValve"].includes(c.kind)) return Number((s.faults[c.id] === "stuckClosed" ? 0 : s.faults[c.id] === "stuckOpen" ? 100 : s.multiphysics.positions[c.id] ?? Number(c.props.opening)) > 0);
       if (s.failed[c.id] || s.faults[c.id] === "failedOpen") return 0;

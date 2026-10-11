@@ -51,7 +51,7 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'pressureReducingValve', 'heatExchanger']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'pressureReducingValve', 'heatExchanger', 'radiator']);
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
 export const positionedValves = new Set(['actuatedValve', 'pressureReducingValve']);
 const valveKinds = new Set(['valve', 'actuatedValve', 'checkValve', 'pressureReducingValve']);
@@ -324,7 +324,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    */
   const valveTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
-    const opening = c.kind === 'heatExchanger' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
+    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
     const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
@@ -534,7 +534,7 @@ export const pipeWaterMass = (c: Component) => RHO * Math.PI * prop(c, 'diameter
  * ε-NTU. Every outlet temperature is linear in upstream node temperatures, so the
  * whole network is one linear solve and energy is conserved exactly.
  */
-export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}) {
+export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}) {
   const nodes = Object.keys(result.potentials), index = new Map(nodes.map((n, i) => [n, i]));
   const matrix = nodes.map(() => Array(nodes.length).fill(0)), rhs = nodes.map(() => 0), boundary = new Map<string, string>();
   for (const [id, n] of Object.entries(result.tankNodes)) boundary.set(n, id);
@@ -546,7 +546,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     // Branch dissipation plus pump shaft losses (shaft − impeller); with b.loss = P_imp − P_net
     // for a pump this totals P_shaft − P_net, each loss counted once.
     const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower), ambientK = U.celsiusToK(prop(c, 'ambient', 20));
-    const ua = c.kind === 'pipe' ? prop(c, 'thermalUA') : 0, n = pipeCells(c);
+    const ua = c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0, n = pipeCells(c);
     if (n) {
       // Implicit cell chain: T_k' = (m c T_k + h ṁ c T_{k−1}' + h UA/N T_amb + h Q/N)/(m c + h ṁ c + h UA/N).
       const mc = pipeWaterMass(c) / n * CP, uaCell = ua / n, flowTerm = dt * b.rate * CP;
@@ -605,6 +605,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
       cells[c.id] = b.flow > 0 ? updated : updated.reverse();
     } else ambient += b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK) * dt;
     heat += b.heat * dt;
+    if (c.kind === "radiator") result.readings[b.id].duty = b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK);
     result.readings[b.id].temperature = outlet;
     result.readings[b.id].temperatureValid = true;
   }

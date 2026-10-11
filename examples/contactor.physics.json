@@ -1,0 +1,212 @@
+{
+  "version": 3,
+  "id": "example-contactor",
+  "name": "Powering a contactor",
+  "components": [
+    {
+      "id": "contactor-component-1",
+      "kind": "sourceAC",
+      "name": "AC-01",
+      "x": 50,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 24,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "contactor-component-2",
+      "kind": "contactor",
+      "name": "KM-01",
+      "x": 350,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "coilVoltage": 24,
+        "coilResistance": 144,
+        "pickupRatio": 0.8,
+        "dropoutRatio": 0.3,
+        "pickupTime": 0.02,
+        "dropoutTime": 0.02,
+        "resistance": 0.01,
+        "ratedVoltage": 690,
+        "ratedCurrent": 25,
+        "ratedPower": 20,
+        "heatCapacity": 150,
+        "loss": 1,
+        "conductance": 10,
+        "maxTemperature": 120
+      }
+    },
+    {
+      "id": "contactor-component-3",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 650,
+      "y": 70,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 24,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2
+      }
+    },
+    {
+      "id": "contactor-component-4",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 50,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 24,
+        "maxCurrent": 20,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 4800,
+        "enabled": true
+      }
+    },
+    {
+      "id": "contactor-component-5",
+      "kind": "switch",
+      "name": "S-01",
+      "x": 350,
+      "y": 340,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 0.01,
+        "ratedPower": 20,
+        "heatCapacity": 20,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "closed": true
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "contactor-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "contactor-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "contactor-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "contactor-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "contactor-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "contactor-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "contactor-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "contactor-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "contactor-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "contactor-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "contactor-component-4",
+        "port": "a"
+      },
+      "to": {
+        "component": "contactor-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "contactor-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "contactor-component-5",
+        "port": "b"
+      },
+      "to": {
+        "component": "contactor-component-2",
+        "port": "ca"
+      }
+    },
+    {
+      "id": "contactor-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "contactor-component-2",
+        "port": "cb"
+      },
+      "to": {
+        "component": "contactor-component-4",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "contactor-probe-1",
+      "component": "contactor-component-2",
+      "measurement": "coilVoltage",
+      "name": "Coil voltage",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "contactor-probe-2",
+      "component": "contactor-component-2",
+      "measurement": "state",
+      "name": "Main contact",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "contactor-probe-3",
+      "component": "contactor-component-3",
+      "measurement": "power",
+      "name": "Load power",
+      "color": "#f59e0b",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

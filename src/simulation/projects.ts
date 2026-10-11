@@ -1,3 +1,4 @@
+import { deviceStarter, type DeviceMode } from "./device-projects";
 import { compatibleTarget, legacyUnavailableMeasurement } from "./capabilities";
 import { hydraulicStarter, industrialStarter, heatExchangerStarter, type HydraulicMode } from "./hydraulic-projects";
 import { mechanicalStarter, type MechanicalMode } from './spatial-projects';
@@ -13,9 +14,10 @@ import {
   type Component,
 } from "./model";
 export function starter(
-  mode: "induction" | "starting" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode = "heat",
+  mode: "induction" | "starting" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode = "heat",
   challenge = false,
 ): Project {
+  if (["battery", "contactor", "transformer", "radiator"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
   if (mode === "exchanger") return heatExchangerStarter();
   if (mode === "industrial") return industrialStarter();
@@ -415,6 +417,7 @@ export function validateProbes(p: Project) {
         "power",
         "bodyTemperature", "temperature",
         "energy",
+        "stateOfCharge", "chemicalEnergy", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower",
         "state",
         "signal",
         "nodeVoltage",

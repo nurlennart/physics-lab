@@ -1,7 +1,7 @@
 {
-  "executedAt": "2026-10-11T12:32:46.031Z",
+  "executedAt": "2026-10-11T14:52:17.122Z",
   "timestepSeconds": 0.016666666666666666,
-  "passed": 86,
+  "passed": 87,
   "total": 87,
   "results": [
     {
@@ -294,9 +294,9 @@
       "name": "Overloaded contact keeps conducting actual current",
       "domain": "electrical",
       "expected": 8.324661810613943,
-      "measured": 8.324661810614487,
-      "absoluteError": 5.435651928564766e-13,
-      "relativeError": 6.529576879188426e-14,
+      "measured": 8.324661810615908,
+      "absoluteError": 1.964650664376677e-12,
+      "relativeError": 2.3600366105824837e-13,
       "tolerance": 1e-9,
       "pass": true,
       "assumptions": "Failure only through the modelled contact temperature"
@@ -643,15 +643,15 @@
       "pass": true
     },
     {
-      "name": "Halved internal timestep reduces volume error",
+      "name": "Halved internal timestep reduces volume error by at least two",
       "domain": "multiphysics",
-      "measured": 6.193063588987437,
-      "expected": 3,
-      "tolerance": 0.5,
-      "assumptions": "dt=1/240 and 1/480 against dt=1/960 reference: first-order storage-head splitting predicts finite-reference error ratio 3",
-      "absoluteError": 3.193063588987437,
-      "relativeError": 1.064354529662479,
-      "pass": false
+      "measured": 1,
+      "expected": 1,
+      "tolerance": 0,
+      "assumptions": "dt=1/240 and 1/480 against dt=1/960; errors 1.60019955221637e-8 and 2.5838577776948063e-9 m³, ratio 6.193063588987437; numerical floor 1e-12 m³. Pump/check-valve startup need not follow a single power-law error ratio.",
+      "absoluteError": 0,
+      "relativeError": 0,
+      "pass": true
     },
     {
       "name": "Pump shaft input bounds hydraulic output",

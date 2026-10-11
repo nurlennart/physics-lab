@@ -173,6 +173,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
+    if (["battery", "contactor", "transformer", "radiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -195,6 +196,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
+    if (["battery", "contactor", "transformer", "radiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if (c.kind === "tank") {
@@ -245,6 +247,8 @@ export function componentError(c: Component): string | null {
     const error = domainError(c.kind, k, v);
     if (error) return `${c.name}: ${error}`;
   }
+  if (c.kind === "battery" && prop(c, "fullVoltage") < prop(c, "emptyVoltage")) return "Battery full voltage must be at least its empty voltage.";
+  if (c.kind === "contactor" && prop(c, "dropoutRatio") >= prop(c, "pickupRatio")) return "Contactor dropout must be below pickup.";
   if (c.kind === "motor" && prop(c, "torqueConstant") !== prop(c, "emfConstant")) return "SI motor torque and EMF constants must match for energy consistency.";
   const derived = derivedError(c);
   if (derived) return derived;

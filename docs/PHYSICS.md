@@ -495,3 +495,7 @@ A six-pulse diode rectifier draws non-sinusoidal current: harmonics h = 6k ± 1.
 - Example "Starting a motor three ways" runs all three methods from one supply.
 
 Tests: `motor-starting.test.ts` covers the star current and torque ratio, transition timing and surge, non-starting in star, the soft-starter current limit, reactive power, bypass, soft stop and start-time trip, and for the drive V/f, power balance and unity power factor at the input, starting current, current limit while accelerating and braking, braking energy outside the heat sink, the I²t trip time, output short circuit, missing supply and output capacitor errors, the wired frequency command and field weakening.
+
+## Finite batteries, powered contactors, transformers and radiators
+
+See [DEVICES.md](DEVICES.md) for equations, physical state, terminal conventions, source/chemical energy accounting, solver corrections and explicit limitations. These components are available in Free Sandbox; earlier model-limit paragraphs describe their historical revision, rather than overriding the current component inventory.
