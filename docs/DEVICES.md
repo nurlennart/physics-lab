@@ -34,7 +34,7 @@ pickup: |V_coil| ≥ pickupRatio × ratedCoilVoltage for pickupTime
 release: |V_coil| ≤ dropoutRatio × ratedCoilVoltage for dropoutTime
 ```
 
-Dropout is below pickup; between thresholds the contact keeps its state. Mechanical timers advance only on accepted simulation intervals and have the existing coupled-substep resolution (normally at most 1/240 s). Paused inspection cannot pick up the coil or advance a timer. Contact and coil losses heat one package. Welded/stuck-open contacts and whole-device open failure are injectable.
+Dropout is below pickup; between thresholds the contact keeps its state. Mechanical timers advance only on accepted simulation intervals; a running pickup or dropout timer limits the coupled substep so the contact changes exactly at the end of its delay. Paused inspection cannot pick up the coil or advance a timer. Contact and coil losses heat one package. Welded/stuck-open contacts and whole-device open failure are injectable.
 
 This is a DC resistive-coil approximation. Coil inductance, armature motion/force, flyback, arcs, contact bounce, auxiliary contacts and AC shading-ring behavior are omitted. AC excitation of the coil is explicitly rejected. AC power and DC coil supplies must remain separate solving islands: the existing circuit solver does not superpose AC and DC excitation in a shared network. Thresholds and delays are configurable illustrative values; actual coil limits depend on the selected product: [Schneider Electric coil operating bands](https://www.se.com/ca/en/faqs/FAQ000223298/).
 
@@ -81,3 +81,7 @@ Generic numerics are in `linear-algebra.ts`; `electrical.ts` retains the public 
 The contribution gate now stops if physics validation or the production build fails. Previously those commands were on the left side of `&&`, which bypassed Bash's `set -e` failure handling. Stubbed failing validators/builds verify that their exit codes propagate and no success message appears.
 
 The existing hydraulic startup report also assumed a fixed finite-reference error ratio of 3. Its unchanged baseline actually produced 6.193, with all absolute volume/current/speed/temperature bounds passing. Pump reverse-check opening makes this a nonsmooth coupled startup; one error ratio cannot establish a particular convergence order. The report now retains every absolute bound and requires at least a factor-of-two volume-error reduction on halving the internal step, with a 1e-12 m³ numerical floor. Raw errors and their ratio remain in the report. No hydraulic equation or challenge reference score was changed to make this check pass.
+
+## Adaptive advance (2026-10-11)
+
+Batteries and powered contactors no longer force fixed steps. Adaptive steps change a battery's state of charge by at most 0.2 % (its open-circuit voltage follows the charge; the midpoint stamping above is exact for the linear curve at any step), the empty/full boundary still splits the step, and a coil within 5 % of rated voltage of its pickup or dropout threshold limits the step to 1 s; running pickup/dropout timers end substeps exactly. Test: a 1 Ah pack discharging into 6 Ω for an hour matches the analytic state of charge and empties exactly at the boundary (`components-next.test.ts`).

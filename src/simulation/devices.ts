@@ -26,6 +26,18 @@ export class Devices {
     }
     return limit;
   }
+  /** Substep limit so a running pickup/dropout timer ends exactly on a substep boundary. */
+  eventLimit(project: Project) {
+    if (!this.active) return Infinity;
+    let limit = Infinity;
+    for (const c of project.components) {
+      const state = c.kind === 'contactor' ? this.contactors[c.id] : undefined;
+      if (!state || state.requested === state.closed) continue;
+      const remaining = prop(c, state.requested ? 'pickupTime' : 'dropoutTime') - state.elapsed;
+      if (remaining > 1e-12) limit = Math.min(limit, remaining);
+    }
+    return limit;
+  }
   advance(project: Project, electrical: ElectricalResult, h: number) {
     if (!this.active) return;
     for (const c of project.components) {

@@ -378,7 +378,6 @@ export class Simulation {
   }
   /** Null when adaptive stepping is valid for this experiment; otherwise the reason. */
   adaptiveUnavailable(): string | null {
-    if (this.project.components.some(c => c.kind === "battery" || c.kind === "contactor")) return "Battery charge and powered contactors require fixed simulation steps.";
     if (this.project.challenge) return "Scored challenges always use the fixed 1/60 s step.";
     if (this.spatial.hasMovingBodies) return "Rigid-body dynamics use the fixed 1/60 s step with contact substeps.";
     return null;
@@ -393,6 +392,17 @@ export class Simulation {
       if (c.kind === "pid") limit = Math.min(limit, 0.5, prop(c, "kd") ? prop(c, "derivativeFilter") / 2 : Infinity);
       if (c.kind === "filter") limit = Math.min(limit, Math.max(DT, prop(c, "timeConstant") / 5));
       if (prop(c, "lag") > 0) limit = Math.min(limit, Math.max(DT, prop(c, "lag") * 2));
+      // Battery: at most 0.2 % state-of-charge change per step (its open-circuit voltage follows the charge).
+      if (c.kind === "battery") {
+        const current = Math.abs(this.electrical.readings[c.id]?.current ?? 0);
+        if (current > 1e-12) limit = Math.min(limit, 0.002 * 3600 * prop(c, "capacityAh") / current);
+      }
+      // Contactor coil near a pickup or dropout threshold: resolve the crossing (timers then end substeps exactly).
+      if (c.kind === "contactor") {
+        const state = this.devices.contactors[c.id], voltage = Math.abs(this.electrical.readings[c.id]?.coilVoltage ?? 0), rated = prop(c, "coilVoltage");
+        const threshold = rated * prop(c, state?.closed ? "dropoutRatio" : "pickupRatio");
+        if (Math.abs(voltage - threshold) < 0.05 * rated) limit = Math.min(limit, 1);
+      }
       // A starting allowance in progress: resolve its end (the over-current report).
       const overTime = this.overCurrentTime[c.id] ?? 0;
       if (overTime > 0 && overTime <= MOTOR_START_ALLOWANCE) limit = Math.min(limit, MOTOR_START_ALLOWANCE / 100);
@@ -791,7 +801,7 @@ export class Simulation {
         // outside rating and fail only through their modelled temperature.
         const overPower = (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
           rawOverCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
-          overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %
+          overVoltage = c.kind !== "heater" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) * (c.kind === "motor" ? this.multiphysics.motors[c.id]?.duty ?? 1 : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %; a PWM-driven DC armature sees duty × bus voltage
         // Motors draw several times rated current while starting direct-on-line; that is normal operation.
         // Current above rating is reported only once it persists beyond the starting allowance; winding
         // temperature still decides failure.

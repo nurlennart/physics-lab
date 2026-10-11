@@ -395,7 +395,7 @@ export class Multiphysics {
       // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit; rigid bodies keep
       // their contact/gravity substep; other fixed steps are bounded by the storage time scales.
       this.applyCommands(s, commands);
-      let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s));
+      let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s), s.devices.eventLimit(s.project));
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
       const { loads, held } = this.opposingLoads(s, old, controls, linked, h);

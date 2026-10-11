@@ -37,6 +37,21 @@ describe('finite battery', () => {
     const s = new Simulation(b.p); run(s, 0.1);
     expect(s.devices.batteries[battery.id]).toBe(0); expect(s.electrical.readings[load.id].power).toBeCloseTo(0, 12);
   });
+  it('advances a long discharge adaptively: analytic SOC, exact empty boundary, closed ledger', () => {
+    const b = new Builder(), battery = b.add('battery', { capacityAh: 1, initialSOC: 80, heatCapacity: 1e6, loss: 0 }), load = b.add('resistor', { resistance: 6, ratedPower: 1e3, heatCapacity: 1e6, loss: 0 });
+    b.series(battery, load);
+    const s = new Simulation(b.p);
+    expect(s.adaptiveUnavailable()).toBeNull();
+    // Q ds/dt = −(11 + 2s)/6.02 with Q = 3600 C: s(t) = (s₀ + 5.5)·exp(−2t/(6.02·3600)) − 5.5, empty at t_e ≈ 1,471 s.
+    const tau = 6.02 * 3600 / 2, analytic = (t: number) => (0.8 + 5.5) * Math.exp(-t / tau) - 5.5;
+    const first = s.advanceAdaptive(1000);
+    expect(s.devices.batteries[battery.id]).toBeCloseTo(analytic(s.time), 5);
+    expect(first.steps).toBeLessThan(1000);
+    s.advanceAdaptive(2600);
+    expect(s.devices.batteries[battery.id]).toBe(0);
+    expect(s.electrical.readings[load.id].current).toBeCloseTo(0, 12);
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-6 * 3600 * 12);
+  });
   it('does not mutate SOC on paused refresh and restores initial charge on reset', () => {
     const b = new Builder(), battery = b.add('battery'), load = b.add('resistor'); b.series(battery, load);
     const s = new Simulation(parseProject(b.p)); run(s, 0.1); const soc = s.devices.batteries[battery.id];
@@ -58,6 +73,15 @@ describe('powered DC contactor', () => {
     expect(s.refresh({ ...s.project, components: s.project.components.map(c => c.id === coil.id ? { ...c, props: { ...c.props, enabled: false } } : c) })).toBe(true);
     run(s, 0.05); expect(s.devices.contactors[contactor.id].closed).toBe(false);
     expect(s.electrical.readings[load.id].current).toBe(0); expect(Math.abs(s.energyResidual)).toBeLessThan(1e-7);
+  });
+  it('closes exactly at the end of the pickup delay (the timer ends a substep)', () => {
+    const b = new Builder(), coil = b.add('source', { voltage: 24 }), mains = b.add('sourceAC', { voltage: 120 }), contactor = b.add('contactor'), load = b.add('resistor', { resistance: 12, loss: 0 });
+    b.series(mains, contactor, load); b.wire(coil, 'a', contactor, 'ca'); b.wire(coil, 'b', contactor, 'cb');
+    const s = new Simulation(b.p);
+    expect(s.step()).toBe(true); expect(s.step()).toBe(true);
+    // Energised at t = 0, pickup 20 ms: the load conducts from 0.020 s to the end of the second step (1/30 s).
+    const power = (120 / 12.01) ** 2 * 12;
+    expect(s.componentEnergy[load.id] / (power * (2 / 60 - 0.02)) - 1).toBeCloseTo(0, 6);
   });
   it('rejects AC coil excitation explicitly', () => {
     const b = new Builder(), coil = b.add('sourceAC'), c = b.add('contactor'); b.wire(coil, 'a', c, 'ca'); b.wire(coil, 'b', c, 'cb');
