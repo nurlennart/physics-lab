@@ -1,5 +1,6 @@
 import { definitions, isSource, prop, terminalKey, type Component, type Project } from "./model";
 import { actualResistance } from "./parameters";
+import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, type MachineParams } from "./induction";
 type Cx = [number, number];
 const cadd = (a: Cx, b: Cx): Cx => [a[0] + b[0], a[1] + b[1]];
 const csub = (a: Cx, b: Cx): Cx => [a[0] - b[0], a[1] - b[1]];
@@ -56,8 +57,8 @@ export interface ElectricalReading {
   reactivePower?: number;
   powerFactor?: number | null;
   frequency?: number;
-  /** Induction machines: air-gap torque (N·m), copper losses (W) and slip. */
-  machine?: { torque: number; statorCopper: number; rotorCopper: number; slip: number };
+  /** Induction machines: air-gap torque (N·m), copper losses (W) and slip; dynamic model: midpoint flux linkages. */
+  machine?: { torque: number; statorCopper: number; rotorCopper: number; slip: number; psiS?: [number, number]; psiR?: [number, number] };
 }
 export interface ElectricalResult {
   readings: Record<string, ElectricalReading>;
@@ -118,7 +119,12 @@ export interface ElectricalRuntime {
   disconnected?: Set<string>;
   motors?: Record<string, { emf: number; duty: number; enabled: boolean }>;
   /** Induction machines: mechanical speed (rad/s) and contactor state. */
-  inductionMotors?: Record<string, { omega: number; enabled: boolean }>;
+  /**
+   * Induction machines. With `psiS`/`psiR` (flux linkages at the start of the step) the dynamic model
+   * is used: a midpoint Thevenin equivalent over the step `h`, or for h = 0 (paused re-solve) a current
+   * source carrying the present winding current. Without them the steady equivalent circuit is used.
+   */
+  inductionMotors?: Record<string, { omega: number; enabled: boolean; psiS?: [number, number]; psiR?: [number, number]; h?: number }>;
   /** Protective devices currently tripped open (breakers, motor protectors). */
   open?: Set<string>;
   /** Element temperatures (°C) for temperature-dependent resistance. */
@@ -224,11 +230,30 @@ export function solveElectrical(
     const A: Cx[][] = Array.from({ length: size }, () => Array.from({ length: size }, () => [0, 0] as Cx)), B: Cx[] = Array.from({ length: size }, () => [0, 0] as Cx);
     const add = (i: number | undefined, j: number | undefined, v: Cx) => { if (i !== undefined && j !== undefined) A[i][j] = cadd(A[i][j], v); };
     const impedance = new Map<string, Cx>(), circuits = new Map<string, ReturnType<typeof inductionCircuit>>();
+    const dynamic = new Map<string, { m: MachineParams; state: NonNullable<ElectricalRuntime["inductionMotors"]>[string]; e?: Cx }>();
+    const inject = (p: number | undefined, q: number | undefined, j: Cx) => { if (p !== undefined) B[p] = cadd(B[p], j); if (q !== undefined) B[q] = csub(B[q], j); };
     for (const c of members.filter((c) => !isSource(c))) {
       let z: Cx;
       if (c.kind === "inductionMotor") {
         const state = runtime.inductionMotors?.[c.id];
         if (state && !state.enabled) continue;
+        if (state?.psiS && state.psiR) {
+          const m = machineParams(c, frequency), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, "b"));
+          if (!state.h) {
+            // Paused re-solve: the windings keep their present current (inductive continuity).
+            const { is } = currents(m, state.psiS, state.psiR);
+            inject(p, q, [-is[0], -is[1]]);
+            dynamic.set(c.id, { m, state });
+            continue;
+          }
+          const th = midpointThevenin(m, state.psiS, state.psiR, state.h, state.omega);
+          impedance.set(c.id, th.z);
+          dynamic.set(c.id, { m, state, e: th.e });
+          const y = cdiv([1, 0], th.z);
+          add(p, p, y); add(q, q, y); add(p, q, [-y[0], -y[1]]); add(q, p, [-y[0], -y[1]]);
+          inject(p, q, cmul(y, th.e));
+          continue;
+        }
         const circuit = inductionCircuit(c, frequency, state?.omega ?? 0);
         circuits.set(c.id, circuit);
         z = circuit.impedance;
@@ -270,10 +295,16 @@ export function solveElectrical(
     for (const c of members.filter((c) => !isSource(c))) {
       const z = impedance.get(c.id);
       const across = csub(V(node(c.id, "a")), V(node(c.id, end(c)))), terminal = csub(V(node(c.id, "a")), V(node(c.id, "b")));
-      const current = z ? cdiv(across, z) : ([0, 0] as Cx);
+      const dyn = dynamic.get(c.id);
+      let current = z ? cdiv(dyn?.e ? csub(across, dyn.e) : across, z) : ([0, 0] as Cx);
       const circuit = circuits.get(c.id);
       let machine: ElectricalReading["machine"] | undefined;
-      if (circuit) {
+      if (dyn) {
+        const { m, state } = dyn, slip = (m.ws - m.pairs * state.omega) / m.ws;
+        const mid = state.h ? midpointState(m, state.psiS!, state.psiR!, state.h, state.omega, terminal) : { ...currents(m, state.psiS!, state.psiR!), psiS: state.psiS!, psiR: state.psiR! };
+        current = mid.is;
+        machine = { torque: airGapTorque(m, mid.psiS, mid.is), statorCopper: phases * m.Rs * (mid.is[0] ** 2 + mid.is[1] ** 2), rotorCopper: phases * m.Rr * (mid.ir[0] ** 2 + mid.ir[1] ** 2), slip, psiS: mid.psiS, psiR: mid.psiR };
+      } else if (circuit) {
         const rotor: Cx = circuit.z2 ? cdiv(cmul(current, circuit.xm), cadd(circuit.xm, circuit.z2)) : [0, 0];
         const r2 = prop(c, "rotorResistance"), rotorSq = rotor[0] ** 2 + rotor[1] ** 2;
         const airGap = circuit.z2 ? phases * rotorSq * r2 / circuit.slip : 0;

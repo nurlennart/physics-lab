@@ -72,12 +72,15 @@ describe("three-phase induction motor", () => {
   it("locked-rotor current and torque match the equivalent circuit", () => {
     const { b, motor } = rig({ loadTorque: 1e6 });
     const s = new Simulation(b.p), p = motor.props as Record<string, number>;
+    // Dynamic machine: compare after the electromagnetic transient has decayed (slowest mode ~1 s at standstill).
+    for (let i = 0; i < 20 / DT; i++) s.step();
+    expect(s.multiphysics.motors[motor.id].omega).toBe(0);
     const z2: C = [p.rotorResistance, p.rotorReactance], xm: C = [0, p.magnetizingReactance];
     const z = add([p.statorResistance, p.statorReactance], div(mul(xm, z2), add(xm, z2)));
     const i1 = 400 / Math.sqrt(3) / abs(z), i2 = i1 * abs(xm) / abs(add(xm, z2));
     const torque = 3 * i2 * i2 * p.rotorResistance / (2 * Math.PI * 50 / 2);
-    expect(rel(s.electrical.readings[motor.id].current, i1)).toBeLessThan(1e-9);
-    expect(rel(s.electrical.readings[motor.id].machine!.torque, torque)).toBeLessThan(1e-9);
+    expect(rel(s.electrical.readings[motor.id].current, i1)).toBeLessThan(1e-6);
+    expect(rel(s.electrical.readings[motor.id].machine!.torque, torque)).toBeLessThan(1e-6);
   });
   it("runs up to near synchronous speed, balances power and conserves energy", () => {
     const { b, motor } = rig();

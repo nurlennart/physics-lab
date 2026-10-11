@@ -214,6 +214,7 @@ export default function Inspector() {
                     );
                   })}
               </div>
+              {c.kind === "inductionMotor" && started && <p className="field-hint" data-testid="inrush-note">Dynamic electromagnetic model (stator and rotor flux transients). Largest instantaneous phase current since switch-on: {(simulation.multiphysics.motors[c.id]?.inrushPeak ?? 0).toFixed(1)} A.</p>}
               {!started && <p className="field-hint" data-testid="not-started-hint">Ready. Operating values (current, power, flow, speed) appear once the experiment runs.</p>}
               {sensor && !sensor.valid && <p className="field-hint">{sensor.reason}</p>}
               {v && !v.valid && <p className="field-hint">{v.reason}</p>}

@@ -1,12 +1,17 @@
-import { prop, isMotor, type Project } from './model';
-import { solveElectrical, solveLinear, type ElectricalResult } from './electrical';
+import { prop, isMotor, type Component, type Project } from './model';
+import { solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
+import { machineParams, magneticEnergy, openStatorFlux, openStatorStep, instantaneousPeak, currents, cabs, type Cx } from './induction';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
 import type { Simulation } from './engine';
 import { shaftBody } from './spatial-model';
 /** `angle` is the accumulated rotor rotation (rad) since reset, used for drawing. */
-export interface MotorState { omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number; angle: number }
+export interface MotorState {
+  omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number; angle: number;
+  /** Induction machines: stator/rotor flux linkages (Wb, RMS phasors in the supply frame), supply frequency, largest instantaneous phase current since energisation (A), flux change rate (1/s). */
+  psiS?: Cx; psiR?: Cx; frequency?: number; inrushPeak?: number; energized?: boolean; fluxRate?: number;
+}
 /** Below this speed (rad/s) a rotor counts as at rest for the opposing load. */
 const OMEGA_REST = 1e-9;
 export class Multiphysics {
@@ -25,6 +30,8 @@ export class Multiphysics {
   hydraulicWork = 0;
   dissipation = 0;
   externalShaftWork = 0;
+  /** Field energy dumped when an induction machine's winding current is interrupted (J). */
+  switchingLoss = 0;
   dryLoss = 0;
   removedMass = 0;
   removedEnergy = 0;
@@ -44,7 +51,7 @@ export class Multiphysics {
         this.tanks[c.id] = { volume, mass, temperature, vessel: prop(c, 'vesselHeatCapacity') };
         this.initialMass += mass;
       }
-      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0 };
+      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: [0, 0] as Cx, frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
@@ -73,12 +80,12 @@ export class Multiphysics {
    * "External shaft load" property is a magnitude that always resists motion (advance() chooses the
    * sign from the direction of rotation, or holds the rotor at rest); default: +magnitude.
    */
-  solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks, loads?: number[]) {
+  solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks, loads?: number[], h = 0) {
     const motors = s.project.components.filter(isMotor);
     const electrical = solveElectrical(s.project, s.failed, {
       contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, open: s.openDevices(),
       motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { ...controls[c.id], emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
-      inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled }]] : [])),
+      inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? [0, 0], h }]] : [])),
     });
     const speeds: Record<string, number> = {};
     const pairs: Record<string, string> = {};
@@ -97,7 +104,8 @@ export class Multiphysics {
       const load = (pump?.torque ?? 0) + (loads?.[i] ?? prop(c, 'loadTorque'));
       const torque = c.kind === 'inductionMotor' ? machine?.torque ?? 0 : prop(c, 'torqueConstant') * current;
       const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper : 0) : current * current * prop(c, 'resistance');
-      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia'), angle: this.motors[c.id]?.angle ?? 0 };
+      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia'), angle: this.motors[c.id]?.angle ?? 0,
+        ...(c.kind === 'inductionMotor' ? { psiS: this.motors[c.id]?.psiS, psiR: this.motors[c.id]?.psiR, frequency: this.motors[c.id]?.frequency, inrushPeak: this.motors[c.id]?.inrushPeak, energized: this.motors[c.id]?.energized, fluxRate: this.motors[c.id]?.fluxRate } : {}) };
     });
     return { electrical, hydraulic, state, speeds };
   }
@@ -126,13 +134,13 @@ export class Multiphysics {
    * At rest it acts as static friction: it balances any net drive up to T_L (rotor held), and beyond
    * that resists the breakaway direction. Externally driven reverse rotation stays possible.
    */
-  private opposingLoads(s: Simulation, old: number[], controls: ReturnType<Multiphysics['controls']>, linked: (string | undefined)[]) {
+  private opposingLoads(s: Simulation, old: number[], controls: ReturnType<Multiphysics['controls']>, linked: (string | undefined)[], h = 0) {
     const motors = s.project.components.filter(isMotor);
     const magnitude = motors.map(c => Math.max(0, prop(c, 'loadTorque')));
     const loads = motors.map((c, i) => Math.abs(old[i]) > OMEGA_REST ? Math.sign(old[i]) * magnitude[i] : 0);
     const held = motors.map(() => false);
     if (motors.some((c, i) => Math.abs(old[i]) <= OMEGA_REST)) {
-      const atRest = this.solve(s, old, controls, this.tanks, loads);
+      const atRest = this.solve(s, old, controls, this.tanks, loads, h);
       motors.forEach((c, i) => {
         if (Math.abs(old[i]) > OMEGA_REST) return;
         const drive = atRest.state[i].torque - atRest.state[i].load; // load here is the pump torque only
@@ -141,6 +149,57 @@ export class Multiphysics {
       });
     }
     return { loads, held };
+  }
+  /**
+   * Advance an induction machine's flux linkages over an accepted step (midpoint values from the
+   * electrical solve). Energised: ψ₁ = 2ψ_mid − ψ₀. Open stator (contactor open, supply lost): the
+   * rotor flux decays; interrupting a winding current dumps the stator-side field energy at once
+   * (contact arc, booked as heat in the motor). Returns the extra heat (J) of the open-stator path.
+   */
+  private advanceFlux(c: Component, reading: ElectricalReading | undefined, omega: number, h: number, time: number) {
+    const state = this.motors[c.id], psiS0 = state.psiS ?? [0, 0], psiR0 = state.psiR ?? [0, 0];
+    const mid = reading?.machine?.psiS && reading.machine.psiR ? { s: reading.machine.psiS, r: reading.machine.psiR } : undefined;
+    const frequency = reading?.frequency ?? state.frequency ?? prop(c, 'ratedFrequency', 50), m = machineParams(c, frequency);
+    let heat = 0, psiS: Cx, psiR: Cx, peak = state.inrushPeak ?? 0;
+    if (mid) {
+      psiS = [2 * mid.s[0] - psiS0[0], 2 * mid.s[1] - psiS0[1]];
+      psiR = [2 * mid.r[0] - psiR0[0], 2 * mid.r[1] - psiR0[1]];
+      peak = Math.max(state.energized ? peak : 0, instantaneousPeak(currents(m, mid.s, mid.r).is, m.ws * time));
+    } else {
+      const interrupted = magneticEnergy(m, psiS0, psiR0) - magneticEnergy(m, openStatorFlux(m, psiR0), psiR0);
+      const step = openStatorStep(m, psiR0, h, omega);
+      psiR = step.psiR; psiS = openStatorFlux(m, psiR);
+      heat = Math.max(0, interrupted) + step.rotorCopper * h;
+      this.copperEnergy += step.rotorCopper * h;
+      this.switchingLoss += Math.max(0, interrupted);
+    }
+    const reference = 0.01 * prop(c, 'ratedVoltage') / Math.sqrt(3) / m.ws;
+    const fluxRate = Math.hypot(psiS[0] - psiS0[0], psiS[1] - psiS0[1]) / (h * Math.max(cabs(psiS), reference));
+    this.motors[c.id] = { ...this.motors[c.id], psiS, psiR, frequency, inrushPeak: peak, energized: !!mid, fluxRate };
+    return heat;
+  }
+  /**
+   * Coupled substep limit while an induction machine's electromagnetic state is changing (switch-on,
+   * run-up, interruption, reconnection): 1/40 of a supply period resolves the stator flux transient
+   * (decaying DC offset, rotating at the supply frequency in this frame). Steady operation: no limit.
+   */
+  electricalStepLimit(s: Simulation, controls = this.controls(s)) {
+    let limit = Infinity;
+    for (const c of s.project.components) {
+      if (c.kind !== 'inductionMotor') continue;
+      const state = this.motors[c.id];
+      if (!state) continue;
+      const switching = controls[c.id]?.enabled !== state.energized, fluxing = (state.fluxRate ?? 0) > 1;
+      if (switching || fluxing) limit = Math.min(limit, 1 / (40 * (state.frequency ?? prop(c, 'ratedFrequency', 50))));
+    }
+    return limit;
+  }
+  /** Magnetic energy stored in induction machines (J). */
+  magneticEnergy(p?: Project) {
+    return (p ?? this.lastProject)?.components.filter(c => c.kind === 'inductionMotor').reduce((sum, c) => {
+      const state = this.motors[c.id];
+      return state?.psiS && state.psiR ? sum + magneticEnergy(machineParams(c, state.frequency ?? 50), state.psiS, state.psiR) : sum;
+    }, 0) ?? 0;
   }
   refresh(s: Simulation) {
     this.lastProject = s.project;
@@ -182,10 +241,10 @@ export class Multiphysics {
       if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
       // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit;
       // fixed steps keep the 1/240 s head/storage splitting bound.
-      let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining);
+      let h = Math.min(remaining, s.spatial.count || dt <= 0.1 + 1e-12 ? s.spatial.maxStep(s.project) : remaining, this.electricalStepLimit(s, controls));
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
-      const { loads, held } = this.opposingLoads(s, old, controls, linked);
+      const { loads, held } = this.opposingLoads(s, old, controls, linked, h);
       const discrete = motors.map((c, i) => `${controls[c.id].enabled ? 1 : 0}${Math.sign(loads[i])}${held[i] ? 'h' : ''}`).join('|');
       const snapshot = linked.some(Boolean) ? s.spatial.checkpoint() : undefined;
       let accepted: ReturnType<Multiphysics['solve']> | undefined;
@@ -199,7 +258,7 @@ export class Multiphysics {
         // the head/storage coupling); fixed steps keep start-of-step levels.
         const levels = adaptive ? this.midpointTanks(s, h) : this.tanks;
         const residualAt = (x: number[]) => {
-          const r = this.solve(s, x, controls, levels, loads);
+          const r = this.solve(s, x, controls, levels, loads, h);
           const trial = snapshot ? s.spatial.trial(s, h, torqueMap(r, x), snapshot) : undefined;
           return { r, trial, f: x.map((v, i) => linked[i] ? 2 * v - old[i] - trial!.bodies[linked[i]!].getAngularVelocity() : held[i] ? 2 * (v - old[i]) : 2 * (v - old[i]) - h * r.state[i].acceleration) };
         };
@@ -229,7 +288,7 @@ export class Multiphysics {
           midpoint = midpoint.map((v, i) => v + d[i]);
         }
         if (!converged) throw Error('Electromechanical midpoint coupling failed to converge.');
-        accepted = accepted ?? this.solve(s, midpoint, controls, levels, loads);
+        accepted = accepted ?? this.solve(s, midpoint, controls, levels, loads, h);
         const safe = boundaryTime(s.project, this.tanks, accepted.hydraulic, h);
         if (safe < h * (1 - 1e-9)) { h = Math.max(1e-10, safe); accepted = undefined; acceptedTrial = undefined; continue; }
         // A loaded rotor that would pass through zero speed stops within this step: split the step at
@@ -239,7 +298,9 @@ export class Multiphysics {
           const next = 2 * midpoint[i] - old[i];
           return Math.sign(next) === -Math.sign(old[i]) && Math.abs(next) > 1e-9 * Math.max(1, Math.abs(old[i])) ? old[i] / (old[i] - next) : 1;
         }));
-        if (stop < 1 - 1e-9) { h = Math.max(1e-10, h * stop); accepted = undefined; acceptedTrial = undefined; continue; }
+        // A stopping instant within 1 µs is treated as arrival at rest (the end speed is clamped to zero
+        // below); oscillating transient torque near standstill would otherwise split the step indefinitely.
+        if (stop < 1 - 1e-9 && h * stop >= 1e-6) { h = Math.max(1e-10, h * stop); accepted = undefined; acceptedTrial = undefined; continue; }
         break;
       }
       if (!accepted) throw Error('Tank boundary event failed to converge.');
@@ -253,14 +314,21 @@ export class Multiphysics {
         const m = r.state[i];
         let next = linked[i] ? s.spatial.readings[linked[i]!].omega : held[i] ? 0 : 2 * midpoint[i] - old[i];
         // Arrival at rest after a split stopping step: remove the round-off remainder.
-        if (!linked[i] && loads[i] !== 0 && Math.abs(old[i]) > OMEGA_REST && (Math.sign(next) === -Math.sign(old[i]) || Math.abs(next) <= 1e-9 * Math.max(1, Math.abs(old[i])))) next = 0;
+        if (!linked[i] && loads[i] !== 0 && Math.abs(old[i]) > OMEGA_REST && (Math.sign(next) === -Math.sign(old[i]) || Math.abs(next) <= 1e-9 * Math.max(1, Math.abs(old[i])))) {
+          // The load catches the rotor: the overshoot's kinetic energy goes to the load (exported work).
+          this.externalShaftWork += 0.5 * prop(c, 'inertia') * next * next;
+          next = 0;
+        }
         const acceleration = (next - old[i]) / h;
         const load = linked[i] ? m.torque - prop(c, 'friction') * midpoint[i] - prop(c, 'inertia') * acceleration : m.load;
-        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration, angle: (this.motors[c.id]?.angle ?? 0) + midpoint[i] * h };
+        const previous = this.motors[c.id];
+        this.motors[c.id] = { ...m, omega: next, load, shaftPower: load * midpoint[i], acceleration, angle: (previous?.angle ?? 0) + midpoint[i] * h,
+          ...(c.kind === 'inductionMotor' ? { psiS: previous?.psiS, psiR: previous?.psiR, frequency: previous?.frequency, inrushPeak: previous?.inrushPeak, energized: previous?.energized, fluxRate: previous?.fluxRate } : {}) };
         this.copperEnergy += m.copperPower * h;
         const friction = prop(c, 'friction') * midpoint[i] ** 2;
         this.frictionEnergy += friction * h;
         heatEnergy[c.id] = (heatEnergy[c.id] ?? 0) + (m.copperPower + friction) * h;
+        if (c.kind === 'inductionMotor') heatEnergy[c.id] += this.advanceFlux(c, r.electrical.readings[c.id], midpoint[i], h, s.time + (dt - remaining) + h / 2);
         // Work exported by the opposing load: loads[i]·ω ≥ 0 while moving, zero while held at rest.
         this.externalShaftWork += loads[i] * midpoint[i] * h;
         if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);

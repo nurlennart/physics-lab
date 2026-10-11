@@ -205,7 +205,7 @@ V = m/ρ(T)       P_bottom = ρ_ref·g·z + g·m/A       Φ = g·(z·m + m²/(2�
 - **In DC networks** an inductor is its winding resistance and a capacitor is open (1 GΩ insulation leakage).
 - **Supply protection:** AC supplies trip like a C-characteristic breaker with In = their current rating (thermal image τ = 60 s, trip at θ ≥ 1.3²; instantaneous at 10 × In). Motor starting surges are tolerated; DC supplies trip instantly above their rating.
 - **Rejected with explanations:** DC and AC sources in one network; different frequencies in one network; a DC motor on AC; a three-phase induction motor without a `source3` supply.
-- **Not modelled:** transients (switching inrush, capacitor charging), harmonics, saturation, core loss, single-phase machines.
+- **Not modelled:** network transients (capacitor charging, inductor energy at switching), harmonics, saturation, core loss, single-phase machines. The induction machine itself is dynamic since the electromagnetic-transient revision below.
 
 **Induction motor** (`inductionMotor`, default 7.5 kW / 400 V / 50 Hz / 4-pole; 45 kW variant):
 
@@ -217,7 +217,7 @@ P_in = P_cu1 + P_cu2 + T·ω     (P_cu2 = s·P_airgap)
 
 - Reactances are given at `ratedFrequency` and scale with the supply frequency.
 - The shaft equation, loads, friction and shaft couplings (pumps, rigid bodies) are shared with the DC motor. Copper losses heat the motor's thermal mass.
-- The motor–network coupling uses a chord (frozen-Jacobian) Newton iteration with a midpoint predictor. A 5 s run-up closes energy to ~10⁻¹¹ relative.
+- The motor–network coupling uses a chord (frozen-Jacobian) Newton iteration with a midpoint predictor. A 5 s run-up closes energy to ~10⁻¹¹ relative. *Superseded:* the machine now has electromagnetic transients (section below); the circuit above is its steady state.
 - Default calibration: locked rotor 74 A / 54 N·m (≈ 5 × rated current), rated point ≈ 1450 rpm, 14 A, 52 N·m, breakdown torque 131 N·m at ≈ 1200 rpm.
 
 Tests: `src/simulation/ac.test.ts` (R–L power and power factor, capacitor power-factor correction, DC capacitor, unbalanced star with neutral, locked rotor vs equivalent circuit, run-up energy and power balance, motor driving a pump, rejection messages) and rows in the scaling campaign.
@@ -282,7 +282,7 @@ The engine holds the switch-on solution at t = 0 (needed for inspection and test
 
 DC capacitor readings and heat use the same 1 GΩ insulation leakage as the nodal solve; ESR, including its configured temperature coefficient and sample tolerance, applies to AC. AC relay heat uses the conducting contact voltage (a–nc when de-energized); the public voltage probe remains a–b and is unavailable across separate islands.
 
-An induction machine on an unpowered island has zero excitation/current/torque and coasts under its modeled mechanical loads. Residual-flux and reconnection transients are unsupported. Power-loss, machine-failure and control-loss injections use the existing motor fault paths. An energized incompatible DC or single-phase connection still reports an error.
+An induction machine on an unpowered island has zero stator current and torque and coasts under its modeled mechanical loads; its residual rotor flux decays (electromagnetic-transient revision below). Power-loss, machine-failure and control-loss injections use the existing motor fault paths. An energized incompatible DC or single-phase connection still reports an error.
 
 Free-overfall overflow cannot drive water into a drain whose piezometric pressure exceeds the tank free surface. Such routes now stop with an explicit unsupported-backpressure error, rather than moving water uphill and assigning negative dissipation. Submerged weirs and drain backpressure require a different hydraulic boundary model.
 
@@ -334,3 +334,43 @@ Sources:
 - [Hydraulic Institute: the basics of NPSH](https://www.pumps.org/2022/12/07/the-basics-of-npsh-pump-operating-regions/)
 
 The earlier sections "Pump catalog drag" and "Catalog drag (revised)" describe the superseded k·ω³ model.
+
+## Induction motor electromagnetic transients (dynamic revision)
+
+### Model
+
+The induction machine is a 5th-order dq model: stator and rotor flux linkages plus the shared shaft speed. Quantities are RMS complex phasors in the synchronous frame of the network, using the motor convention:
+
+```
+v  = Rs·is + dψs/dt + jωs·ψs
+0  = Rr·ir + dψr/dt + j(ωs − ωr)·ψr          ωr = (p/2)·ω_mech
+ψs = Ls·is + Lm·ir,  ψr = Lm·is + Lr·ir       L = X/ω_rated
+Te = 3·(p/2)·Im(conj(ψs)·is)
+W  = (3/2)·Re(ψs·is* + ψr·ir*)
+```
+
+- **Steady state:** the model reduces exactly to the per-phase equivalent circuit, so steady results are unchanged. The tests confirm settled current and torque against the circuit to 10⁻⁹ at 0, 1200 and 1450 rpm.
+- **The network** (supply impedance, cables, R/L/C loads) stays quasi-static phasors; only the machine is dynamic.
+
+### Numerics
+
+- **Integration:** each coupled step uses the implicit midpoint rule (the same scheme as the shaft). The machine enters the network as a midpoint Thevenin source: v_mid = Z(h, ω)·is_mid + E(ψ₀). With midpoint currents, P_in·h = (P_cu,s + P_cu,r + Te·ω)·h + ΔW holds exactly, and the stored magnetic energy is part of the energy ledger.
+- **Step size:** while the flux changes (switch-on, run-up, interruption, reconnection), coupled steps are limited to 1/40 of a supply period (0.5 ms at 50 Hz), so the stator transient rotating at the supply frequency is resolved. In steady operation the normal steps apply. A start-up costs about 0.1–0.3 s of computation.
+- **Paused re-solves** hold the present winding current (inductive continuity). Before the first step the motor draws 0 A.
+
+### What this adds
+
+- **Inrush:** current builds up within the first cycle. The first instantaneous peak includes the decaying DC offset: 130 A for the 7.5 kW motor, against the symmetric √2·74 A = 105 A. The inspector shows the largest instantaneous phase current since switch-on.
+- **Transient torque:** at switch-on the torque oscillates at the supply frequency. At standstill the switch-on DC flux decays slowly, because the rotor does not oppose a field that doesn't move relative to it: τ ≈ Ls/Rs + Lr/Rr ≈ 0.5 s. Torque peaks reach about 165 N·m around the 54 N·m steady locked-rotor torque, so a heavily loaded rotor twitches before its load holds it.
+- **Run-up timing:** 7.5 kW motor to 1400 rpm with 35 N·m: 0.183 s dynamic against 0.152 s quasi-static (+20 %). With 10× rotor inertia: 1.733 s against 1.686 s (+3 %). Electromagnetic dynamics matter most for low inertia.
+- **Interruption:** opening the contactor forces is = 0 immediately. The stator-side field energy is dumped as heat in the motor, standing in for the contact arc (reported as switching loss). The rotor flux then decays with T0' = Lr/Rr (0.287 s), so the machine keeps a residual voltage source.
+- **Reconnection:** reclosing with residual flux gives a reconnection transient that depends on the flux phase.
+
+### Limits
+
+- The network is quasi-static: supply and cable inductance do not add their own transients.
+- No saturation (inrush and reconnection peaks would be higher with saturation), no core loss, no skin effect in the rotor bars (deep-bar starting torque).
+- A machine on an unpowered island is treated as an open stator (no self-excitation with capacitors).
+- The instantaneous peak is sampled at the substep midpoints (40 per cycle, within 0.3 %).
+
+Tests: `induction.test.ts` covers the steady state against the circuit, exact discrete energy balance, open-stator decay (second order), inrush asymmetry, run-up against the quasi-static model, residual flux after opening, and energy through reconnection to 10⁻⁹.

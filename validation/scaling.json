@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-11T01:14:07.806Z",
-  "wallSeconds": 23.18,
+  "executedAt": "2026-10-11T01:39:42.534Z",
+  "wallSeconds": 21.64,
   "passed": 124,
   "total": 124,
   "results": [
@@ -1294,10 +1294,10 @@
     {
       "name": "Induction motor 50 N·m load: torque balance",
       "domain": "multiphysics",
-      "expected": 50.30414847979572,
-      "measured": 50.30414846626751,
-      "absoluteError": 1.3528207887247845e-8,
-      "relativeError": 2.689282752232919e-10,
+      "expected": 50.304148479796915,
+      "measured": 50.30414855397676,
+      "absoluteError": 7.417984448920834e-8,
+      "relativeError": 1.4746267799165778e-9,
       "tolerance": "0.10%",
       "pass": true,
       "assumptions": "Air-gap torque = load + viscous friction at steady speed (5 s run-up)"
@@ -1317,8 +1317,8 @@
       "name": "Induction motor run-up: relative energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": 6.5207194795620794e-12,
-      "absoluteError": 6.5207194795620794e-12,
+      "measured": 1.3021559225050944e-11,
+      "absoluteError": 1.3021559225050944e-11,
       "relativeError": null,
       "tolerance": "±0.00001",
       "pass": true,

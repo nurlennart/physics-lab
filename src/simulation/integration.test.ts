@@ -10,15 +10,17 @@ import { Builder } from './scaling-validation';
 
 const probe = (id: string, measurement: Probe['measurement']) => ({ component: id, measurement } as Probe);
 describe('functional integration regressions', () => {
-  it('standard induction motor needs ~75 A at startup; both the standard and the 250 A supply run 35 Nm load', () => {
+  it('standard induction motor draws ~75-85 A RMS inrush at startup; both the standard and the 250 A supply run 35 Nm load', () => {
     const p = starter('induction'), motor = p.components.find(c => c.kind === 'inductionMotor')!, source = p.components.find(c => c.kind === 'source3')!;
     const s = new Simulation(parseProject(JSON.parse(serializeProject(p))));
-    const start = s.electrical.readings[motor.id];
-    expect(start.current).toBeGreaterThan(63);
-    expect(start.current).toBeLessThan(80);
-    expect(start.phases).toBe(3);
-    expect(start.voltage).toBeCloseTo(400 / Math.sqrt(3), 0);
-    for (let i = 0; i < 600; i++) expect(s.step()).toBe(true);
+    // Winding current cannot jump: zero before the first step, inrush builds within the first cycles.
+    expect(s.electrical.readings[motor.id].current).toBe(0);
+    let inrush = 0;
+    for (let i = 0; i < 6; i++) { expect(s.step()).toBe(true); inrush = Math.max(inrush, s.electrical.readings[motor.id].current); }
+    expect(inrush).toBeGreaterThan(63);
+    expect(inrush).toBeLessThan(90);
+    expect(s.electrical.readings[motor.id].phases).toBe(3);
+    for (let i = 0; i < 594; i++) expect(s.step()).toBe(true);
     expect(s.failed).toEqual({});
     expect(readProbe(probe(motor.id, 'rpm'), s)).toBeGreaterThan(1400);
     expect(s.electrical.readings[motor.id].current).toBeLessThan(Number(motor.props.ratedCurrent));

@@ -37,25 +37,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 348628.16925090784,
-    "energyResidual": 3.7759309634566307e-7,
+    "suppliedEnergy": 349080.74666397594,
+    "energyResidual": -2.0285369828343391e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "IM-01 rpm",
-        "value": 1467.7313938164368
+        "value": 1467.7313936197024
       },
       {
         "name": "IM-01 current",
-        "value": 9.885539250342429
+        "value": 9.885539250139017
       },
       {
         "name": "IM-01 shaftPower",
-        "value": 5379.516525067551
+        "value": 5379.516525082495
       },
       {
         "name": "IM-01 temperature",
-        "value": 21.009367284630592
+        "value": 21.028494594706615
       }
     ]
   },

@@ -51,10 +51,14 @@ describe("opposing external shaft load", () => {
     expect(Math.abs(w / (w0 * Math.exp(-20 * 0.002 / 0.045)) - 1)).toBeLessThan(1e-4);
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-6);
   });
-  it("a load above the locked-rotor torque holds the rotor at rest instead of reversing it", () => {
-    const { s, motor } = motorRig(80); // locked-rotor torque ≈ 54 N·m
+  it("a load above the steady locked-rotor torque is held after the switch-on transient, never reversed", () => {
+    const { s, motor } = motorRig(80); // steady locked-rotor torque ≈ 54 N·m
+    // At standstill the switch-on DC flux decays slowly (τ ≈ Ls/Rs + Lr/Rr ≈ 0.5 s) and makes the torque
+    // oscillate at 50 Hz around the 54 N·m mean (peaks ≈ 165 N·m), so the rotor twitches forward for
+    // about half a second before the load holds it.
+    run(s, 1, () => expect(s.multiphysics.motors[motor.id].omega).toBeGreaterThanOrEqual(0));
     run(s, 2, () => expect(s.multiphysics.motors[motor.id].omega).toBe(0));
-    expect(s.multiphysics.externalShaftWork).toBe(0);
+    expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-6);
   });
   it("legitimate reverse rotation: a reversed DC motor runs backwards against the load", () => {
     const b = new Builder(), src = b.add("source", { voltage: 24, maxCurrent: 100 }), m = b.add("motor", { loadTorque: 0.2 });

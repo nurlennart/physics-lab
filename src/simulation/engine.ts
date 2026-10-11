@@ -367,7 +367,7 @@ export class Simulation {
   }
   /** Step bound from controller, protection and thermal time scales. */
   adaptiveLimit(tolerance: number) {
-    let limit = MAX_ADAPTIVE_STEP;
+    let limit = Math.min(MAX_ADAPTIVE_STEP, this.multiphysics.electricalStepLimit(this));
     if (this.automation.pulses.size) return DT;
     for (const c of this.project.components) {
       if (c.kind === "timer") limit = Math.min(limit, prop(c, "delay") / 20);
@@ -427,7 +427,7 @@ export class Simulation {
   get energyResidual() {
     return this.suppliedEnergy + this.spatial.externalWork - this.storedEnergy - this.ambientEnergy
       - (this.spatial.energy - this.spatial.initialEnergy) - this.spatial.contactLoss - this.spatial.limitLoss - this.spatial.dampingLoss
-      - this.multiphysics.kineticEnergy(this.project)
+      - this.multiphysics.kineticEnergy(this.project) - this.multiphysics.magneticEnergy(this.project)
       - (this.multiphysics.potential(this.project) - this.multiphysics.initialPotential)
       - this.multiphysics.externalShaftWork - this.multiphysics.removedEnergy;
   }

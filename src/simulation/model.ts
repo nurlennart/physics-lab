@@ -329,7 +329,7 @@ export const definitions: Record<Kind, Definition> = {
   inductionMotor: {
     label: "Three-phase induction motor",
     category: "Electrical",
-    description: "Squirrel-cage machine, per-phase equivalent circuit (R1, X1, Xm, R2/s, X2) on a balanced three-phase supply; slip-dependent torque, starting current and copper losses; shaft drives pumps and spatial rotors",
+    description: "Squirrel-cage machine on a balanced three-phase supply: dynamic dq model (stator and rotor flux transients: inrush with DC offset, transient torque, residual flux) whose steady state is the per-phase equivalent circuit (R1, X1, Xm, R2/s, X2); copper losses; shaft drives pumps and spatial rotors",
     spec: "400 V 3~ · 7.5 kW · 4-pole",
     cost: 420,
     prefix: "IM",
