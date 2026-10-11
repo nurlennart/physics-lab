@@ -203,7 +203,7 @@ V = m/ρ(T)       P_bottom = ρ_ref·g·z + g·m/A       Φ = g·(z·m + m²/(2�
 - **Single-phase AC (`sourceAC`):** each source has its own phase angle. Three single-phase sources at 0°/−120°/+120° with a common neutral form an explicit, possibly **unbalanced** three-phase system. Neutral current and line-to-line voltages follow from the solution (tested against hand calculation).
 - **Balanced three-phase supply (`source3`):** solved as the per-phase star equivalent (V_LL/√3), powers × 3. It can now also feed inductors, capacitors and induction motors.
 - **In DC networks** an inductor is its winding resistance and a capacitor is open (1 GΩ insulation leakage).
-- **Supply protection:** AC supplies trip like a C-characteristic breaker with In = their current rating (thermal image τ = 60 s, trip at θ ≥ 1.3²; instantaneous at 10 × In). Motor starting surges are tolerated; DC supplies trip instantly above their rating.
+- **Supply protection:** AC supplies trip like a C-characteristic breaker with In = their current rating (thermal image τ = 60 s, trip at θ ≥ 1.3²; instantaneous at 10 × In, compared with the instantaneous current, see "Magnetic releases act on the instantaneous current"). Motor starting surges below that are tolerated; DC supplies trip instantly above their rating.
 - **Rejected with explanations:** DC and AC sources in one network; different frequencies in one network; a DC motor on AC; a three-phase induction motor without a `source3` supply.
 - **Not modelled:** network transients (capacitor charging, inductor energy at switching), harmonics, saturation, core loss, single-phase machines. The induction machine itself is dynamic since the electromagnetic-transient revision below.
 
@@ -371,6 +371,15 @@ W  = (3/2)·Re(ψs·is* + ψr·ir*)
 - The network is quasi-static: supply and cable inductance do not add their own transients.
 - No saturation (inrush and reconnection peaks would be higher with saturation), no core loss, no skin effect in the rotor bars (deep-bar starting torque).
 - A machine on an unpowered island is treated as an open stator (no self-excitation with capacitors).
-- The instantaneous peak is sampled at the substep midpoints (40 per cycle, within 0.3 %).
+- The instantaneous peak is the exact maximum of the three phase currents over each substep, with the midpoint phasor held over the substep.
 
 Tests: `induction.test.ts` covers the steady state against the circuit, exact discrete energy balance, open-stator decay (second order), inrush asymmetry, run-up against the quasi-static model, residual flux after opening, and energy through reconnection to 10⁻⁹.
+
+### Magnetic releases act on the instantaneous current
+
+Breaker and motor-protector curves (IEC 60898, IEC 60947-2) state the instantaneous setting k·In as the RMS value of a symmetric current, while the release itself responds to the instantaneous current. On AC, breakers, motor protectors and supply protection therefore trip when |i(t)| ≥ √2·k·In. In steady state this is exactly the RMS setting. With an asymmetric switch-on current it is not: the DC offset of a motor inrush can trip a release whose setting lies above the symmetric current, the familiar nuisance trip of a direct-on-line start.
+
+- Each coupled substep reports the largest instantaneous line current over its interval (exact for the phasor held over the substep: max over phases of √2·Re(I·e^{j(ωt − 2πk/3)})). The engine compares the largest value of the step with √2·k·In.
+- **Previously** the magnetic check compared the RMS phasor magnitude of the step's first substep. During a motor start that missed the half-cycle maximum: the 7.5 kW start showed 6.1 A in the switch-on step and at most 85 A RMS (equivalent to a 121 A peak), against a true first peak of 130 A.
+- **Example** (`protection.test.ts`): a 16 A breaker set to 5.5 × In (88 A RMS, 124.5 A peak) trips magnetically in the first step of the 7.5 kW start; at 6 × In (135.8 A peak) the motor starts.
+- DC releases compare |i| with k·In directly. The thermal image still uses the step's first-substep RMS current.

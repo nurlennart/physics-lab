@@ -59,6 +59,21 @@ export interface ElectricalReading {
   frequency?: number;
   /** Induction machines: air-gap torque (N·m), copper losses (W) and slip; dynamic model: midpoint flux linkages. */
   machine?: { torque: number; statorCopper: number; rotorCopper: number; slip: number; psiS?: [number, number]; psiR?: [number, number] };
+  /** AC: complex RMS current phasor of the conducting path (A), referred to the supply angle ωt. */
+  currentPhasor?: [number, number];
+  /** AC, coupled steps: largest instantaneous line current |i(t)| over the step (A), across all substeps. */
+  peakCurrent?: number;
+}
+/**
+ * Largest instantaneous line current over the supply-angle interval [θ0, θ1] for a phasor I held over
+ * the interval: i_k(θ) = √2·Re(I·e^{j(θ − 2πk/3)}), k over the phases. Exact for a constant phasor:
+ * max_k |i_k| peaks every π/3 (three-phase) or π (single-phase), otherwise at an interval end.
+ */
+export function peakOverInterval(I: [number, number], phases: number, theta0: number, theta1: number) {
+  const amplitude = Math.SQRT2 * Math.hypot(I[0], I[1]), phi = Math.atan2(I[1], I[0]), spacing = Math.PI / phases;
+  if (Math.floor((theta1 + phi) / spacing) > Math.floor((theta0 + phi) / spacing) || theta1 - theta0 >= spacing) return amplitude;
+  const at = (x: number) => Math.max(...Array.from({ length: phases }, (_, k) => Math.abs(Math.cos(x - (2 * Math.PI * k) / 3))));
+  return amplitude * Math.max(at(theta0 + phi), at(theta1 + phi));
 }
 export interface ElectricalResult {
   readings: Record<string, ElectricalReading>;
@@ -283,7 +298,7 @@ export function solveElectrical(
       const S = cmul(voltage, conj(current)), P = phases * S[0], Q = phases * S[1], apparent = Math.hypot(P, Q);
       acReadings[c.id] = {
         voltage: cabs(voltage), current: cabs(current), contactCurrent: cabs(current), currentNC: 0, power: P, voltageValid: true,
-        ac: true, reactivePower: Q, powerFactor: apparent > 1e-12 ? Math.abs(P) / apparent : null, frequency, ...(phases === 3 ? { phases: 3 as const } : {}), ...extra,
+        ac: true, currentPhasor: current, reactivePower: Q, powerFactor: apparent > 1e-12 ? Math.abs(P) / apparent : null, frequency, ...(phases === 3 ? { phases: 3 as const } : {}), ...extra,
       };
     };
     sources.forEach((src, i) => {

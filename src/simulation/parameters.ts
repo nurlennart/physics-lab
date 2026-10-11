@@ -453,7 +453,7 @@ export function derivedReadouts(c: Component): Readout[] {
         { label: "Trip time at 1.5 × In (cold)", value: t(1.5), unit: "s" },
         { label: "Trip time at 3 × In (cold)", value: t(3), unit: "s" },
         { label: "Trip time at 7.2 × In (cold)", value: t(7.2), unit: "s" },
-        { label: "Instantaneous trip above", value: n("ratedCurrent") * n("magneticTrip"), unit: "A" },
+        { label: "Instantaneous trip above", value: n("ratedCurrent") * n("magneticTrip"), unit: "A", note: "RMS, symmetric; AC trips when the instantaneous current exceeds √2 × this, so a DC offset at switch-on counts" },
       ];
     }
     default: return [];

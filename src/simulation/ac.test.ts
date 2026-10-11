@@ -143,7 +143,7 @@ describe("AC supply thermal-magnetic output protection", () => {
     const { s, src } = rig(400 / Math.sqrt(3) / (11 * 63));
     s.step();
     expect(s.failed[src.id]).toBe(true);
-    expect(s.tripped[src.id]).toMatch(/instantaneous limit of 10 × 63 A/);
+    expect(s.tripped[src.id]).toMatch(/instantaneous current peak of 980\.0 A reached √2 × the 630\.0 A RMS setting/);
   });
   it("the default 63 A supply starts and runs the default 7.5 kW motor at rated load", () => {
     const b = new Builder(), src = b.add("source3"), motor = b.add("inductionMotor", { loadTorque: 50 });

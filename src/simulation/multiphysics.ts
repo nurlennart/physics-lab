@@ -1,6 +1,6 @@
 import { prop, isMotor, type Component, type Project } from './model';
-import { solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
-import { machineParams, magneticEnergy, openStatorFlux, openStatorStep, instantaneousPeak, currents, cabs, type Cx } from './induction';
+import { peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
+import { machineParams, magneticEnergy, openStatorFlux, openStatorStep, currents, cabs, type Cx } from './induction';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
@@ -164,7 +164,7 @@ export class Multiphysics {
     if (mid) {
       psiS = [2 * mid.s[0] - psiS0[0], 2 * mid.s[1] - psiS0[1]];
       psiR = [2 * mid.r[0] - psiR0[0], 2 * mid.r[1] - psiR0[1]];
-      peak = Math.max(state.energized ? peak : 0, instantaneousPeak(currents(m, mid.s, mid.r).is, m.ws * time));
+      peak = Math.max(state.energized ? peak : 0, peakOverInterval(currents(m, mid.s, mid.r).is, 3, m.ws * (time - h / 2), m.ws * (time + h / 2)));
     } else {
       const interrupted = magneticEnergy(m, psiS0, psiR0) - magneticEnergy(m, openStatorFlux(m, psiR0), psiR0);
       const step = openStatorStep(m, psiR0, h, omega);
@@ -378,7 +378,13 @@ export class Multiphysics {
       if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0 }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
-      for (const [id, v] of Object.entries(r.electrical.readings)) totalElectrical.readings[id].power += v.power * h / dt;
+      const start = s.time + (dt - remaining), turn = (f: number) => 2 * Math.PI * f;
+      for (const [id, v] of Object.entries(r.electrical.readings)) {
+        const total = totalElectrical.readings[id];
+        total.power += v.power * h / dt;
+        // Magnetic releases act on the instantaneous current: track its largest value across the substeps.
+        if (v.currentPhasor && v.frequency) total.peakCurrent = Math.max(total.peakCurrent ?? 0, peakOverInterval(v.currentPhasor, v.phases ?? 1, turn(v.frequency) * start, turn(v.frequency) * (start + h)));
+      }
       remaining -= h;
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);

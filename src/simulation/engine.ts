@@ -7,6 +7,7 @@ import {
   solveLinear,
   sourceMode,
   type ElectricalResult,
+  type ElectricalReading,
 } from "./electrical";
 import { warnOnlyTemperature, thermalTau, thermalThreshold } from "./parameters";
 import { inventoryVolume } from "./water";
@@ -129,6 +130,17 @@ export interface RunawayState {
   safetyId: string;
   reduced: boolean;
   overshoot: number;
+}
+/**
+ * Magnetic (instantaneous) release. The setting k·In is the RMS value of a symmetric current, as on
+ * breaker curves (IEC 60898/60947-2); the release responds to the instantaneous current, so on AC it
+ * trips when |i(t)| ≥ √2·k·In. An asymmetric switch-on current (DC offset of a motor inrush) can
+ * therefore trip a release whose setting lies above the symmetric RMS current. DC: |i| ≥ k·In.
+ */
+function magneticRelease(r: ElectricalReading, current: number, setting: number) {
+  if (!r.ac) return { trip: current >= setting, message: `${current.toFixed(1)} A reached the instantaneous setting of ${setting.toFixed(1)} A` };
+  const peak = r.peakCurrent ?? Math.SQRT2 * current, threshold = Math.SQRT2 * setting;
+  return { trip: peak >= threshold, message: `instantaneous current peak of ${peak.toFixed(1)} A reached √2 × the ${setting.toFixed(1)} A RMS setting (${threshold.toFixed(1)} A)` };
 }
 export class Simulation {
   private ownedProject!: Project;
@@ -737,12 +749,13 @@ export class Simulation {
         if (c.kind === "sourceAC" || c.kind === "source3") {
           // Mains supplies: thermal-magnetic output protection with In = current rating, the same
           // characteristic as the breaker (thermal image θ, trip at θ ≥ 1.3²; instantaneous trip at
-          // magneticTrip × In). Motor starting surges below the magnetic threshold are tolerated.
+          // magneticTrip × In, compared with the instantaneous peak). Motor starting surges below the magnetic
+          // threshold are tolerated.
           const b = (this.breakers[c.id] ??= { theta: 0, tripped: false }), x2 = (current / rating) ** 2;
           b.theta = x2 + (b.theta - x2) * Math.exp(-dt / prop(c, "thermalTimeConstant", 60));
-          const magnetic = current >= rating * prop(c, "magneticTrip", 10);
-          if (magnetic || b.theta >= thermalThreshold("breaker") ** 2) {
-            this.tripped[c.id] = `${c.name}: output protection tripped — ${magnetic ? `${current.toFixed(1)} A RMS line current reached the instantaneous limit of ${prop(c, "magneticTrip", 10)} × ${rating} A` : `thermal overload at ${(current / rating).toFixed(2)} × the ${rating} A rating`}. Reduce the load or use a supply with a higher current rating; reset to re-arm.`;
+          const release = magneticRelease(r, current, rating * prop(c, "magneticTrip", 10));
+          if (release.trip || b.theta >= thermalThreshold("breaker") ** 2) {
+            this.tripped[c.id] = `${c.name}: output protection tripped — ${release.trip ? release.message : `thermal overload at ${(current / rating).toFixed(2)} × the ${rating} A rating`}. Reduce the load or use a supply with a higher current rating; reset to re-arm.`;
             this.fail(c.id, this.tripped[c.id]);
             changed = true;
           } else if (current > rating * (1 + 1e-9))
@@ -789,11 +802,11 @@ export class Simulation {
           const current = Math.abs(r.contactCurrent ?? r.current), x2 = (current / prop(c, "ratedCurrent")) ** 2;
           // Exact thermal-image update for the current held over the interval.
           b.theta = x2 + (b.theta - x2) * Math.exp(-dt / thermalTau(c));
-          const magnetic = current >= prop(c, "ratedCurrent") * prop(c, "magneticTrip");
-          if (!b.tripped && (magnetic || b.theta >= thermalThreshold(c.kind) ** 2) && this.faults[c.id] !== "stuckClosed") {
+          const release = magneticRelease(r, current, prop(c, "ratedCurrent") * prop(c, "magneticTrip"));
+          if (!b.tripped && (release.trip || b.theta >= thermalThreshold(c.kind) ** 2) && this.faults[c.id] !== "stuckClosed") {
             b.tripped = true;
             changed = true;
-            this.log(`${c.name}: ${magnetic ? `magnetic trip at ${current.toFixed(1)} A` : `thermal overload trip (${(current / prop(c, "ratedCurrent")).toFixed(2)} × In)`}. Re-close after cooling.`, "warning");
+            this.log(`${c.name}: ${release.trip ? `magnetic trip — ${release.message}` : `thermal overload trip (${(current / prop(c, "ratedCurrent")).toFixed(2)} × In)`}. Re-close after cooling.`, "warning");
             if (current > prop(c, "breakingCapacity"))
               this.violation(`${c.name}: interrupted current above its breaking capacity (arc and destruction are not modelled).`, "error");
           }

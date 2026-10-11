@@ -78,12 +78,3 @@ export function openStatorStep(m: MachineParams, psiR0: Cx, h: number, omega: nu
   const mid = scale(add(psiR0, psiR1), 0.5), ir = scale(mid, 1 / m.Lr);
   return { psiR: psiR1, rotorCopper: 3 * m.Rr * (ir[0] ** 2 + ir[1] ** 2) };
 }
-/** Largest instantaneous phase current (A) for the RMS phasor is at supply angle θ (rad). */
-export function instantaneousPeak(is: Cx, theta: number) {
-  let peak = 0;
-  for (let k = 0; k < 3; k++) {
-    const angle = theta - (2 * Math.PI * k) / 3;
-    peak = Math.max(peak, Math.abs(Math.SQRT2 * (is[0] * Math.cos(angle) - is[1] * Math.sin(angle))));
-  }
-  return peak;
-}
