@@ -338,14 +338,14 @@ export const definitions: Record<Kind, Definition> = {
   inductionMotor: {
     label: "Three-phase induction motor",
     category: "Electrical",
-    description: "Squirrel-cage machine on a balanced three-phase supply: dynamic dq model (stator and rotor flux transients: inrush with DC offset, transient torque, residual flux) whose steady state is the per-phase equivalent circuit (R1, X1, Xm, R2/s, X2); copper losses; shaft drives pumps and spatial rotors",
+    description: "Squirrel-cage machine on a balanced three-phase supply: dynamic dq model with a double (deep-bar) cage (stator and rotor flux transients: inrush with DC offset, transient torque, residual flux) whose steady state is the per-phase equivalent circuit; copper, iron and friction losses calibrated to IE3 data; shaft drives pumps and spatial rotors",
     spec: "400 V 3~ · 7.5 kW · 4-pole",
     cost: 420,
     prefix: "IM",
     ports: [...electric, shaft, heat, input("enable", "boolean", true)],
-    defaults: { ratedVoltage: 400, ratedFrequency: 50, poles: 4, ratedPower: 7500, ratedCurrent: 15, ratedTorque: 50, statorResistance: 0.75, statorReactance: 1.3, magnetizingReactance: 48, rotorResistance: 0.55, rotorReactance: 1.6, inertia: 0.045, friction: 0.002, loadTorque: 0, maxSpeed: 330, heatCapacity: 25000, loss: 18, conductance: 30, maxTemperature: 155, enabled: true },
+    defaults: { ratedVoltage: 400, ratedFrequency: 50, poles: 4, ratedPower: 7500, ratedCurrent: 14.4, ratedTorque: 49, statorResistance: 0.71, statorReactance: 1.17, magnetizingReactance: 33.5, rotorResistance: 0.809, rotorReactance: 5.79, rotorResistance2: 0.816, rotorReactance2: 0.858, coreResistance: 1160, inertia: 0.045, friction: 0.002, loadTorque: 0, maxSpeed: 330, heatCapacity: 25000, loss: 18, conductance: 30, maxTemperature: 155, enabled: true },
     variants: [
-      { id: "im45", label: "Induction motor 45 kW", cost: 2200, spec: "400 V 3~ · 45 kW · 4-pole", overrides: { ratedPower: 45000, ratedCurrent: 82, ratedTorque: 290, statorResistance: 0.07, statorReactance: 0.27, magnetizingReactance: 9, rotorResistance: 0.06, rotorReactance: 0.33, inertia: 0.38, friction: 0.01, heatCapacity: 150000, loss: 90 } },
+      { id: "im45", label: "Induction motor 45 kW", cost: 2200, spec: "400 V 3~ · 45 kW · 4-pole", overrides: { ratedPower: 45000, ratedCurrent: 80, ratedTorque: 290, statorResistance: 0.0778, statorReactance: 0.215, magnetizingReactance: 8.22, rotorResistance: 0.0436, rotorReactance: 0.766, rotorResistance2: 0.164, rotorReactance2: 0.154, coreResistance: 306, inertia: 0.38, friction: 0.01, heatCapacity: 150000, loss: 90 } },
     ],
   },
   starDeltaStarter: {

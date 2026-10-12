@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-12T10:16:35.310Z",
-  "wallSeconds": 18.43,
+  "executedAt": "2026-10-12T14:04:09.959Z",
+  "wallSeconds": 39.36,
   "passed": 124,
   "total": 124,
   "results": [
@@ -1294,10 +1294,10 @@
     {
       "name": "Induction motor 50 N·m load: torque balance",
       "domain": "multiphysics",
-      "expected": 50.304148479796915,
-      "measured": 50.30414855397676,
-      "absoluteError": 7.417984448920834e-8,
-      "relativeError": 1.4746267799165778e-9,
+      "expected": 50.306649318986956,
+      "measured": 50.306649405827166,
+      "absoluteError": 8.684020968985351e-8,
+      "relativeError": 1.7262173264455102e-9,
       "tolerance": "0.10%",
       "pass": true,
       "assumptions": "Air-gap torque = load + viscous friction at steady speed (5 s run-up)"
@@ -1311,14 +1311,14 @@
       "relativeError": null,
       "tolerance": "pass/fail",
       "pass": true,
-      "assumptions": "4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1452.2)"
+      "assumptions": "4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1464.14)"
     },
     {
       "name": "Induction motor run-up: relative energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": 1.3021559225050944e-11,
-      "absoluteError": 1.3021559225050944e-11,
+      "measured": 9.859341796586572e-13,
+      "absoluteError": 9.859341796586572e-13,
       "relativeError": null,
       "tolerance": "±0.00001",
       "pass": true,
@@ -1366,7 +1366,7 @@
       "relativeError": null,
       "tolerance": "",
       "pass": true,
-      "assumptions": "794 boundary cases across every component; none failed"
+      "assumptions": "800 boundary cases across every component; none failed"
     }
   ]
 }

@@ -380,25 +380,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 349080.74666397594,
-    "energyResidual": -2.0285369828343391e-7,
+    "suppliedEnergy": 359078.756507307,
+    "energyResidual": -2.228771336376667e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "IM-01 rpm",
-        "value": 1467.7313936197024
+        "value": 1475.8148184536683
       },
       {
         "name": "IM-01 current",
-        "value": 9.885539250139017
+        "value": 11.209730941913064
       },
       {
         "name": "IM-01 shaftPower",
-        "value": 5379.516525082495
+        "value": 5409.143823072082
       },
       {
         "name": "IM-01 temperature",
-        "value": 21.028494594706615
+        "value": 21.336448913230505
       }
     ]
   },
@@ -409,25 +409,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 349080.74666397594,
-    "energyResidual": -2.0285369828343391e-7,
+    "suppliedEnergy": 359078.756507307,
+    "energyResidual": -2.228771336376667e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "IM-01 rpm",
-        "value": 1467.7313936197024
+        "value": 1475.8148184536683
       },
       {
         "name": "IM-01 current",
-        "value": 9.885539250139017
+        "value": 11.209730941913064
       },
       {
         "name": "IM-01 shaftPower",
-        "value": 5379.516525082495
+        "value": 5409.143823072082
       },
       {
         "name": "IM-01 temperature",
-        "value": 21.028494594706615
+        "value": 21.336448913230505
       }
     ]
   },
@@ -438,25 +438,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 369316.04586779187,
-    "energyResidual": -0.0000013075186870992184,
+    "suppliedEnergy": 398716.0187600802,
+    "energyResidual": -0.000003459514118731022,
     "massResidual": 0,
     "probes": [
       {
         "name": "TS3-01 line current",
-        "value": -12.916220103818572
+        "value": -16.444956924969553
       },
       {
         "name": "Motor (star-delta) rpm",
-        "value": 1489.266747406488
+        "value": 1491.9521439270095
       },
       {
         "name": "Motor (soft starter) rpm",
-        "value": 1489.5034419043302
+        "value": 1492.0835954462848
       },
       {
         "name": "Motor (drive) rpm",
-        "value": 1489.288949145514
+        "value": 1491.946729924241
       }
     ]
   },
@@ -467,25 +467,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 369316.04586779187,
-    "energyResidual": -0.0000013075186870992184,
+    "suppliedEnergy": 398716.0187600802,
+    "energyResidual": -0.000003459514118731022,
     "massResidual": 0,
     "probes": [
       {
         "name": "TS3-01 line current",
-        "value": -12.916220103818572
+        "value": -16.444956924969553
       },
       {
         "name": "Motor (star-delta) rpm",
-        "value": 1489.266747406488
+        "value": 1491.9521439270095
       },
       {
         "name": "Motor (soft starter) rpm",
-        "value": 1489.5034419043302
+        "value": 1492.0835954462848
       },
       {
         "name": "Motor (drive) rpm",
-        "value": 1489.288949145514
+        "value": 1491.946729924241
       }
     ]
   },

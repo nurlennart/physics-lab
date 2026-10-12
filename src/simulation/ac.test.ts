@@ -77,12 +77,18 @@ describe("three-phase induction motor", () => {
     // Dynamic machine: compare after the electromagnetic transient has decayed (slowest mode ~1 s at standstill).
     for (let i = 0; i < 20 / DT; i++) s.step();
     expect(s.multiphysics.motors[motor.id].omega).toBe(0);
-    const z2: C = [p.rotorResistance, p.rotorReactance], xm: C = [0, p.magnetizingReactance];
-    const z = add([p.statorResistance, p.statorReactance], div(mul(xm, z2), add(xm, z2)));
-    const i1 = 400 / Math.sqrt(3) / abs(z), i2 = i1 * abs(xm) / abs(add(xm, z2));
-    const torque = 3 * i2 * i2 * p.rotorResistance / (2 * Math.PI * 50 / 2);
-    expect(rel(s.electrical.readings[motor.id].current, i1)).toBeLessThan(1e-6);
+    // Independent double-cage equivalent circuit at s = 1, with the iron-loss resistance across the phase voltage.
+    const v = 400 / Math.sqrt(3), cage = (r: number, x: number): C => [r, x], par = (a: C, b: C) => div(mul(a, b), add(a, b));
+    const running = cage(p.rotorResistance, p.rotorReactance), starting = cage(p.rotorResistance2, p.rotorReactance2), xm: C = [0, p.magnetizingReactance];
+    const z = add([p.statorResistance, p.statorReactance], par(xm, par(running, starting)));
+    const i1 = div([v, 0], z), airGap = mul(i1, par(xm, par(running, starting)));
+    const line = abs(add(i1, [v / p.coreResistance, 0]));
+    const torque = 3 * (abs(div(airGap, running)) ** 2 * p.rotorResistance + abs(div(airGap, starting)) ** 2 * p.rotorResistance2) / (2 * Math.PI * 50 / 2);
+    expect(rel(s.electrical.readings[motor.id].current, line)).toBeLessThan(1e-6);
     expect(rel(s.electrical.readings[motor.id].machine!.torque, torque)).toBeLessThan(1e-6);
+    // A deep-bar (double-cage) motor: starting torque about 2.2 × rated, starting current about 7 × rated.
+    expect(torque / p.ratedTorque).toBeGreaterThan(2);
+    expect(line / p.ratedCurrent).toBeGreaterThan(6.5);
   });
   it("runs up to near synchronous speed, balances power and conserves energy", () => {
     const { b, motor } = rig();
@@ -91,8 +97,8 @@ describe("three-phase induction motor", () => {
     const m = s.multiphysics.motors[motor.id], r = s.electrical.readings[motor.id];
     expect(m.omega * 30 / Math.PI).toBeGreaterThan(1490);
     expect(m.omega * 30 / Math.PI).toBeLessThan(1500);
-    // Electrical input = stator + rotor copper + mechanical (air-gap torque × speed).
-    expect(rel(r.power, r.machine!.statorCopper + r.machine!.rotorCopper + r.machine!.torque * m.omega)).toBeLessThan(1e-6);
+    // Electrical input = stator + rotor copper + iron loss + mechanical (air-gap torque × speed).
+    expect(rel(r.power, r.machine!.statorCopper + r.machine!.rotorCopper + r.machine!.coreLoss + r.machine!.torque * m.omega)).toBeLessThan(1e-6);
     expect(r.powerFactor!).toBeLessThan(0.5);
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-4);
   });

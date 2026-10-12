@@ -279,7 +279,7 @@ export default function Telemetry() {
                 { name: 'Spatial kinetic / potential / spring Δ', value: delta('spatialEnergy') },
                 { name: 'Contact, stop and brake heat', value: delta('mechanicalLoss') },
                 { name: "Electrical conversion (internal)", value: delta("energy") },
-                { name: "Motor copper heat (internal)", value: delta("copper") },
+                { name: "Motor copper and iron heat (internal)", value: delta("copper") },
                 { name: "Pump shaft work (internal)", value: delta("pumpWork") },
                 { name: "Net pump hydraulic work Δp·Q (internal)", value: delta("hydraulicWork") },
                 { name: "Hydraulic dissipation (internal)", value: delta("dissipation") },

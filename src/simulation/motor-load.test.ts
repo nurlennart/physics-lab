@@ -52,10 +52,9 @@ describe("opposing external shaft load", () => {
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-6);
   });
   it("a load above the steady locked-rotor torque is held after the switch-on transient, never reversed", () => {
-    const { s, motor } = motorRig(80); // steady locked-rotor torque ≈ 54 N·m
-    // At standstill the switch-on DC flux decays slowly (τ ≈ Ls/Rs + Lr/Rr ≈ 0.5 s) and makes the torque
-    // oscillate at 50 Hz around the 54 N·m mean (peaks ≈ 165 N·m), so the rotor twitches forward for
-    // about half a second before the load holds it.
+    const { s, motor } = motorRig(150); // steady locked-rotor torque ≈ 108 N·m (deep-bar double cage)
+    // At standstill the switch-on DC flux decays slowly and makes the torque oscillate at 50 Hz around the
+    // 108 N·m mean, so the rotor twitches forward for a moment before the load holds it.
     run(s, 1, () => expect(s.multiphysics.motors[motor.id].omega).toBeGreaterThanOrEqual(0));
     run(s, 2, () => expect(s.multiphysics.motors[motor.id].omega).toBe(0));
     expect(Math.abs(s.energyResidual / s.suppliedEnergy)).toBeLessThan(1e-6);

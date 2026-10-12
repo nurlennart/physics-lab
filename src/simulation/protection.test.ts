@@ -149,21 +149,21 @@ describe("magnetic release on AC: instantaneous current", () => {
     return { s: new Simulation(b.p), device, motor };
   }
   it("a 7.5 kW direct-on-line start: the asymmetric first peak trips a setting the symmetric current stays below", () => {
-    // Switch-on at θ = 0: first instantaneous peak ≈ 130 A (DC offset); symmetric locked-rotor peak ≈ 105 A,
-    // largest RMS phasor sample ≈ 85 A. Setting 5.5 × 16 A = 88 A RMS → 124.5 A instantaneous.
-    const { s, device, motor } = motorStart(5.5);
+    // Switch-on at θ = 0: first instantaneous peak ≈ 161 A (DC offset); symmetric locked-rotor peak √2·98 ≈ 139 A,
+    // largest RMS phasor sample ≈ 97 A. Setting 6.5 × 16 A = 104 A RMS → 147 A instantaneous.
+    const { s, device, motor } = motorStart(6.5);
     s.step();
     expect(s.breakers[device.id].tripped).toBe(true);
-    expect(s.events.some((e) => /magnetic trip — instantaneous current peak of 13\d\.\d A/.test(e.message))).toBe(true);
-    expect(s.multiphysics.motors[motor.id].inrushPeak).toBeGreaterThan(124.5);
-    // RMS samples alone would not have reached the 88 A setting.
+    expect(s.events.some((e) => /magnetic trip — instantaneous current peak of 1[56]\d\.\d A/.test(e.message))).toBe(true);
+    expect(s.multiphysics.motors[motor.id].inrushPeak).toBeGreaterThan(147);
+    // RMS samples alone would not have reached the 104 A setting.
     const rms = motorStart(1000);
     let largest = 0;
     for (let i = 0; i < 30; i++) { rms.s.step(); largest = Math.max(largest, rms.s.electrical.readings[rms.device.id].current); }
-    expect(largest).toBeLessThan(88);
+    expect(largest).toBeLessThan(104);
   });
   it("a setting above the asymmetric peak rides through the start; steady AC trips at k·In RMS", () => {
-    const { s, device, motor } = motorStart(6); // 96 A RMS → 135.8 A instantaneous
+    const { s, device, motor } = motorStart(7.5); // 120 A RMS → 169.7 A instantaneous
     for (let i = 0; i < 120; i++) s.step();
     expect(s.breakers[device.id].tripped).toBe(false);
     expect(s.multiphysics.motors[motor.id].omega * 30 / Math.PI).toBeGreaterThan(1450);

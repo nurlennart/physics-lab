@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-12T10:16:35.310Z. 124/124 checks passed in 18.43 s wall time.
+Executed: 2026-10-12T14:04:09.959Z. 124/124 checks passed in 39.36 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -121,10 +121,10 @@ Executed: 2026-10-12T10:16:35.310Z. 124/124 checks passed in 18.43 s wall time.
 | Three-phase line current | electrical | 43.30127 | 43.30127 | 7.105e-15 | 1.641e-16 | 1.0e-7% | PASS | I_L = P/(√3·V_LL) |
 | AC R–L load: RMS current | electrical | 12.351673 | 12.351673 | 1.776e-15 | 1.438e-16 | 1.0e-7% | PASS | I = V/√(R² + (ωL)²), 10 Ω + 50 mH at 50 Hz |
 | AC R–L load: power factor | electrical | 0.53702931 | 0.53702931 | 1.110e-16 | 2.067e-16 | 1.0e-7% | PASS | cos φ = R/√(R² + (ωL)²) |
-| Induction motor 50 N·m load: torque balance | multiphysics | 50.304148 | 50.304149 | 7.418e-8 | 1.475e-9 | 0.10% | PASS | Air-gap torque = load + viscous friction at steady speed (5 s run-up) |
-| Induction motor rated-load speed within 1400–1490 rpm | multiphysics | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | 4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1452.2) |
-| Induction motor run-up: relative energy residual | multiphysics | 0 | 1.3021559e-11 | 1.302e-11 | — | ±0.00001 | PASS | 1 |
+| Induction motor 50 N·m load: torque balance | multiphysics | 50.306649 | 50.306649 | 8.684e-8 | 1.726e-9 | 0.10% | PASS | Air-gap torque = load + viscous friction at steady speed (5 s run-up) |
+| Induction motor rated-load speed within 1400–1490 rpm | multiphysics | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | 4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1464.14) |
+| Induction motor run-up: relative energy residual | multiphysics | 0 | 9.8593418e-13 | 9.859e-13 | — | ±0.00001 | PASS | 1 |
 | PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.703e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
 | Adaptive pumping station (270 steps vs 7200): delivered volume | multiphysics | 618.62233 | 618.62231 | 2.786e-5 | 4.503e-8 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
 | Adaptive pumping station: relative energy residual | multiphysics | 0 | 4.2308356e-8 | 4.231e-8 | — | ±0.00001 | PASS | 1 |
-| E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 794 boundary cases across every component; none failed |
+| E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 800 boundary cases across every component; none failed |

@@ -1,6 +1,6 @@
 import { definitions, isSource, perPoleKinds, prop, terminalKey, type Component, type Project } from "./model";
 import { actualResistance } from "./parameters";
-import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, type MachineParams } from "./induction";
+import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, rotorCopper, steadyCircuit, type MachineParams } from "./induction";
 import { expm, preciseDot, solveComplex, solveLinear, solveLyapunov } from "./linear-algebra";
 export { solveComplex, solveLinear } from "./linear-algebra";
 type Cx = [number, number];
@@ -11,15 +11,8 @@ const cmul = (a: Cx, b: Cx): Cx => [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1
 const cdiv = (a: Cx, b: Cx): Cx => { const d = b[0] * b[0] + b[1] * b[1]; return [(a[0] * b[0] + a[1] * b[1]) / d, (a[1] * b[0] - a[0] * b[1]) / d]; };
 const cabs = (a: Cx) => Math.hypot(a[0], a[1]);
 const conj = (a: Cx): Cx => [a[0], -a[1]];
-/** Induction machine per-phase equivalent circuit at slip s (rad/s quantities, reactances at supply frequency). */
-export function inductionCircuit(c: Component, frequency: number, omega: number) {
-  const scale = frequency / prop(c, "ratedFrequency", 50), syncSpeed = 2 * Math.PI * frequency / (prop(c, "poles", 4) / 2);
-  const slip = syncSpeed > 0 ? (syncSpeed - omega) / syncSpeed : 1;
-  const z1: Cx = [prop(c, "statorResistance"), prop(c, "statorReactance") * scale], xm: Cx = [0, prop(c, "magnetizingReactance") * scale];
-  const z2: Cx | null = Math.abs(slip) > 1e-9 ? [prop(c, "rotorResistance") / slip, prop(c, "rotorReactance") * scale] : null;
-  const branch = z2 ? cdiv(cmul(xm, z2), cadd(xm, z2)) : xm;
-  return { impedance: cadd(z1, branch), z2, xm, slip, syncSpeed };
-}
+/** Induction machine per-phase steady equivalent circuit (double cage, iron loss) at mechanical speed ω (rad/s). */
+export const inductionCircuit = (c: Component, frequency: number, omega: number) => steadyCircuit(machineParams(c, frequency), omega);
 export interface ElectricalReading {
   inputPower?: number;
   /**
@@ -48,7 +41,7 @@ export interface ElectricalReading {
   powerFactor?: number | null;
   frequency?: number;
   /** Induction machines: air-gap torque (N·m), copper losses (W) and slip; dynamic model: midpoint flux linkages. */
-  machine?: { torque: number; statorCopper: number; rotorCopper: number; slip: number; psiS?: [number, number]; psiR?: [number, number]; lineRatio?: number };
+  machine?: { torque: number; statorCopper: number; rotorCopper: number; coreLoss: number; slip: number; psiS?: [number, number]; psiR?: [number, number][]; lineRatio?: number };
   /** AC: complex RMS current phasor of the conducting path (A), referred to the supply angle ωt. */
   currentPhasor?: [number, number];
   /** Largest instantaneous current |i(t)| over the step (A), across all substeps: AC line current, or DC with storage. */
@@ -148,7 +141,7 @@ export interface ElectricalRuntime {
    * is used: a midpoint Thevenin equivalent over the step `h`, or for h = 0 (paused re-solve) a current
    * source carrying the present winding current. Without them the steady equivalent circuit is used.
    */
-  inductionMotors?: Record<string, { omega: number; enabled: boolean; psiS?: [number, number]; psiR?: [number, number]; h?: number }>;
+  inductionMotors?: Record<string, { omega: number; enabled: boolean; psiS?: [number, number]; psiR?: [number, number][]; h?: number }>;
   /** Protective devices currently tripped open (breakers, motor protectors). */
   open?: Set<string>;
   /** Motor starters: contactor state; soft starter: target fundamental voltage ratio (0–1) while ramping. */
@@ -413,8 +406,9 @@ export function solveElectricalCore(
       }
       if (c.kind === "inductionMotor") {
         if (runtime.inductionMotors?.[c.id]?.enabled === false || !closedLoopIn(members, c)) continue;
-        const a = lineRatio(c), scale = frequency * order / prop(c, "ratedFrequency", 50);
-        z = [(prop(c, "statorResistance") + prop(c, "rotorResistance")) / (a * a), scale * (prop(c, "statorReactance") + prop(c, "rotorReactance")) / (a * a)];
+        // Harmonic fields rotate far faster than the rotor (slip ≈ 1): the locked-rotor circuit at h·f, both cages and iron loss.
+        const a = lineRatio(c), locked = inductionCircuit(c, frequency * order, 0).impedance;
+        z = [locked[0] / (a * a), locked[1] / (a * a)];
       } else z = passiveImpedance(c, w, (reactances.get(c.id) ?? 0) * order);
       impedance.set(c.id, z);
       const y = cdiv([1, 0], z), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, end(c)));
@@ -486,6 +480,9 @@ export function solveElectricalCore(
         const a = lineRatio(c);
         if (state?.psiS && state.psiR) {
           const m = machineParams(c, frequency), p = indices.get(node(c.id, "a")), q = indices.get(node(c.id, "b"));
+          // Iron loss: the core-loss resistance across the winding voltage, a²/Rc at the line terminals.
+          const core = Number.isFinite(m.Rc) ? a * a / m.Rc : 0;
+          if (core) { add(p, p, [core, 0]); add(q, q, [core, 0]); add(p, q, [-core, 0]); add(q, p, [-core, 0]); }
           if (!state.h) {
             // Paused re-solve: the windings keep their present current (inductive continuity).
             const { is } = currents(m, state.psiS, state.psiR);
@@ -569,16 +566,15 @@ export function solveElectricalCore(
       // Star-connected motor: winding quantities are v = a·v_line, i = i_line/a; readings show line current.
       const a = c.kind === "inductionMotor" ? lineRatio(c) : 1;
       if (dyn) {
-        const { m, state } = dyn, slip = (m.ws - m.pairs * state.omega) / m.ws;
-        const mid = state.h ? midpointState(m, state.psiS!, state.psiR!, state.h, state.omega, [a * terminal[0], a * terminal[1]]) : { ...currents(m, state.psiS!, state.psiR!), psiS: state.psiS!, psiR: state.psiR! };
-        current = [a * mid.is[0], a * mid.is[1]];
-        machine = { torque: airGapTorque(m, mid.psiS, mid.is), statorCopper: phases * m.Rs * (mid.is[0] ** 2 + mid.is[1] ** 2), rotorCopper: phases * m.Rr * (mid.ir[0] ** 2 + mid.ir[1] ** 2), slip, psiS: mid.psiS, psiR: mid.psiR, ...(a !== 1 ? { lineRatio: a } : {}) };
+        const { m, state } = dyn, slip = (m.ws - m.pairs * state.omega) / m.ws, winding: Cx = [a * terminal[0], a * terminal[1]];
+        const mid = state.h ? midpointState(m, state.psiS!, state.psiR!, state.h, state.omega, winding) : { ...currents(m, state.psiS!, state.psiR!), psiS: state.psiS!, psiR: state.psiR! };
+        const core: Cx = Number.isFinite(m.Rc) ? [winding[0] / m.Rc, winding[1] / m.Rc] : [0, 0];
+        current = [a * (mid.is[0] + core[0]), a * (mid.is[1] + core[1])];
+        // Per-phase losses × 3 (the machine is always three-phase; `phases` is 3 in its balanced island).
+        machine = { torque: airGapTorque(m, mid.psiS, mid.is), statorCopper: 3 * m.Rs * (mid.is[0] ** 2 + mid.is[1] ** 2), rotorCopper: rotorCopper(m, mid.ir), coreLoss: Number.isFinite(m.Rc) ? 3 * cabs(winding) ** 2 / m.Rc : 0, slip, psiS: mid.psiS, psiR: mid.psiR, ...(a !== 1 ? { lineRatio: a } : {}) };
       } else if (circuit) {
-        const winding: Cx = [current[0] / a, current[1] / a];
-        const rotor: Cx = circuit.z2 ? cdiv(cmul(winding, circuit.xm), cadd(circuit.xm, circuit.z2)) : [0, 0];
-        const r2 = prop(c, "rotorResistance"), rotorSq = rotor[0] ** 2 + rotor[1] ** 2;
-        const airGap = circuit.z2 ? phases * rotorSq * r2 / circuit.slip : 0;
-        machine = { torque: circuit.syncSpeed > 0 ? airGap / circuit.syncSpeed : 0, statorCopper: phases * cabs(winding) ** 2 * prop(c, "statorResistance"), rotorCopper: phases * rotorSq * r2, slip: circuit.slip, ...(a !== 1 ? { lineRatio: a } : {}) };
+        const split = circuit.split([a * terminal[0], a * terminal[1]]);
+        machine = { torque: split.torque, statorCopper: split.statorCopper, rotorCopper: split.rotorCopper, coreLoss: split.coreLoss, slip: circuit.slip, ...(a !== 1 ? { lineRatio: a } : {}) };
       }
       // Line power factor at the starter's supply terminal (motor plus thyristor reactance), not the element's own.
       const lineSide = V(node(c.id, "a")), lineApparent = cabs(lineSide) * cabs(current);

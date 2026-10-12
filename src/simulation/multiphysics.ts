@@ -2,7 +2,7 @@ import { radiatorUA } from './devices';
 import { prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
-import { machineParams, magneticEnergy, openStatorFlux, openStatorStep, currents, cabs, type Cx } from './induction';
+import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, type TankState } from './hydraulic';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
@@ -12,7 +12,7 @@ import { shaftBody } from './spatial-model';
 export interface MotorState {
   omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number; angle: number;
   /** Induction machines: stator/rotor flux linkages (Wb, RMS phasors in the supply frame), supply frequency, largest instantaneous phase current since energisation (A), flux change rate (1/s). */
-  psiS?: Cx; psiR?: Cx; frequency?: number; inrushPeak?: number; energized?: boolean; fluxRate?: number;
+  psiS?: Cx; psiR?: Cx[]; frequency?: number; inrushPeak?: number; energized?: boolean; fluxRate?: number;
   /** Speed-controlled DC drive: integral part of the armature current reference (A). */
   speedIntegral?: number;
 }
@@ -61,7 +61,7 @@ export class Multiphysics {
         this.tanks[c.id] = { volume, mass, temperature, vessel: prop(c, 'vesselHeatCapacity') };
         this.initialMass += mass;
       }
-      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: [0, 0] as Cx, frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
+      if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
@@ -207,7 +207,7 @@ export class Multiphysics {
       ...s.devices.runtime(h),
       contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, filaments: s.filamentRatios(), open: s.openDevices(),
       motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { enabled: controls[c.id].enabled, duty: this.dcDuty(c, controls[c.id].command, omega[i]), emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
-      inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? [0, 0], h }]] : [])),
+      inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), h }]] : [])),
       ...this.converterRuntime(s),
     });
     const speeds: Record<string, number> = {};
@@ -228,7 +228,7 @@ export class Multiphysics {
       const torque = c.kind === 'inductionMotor' ? machine?.torque ?? 0 : prop(c, 'torqueConstant') * current;
       // DC armature: the current's within-step variance (storage transients) adds to the copper loss; the supply-side
       // current is duty × the armature current.
-      const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper : 0) : (current * current + (running && ctrl.duty > 0 ? (r?.currentVariance ?? 0) / ctrl.duty ** 2 : 0)) * prop(c, 'resistance');
+      const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper + machine.coreLoss : 0) : (current * current + (running && ctrl.duty > 0 ? (r?.currentVariance ?? 0) / ctrl.duty ** 2 : 0)) * prop(c, 'resistance');
       return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia'), angle: this.motors[c.id]?.angle ?? 0,
         ...(c.kind === 'inductionMotor' ? { psiS: this.motors[c.id]?.psiS, psiR: this.motors[c.id]?.psiR, frequency: this.motors[c.id]?.frequency, inrushPeak: this.motors[c.id]?.inrushPeak, energized: this.motors[c.id]?.energized, fluxRate: this.motors[c.id]?.fluxRate } : {}) };
     });
@@ -287,16 +287,15 @@ export class Multiphysics {
    * (contact arc, booked as heat in the motor). Returns the extra heat (J) of the open-stator path.
    */
   private advanceFlux(c: Component, reading: ElectricalReading | undefined, omega: number, h: number, window: [number, number]) {
-    const state = this.motors[c.id], psiS0 = state.psiS ?? [0, 0], psiR0 = state.psiR ?? [0, 0];
+    const frequency = reading?.frequency ?? this.motors[c.id].frequency ?? prop(c, 'ratedFrequency', 50), m = machineParams(c, frequency);
+    const state = this.motors[c.id], psiS0 = state.psiS ?? [0, 0], psiR0 = state.psiR ?? noRotorFlux(m);
     const mid = reading?.machine?.psiS && reading.machine.psiR ? { s: reading.machine.psiS, r: reading.machine.psiR } : undefined;
-    const frequency = reading?.frequency ?? state.frequency ?? prop(c, 'ratedFrequency', 50), m = machineParams(c, frequency);
-    let heat = 0, psiS: Cx, psiR: Cx, peak = state.inrushPeak ?? 0;
+    let heat = 0, psiS: Cx, psiR: Cx[], peak = state.inrushPeak ?? 0;
     if (mid) {
       psiS = [2 * mid.s[0] - psiS0[0], 2 * mid.s[1] - psiS0[1]];
-      psiR = [2 * mid.r[0] - psiR0[0], 2 * mid.r[1] - psiR0[1]];
-      // Line current: a star-connected winding carries i_line/a.
-      const is = currents(m, mid.s, mid.r).is, a = reading?.machine?.lineRatio ?? 1;
-      peak = Math.max(state.energized ? peak : 0, peakOverInterval([a * is[0], a * is[1]], 3, window[0], window[1]));
+      psiR = mid.r.map((r, k) => [2 * r[0] - psiR0[k][0], 2 * r[1] - psiR0[k][1]]);
+      // Largest instantaneous line current (winding plus iron-loss current) over the substep.
+      peak = Math.max(state.energized ? peak : 0, peakOverInterval(reading!.currentPhasor ?? [0, 0], 3, window[0], window[1]));
     } else {
       const interrupted = magneticEnergy(m, psiS0, psiR0) - magneticEnergy(m, openStatorFlux(m, psiR0), psiR0);
       const step = openStatorStep(m, psiR0, h, omega);

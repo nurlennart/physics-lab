@@ -31,8 +31,8 @@ function driveRig(load: number, props: Record<string, Property> = {}, motorProps
 
 describe("star-delta starter", () => {
   it("star: line current and torque are one third of direct-on-line", () => {
-    // 80 N·m holds the rotor in both cases (steady locked-rotor torque ≈ 54 N·m direct, 18 N·m in star).
-    const star = starterRig("starDeltaStarter", 80, { starTime: 100 }), dol = starterRig("dol", 80);
+    // 150 N·m holds the rotor in both cases (steady locked-rotor torque ≈ 108 N·m direct, 36 N·m in star).
+    const star = starterRig("starDeltaStarter", 150, { starTime: 100 }), dol = starterRig("dol", 150);
     run(star.s, 4); run(dol.s, 4);
     const ratio = star.s.electrical.readings[star.src.id].current / dol.s.electrical.readings[dol.src.id].current;
     // Exactly 1/3 for a stiff supply; the supply's internal impedance drops less voltage at the lower star
@@ -45,7 +45,7 @@ describe("star-delta starter", () => {
   it("star → open transition → delta at the set times; reconnection surge; final state equals direct-on-line", () => {
     const { s, motor, src, starter } = starterRig("starDeltaStarter", 10, { starTime: 2, transitionTime: 0.05 });
     const dol = starterRig("dol", 10);
-    let starPeak = 0, surge = 0;
+    let starPeak = 0, surge = 0, dolPeak = 0;
     run(s, 1.99, () => { starPeak = Math.max(starPeak, s.electrical.readings[src.id].peakCurrent ?? 0); });
     expect(s.multiphysics.starters[starter!.id].mode).toBe("star");
     expect(rpm(s, motor)).toBeGreaterThan(1450); // runs up in star: 10 N·m < star torque
@@ -56,15 +56,18 @@ describe("star-delta starter", () => {
     expect(s.multiphysics.starters[starter!.id].mode).toBe("delta");
     run(s, 0.2, () => { surge = Math.max(surge, s.electrical.readings[src.id].peakCurrent ?? 0); });
     run(s, 3);
-    run(dol.s, 5.26);
-    // Star first peak ≈ one third of the direct-on-line asymmetric peak (131 A); the reconnection with residual flux surges.
-    expect(starPeak).toBeLessThan(50);
+    run(dol.s, 0.2, () => { dolPeak = Math.max(dolPeak, dol.s.electrical.readings[dol.src.id].peakCurrent ?? 0); });
+    run(dol.s, 5.06);
+    // Star first peak ≈ one third of the direct-on-line asymmetric peak (≈ 161 A); the reconnection with residual flux surges.
+    expect(starPeak / dolPeak).toBeGreaterThan(0.3);
+    expect(starPeak / dolPeak).toBeLessThan(0.4);
     expect(surge).toBeGreaterThan(2 * starPeak);
     expect(rpm(s, motor)).toBeCloseTo(rpm(dol.s, dol.motor), 2);
     closes(s, 1e-8);
   });
   it("a load above the star torque does not start in star (physical limit of the method)", () => {
-    const { s, motor } = starterRig("starDeltaStarter", 20, { starTime: 3 });
+    // Star torque ≈ 36 N·m at standstill (one third of 108 N·m direct-on-line).
+    const { s, motor } = starterRig("starDeltaStarter", 45, { starTime: 3 });
     run(s, 2.9);
     expect(rpm(s, motor)).toBeLessThan(1);
   });
@@ -246,7 +249,8 @@ describe("variable-frequency drive", () => {
 
 describe("elements between starter and motor", () => {
   function leadRig(kind: "starDeltaStarter" | "softStarter", props: Record<string, Property> = {}) {
-    const b = new Builder(), src = b.add("source3", { lineVoltage: 400, maxCurrent: 63, maxPower: 1e7 });
+    // A supply rated for the delta reconnection surge; these tests concern the motor leads.
+    const b = new Builder(), src = b.add("source3", { lineVoltage: 400, maxCurrent: 125, maxPower: 1e7 });
     const starter = b.add(kind, props), relay = b.add("motorProtector", { ratedCurrent: 9 }), cable = b.add("cable", { length: 50, area: 2.5 }), motor = b.add("inductionMotor", { loadTorque: 10 });
     b.series(src, starter, relay, cable, motor);
     return { s: new Simulation(b.p), src, starter, relay, cable, motor };

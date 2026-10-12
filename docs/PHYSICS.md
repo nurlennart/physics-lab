@@ -408,28 +408,45 @@ The drive never applies free shaft torque. Not modelled: armature inductance, cu
 
 ### Induction motor
 
-A 5th-order dq model (stator and rotor flux linkages plus shaft speed) in RMS complex phasors in the network's synchronous frame, motor convention:
+A dq model of the stator and a double (deep-bar) rotor cage plus shaft speed, in RMS complex phasors in the network's synchronous frame, motor convention:
 
 ```
 v  = Rs·is + dψs/dt + jωs·ψs
-0  = Rr·ir + dψr/dt + j(ωs − ωr)·ψr          ωr = (p/2)·ω_mech
-ψs = Ls·is + Lm·ir,  ψr = Lm·is + Lr·ir       L = X/ω_rated
+0  = Rk·ik + dψk/dt + j(ωs − ωr)·ψk                 cage k = running, starting;  ωr = (p/2)·ω_mech
+ψs = Ls·is + Lm·Σi,   ψk = Lm·(is + Σi) + Lσk·ik     L = X/ω_rated
 Te = 3·(p/2)·Im(conj(ψs)·is)
-W  = (3/2)·Re(ψs·is* + ψr·ir*)
+W  = (3/2)·Re(Σ ψ·i*)
+P_fe = 3·|v|²/Rc,   Rc ∝ √(f/f_rated)
 ```
 
-In steady state it reduces exactly to the per-phase equivalent circuit Z₁ + jX_m ∥ (R₂′/s + jX₂′), T = 3·I₂²·(R₂′/s)/ω_s. Each substep uses the implicit midpoint rule; the machine enters the network as a midpoint Thevenin source, so P_in·h = (P_cu,s + P_cu,r + Te·ω)·h + ΔW holds exactly and magnetic energy is in the ledger. Paused re-solves hold the present winding current.
+The two cages share only the magnetizing flux. The starting cage (high resistance, low leakage) carries the rotor current at standstill; near synchronous speed the running cage (low resistance, high leakage) does. That is the deep-bar effect: about twice rated starting torque with a few percent rated slip, from constant parameters, so the magnetic energy and the ledger stay exact. In steady state the model reduces exactly to the per-phase equivalent circuit Z₁ + jX_m ∥ (R₂′/s + jX₂′) ∥ (R₂s′/s + jX₂s′), with the iron-loss resistance Rc across the winding voltage. Without a starting cage (`rotorResistance2` = 0) it is the classic single-cage machine.
 
-- **Default 7.5 kW / 400 V / 50 Hz / 4-pole:** locked rotor 74 A / 54 N·m, rated point ≈ 1,450 RPM, 14 A, 52 N·m, breakdown 131 N·m at ≈ 1,200 RPM. A 45 kW variant exists.
-- **Inrush:** the first peak includes the decaying DC offset (130 A against a symmetric √2·74 A = 105 A); at standstill the switch-on flux decays with τ ≈ Ls/Rs + Lr/Rr ≈ 0.5 s and torque oscillates up to ≈ 165 N·m.
-- **Interruption:** opening the supply forces is = 0; the stator field energy becomes heat (switching loss) and the rotor flux decays with T0′ = Lr/Rr (0.287 s), so reclosing gives a phase-dependent reconnection transient.
+Each substep uses the implicit midpoint rule on all windings at once: (R + (2/h + jΩ)·L)·i = v + (2/h)·ψ₀. The machine enters the network as a midpoint Thevenin source in parallel with its iron-loss conductance, so P_in·h = (P_cu,s + P_cu,r + P_fe + Te·ω)·h + ΔW holds exactly and magnetic energy is in the ledger. Copper, iron and friction losses heat the winding. Paused re-solves hold the present winding current; the resistive iron-loss current flows at once.
+
+**Losses.** Stator and rotor copper (per cage), iron loss and viscous bearing friction are computed separately. Stray load loss is not a separate term: the resistances are fitted to datasheet efficiency, which includes it. Iron loss grows as f^1.5 at constant flux (V/f), between hysteresis (∝ f) and eddy-current loss (∝ f²).
+
+**Calibration.** Both catalog motors are fitted to published IE3 data (400 V, 50 Hz, 4-pole: ABB M3KP, TEC, Universal UM3C and Baldor data sheets). `induction.test.ts` checks them against the data-sheet ranges.
+
+| 7.5 kW (132M) | No load | 25 % | 50 % | 75 % | 100 % | IE3 data |
+| --- | --- | --- | --- | --- | --- | --- |
+| Speed (RPM) | 1,499.8 | 1,491.8 | 1,483.4 | 1,474.5 | 1,465.0 | 1,455–1,465 |
+| Current (A) | 6.67 | 7.38 | 9.16 | 11.58 | 14.41 | 14.3–15.2 |
+| Efficiency | 0 | 86.0 % | 90.4 % | 91.0 % | 90.4 % | 90.4 / 90.9–91.4 / 90.0–91.4 % |
+| Power factor | 0.061 | 0.44 | 0.66 | 0.78 | 0.83 | 0.80–0.84 |
+| Losses: Cu₁ / Cu₂ / Fe / friction (W) | 94 / 0 / 138 / 49 | | | | 432 / 181 / 138 / 47 | |
+
+Locked rotor: 98 A (6.8 × In), 109 N·m (2.2 × Tn); breakdown 153 N·m (3.1 × Tn) at 1,030 RPM. The 45 kW variant (225M): 1,483 RPM, 80.5 A, 94.2 % (94.6 % at 75 %, 94.3 % at 50 %), power factor 0.86, 7.2 × In and 2.3 × Tn locked, breakdown 2.9 × Tn.
+
+- **Inrush:** the first peak includes the decaying DC offset (161 A against a symmetric √2·98 A = 139 A for the 7.5 kW motor); at standstill the switch-on flux makes the torque oscillate up to ≈ 250 N·m.
+- **Interruption:** opening the supply forces is = 0; the stator field energy becomes heat (switching loss) and the rotor fluxes decay in two modes (0.276 s and 13 ms for the 7.5 kW motor), so reclosing gives a phase-dependent reconnection transient.
 - An unpowered machine (open supply, open starter, unwired) is an open stator: zero current and torque, coasting under its loads.
 - **Starting allowance:** current above rating is reported only after it persists for more than 10 s (`MOTOR_START_ALLOWANCE`, a class-10 locked-rotor withstand). Winding temperature still decides failure. Overvoltage is reported above 105 % of rated voltage (IEC 60034-1 zone A).
-- Not modelled: saturation, core loss, deep-bar effect, single-phase machines, self-excitation with capacitors. The surrounding network is quasi-static.
+- **Harmonics** from drives see the locked-rotor circuit at the harmonic frequency (both cages, iron loss).
+- Not modelled: saturation (it would raise the magnetizing current above rated voltage), stray load loss as a separate term, rotor iron loss, temperature-dependent winding resistance, single-phase machines, self-excitation with capacitors. The surrounding network is quasi-static.
 
 ### Star-delta starter
 
-Star connection is an ideal ratio a = 1/√3 between line and machine: terminals see Z/a² = 3Z, line current and torque are one third of direct-on-line. After the star time both contactors open for the dead time (default 50 ms), the rotor flux decays and the rotor slows, then delta reconnects with residual flux (the transition surge). For the 7.5 kW motor at 10 N·m: 44 A first peak in star (131 A direct-on-line), 112 A at the delta transition. A load above about one third of locked-rotor torque does not start in star.
+Star connection is an ideal ratio a = 1/√3 between line and machine: terminals see Z/a² = 3Z, line current and torque are one third of direct-on-line. After the star time both contactors open for the dead time (default 50 ms), the rotor flux decays and the rotor slows, then delta reconnects with residual flux (the transition surge). For the 7.5 kW motor at 10 N·m: 54 A first peak in star (161 A direct-on-line), 129 A at the delta transition. A load above about one third of locked-rotor torque (≈ 36 N·m) does not start in star.
 
 Series elements between starter and motor (cable, overload relay, meter, switch) are motor leads: a cable stands for both lead sets (two conductors per winding), a device in the U1 leads counts once. Star: winding current = line current. Delta: winding current = line current/√3, so an overload relay in the leads is set to In/√3. A cable's thermal mass counts six conductors.
 
@@ -568,7 +585,7 @@ external electrical supply + signed external mechanical work
 
 - **Electrical:** single-frequency steady phasors outside induction machines; DC capacitors and inductors are dynamic, but there are no AC switching transients, no network transients from supply or cable inductance, no semiconductors beyond the starter and drive models above, no arcs, contact wear or ageing.
 - **Water:** liquid 1–95 °C only, incompressible flow with ρ_ref, constant c_p. No boiling, evaporation, freezing, sealed vessels, stratification, water hammer, spatial fluid, spills or leaks.
-- **Machines:** no saturation, core loss or single-phase machines; quasi-steady DC armature; no hydraulic turbine torque; pump curves are teaching approximations.
+- **Machines:** no saturation or single-phase machines; induction-motor stray load loss is folded into the fitted resistances; quasi-steady DC armature; no hydraulic turbine torque; pump curves are teaching approximations.
 - **Mechanics:** static housings only; no deformation, fracture or contact heat conduction; last-substep reaction readings.
 - **Control:** ideal actuator power, one-step response quantization, acyclic graphs only.
 - **Replay** reconstructs final state through the current engine; old archives that depended on a corrected defect can evolve differently. There is no timeline scrubbing.
