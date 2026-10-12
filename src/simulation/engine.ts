@@ -326,7 +326,11 @@ export class Simulation {
       if (isThermalMass(c) && (this.time === 0 || this.temperatures[c.id] === undefined))
         this.temperatures[c.id] =
           c.kind === "tank" || c.kind === "thermalMass" ? prop(c, "initialTemperature", 20) : projectAmbient(project);
-    return this.solve(true, 0);
+    const solved = this.solve(true, 0);
+    // The recorded start reflects only the final build-mode configuration, not a superseded one
+    // (e.g. 2 kW from a switch that was opened before the run).
+    if (solved && this.time === 0) { this.samples = []; this.lastSample = -Infinity; this.sample(); }
+    return solved;
   }
   private solve(control: boolean, dt: number) {
     try {

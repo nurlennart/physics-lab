@@ -3,6 +3,22 @@ import { Builder } from './scaling-validation';
 import { solveElectrical } from './electrical';
 import { Simulation } from './engine';
 import { builtinPresets, presetComponentProps } from './presets';
+import { starter } from './projects';
+
+it('a build-mode edit at t = 0 replaces the recorded start sample (heating example, switch opened before the run)', () => {
+  const p = starter('heat'), s = new Simulation(p);
+  expect(s.samples[0].power).toBeGreaterThan(1900);
+  const open = { ...p, components: p.components.map(c => c.kind === 'switch' ? { ...c, props: { ...c.props, closed: false } } : c) };
+  expect(s.refresh(open)).toBe(true);
+  expect(s.samples).toHaveLength(1);
+  for (let i = 0; i < 60; i++) expect(s.step()).toBe(true);
+  const heaterPower = p.probes!.find(probe => probe.measurement === 'power')!;
+  for (const sample of s.samples) {
+    expect(sample.power).toBe(0);
+    expect(sample.values[heaterPower.id]).toBe(0);
+  }
+  expect(s.peakPower).toBe(0);
+});
 
 it('the DN100 gate-valve preset has only its physical two-K loss at 600 L/min', () => {
   const preset = builtinPresets.find(p => p.name === 'Gate valve DN100')!;
