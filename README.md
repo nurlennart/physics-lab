@@ -9,6 +9,8 @@ A browser engineering sandbox. Build circuits, heating systems, pumped water net
 - **Mechanics:** a Physical view with rigid bodies, joints, gears, springs, forces and brakes (Planck.js), sharing shafts and sensors with the schematic.
 - **Control:** sensors, logic, timers, hysteresis, PID and signal blocks on the simulation clock, plus an independent safety cutoff.
 
+![The schematic workspace after one simulated minute of the heated circulation example: a motor-driven pump moves heated water between two tanks, with live currents, flows and temperatures on the wires, the selected pump's measurements and operating curve in the inspector, and telemetry charts below.](docs/images/workspace.png)
+
 Every run carries a mass and energy ledger without correction factors. Experiments can be probed, charted and exported as CSV, saved as replayable run archives, and advanced by up to 24 h with an adaptive integrator.
 
 ## Using it
