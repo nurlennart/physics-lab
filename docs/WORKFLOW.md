@@ -19,7 +19,7 @@
 `npm run check` (`scripts/check.sh`) runs, in order:
 1. TypeScript typecheck (incremental; cache in `node_modules/.cache`).
 2. Unit and integration tests (Vitest, one worker per core).
-3. Physics validation (`validation/latest.md`), scale-validation campaign (`validation/scaling.md`) and challenge score guard (`scripts/check-scores.mjs`, compared with `validation/reference-scores.json`), side by side as three processes.
+3. Physics validation (`validation/latest.md`), scale-validation campaign (`validation/scaling.md`), challenge score guard (`scripts/check-scores.mjs`, compared with `validation/reference-scores.json`), preset operating campaign (`validation/presets.json`) and shaft events (`validation/shaft-events.json`), side by side as five processes.
 4. Production bundle (`vite build`; the typecheck already ran).
 5. Browser tests against the production bundle (`scripts/e2e.sh`), including the `@slow` tier (complete scored challenges, rigid-body and drive starters). One Playwright worker: the browser simulations are CPU-bound, and two workers on this two-core host were no faster and timed out under load (`PHYSICS_LAB_E2E_WORKERS` overrides).
 

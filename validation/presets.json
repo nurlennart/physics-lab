@@ -1,0 +1,4610 @@
+{
+  "summary": {
+    "presets": 68,
+    "coveredPresets": 68,
+    "scenarios": 112,
+    "passed": 112,
+    "failed": 0
+  },
+  "reports": [
+    {
+      "name": "12 V rechargeable · 20 Ah",
+      "presets": [
+        "builtin:battery:12 V rechargeable · 20 Ah"
+      ],
+      "checks": [
+        {
+          "label": "analytic discharge SOC",
+          "expected": 0.7999861331372893,
+          "measured": 0.7999861331372897,
+          "absoluteError": 4.440892098500626e-16,
+          "tolerance": 1e-10
+        },
+        {
+          "label": "external supply energy (J)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 1e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0003741845771165468,
+          "absoluteError": 0.0003741845771165468,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0003741845771165468,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "48 V rechargeable · 100 Ah",
+      "presets": [
+        "builtin:battery:48 V rechargeable · 100 Ah"
+      ],
+      "checks": [
+        {
+          "label": "analytic discharge SOC",
+          "expected": 0.7999972238752893,
+          "measured": 0.7999972238752895,
+          "absoluteError": 2.220446049250313e-16,
+          "tolerance": 1e-10
+        },
+        {
+          "label": "external supply energy (J)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 1e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0002456735926685383,
+          "absoluteError": 0.0002456735926685383,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0002456735926685383,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "24 V DC coil · 25 A contact",
+      "presets": [
+        "builtin:contactor:24 V DC coil · 25 A contact"
+      ],
+      "checks": [
+        {
+          "label": "coil consumption (W)",
+          "expected": 4,
+          "measured": 4,
+          "absoluteError": 0,
+          "tolerance": 5e-8
+        },
+        {
+          "label": "switched AC load current (A)",
+          "expected": 0.9995835068721366,
+          "measured": 0.9995835068721366,
+          "absoluteError": 0,
+          "tolerance": 1.9995835068721364e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00039794355274083704,
+          "absoluteError": 0.00039794355274083704,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00039794355274083704,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "230 / 24 V · 250 VA",
+      "presets": [
+        "builtin:transformer:230 / 24 V · 250 VA"
+      ],
+      "checks": [
+        {
+          "label": "reflected-load secondary current (A)",
+          "expected": 1.0406804584789697,
+          "measured": 1.0406804584789693,
+          "absoluteError": 4.440892098500626e-16,
+          "tolerance": 2.0406804584789696e-8
+        },
+        {
+          "label": "core plus copper loss (W)",
+          "expected": 2.6685847678788717,
+          "measured": 2.668584767878869,
+          "absoluteError": 2.6645352591003757e-15,
+          "tolerance": 3.6685847678788715e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0005817042735129026,
+          "absoluteError": 0.0005817042735129026,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0005817042735129026,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "24 V fan · 100 W/K radiator",
+      "presets": [
+        "builtin:radiator:24 V fan · 100 W/K radiator"
+      ],
+      "checks": [
+        {
+          "label": "rated fan consumption (W)",
+          "expected": 30,
+          "measured": 30,
+          "absoluteError": 0,
+          "tolerance": 3.1e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000011680748684739228,
+          "absoluteError": 0.000011680748684739228,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000011680748684739228,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bench CV/CC 30 V / 3 A",
+      "presets": [
+        "builtin:source:Bench CV/CC 30 V / 3 A"
+      ],
+      "checks": [
+        {
+          "label": "load current (A)",
+          "expected": 0.75,
+          "measured": 0.75,
+          "absoluteError": 0,
+          "tolerance": 1.75e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000017018905065668832,
+          "absoluteError": 0.000017018905065668832,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.000017018905065668832,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Constant-current 2 A / 60 V",
+      "presets": [
+        "builtin:source:Constant-current 2 A / 60 V"
+      ],
+      "checks": [
+        {
+          "label": "load current (A)",
+          "expected": 2,
+          "measured": 2,
+          "absoluteError": 0,
+          "tolerance": 3.0000000000000004e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000004964422259945422,
+          "absoluteError": 0.000004964422259945422,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000004964422259945422,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Battery 12 V · 20 mΩ",
+      "presets": [
+        "builtin:source:Battery 12 V · 20 mΩ"
+      ],
+      "checks": [
+        {
+          "label": "load current (A)",
+          "expected": 9.84375,
+          "measured": 9.84375,
+          "absoluteError": 0,
+          "tolerance": 1.084375e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0002557996011631758,
+          "absoluteError": 0.0002557996011631758,
+          "tolerance": 0.6104663085937506
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0002557996011631758,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DC supply 400 V / 100 A CV/CC",
+      "presets": [
+        "builtin:source:DC supply 400 V / 100 A CV/CC"
+      ],
+      "checks": [
+        {
+          "label": "load current (A)",
+          "expected": 9.99875015623047,
+          "measured": 9.998750156230471,
+          "absoluteError": 1.7763568394002505e-15,
+          "tolerance": 1.099875015623047e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0003362063544045668,
+          "absoluteError": 0.0003362063544045668,
+          "tolerance": 19.995000937343757
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0003362063544045668,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DC bus 690 V / 400 A CV/CC",
+      "presets": [
+        "builtin:source:DC bus 690 V / 400 A CV/CC"
+      ],
+      "checks": [
+        {
+          "label": "load current (A)",
+          "expected": 9.99971015332889,
+          "measured": 9.999710153328888,
+          "absoluteError": 1.7763568394002505e-15,
+          "tolerance": 1.099971015332889e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0003702207177411765,
+          "absoluteError": 0.0003702207177411765,
+          "tolerance": 34.49800008695313
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0003702207177411765,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Precision 1 kΩ · 0.25 W",
+      "presets": [
+        "builtin:resistor:Precision 1 kΩ · 0.25 W"
+      ],
+      "checks": [
+        {
+          "label": "Ohm current at sampled tolerance (A)",
+          "expected": 0.001569036313644957,
+          "measured": 0.001569036313644957,
+          "absoluteError": 0,
+          "tolerance": 1.001569036313645e-8
+        },
+        {
+          "label": "Joule power (W)",
+          "expected": 0.0024808642413161972,
+          "measured": 0.0024808642413161972,
+          "absoluteError": 0,
+          "tolerance": 1.0024808642413162e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.880284393896564e-14,
+          "absoluteError": 1.880284393896564e-14,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.880284393896564e-14,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Wirewound 10 Ω · 100 W",
+      "presets": [
+        "builtin:resistor:Wirewound 10 Ω · 100 W"
+      ],
+      "checks": [
+        {
+          "label": "Ohm current at sampled tolerance (A)",
+          "expected": 0.3044847868815443,
+          "measured": 0.3044847868815443,
+          "absoluteError": 0,
+          "tolerance": 1.3044847868815443e-8
+        },
+        {
+          "label": "Joule power (W)",
+          "expected": 0.9628654394166376,
+          "measured": 0.9628654394166376,
+          "absoluteError": 0,
+          "tolerance": 1.9628654394166377e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 7.144653792201527e-13,
+          "absoluteError": 7.144653792201527e-13,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 7.144653792201527e-13,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Load bank 2 Ω · 20 kW",
+      "presets": [
+        "builtin:resistor:Load bank 2 Ω · 20 kW"
+      ],
+      "checks": [
+        {
+          "label": "Ohm current at sampled tolerance (A)",
+          "expected": 9.628654394166375,
+          "measured": 9.628654394166375,
+          "absoluteError": 0,
+          "tolerance": 1.0628654394166375e-7
+        },
+        {
+          "label": "Joule power (W)",
+          "expected": 192.5730878833275,
+          "measured": 192.5730878833275,
+          "absoluteError": 0,
+          "tolerance": 0.000001935730878833275
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.0171170572448318e-9,
+          "absoluteError": 1.0171170572448318e-9,
+          "tolerance": 0.9628654394166375
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.0171170572448318e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "NTC thermistor 10 kΩ",
+      "presets": [
+        "builtin:resistor:NTC thermistor 10 kΩ"
+      ],
+      "checks": [
+        {
+          "label": "Ohm current at sampled tolerance (A)",
+          "expected": 0.000701694371295161,
+          "measured": 0.000701694371295161,
+          "absoluteError": 0,
+          "tolerance": 1.0007016943712952e-8
+        },
+        {
+          "label": "Joule power (W)",
+          "expected": 0.0049617284826323944,
+          "measured": 0.0049617284826323944,
+          "absoluteError": 0,
+          "tolerance": 1.0049617284826324e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -9.218205354859926e-15,
+          "absoluteError": 9.218205354859926e-15,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -9.218205354859926e-15,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Fuse 2 A",
+      "presets": [
+        "builtin:fuse:Fuse 2 A"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 1,
+          "measured": 0.9999999999999964,
+          "absoluteError": 3.552713678800501e-15,
+          "tolerance": 2e-8
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 0.1,
+          "measured": 0.09999999999999928,
+          "absoluteError": 7.216449660063518e-16,
+          "tolerance": 1.1000000000000001e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0008802812447062424,
+          "absoluteError": 0.0008802812447062424,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0008802812447062424,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Power fuse 125 A",
+      "presets": [
+        "builtin:fuse:Power fuse 125 A"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 62.5,
+          "measured": 62.5,
+          "absoluteError": 0,
+          "tolerance": 6.350000000000001e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 1.953125,
+          "measured": 1.953125,
+          "absoluteError": 0,
+          "tolerance": 2.9531250000000002e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.00027256101320152944,
+          "absoluteError": 0.00027256101320152944,
+          "tolerance": 3.7500000000000084
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.00027256101320152944,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "NH fuse 630 A",
+      "presets": [
+        "builtin:fuse:NH fuse 630 A"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 100,
+          "measured": 99.99999999999787,
+          "absoluteError": 2.1316282072803006e-12,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 1,
+          "measured": 0.9999999999999574,
+          "absoluteError": 4.263256414560601e-14,
+          "tolerance": 2e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00008144210827083515,
+          "absoluteError": 0.00008144210827083515,
+          "tolerance": 6.000000000000131
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00008144210827083515,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Contactor 400 V / 80 A",
+      "presets": [
+        "builtin:relay:Contactor 400 V / 80 A"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 40,
+          "measured": 39.99999999999781,
+          "absoluteError": 2.1884716261411086e-12,
+          "tolerance": 4.1e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 1.28,
+          "measured": 1.2799999999998601,
+          "absoluteError": 1.3988810110276972e-13,
+          "tolerance": 2.28e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0007075196873175338,
+          "absoluteError": 0.0007075196873175338,
+          "tolerance": 2.3999999999999364
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0007075196873175338,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Cu 1.5 mm² · 10 m",
+      "presets": [
+        "builtin:cable:Cu 1.5 mm² · 10 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.11493333333333333,
+          "measured": 0.11493333333333333,
+          "absoluteError": 0,
+          "tolerance": 1.1149333333333334e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 8.7,
+          "measured": 8.699999999999996,
+          "absoluteError": 3.552713678800501e-15,
+          "tolerance": 9.7e-8
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 8.699303999999998,
+          "measured": 8.69930399999999,
+          "absoluteError": 7.105427357601002e-15,
+          "tolerance": 9.699303999999997e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000115666055783753,
+          "absoluteError": 0.000115666055783753,
+          "tolerance": 0.5219859638454253
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.000115666055783753,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Cu 2.5 mm² · 20 m",
+      "presets": [
+        "builtin:cable:Cu 2.5 mm² · 20 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.13792000000000001,
+          "measured": 0.13792000000000001,
+          "absoluteError": 0,
+          "tolerance": 1.13792e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 11.95,
+          "measured": 11.950000000000001,
+          "absoluteError": 1.7763568394002505e-15,
+          "tolerance": 1.2950000000000001e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 19.6953208,
+          "measured": 19.695320800000005,
+          "absoluteError": 3.552713678800501e-15,
+          "tolerance": 2.0695320800000003e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00003205549665505347,
+          "absoluteError": 0.00003205549665505347,
+          "tolerance": 0.7169783708160234
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00003205549665505347,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Cu 6 mm² · 25 m",
+      "presets": [
+        "builtin:cable:Cu 6 mm² · 25 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.07183333333333333,
+          "measured": 0.07183333333333333,
+          "absoluteError": 0,
+          "tolerance": 1.0718333333333333e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 20.7,
+          "measured": 20.700000000000003,
+          "absoluteError": 3.552713678800501e-15,
+          "tolerance": 2.17e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 30.779864999999997,
+          "measured": 30.779865000000008,
+          "absoluteError": 1.0658141036401503e-14,
+          "tolerance": 3.1779865e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000006215358884537059,
+          "absoluteError": 0.000006215358884537059,
+          "tolerance": 1.2419823527851503
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.000006215358884537059,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Cu 16 mm² · 30 m",
+      "presets": [
+        "builtin:cable:Cu 16 mm² · 30 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.032325,
+          "measured": 0.032325,
+          "absoluteError": 0,
+          "tolerance": 1.032325e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 38.2,
+          "measured": 38.19999999999998,
+          "absoluteError": 2.1316282072803006e-14,
+          "tolerance": 3.9200000000000007e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 47.16993300000001,
+          "measured": 47.16993299999995,
+          "absoluteError": 5.684341886080802e-14,
+          "tolerance": 4.816993300000001e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.00018939187014539033,
+          "absoluteError": 0.00018939187014539033,
+          "tolerance": 2.291987028008293
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.00018939187014539033,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Cu 35 mm² · 50 m",
+      "presets": [
+        "builtin:cable:Cu 35 mm² · 50 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.024628571428571434,
+          "measured": 0.024628571428571434,
+          "absoluteError": 0,
+          "tolerance": 1.0246285714285715e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 62.3,
+          "measured": 62.30000000000004,
+          "absoluteError": 4.263256414560601e-14,
+          "tolerance": 6.33e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 95.59062800000001,
+          "measured": 95.59062800000014,
+          "absoluteError": 1.2789769243681803e-13,
+          "tolerance": 9.6590628e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00011551172600660076,
+          "absoluteError": 0.00011551172600660076,
+          "tolerance": 3.7379853828308103
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00011551172600660076,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Cu 95 mm² · 50 m",
+      "presets": [
+        "builtin:cable:Cu 95 mm² · 50 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.009073684210526317,
+          "measured": 0.009073684210526317,
+          "absoluteError": 0,
+          "tolerance": 1.0090736842105263e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 100,
+          "measured": 99.99999999999991,
+          "absoluteError": 8.526512829121202e-14,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 90.73684210526316,
+          "measured": 90.73684210526302,
+          "absoluteError": 1.4210854715202004e-13,
+          "tolerance": 9.173684210526317e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0001193395390460053,
+          "absoluteError": 0.0001193395390460053,
+          "tolerance": 5.999995146592206
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0001193395390460053,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Al 240 mm² · 100 m",
+      "presets": [
+        "builtin:cable:Al 240 mm² · 100 m"
+      ],
+      "checks": [
+        {
+          "label": "material resistance (ohm)",
+          "expected": 0.011750000000000002,
+          "measured": 0.011750000000000002,
+          "absoluteError": 0,
+          "tolerance": 1.01175e-8
+        },
+        {
+          "label": "series current (A)",
+          "expected": 100,
+          "measured": 99.9999999999999,
+          "absoluteError": 9.947598300641403e-14,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 117.50000000000001,
+          "measured": 117.49999999999977,
+          "absoluteError": 2.4158453015843406e-13,
+          "tolerance": 0.000001185
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00034346016726645445,
+          "absoluteError": 0.00034346016726645445,
+          "tolerance": 5.999997647182629
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00034346016726645445,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Plate cooler 300 W/K · 15 °C",
+      "presets": [
+        "builtin:cooler:Plate cooler 300 W/K · 15 °C"
+      ],
+      "checks": [
+        {
+          "label": "Newton cooling (C)",
+          "expected": 59.672710947878905,
+          "measured": 59.67271256105724,
+          "absoluteError": 0.0000016131783340256334,
+          "tolerance": 0.002
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -3.489549271762371e-8,
+          "absoluteError": 3.489549271762371e-8,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 10.000000000000076,
+      "energyResidual": -3.489549271762371e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Chiller coil 3 kW/K · 7 °C",
+      "presets": [
+        "builtin:cooler:Chiller coil 3 kW/K · 7 °C"
+      ],
+      "checks": [
+        {
+          "label": "Newton cooling (C)",
+          "expected": 56.269007606683076,
+          "measured": 56.269222279576354,
+          "absoluteError": 0.00021467289327858907,
+          "tolerance": 0.002
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -3.259629011154175e-9,
+          "absoluteError": 3.259629011154175e-9,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 10.000000000000076,
+      "energyResidual": -3.259629011154175e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DC motor 400 V · 22 kW",
+      "presets": [
+        "builtin:motor:DC motor 400 V · 22 kW"
+      ],
+      "checks": [
+        {
+          "label": "DC no-load torque balance speed (rad/s)",
+          "expected": 166.56545501865187,
+          "measured": 166.56545501865187,
+          "absoluteError": 0,
+          "tolerance": 0.16656546501865188
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -5.210231392993592e-7,
+          "absoluteError": 5.210231392993592e-7,
+          "tolerance": 33.339257140931736
+        }
+      ],
+      "pass": true,
+      "time": 4.999999999999988,
+      "energyResidual": -5.210231392993592e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Circulator 20 L/min · 4 m",
+      "presets": [
+        "builtin:pump:Circulator 20 L/min · 4 m"
+      ],
+      "checks": [
+        {
+          "label": "hydraulic pressure work (W)",
+          "expected": 7.952505908815003,
+          "measured": 7.952505908815001,
+          "absoluteError": 1.7763568394002505e-15,
+          "tolerance": 8.952505908815004e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 2.9103830456733704e-11,
+          "absoluteError": 2.9103830456733704e-11,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.00001324970435234718,
+          "absoluteError": 0.00001324970435234718,
+          "tolerance": 26.4826656991023
+        }
+      ],
+      "pass": true,
+      "time": 4.999999999999988,
+      "energyResidual": 0.00001324970435234718,
+      "massResidual": 2.9103830456733704e-11,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Process pump 6,000 L/min · 45 m",
+      "presets": [
+        "builtin:pump:Process pump 6,000 L/min · 45 m"
+      ],
+      "checks": [
+        {
+          "label": "hydraulic pressure work (W)",
+          "expected": 14224.404173131084,
+          "measured": 14224.40417313108,
+          "absoluteError": 3.637978807091713e-12,
+          "tolerance": 0.00014225404173131084
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0000029450893634930253,
+          "absoluteError": 0.0000029450893634930253,
+          "tolerance": 498.51359060579233
+        }
+      ],
+      "pass": true,
+      "time": 4.999999999999988,
+      "energyResidual": 0.0000029450893634930253,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DN15 · 5 m steel",
+      "presets": [
+        "builtin:pipe:DN15 · 5 m steel"
+      ],
+      "checks": [
+        {
+          "label": "Darcy pressure drop (Pa)",
+          "expected": 19613.303920986917,
+          "measured": 19613.3,
+          "absoluteError": 0.003920986917364644,
+          "tolerance": 19.613303930986916
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.291118323365481e-10,
+          "absoluteError": 1.291118323365481e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.291118323365481e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DN25 · 10 m steel",
+      "presets": [
+        "builtin:pipe:DN25 · 10 m steel"
+      ],
+      "checks": [
+        {
+          "label": "Darcy pressure drop (Pa)",
+          "expected": 19613.303807393742,
+          "measured": 19613.3,
+          "absoluteError": 0.0038073937430453952,
+          "tolerance": 19.613303817393742
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 5.835474325976975e-10,
+          "absoluteError": 5.835474325976975e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 5.835474325976975e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DN50 · 20 m steel",
+      "presets": [
+        "builtin:pipe:DN50 · 20 m steel"
+      ],
+      "checks": [
+        {
+          "label": "Darcy pressure drop (Pa)",
+          "expected": 19613.303434224257,
+          "measured": 19613.3,
+          "absoluteError": 0.0034342242579441518,
+          "tolerance": 19.613303444224258
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.0767564617708558e-10,
+          "absoluteError": 1.0767564617708558e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.0767564617708558e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DN100 · 50 m steel",
+      "presets": [
+        "builtin:pipe:DN100 · 50 m steel"
+      ],
+      "checks": [
+        {
+          "label": "Darcy pressure drop (Pa)",
+          "expected": 19613.303350861705,
+          "measured": 19613.3,
+          "absoluteError": 0.0033508617052575573,
+          "tolerance": 19.613303360861707
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 2.106048668792937e-10,
+          "absoluteError": 2.106048668792937e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 2.106048668792937e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DN200 · 100 m steel",
+      "presets": [
+        "builtin:pipe:DN200 · 100 m steel"
+      ],
+      "checks": [
+        {
+          "label": "Darcy pressure drop (Pa)",
+          "expected": 19613.303093012797,
+          "measured": 19613.3,
+          "absoluteError": 0.00309301279776264,
+          "tolerance": 19.613303103012797
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -7.048583938740194e-12,
+          "absoluteError": 7.048583938740194e-12,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -7.048583938740194e-12,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Gate valve DN100",
+      "presets": [
+        "builtin:valve:Gate valve DN100"
+      ],
+      "checks": [
+        {
+          "label": "two-K valve pressure drop (Pa)",
+          "expected": 19613.30006391109,
+          "measured": 19613.3,
+          "absoluteError": 0.00006391109127434902,
+          "tolerance": 19.61330007391109
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.3333192327991128e-9,
+          "absoluteError": 1.3333192327991128e-9,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.3333192327991128e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "B16 socket circuit",
+      "presets": [
+        "builtin:breaker:B16 socket circuit"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 8,
+          "measured": 8.000000000000185,
+          "absoluteError": 1.8474111129762605e-13,
+          "tolerance": 9e-8
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 0.32,
+          "measured": 0.3200000000000148,
+          "absoluteError": 1.4765966227514582e-14,
+          "tolerance": 1.32e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0008021021202899567,
+          "absoluteError": 0.0008021021202899567,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0008021021202899567,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "C32 heater circuit",
+      "presets": [
+        "builtin:breaker:C32 heater circuit"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 16,
+          "measured": 16.00000000000037,
+          "absoluteError": 3.694822225952521e-13,
+          "tolerance": 1.7000000000000001e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 0.64,
+          "measured": 0.6400000000000295,
+          "absoluteError": 2.9531932455029164e-14,
+          "tolerance": 1.64e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.001391041421158157,
+          "absoluteError": 0.001391041421158157,
+          "tolerance": 0.9600000000000026
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.001391041421158157,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "D125 feeder breaker",
+      "presets": [
+        "builtin:breaker:D125 feeder breaker"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 62.5,
+          "measured": 62.49999999999941,
+          "absoluteError": 5.897504706808832e-13,
+          "tolerance": 6.350000000000001e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 2.34375,
+          "measured": 2.3437499999999556,
+          "absoluteError": 4.440892098500626e-14,
+          "tolerance": 3.34375e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.00016184856933835513,
+          "absoluteError": 0.00016184856933835513,
+          "tolerance": 3.7499999999999347
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.00016184856933835513,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "MCCB 630 A",
+      "presets": [
+        "builtin:breaker:MCCB 630 A"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 100,
+          "measured": 100.00000000001118,
+          "absoluteError": 1.1183942660863977e-11,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 0.8,
+          "measured": 0.800000000000179,
+          "absoluteError": 1.7896795156957523e-13,
+          "tolerance": 1.8000000000000002e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0008244833548497845,
+          "absoluteError": 0.0008244833548497845,
+          "tolerance": 6.000000000000412
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0008244833548497845,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Motor protector 45 A class 10",
+      "presets": [
+        "builtin:motorProtector:Motor protector 45 A class 10"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 22.5,
+          "measured": 22.500000000000853,
+          "absoluteError": 8.526512829121202e-13,
+          "tolerance": 2.3500000000000003e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 0.91125,
+          "measured": 0.9112500000000691,
+          "absoluteError": 6.905587213168474e-14,
+          "tolerance": 1.91125e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0006737343155849736,
+          "absoluteError": 0.0006737343155849736,
+          "tolerance": 1.3500000000000325
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0006737343155849736,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Motor protector 150 A class 20 (fan/pump)",
+      "presets": [
+        "builtin:motorProtector:Motor protector 150 A class 20 (fan/pump)"
+      ],
+      "checks": [
+        {
+          "label": "series current (A)",
+          "expected": 75,
+          "measured": 75.00000000000284,
+          "absoluteError": 2.8421709430404007e-12,
+          "tolerance": 7.6e-7
+        },
+        {
+          "label": "contact/conductor loss (W)",
+          "expected": 2.25,
+          "measured": 2.2500000000001705,
+          "absoluteError": 1.7053025658242404e-13,
+          "tolerance": 3.25e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00014089352089700306,
+          "absoluteError": 0.00014089352089700306,
+          "tolerance": 4.500000000000168
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00014089352089700306,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Small heat sink 2 K/W",
+      "presets": [
+        "builtin:thermalMass:Small heat sink 2 K/W"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -4.701839178417044e-12,
+          "absoluteError": 4.701839178417044e-12,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -4.701839178417044e-12,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Forced-air heat sink 0.1 K/W",
+      "presets": [
+        "builtin:thermalMass:Forced-air heat sink 0.1 K/W"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 9.612636598169133e-11,
+          "absoluteError": 9.612636598169133e-11,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 9.612636598169133e-11,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Concrete floor slab 1 m² × 0.2 m",
+      "presets": [
+        "builtin:thermalMass:Concrete floor slab 1 m² × 0.2 m"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 2.445145537895589e-8,
+          "absoluteError": 2.445145537895589e-8,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 2.445145537895589e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Coil exchanger 300 W/K",
+      "presets": [
+        "builtin:heatExchanger:Coil exchanger 300 W/K"
+      ],
+      "checks": [
+        {
+          "label": "equal heat duty in both streams (W)",
+          "expected": 14444.649257901192,
+          "measured": 14444.649257901192,
+          "absoluteError": 0,
+          "tolerance": 0.00014445649257901192
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 5.820766091346741e-11,
+          "absoluteError": 5.820766091346741e-11,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.0430589725274331e-10,
+          "absoluteError": 1.0430589725274331e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.0430589725274331e-10,
+      "massResidual": 5.820766091346741e-11,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Plate exchanger 50 kW/K",
+      "presets": [
+        "builtin:heatExchanger:Plate exchanger 50 kW/K"
+      ],
+      "checks": [
+        {
+          "label": "equal heat duty in both streams (W)",
+          "expected": 1415660.879076718,
+          "measured": 1415660.879076718,
+          "absoluteError": 0,
+          "tolerance": 0.014156618790767178
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 5.17843545821961e-11,
+          "absoluteError": 5.17843545821961e-11,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 5.17843545821961e-11,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Building PRV 3 bar DN25",
+      "presets": [
+        "builtin:pressureReducingValve:Building PRV 3 bar DN25"
+      ],
+      "checks": [
+        {
+          "label": "regulated outlet pressure (Pa)",
+          "expected": 300000,
+          "measured": 299999.99983908376,
+          "absoluteError": 0.00016091624274849892,
+          "tolerance": 3000.00000001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": -1.5425030142068863e-9,
+          "absoluteError": 1.5425030142068863e-9,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 5.07461663801223e-7,
+          "absoluteError": 5.07461663801223e-7,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 119.99999999999447,
+      "energyResidual": 5.07461663801223e-7,
+      "massResidual": -1.5425030142068863e-9,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Process PRV 6 bar DN80",
+      "presets": [
+        "builtin:pressureReducingValve:Process PRV 6 bar DN80"
+      ],
+      "checks": [
+        {
+          "label": "regulated outlet pressure (Pa)",
+          "expected": 600000,
+          "measured": 599999.9951195234,
+          "absoluteError": 0.0048804766265675426,
+          "tolerance": 6000.00000001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.87545844912529e-8,
+          "absoluteError": 2.87545844912529e-8,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 119.99999999999447,
+      "energyResidual": -2.87545844912529e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Measured curve 0–400 L/min (data points)",
+      "presets": [
+        "builtin:pump:Measured curve 0–400 L/min (data points)"
+      ],
+      "checks": [
+        {
+          "label": "hydraulic pressure work (W)",
+          "expected": 877.391149043942,
+          "measured": 877.3911490439423,
+          "absoluteError": 2.2737367544323206e-13,
+          "tolerance": 0.000008783911490439421
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000022715137674822472,
+          "absoluteError": 0.000022715137674822472,
+          "tolerance": 53.533917920224525
+        }
+      ],
+      "pass": true,
+      "time": 4.999999999999988,
+      "energyResidual": 0.000022715137674822472,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Workshop supply 400 V 3~ 32 A",
+      "presets": [
+        "builtin:source3:Workshop supply 400 V 3~ 32 A"
+      ],
+      "checks": [
+        {
+          "label": "line current (A)",
+          "expected": 3.1977845099028768,
+          "measured": 3.1977845099028768,
+          "absoluteError": 0,
+          "tolerance": 4.1977845099028767e-8
+        },
+        {
+          "label": "three-phase real power (W)",
+          "expected": 2213.9562232576436,
+          "measured": 2213.9562232576436,
+          "absoluteError": 0,
+          "tolerance": 0.000022149562232576438
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0007944583385324222,
+          "absoluteError": 0.0007944583385324222,
+          "tolerance": 11.069781116288228
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0007944583385324222,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Transformer 630 kVA (400 V)",
+      "presets": [
+        "builtin:source3:Transformer 630 kVA (400 V)"
+      ],
+      "checks": [
+        {
+          "label": "line current (A)",
+          "expected": 90.9104437675843,
+          "measured": 90.9104437675843,
+          "absoluteError": 0,
+          "tolerance": 9.191044376758431e-7
+        },
+        {
+          "label": "three-phase real power (W)",
+          "expected": 62922.61770174061,
+          "measured": 62922.61770174062,
+          "absoluteError": 1.4551915228366852e-11,
+          "tolerance": 0.0006292361770174062
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0006116741569712758,
+          "absoluteError": 0.0006116741569712758,
+          "tolerance": 314.6130885087036
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0006116741569712758,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Insulated DN25 · 20 m (8 cells)",
+      "presets": [
+        "builtin:pipe:Insulated DN25 · 20 m (8 cells)"
+      ],
+      "checks": [
+        {
+          "label": "Darcy pressure drop (Pa)",
+          "expected": 19613.304654157808,
+          "measured": 19613.3,
+          "absoluteError": 0.004654157808545278,
+          "tolerance": 19.61330466415781
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 7.050537931263534e-11,
+          "absoluteError": 7.050537931263534e-11,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 7.050537931263534e-11,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.005722523873316732,
+          "measured": 0.005785116237436938,
+          "absoluteError": 0.00006259236412020641,
+          "tolerance": 0.002171675716199502
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.8523577116624779e-10,
+          "absoluteError": 1.8523577116624779e-10,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.8523577116624779e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0005660456965514982,
+          "measured": 0.0005722458370769345,
+          "absoluteError": 0.000006200140525436382,
+          "tolerance": 0.002016981370896545
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -6.593700696555516e-9,
+          "absoluteError": 6.593700696555516e-9,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -6.593700696555516e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00005726326757837796,
+          "measured": 0.00005789060286787162,
+          "absoluteError": 6.273352894936579e-7,
+          "tolerance": 0.0020017178980273513
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 7.3095328678718374e-9,
+          "absoluteError": 7.3095328678718374e-9,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 7.3095328678718374e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00001923618325605503,
+          "measured": 0.000019446923481325484,
+          "absoluteError": 2.10740225270456e-7,
+          "tolerance": 0.0020005770854976818
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.704602601293459e-7,
+          "absoluteError": 1.704602601293459e-7,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.704602601293459e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0000029137388040112455,
+          "measured": 0.0000029456600962873836,
+          "absoluteError": 3.192129227613805e-8,
+          "tolerance": 0.0020000874121641203
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 4.197687862306232e-7,
+          "absoluteError": 4.197687862306232e-7,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 4.197687862306232e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 5.848132254016036e-7,
+          "measured": 5.912201679336704e-7,
+          "absoluteError": 6.4069425320667506e-9,
+          "tolerance": 0.0020000175443967622
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0000016677513927643162,
+          "absoluteError": 0.0000016677513927643162,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0000016677513927643162,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 100 W / 24 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Lab element 100 W / 24 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 1.1751796868963993e-7,
+          "measured": 1.1880549877218982e-7,
+          "absoluteError": 1.2875300825498925e-9,
+          "tolerance": 0.002000003525539061
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000014114530351383436,
+          "absoluteError": 0.000014114530351383436,
+          "tolerance": 0.5000000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000014114530351383436,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.028586848423628908,
+          "measured": 0.028898868789227095,
+          "absoluteError": 0.0003120203655981868,
+          "tolerance": 0.0028576054527088674
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -5.113794387945347e-10,
+          "absoluteError": 5.113794387945347e-10,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -5.113794387945347e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.002834075171620043,
+          "measured": 0.002865216854036845,
+          "absoluteError": 0.00003114168241680204,
+          "tolerance": 0.002085022255148601
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -4.393207908570673e-9,
+          "absoluteError": 4.393207908570673e-9,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -4.393207908570673e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000286769428498701,
+          "measured": 0.00028992271573713424,
+          "absoluteError": 0.0000031532872384332222,
+          "tolerance": 0.002008603082854961
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.4178879504409565e-8,
+          "absoluteError": 3.4178879504409565e-8,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 3.4178879504409565e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000096334726549685,
+          "measured": 0.00009739406624476032,
+          "absoluteError": 0.0000010593396950753231,
+          "tolerance": 0.0020028900417964905
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.5224018667936434e-7,
+          "absoluteError": 1.5224018667936434e-7,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.5224018667936434e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000014592096391652376,
+          "measured": 0.000014752561014574894,
+          "absoluteError": 1.6046462292251817e-7,
+          "tolerance": 0.0020004377628917496
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 2.8690082132243333e-7,
+          "absoluteError": 2.8690082132243333e-7,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 2.8690082132243333e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0000029287661789112462,
+          "measured": 0.0000029609730560764547,
+          "absoluteError": 3.2206877165208425e-8,
+          "tolerance": 0.0020000878629853674
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0000022149533009385713,
+          "absoluteError": 0.0000022149533009385713,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0000022149533009385713,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Lab element 500 W / 230 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Lab element 500 W / 230 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 500,
+          "measured": 500,
+          "absoluteError": 0,
+          "tolerance": 0.00000501
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 5.885344300793349e-7,
+          "measured": 5.950064512205699e-7,
+          "absoluteError": 6.472021141235018e-9,
+          "tolerance": 0.0020000176560329022
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000014442605094033834,
+          "absoluteError": 0.000014442605094033834,
+          "tolerance": 2.499999999999998
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000014442605094033834,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.05700651124107026,
+          "measured": 0.05762446507463892,
+          "absoluteError": 0.000617953833568663,
+          "tolerance": 0.0037101953372321076
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.0293566826978804e-10,
+          "absoluteError": 2.0293566826978804e-10,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -2.0293566826978804e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.005667531399694781,
+          "measured": 0.005729792055731764,
+          "absoluteError": 0.00006226065603698316,
+          "tolerance": 0.0021700259419908433
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -5.314923945398675e-9,
+          "absoluteError": 5.314923945398675e-9,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -5.314923945398675e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0005736360898254134,
+          "measured": 0.0005799462349465045,
+          "absoluteError": 0.000006310145121091182,
+          "tolerance": 0.0020172090826947623
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 4.80428569149538e-9,
+          "absoluteError": 4.80428569149538e-9,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 4.80428569149538e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00019270613199751097,
+          "measured": 0.0001948261580295707,
+          "absoluteError": 0.000002120026032059741,
+          "tolerance": 0.0020057811839599253
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.1606814237795646e-7,
+          "absoluteError": 2.1606814237795646e-7,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -2.1606814237795646e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000029190009627200197,
+          "measured": 0.00002951115257587844,
+          "absoluteError": 3.2114294867824356e-7,
+          "tolerance": 0.002000875700288816
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.8116804839651834e-7,
+          "absoluteError": 1.8116804839651834e-7,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.8116804839651834e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000005858707339712055,
+          "measured": 0.000005923164192012109,
+          "absoluteError": 6.445685230005438e-8,
+          "tolerance": 0.0020001757612201914
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000002428977923907283,
+          "absoluteError": 0.000002428977923907283,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000002428977923907283,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 1 kW / 230 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Immersion 1 kW / 230 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 1000,
+          "measured": 1000,
+          "absoluteError": 0,
+          "tolerance": 0.00001001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0000011773052648322846,
+          "measured": 0.0000011902578584965795,
+          "absoluteError": 1.2952593664294909e-8,
+          "tolerance": 0.002000035319157945
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.1595337496304055e-7,
+          "absoluteError": 3.1595337496304055e-7,
+          "tolerance": 4.999999999999996
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 3.1595337496304055e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.16890128076965993,
+          "measured": 0.17067907141410643,
+          "absoluteError": 0.0017777906444464975,
+          "tolerance": 0.007067038423089798
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -4.6521853036551875e-10,
+          "absoluteError": 4.6521853036551875e-10,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -4.6521853036551875e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.016981525281835275,
+          "measured": 0.017167534972262644,
+          "absoluteError": 0.00018600969042736892,
+          "tolerance": 0.002509445758455058
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 2.390176945255007e-10,
+          "absoluteError": 2.390176945255007e-10,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 2.390176945255007e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0017206922984769335,
+          "measured": 0.0017396148013339996,
+          "absoluteError": 0.000018922502857066092,
+          "tolerance": 0.002051620768954308
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.6520184220603085e-8,
+          "absoluteError": 1.6520184220603085e-8,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.6520184220603085e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0005780940216482122,
+          "measured": 0.0005844532039667172,
+          "absoluteError": 0.000006359182318504963,
+          "tolerance": 0.0020173428206494465
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.248479350486221e-7,
+          "absoluteError": 2.248479350486221e-7,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -2.248479350486221e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00008756946965604584,
+          "measured": 0.00008853287792121023,
+          "absoluteError": 9.634082651643894e-7,
+          "tolerance": 0.0020026270840896813
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 4.788097013319614e-7,
+          "absoluteError": 4.788097013319614e-7,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 4.788097013319614e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000017576099480720586,
+          "measured": 0.000017769469074835342,
+          "absoluteError": 1.9336959411475618e-7,
+          "tolerance": 0.0020005272829844217
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00000120224287092352,
+          "absoluteError": 0.00000120224287092352,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00000120224287092352,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 3 kW / 230 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Immersion 3 kW / 230 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 3000,
+          "measured": 3000.0000000000005,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.000030010000000000002
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0000035319148992130067,
+          "measured": 0.0000035707727121803146,
+          "absoluteError": 3.8857812967307837e-8,
+          "tolerance": 0.0020001059574469766
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00001587741070019355,
+          "absoluteError": 0.00001587741070019355,
+          "tolerance": 15
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00001587741070019355,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.3316001831990434,
+          "measured": 0.33493926367607685,
+          "absoluteError": 0.0033390804770334626,
+          "tolerance": 0.011948005495971302
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -3.9147995956057e-10,
+          "absoluteError": 3.9147995956057e-10,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -3.9147995956057e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.03389999640148744,
+          "measured": 0.03426971101074372,
+          "absoluteError": 0.0003697146092562775,
+          "tolerance": 0.0030169998920446233
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -4.708373690931467e-9,
+          "absoluteError": 4.708373690931467e-9,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -4.708373690931467e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.003440736842549086,
+          "measured": 0.00347855806287356,
+          "absoluteError": 0.000037821220324474325,
+          "tolerance": 0.0021032221052764725
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 2.6581967516037253e-8,
+          "absoluteError": 2.6581967516037253e-8,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 2.6581967516037253e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0011561149262888648,
+          "measured": 0.0011688306048753816,
+          "absoluteError": 0.000012715678586516788,
+          "tolerance": 0.002034683447788666
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.3620864575413236e-7,
+          "absoluteError": 2.3620864575413236e-7,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -2.3620864575413236e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00017513726152174058,
+          "measured": 0.00017706401649419945,
+          "absoluteError": 0.000001926754972458866,
+          "tolerance": 0.0020052541178456522
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.515086759442454e-7,
+          "absoluteError": 3.515086759442454e-7,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 3.515086759442454e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00003515213131777273,
+          "measured": 0.00003553886804397166,
+          "absoluteError": 3.8673672619893296e-7,
+          "tolerance": 0.002001054563939533
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -9.83888256866905e-7,
+          "absoluteError": 9.83888256866905e-7,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -9.83888256866905e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 6 kW / 400 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Immersion 6 kW / 400 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 6000,
+          "measured": 6000,
+          "absoluteError": 0,
+          "tolerance": 0.00006001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000007063827069941908,
+          "measured": 0.000007141542472055562,
+          "absoluteError": 7.771540211365391e-8,
+          "tolerance": 0.0020002119148120985
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000005904659716948757,
+          "absoluteError": 0.000005904659716948757,
+          "tolerance": 30
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000005904659716948757,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.6394413791031184,
+          "measured": 0.6453315763793803,
+          "absoluteError": 0.005890197276261944,
+          "tolerance": 0.021183241373093548
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -7.098419629869568e-10,
+          "absoluteError": 7.098419629869568e-10,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -7.098419629869568e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.06754887004353805,
+          "measured": 0.06827916634012254,
+          "absoluteError": 0.0007302962965844984,
+          "tolerance": 0.004026466101306142
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -3.1222247010020965e-9,
+          "absoluteError": 3.1222247010020965e-9,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -3.1222247010020965e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.006878883808894898,
+          "measured": 0.006954431198330724,
+          "absoluteError": 0.00007554738943582606,
+          "tolerance": 0.002206366514266847
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.352855859617421e-8,
+          "absoluteError": 3.352855859617421e-8,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 3.352855859617421e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0023119374263842474,
+          "measured": 0.0023373580447376696,
+          "absoluteError": 0.000025420618353422242,
+          "tolerance": 0.0020693581227915273
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.894827746402484e-7,
+          "absoluteError": 2.894827746402484e-7,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -2.894827746402484e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00035026781142732943,
+          "measured": 0.0003541210755493296,
+          "absoluteError": 0.000003853264122000155,
+          "tolerance": 0.00201050803434282
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 4.9994603568137563e-8,
+          "absoluteError": 4.9994603568137563e-8,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 4.9994603568137563e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00007030399251561903,
+          "measured": 0.00007107745579304492,
+          "absoluteError": 7.734632774258898e-7,
+          "tolerance": 0.002002109119775469
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0000016431373142111738,
+          "absoluteError": 0.0000016431373142111738,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0000016431373142111738,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Immersion 12 kW / 400 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Immersion 12 kW / 400 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 12000,
+          "measured": 12000,
+          "absoluteError": 0,
+          "tolerance": 0.00012001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.000014127643225947395,
+          "measured": 0.000014283073568321925,
+          "absoluteError": 1.5543034237452957e-7,
+          "tolerance": 0.0020004238292967783
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.022252257345315e-7,
+          "absoluteError": 3.022252257345315e-7,
+          "tolerance": 60
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 3.022252257345315e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 1.4393406348299322,
+          "measured": 1.449451959889739,
+          "absoluteError": 0.01011132505980683,
+          "tolerance": 0.04518021904489797
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -3.070681486860849e-10,
+          "absoluteError": 3.070681486860849e-10,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -3.070681486860849e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.16701040090083552,
+          "measured": 0.16876933579183984,
+          "absoluteError": 0.0017589348910043157,
+          "tolerance": 0.007010312027025066
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -4.9242885324929375e-9,
+          "absoluteError": 4.9242885324929375e-9,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -4.9242885324929375e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.017177808229462244,
+          "measured": 0.017365965635324443,
+          "absoluteError": 0.0001881574058621993,
+          "tolerance": 0.0025153342468838672
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.3537011511743913e-8,
+          "absoluteError": 1.3537011511743913e-8,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.3537011511743913e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.005777651241260173,
+          "measured": 0.005841122308527957,
+          "absoluteError": 0.00006347106726778406,
+          "tolerance": 0.0021733295372378053
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -2.3606079224691712e-7,
+          "absoluteError": 2.3606079224691712e-7,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -2.3606079224691712e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00087561920099688,
+          "measured": 0.000885250510762603,
+          "absoluteError": 0.000009631309765723017,
+          "tolerance": 0.0020262685760299064
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.9123087113825932e-8,
+          "absoluteError": 1.9123087113825932e-8,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.9123087113825932e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00017575795345692313,
+          "measured": 0.00017769153718916186,
+          "absoluteError": 0.0000019335837322387306,
+          "tolerance": 0.002005272738603708
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0000028970054195553985,
+          "absoluteError": 0.0000028970054195553985,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0000028970054195553985,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 30 kW / 400 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 30000,
+          "measured": 30000,
+          "absoluteError": 0,
+          "tolerance": 0.00030001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00003531902621034533,
+          "measured": 0.0000357075990926603,
+          "absoluteError": 3.885728823149748e-7,
+          "tolerance": 0.0020010595707863105
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0000116271164891657,
+          "absoluteError": 0.0000116271164891657,
+          "tolerance": 150
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0000116271164891657,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Beaker 1 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Beaker 1 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 3.3768752745745587,
+          "measured": 3.3847654564950105,
+          "absoluteError": 0.007890181920451766,
+          "tolerance": 0.10330625823723676
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 4.96331864496824e-10,
+          "absoluteError": 4.96331864496824e-10,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 4.96331864496824e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Lab vessel 10 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Lab vessel 10 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.5335590347167454,
+          "measured": 0.5386314543128812,
+          "absoluteError": 0.005072419596135802,
+          "tolerance": 0.018006771041502362
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.8791936895468098e-9,
+          "absoluteError": 1.8791936895468098e-9,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.8791936895468098e-9,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Water heater 100 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Water heater 100 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.057008941783351474,
+          "measured": 0.05762700073774951,
+          "absoluteError": 0.0006180589543980375,
+          "tolerance": 0.0037102682535005444
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 4.7480444465008986e-8,
+          "absoluteError": 4.7480444465008986e-8,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 4.7480444465008986e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Hot-water cylinder 300 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Hot-water cylinder 300 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.01923045949843072,
+          "measured": 0.019440989749675452,
+          "absoluteError": 0.0002105302512447338,
+          "tolerance": 0.0025769137849529214
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -7.736692353432773e-8,
+          "absoluteError": 7.736692353432773e-8,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -7.736692353432773e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Process tank 2,000 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0029180783922129194,
+          "measured": 0.002950158807035308,
+          "absoluteError": 0.00003208041482238855,
+          "tolerance": 0.0020875423517663877
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.5811129706075917e-7,
+          "absoluteError": 3.5811129706075917e-7,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 3.5811129706075917e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Storage tank 10,000 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Storage tank 10,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.0005858335616721888,
+          "measured": 0.0005922778756897173,
+          "absoluteError": 0.000006444314017528541,
+          "tolerance": 0.0020175750068501656
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000002406792543041547,
+          "absoluteError": 0.000002406792543041547,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000002406792543041547,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating bank 100 kW / 690 V + Reservoir 50,000 L",
+      "presets": [
+        "builtin:heater:Heating bank 100 kW / 690 V",
+        "builtin:tank:Reservoir 50,000 L"
+      ],
+      "checks": [
+        {
+          "label": "nominal heater electrical power (W)",
+          "expected": 100000,
+          "measured": 100000,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "two-node analytic water rise (K)",
+          "expected": 0.00011772902598750079,
+          "measured": 0.00011902422980014649,
+          "absoluteError": 0.0000012952038126456955,
+          "tolerance": 0.002003531870779625
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000010816616594411244,
+          "absoluteError": 0.000010816616594411244,
+          "tolerance": 500.0000000000003
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000010816616594411244,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bench supply + 100 W heater, 12 V command",
+      "presets": [
+        "builtin:source:Bench CV/CC 30 V / 3 A",
+        "builtin:heater:Lab element 100 W / 24 V"
+      ],
+      "checks": [
+        {
+          "label": "available heater power (W)",
+          "expected": 25.000000000000004,
+          "measured": 25,
+          "absoluteError": 3.552713678800501e-15,
+          "tolerance": 2.6000000000000005e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.0355831470132415e-10,
+          "absoluteError": 1.0355831470132415e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.0355831470132415e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bench supply + 100 W heater, 24 V command",
+      "presets": [
+        "builtin:source:Bench CV/CC 30 V / 3 A",
+        "builtin:heater:Lab element 100 W / 24 V"
+      ],
+      "checks": [
+        {
+          "label": "available heater power (W)",
+          "expected": 51.839999999999996,
+          "measured": 51.84000000000001,
+          "absoluteError": 1.4210854715202004e-14,
+          "tolerance": 5.284e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.054321630000743e-10,
+          "absoluteError": 1.054321630000743e-10,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -1.054321630000743e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "30 kW industrial preset feeder and tank",
+      "presets": [
+        "builtin:source:DC supply 400 V / 100 A CV/CC",
+        "builtin:fuse:Power fuse 125 A",
+        "builtin:relay:Contactor 400 V / 80 A",
+        "builtin:cable:Cu 35 mm² · 50 m",
+        "builtin:heater:Heating bank 30 kW / 400 V",
+        "builtin:tank:Process tank 2,000 L"
+      ],
+      "checks": [
+        {
+          "label": "feeder current including all voltage drops (A)",
+          "expected": 74.56757464524921,
+          "measured": 74.56757464524924,
+          "absoluteError": 2.842170943040401e-14,
+          "tolerance": 7.556757464524921e-7
+        },
+        {
+          "label": "actual heater power (W)",
+          "expected": 29655.057005199,
+          "measured": 29655.05700519902,
+          "absoluteError": 2.1827872842550278e-11,
+          "tolerance": 0.00029656057005199
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -7.785528310932932e-8,
+          "absoluteError": 7.785528310932932e-8,
+          "tolerance": 148.99611126684124
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -7.785528310932932e-8,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    }
+  ]
+}

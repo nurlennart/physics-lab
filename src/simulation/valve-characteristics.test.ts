@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { Builder } from "./scaling-validation";
 import { Simulation, DT } from "./engine";
-import { relativeFlowCoefficient, VALVE_REGULARIZATION } from "./hydraulic";
+import { relativeFlowCoefficient } from "./hydraulic";
 import { parseProject, serializeProject } from "./projects";
 import { makeComponent, type Property } from "./model";
 import { WATER_RHO as RHO } from "./units";
@@ -47,10 +47,10 @@ describe("inherent valve characteristics", () => {
         const phi = relativeFlowCoefficient({ ...makeComponent("valve", 0, 0), props: { ...makeComponent("valve", 0, 0).props, characteristic } }, opening);
         const area = Math.PI * 0.025 ** 2 / 4, quadratic = 5 / phi ** 2 * RHO / (2 * area ** 2);
         expect(r.flow).toBeGreaterThan(0);
-        expect(Math.abs(VALVE_REGULARIZATION * r.flow + quadratic * r.flow ** 2 - r.differentialPressure) / r.differentialPressure).toBeLessThan(1e-9);
+        expect(Math.abs(quadratic * r.flow ** 2 - r.differentialPressure) / r.differentialPressure).toBeLessThan(1e-9);
       }
   });
-  it("at constant Δp the flow ratio is φ (turbulent, regularisation < 0.1 %)", () => {
+  it("at constant Δp the flow ratio is φ for a purely turbulent restriction", () => {
     const full = flow({ opening: 100 }).flow;
     expect(flow({ characteristic: "equalPercentage", opening: 50 }).flow / full).toBeCloseTo(50 ** -0.5, 3);
     expect(flow({ characteristic: "quickOpening", opening: 25 }).flow / full).toBeCloseTo(0.5, 3);

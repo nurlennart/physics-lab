@@ -1,41 +1,93 @@
 [
   {
     "mode": "battery",
-    "simulatedSeconds": 59.999999999997875,
+    "source": "generated",
+    "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": 7.015614755800925e-10,
+    "energyResidual": -2.5272584025515243e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "State of charge",
-        "value": 62.79736996450814
+        "value": 62.79736995175161
       },
       {
         "name": "Chemical energy",
-        "value": 5257.484397750115
+        "value": 5257.484396624443
       },
       {
         "name": "Load power",
-        "value": 24.868831771808132
+        "value": 24.87241595347129
+      }
+    ]
+  },
+  {
+    "mode": "battery",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0,
+    "energyResidual": -2.5272584025515243e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "State of charge",
+        "value": 62.79736995175161
+      },
+      {
+        "name": "Chemical energy",
+        "value": 5257.484396624443
+      },
+      {
+        "name": "Load power",
+        "value": 24.87241595347129
       }
     ]
   },
   {
     "mode": "contactor",
-    "simulatedSeconds": 59.999999999997875,
+    "source": "generated",
+    "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 1678.883792633228,
-    "energyResidual": 1.4381384971784428e-10,
+    "suppliedEnergy": 1678.903784303524,
+    "energyResidual": 2.766000761766918e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "Coil voltage",
-        "value": 23.99833344906604
+        "value": 23.998333449066042
+      },
+      {
+        "name": "Main contact",
+        "value": 1
+      },
+      {
+        "name": "Load power",
+        "value": 23.98001249305917
+      }
+    ]
+  },
+  {
+    "mode": "contactor",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1678.903784303524,
+    "energyResidual": 2.766000761766918e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Coil voltage",
+        "value": 23.998333449066042
       },
       {
         "name": "Main contact",
@@ -49,6 +101,32 @@
   },
   {
     "mode": "transformer",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1597.3880042000774,
+    "energyResidual": 4.581579560181126e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Secondary RMS voltage",
+        "value": 23.978188103735313
+      },
+      {
+        "name": "Load power",
+        "value": 23.95639603075474
+      },
+      {
+        "name": "Transformer temperature",
+        "value": 20.102501183970126
+      }
+    ]
+  },
+  {
+    "mode": "transformer",
+    "source": "file",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
@@ -73,21 +151,22 @@
   },
   {
     "mode": "radiator",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
     "suppliedEnergy": 1800.0000000000002,
-    "energyResidual": 0.019087048905930715,
-    "massResidual": 2.2737367544323206e-13,
+    "energyResidual": 0.01917506823883741,
+    "massResidual": 0,
     "probes": [
       {
         "name": "Radiator outlet",
-        "value": 58.7691660218066
+        "value": 58.7711008535361
       },
       {
         "name": "Heat rejected",
-        "value": 3937.851929022309
+        "value": 3937.9497041438076
       },
       {
         "name": "Fan power",
@@ -95,18 +174,48 @@
       },
       {
         "name": "Water flow",
-        "value": 45.7134032852172
+        "value": 45.786193607908665
+      }
+    ]
+  },
+  {
+    "mode": "radiator",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1800.0000000000002,
+    "energyResidual": 0.01917506823883741,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator outlet",
+        "value": 58.7711008535361
+      },
+      {
+        "name": "Heat rejected",
+        "value": 3937.9497041438076
+      },
+      {
+        "name": "Fan power",
+        "value": 30.000000000000004
+      },
+      {
+        "name": "Water flow",
+        "value": 45.786193607908665
       }
     ]
   },
   {
     "mode": "acRlc",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 5971.60903846317,
-    "energyResidual": -5.331912689143792e-11,
+    "suppliedEnergy": 5971.609038463171,
+    "energyResidual": -4.808953235624358e-11,
     "massResidual": 0,
     "probes": [
       {
@@ -123,7 +232,40 @@
       },
       {
         "name": "AC-01 reactivePower",
-        "value": 24.923720571799805
+        "value": 24.92372057179981
+      },
+      {
+        "name": "AC-01 powerFactor",
+        "value": 0.97004606708983
+      }
+    ]
+  },
+  {
+    "mode": "acRlc",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 5971.609038463171,
+    "energyResidual": -4.808953235624358e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "AC-01 current",
+        "value": -0.4460873628480614
+      },
+      {
+        "name": "AC-01 voltage",
+        "value": 230
+      },
+      {
+        "name": "AC-01 power",
+        "value": 99.52681713912426
+      },
+      {
+        "name": "AC-01 reactivePower",
+        "value": 24.92372057179981
       },
       {
         "name": "AC-01 powerFactor",
@@ -133,6 +275,36 @@
   },
   {
     "mode": "induction",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 349080.74666397594,
+    "energyResidual": -2.0285369828343391e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "IM-01 rpm",
+        "value": 1467.7313936197024
+      },
+      {
+        "name": "IM-01 current",
+        "value": 9.885539250139017
+      },
+      {
+        "name": "IM-01 shaftPower",
+        "value": 5379.516525082495
+      },
+      {
+        "name": "IM-01 temperature",
+        "value": 21.028494594706615
+      }
+    ]
+  },
+  {
+    "mode": "induction",
+    "source": "file",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
@@ -161,50 +333,120 @@
   },
   {
     "mode": "starting",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 369316.0458680266,
-    "energyResidual": -0.0000010693911463022232,
+    "suppliedEnergy": 369316.04586779187,
+    "energyResidual": -0.0000013075186870992184,
     "massResidual": 0,
     "probes": [
       {
         "name": "TS3-01 line current",
-        "value": -12.916220103822035
+        "value": -12.916220103818572
       },
       {
         "name": "Motor (star-delta) rpm",
-        "value": 1489.2667474064872
+        "value": 1489.266747406488
       },
       {
         "name": "Motor (soft starter) rpm",
-        "value": 1489.5034419043247
+        "value": 1489.5034419043302
       },
       {
         "name": "Motor (drive) rpm",
-        "value": 1489.288949145518
+        "value": 1489.288949145514
+      }
+    ]
+  },
+  {
+    "mode": "starting",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 369316.04586779187,
+    "energyResidual": -0.0000013075186870992184,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "TS3-01 line current",
+        "value": -12.916220103818572
+      },
+      {
+        "name": "Motor (star-delta) rpm",
+        "value": 1489.266747406488
+      },
+      {
+        "name": "Motor (soft starter) rpm",
+        "value": 1489.5034419043302
+      },
+      {
+        "name": "Motor (drive) rpm",
+        "value": 1489.288949145514
       }
     ]
   },
   {
     "mode": "light",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 1437.6039933444663,
-    "energyResidual": 2.864908310584724e-11,
+    "suppliedEnergy": 1515.641712119563,
+    "energyResidual": 3.456079866737127e-11,
     "massResidual": 0,
     "probes": [
       {
         "name": "L-01 power",
-        "value": 23.920199556479634
+        "value": 25.13416829489315
+      }
+    ]
+  },
+  {
+    "mode": "light",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 1515.641712119563,
+    "energyResidual": 3.456079866737127e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "L-01 power",
+        "value": 25.13416829489315
       }
     ]
   },
   {
     "mode": "heat",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119958.34779592598,
+    "energyResidual": 2.223816863988759e-8,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "H-01 power",
+        "value": 1998.6118341559875
+      },
+      {
+        "name": "TK-01 water",
+        "value": 22.762139826211666
+      }
+    ]
+  },
+  {
+    "mode": "heat",
+    "source": "file",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
@@ -225,17 +467,43 @@
   },
   {
     "mode": "automated",
+    "source": "generated",
     "simulatedSeconds": 1800,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 3193999.868673931,
-    "energyResidual": 5.784677341580391e-7,
+    "suppliedEnergy": 3193999.868673913,
+    "energyResidual": 5.885958671569824e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "TK-01 water",
-        "value": 79.22038445713562
+        "value": 79.22038445713488
+      },
+      {
+        "name": "H-01 power",
+        "value": 0
+      },
+      {
+        "name": "HC-01 demand",
+        "value": 0
+      }
+    ]
+  },
+  {
+    "mode": "automated",
+    "source": "file",
+    "simulatedSeconds": 1800,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 3193999.868673913,
+    "energyResidual": 5.885958671569824e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "TK-01 water",
+        "value": 79.22038445713488
       },
       {
         "name": "H-01 power",
@@ -249,81 +517,150 @@
   },
   {
     "mode": "transfer",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4990.739960016901,
-    "energyResidual": 0.0011505426878670733,
-    "massResidual": -1.6399326341343112e-11,
+    "suppliedEnergy": 4988.785087251311,
+    "energyResidual": 0.0016896423325079013,
+    "massResidual": -2.8279600883251987e-11,
     "probes": [
       {
         "name": "Destination level",
-        "value": 42.385536025453106
+        "value": 42.42864302689265
       },
       {
         "name": "Delivery flow",
-        "value": 48.52481785823511
+        "value": 48.60193710015706
       },
       {
         "name": "Motor current",
-        "value": 3.2861521527848314
+        "value": 3.2846066583880016
       },
       {
         "name": "Delivery pressure",
-        "value": 0.3146994908666763
+        "value": 0.3139358756862941
       },
       {
         "name": "Destination water",
-        "value": 20.006495866171008
+        "value": 20.00647804335256
+      }
+    ]
+  },
+  {
+    "mode": "transfer",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 4988.785087251311,
+    "energyResidual": 0.0016896423325079013,
+    "massResidual": -2.8279600883251987e-11,
+    "probes": [
+      {
+        "name": "Destination level",
+        "value": 42.42864302689265
+      },
+      {
+        "name": "Delivery flow",
+        "value": 48.60193710015706
+      },
+      {
+        "name": "Motor current",
+        "value": 3.2846066583880016
+      },
+      {
+        "name": "Delivery pressure",
+        "value": 0.3139358756862941
+      },
+      {
+        "name": "Destination water",
+        "value": 20.00647804335256
       }
     ]
   },
   {
     "mode": "pressure",
+    "source": "generated",
     "simulatedSeconds": 195,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 8366.878299451462,
-    "energyResidual": -0.005316824056535552,
-    "massResidual": 1.0122960247826995e-9,
+    "suppliedEnergy": 8486.683506901285,
+    "energyResidual": 0.027990239208179446,
+    "massResidual": 6.921538897586288e-10,
     "probes": [
       {
         "name": "Destination level",
-        "value": 62.62419196555439
+        "value": 62.62427775801934
       },
       {
         "name": "Delivery flow",
-        "value": 20.2252925803363
+        "value": 20.19818385442005
       },
       {
         "name": "Motor current",
-        "value": 1.3757487612516894
+        "value": 3.3264660747970614
       },
       {
         "name": "Delivery pressure",
-        "value": 0.3492334644004527
+        "value": 0.34816006968597496
       },
       {
         "name": "Destination water",
-        "value": 20.008058855985382
+        "value": 20.008061002230363
+      }
+    ]
+  },
+  {
+    "mode": "pressure",
+    "source": "file",
+    "simulatedSeconds": 195,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 8486.683506901285,
+    "energyResidual": 0.027990239208179446,
+    "massResidual": 6.921538897586288e-10,
+    "probes": [
+      {
+        "name": "Destination level",
+        "value": 62.62427775801934
+      },
+      {
+        "name": "Delivery flow",
+        "value": 20.19818385442005
+      },
+      {
+        "name": "Motor current",
+        "value": 3.3264660747970614
+      },
+      {
+        "name": "Delivery pressure",
+        "value": 0.34816006968597496
+      },
+      {
+        "name": "Destination water",
+        "value": 20.008061002230363
       }
     ]
   },
   {
     "mode": "supply",
+    "source": "generated",
     "simulatedSeconds": 720,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 12814.034613567872,
-    "energyResidual": 0.015403651353381065,
-    "massResidual": 3.4206948384962743e-9,
+    "suppliedEnergy": 12745.603623997305,
+    "energyResidual": 0.015877573591978944,
+    "massResidual": -5.155271765033831e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 39.17187365071354
+        "value": 38.89626745511236
       },
       {
         "name": "Delivery flow",
@@ -335,128 +672,301 @@
       },
       {
         "name": "Delivery pressure",
-        "value": 0.24258155314044103
+        "value": 0.24198976730968447
       },
       {
         "name": "Destination water",
-        "value": 20.007182270964734
+        "value": 20.007157552373542
+      }
+    ]
+  },
+  {
+    "mode": "supply",
+    "source": "file",
+    "simulatedSeconds": 720,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 12745.603623997305,
+    "energyResidual": 0.015877573591978944,
+    "massResidual": -5.155271765033831e-9,
+    "probes": [
+      {
+        "name": "Destination level",
+        "value": 38.89626745511236
+      },
+      {
+        "name": "Delivery flow",
+        "value": 0
+      },
+      {
+        "name": "Motor current",
+        "value": 0
+      },
+      {
+        "name": "Delivery pressure",
+        "value": 0.24198976730968447
+      },
+      {
+        "name": "Destination water",
+        "value": 20.007157552373542
       }
     ]
   },
   {
     "mode": "circulation",
+    "source": "generated",
     "simulatedSeconds": 300,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 173325.44725545542,
-    "energyResidual": 0.1783776890174522,
-    "massResidual": -2.051308456429979e-9,
+    "suppliedEnergy": 173317.5044785139,
+    "energyResidual": 0.26924157680514327,
+    "massResidual": -1.94938820641255e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 57.22649428564516
+        "value": 57.23791584093853
       },
       {
         "name": "Delivery flow",
-        "value": 49.262315457830525
+        "value": 49.30240575144272
       },
       {
         "name": "Motor current",
-        "value": 3.2727505598184843
+        "value": 3.2718944126414526
       },
       {
         "name": "Delivery pressure",
-        "value": 0.625693626034319
+        "value": 0.6250972039282271
       },
       {
         "name": "Destination water",
-        "value": 48.595808539629445
+        "value": 48.59615121362799
       },
       {
         "name": "Source water",
-        "value": 48.73013922149079
+        "value": 48.729642468587485
+      }
+    ]
+  },
+  {
+    "mode": "circulation",
+    "source": "file",
+    "simulatedSeconds": 300,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 173317.5044785139,
+    "energyResidual": 0.26924157680514327,
+    "massResidual": -1.94938820641255e-9,
+    "probes": [
+      {
+        "name": "Destination level",
+        "value": 57.23791584093853
+      },
+      {
+        "name": "Delivery flow",
+        "value": 49.30240575144272
+      },
+      {
+        "name": "Motor current",
+        "value": 3.2718944126414526
+      },
+      {
+        "name": "Delivery pressure",
+        "value": 0.6250972039282271
+      },
+      {
+        "name": "Destination water",
+        "value": 48.59615121362799
+      },
+      {
+        "name": "Source water",
+        "value": 48.729642468587485
       }
     ]
   },
   {
     "mode": "industrial",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 101030.15675657123,
-    "energyResidual": 0.00028701062547042966,
-    "massResidual": -8.481038094032556e-11,
+    "suppliedEnergy": 100980.76790030826,
+    "energyResidual": 0.0027262994917691685,
+    "massResidual": -1.3005774235352874e-10,
     "probes": [
       {
         "name": "Destination level",
-        "value": 30.903241349933264
+        "value": 30.949081002856115
       },
       {
         "name": "Delivery flow",
-        "value": 312.26752300275797
+        "value": 312.71232995347634
       },
       {
         "name": "Motor current",
-        "value": 8.57419807455677
+        "value": 8.569933037775607
       },
       {
         "name": "Delivery pressure",
-        "value": 1.4181445717392784
+        "value": 1.4136270014111052
       },
       {
         "name": "Destination water",
-        "value": 20.02413605494496
+        "value": 20.024034559536062
       },
       {
         "name": "Motor RPM",
-        "value": 2678.610314353503
+        "value": 2678.8389094955396
       },
       {
         "name": "Shaft power",
-        "value": 1165.6815006499605
+        "value": 1165.1097708728237
       },
       {
         "name": "Hydraulic power",
-        "value": 886.9817108144418
+        "value": 886.5821096338656
+      }
+    ]
+  },
+  {
+    "mode": "industrial",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 100980.76790030826,
+    "energyResidual": 0.0027262994917691685,
+    "massResidual": -1.3005774235352874e-10,
+    "probes": [
+      {
+        "name": "Destination level",
+        "value": 30.949081002856115
+      },
+      {
+        "name": "Delivery flow",
+        "value": 312.71232995347634
+      },
+      {
+        "name": "Motor current",
+        "value": 8.569933037775607
+      },
+      {
+        "name": "Delivery pressure",
+        "value": 1.4136270014111052
+      },
+      {
+        "name": "Destination water",
+        "value": 20.024034559536062
+      },
+      {
+        "name": "Motor RPM",
+        "value": 2678.8389094955396
+      },
+      {
+        "name": "Shaft power",
+        "value": 1165.1097708728237
+      },
+      {
+        "name": "Hydraulic power",
+        "value": 886.5821096338656
       }
     ]
   },
   {
     "mode": "exchanger",
+    "source": "generated",
     "simulatedSeconds": 60,
     "error": null,
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": 0.309457113755343,
-    "massResidual": -6.002665031701326e-11,
+    "energyResidual": 0.31766782274644356,
+    "massResidual": -1.1823431123048067e-11,
     "probes": [
       {
         "name": "Cooled hot water",
-        "value": 71.48572280151848
+        "value": 71.53947164658564
       },
       {
         "name": "Warmed cold water",
-        "value": 18.688670755246733
+        "value": 18.63455136558059
       },
       {
         "name": "Recovered heat",
-        "value": 305300.43573026935
+        "value": 305589.92765418487
       },
       {
         "name": "Hot stream flow",
-        "value": 494.3068549526223
+        "value": 498.0198947853045
       },
       {
         "name": "Cold stream flow",
-        "value": 486.18383956980404
+        "value": 489.79880515593914
+      }
+    ]
+  },
+  {
+    "mode": "exchanger",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0,
+    "energyResidual": 0.31766782274644356,
+    "massResidual": -1.1823431123048067e-11,
+    "probes": [
+      {
+        "name": "Cooled hot water",
+        "value": 71.53947164658564
+      },
+      {
+        "name": "Warmed cold water",
+        "value": 18.63455136558059
+      },
+      {
+        "name": "Recovered heat",
+        "value": 305589.92765418487
+      },
+      {
+        "name": "Hot stream flow",
+        "value": 498.0198947853045
+      },
+      {
+        "name": "Cold stream flow",
+        "value": 489.79880515593914
       }
     ]
   },
   {
     "mode": "mechanism",
+    "source": "generated",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0,
+    "energyResidual": 1.004427078581216,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Spring position",
+        "value": 3.1077340000000073
+      },
+      {
+        "name": "Spring velocity",
+        "value": -5.3838877800416185e-14
+      }
+    ]
+  },
+  {
+    "mode": "mechanism",
+    "source": "file",
     "simulatedSeconds": 59.999999999997875,
     "error": null,
     "violations": [],
@@ -477,30 +987,82 @@
   },
   {
     "mode": "rotor",
+    "source": "generated",
     "simulatedSeconds": 59.999999999997875,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 12804.54570709491,
-    "energyResidual": 2.1318555809557438e-9,
+    "suppliedEnergy": 14049.180662426868,
+    "energyResidual": -1.4233592082746327e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "Rotor speed",
-        "value": 120.45484785784328
+        "value": 125.66370614359172
       },
       {
         "name": "Motor current",
-        "value": 2.394046111457481
+        "value": 2.6055755618852667
       },
       {
         "name": "Mechanical energy",
-        "value": 1165.9498072546512
+        "value": 1268.969010092949
+      }
+    ]
+  },
+  {
+    "mode": "rotor",
+    "source": "file",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 14049.180662426868,
+    "energyResidual": -1.4233592082746327e-9,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Rotor speed",
+        "value": 125.66370614359172
+      },
+      {
+        "name": "Motor current",
+        "value": 2.6055755618852667
+      },
+      {
+        "name": "Mechanical energy",
+        "value": 1268.969010092949
       }
     ]
   },
   {
     "mode": "descent",
+    "source": "generated",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0,
+    "energyResidual": 2.8705926524708048e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Load height",
+        "value": 1.0191130156246786
+      },
+      {
+        "name": "Descent velocity",
+        "value": 0
+      },
+      {
+        "name": "Brake energy",
+        "value": 389.1895236504325
+      }
+    ]
+  },
+  {
+    "mode": "descent",
+    "source": "file",
     "simulatedSeconds": 59.999999999997875,
     "error": null,
     "violations": [],
@@ -525,6 +1087,40 @@
   },
   {
     "mode": "lift",
+    "source": "generated",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 15206.525163966362,
+    "energyResidual": -0.0000018613584700233332,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Lift height",
+        "value": 2.9999453463494956
+      },
+      {
+        "name": "Lift velocity",
+        "value": 0.00001799271134664027
+      },
+      {
+        "name": "Rotor speed",
+        "value": 0.0008996355673320135
+      },
+      {
+        "name": "Motor current",
+        "value": 4.274113752214488
+      },
+      {
+        "name": "Mechanical energy",
+        "value": 1.4420078729311104e-7
+      }
+    ]
+  },
+  {
+    "mode": "lift",
+    "source": "file",
     "simulatedSeconds": 59.999999999997875,
     "error": null,
     "violations": [],
@@ -557,25 +1153,51 @@
   },
   {
     "mode": "rotation",
+    "source": "generated",
     "simulatedSeconds": 59.999999999997875,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 13842.650540192295,
-    "energyResidual": -7.019025360932574e-9,
+    "suppliedEnergy": 13969.655702658847,
+    "energyResidual": 9.83550307864789e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "Rotor speed",
-        "value": 125.66375615489892
+        "value": 125.66365727437181
       },
       {
         "name": "Motor current",
-        "value": 1.6832099148891349
+        "value": 1.68320845764517
       },
       {
         "name": "Mechanical energy",
-        "value": 1268.970020134966
+        "value": 1268.968023117227
+      }
+    ]
+  },
+  {
+    "mode": "rotation",
+    "source": "file",
+    "simulatedSeconds": 59.999999999997875,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 13969.655702658847,
+    "energyResidual": 9.83550307864789e-9,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Rotor speed",
+        "value": 125.66365727437181
+      },
+      {
+        "name": "Motor current",
+        "value": 1.68320845764517
+      },
+      {
+        "name": "Mechanical energy",
+        "value": 1268.968023117227
       }
     ]
   }

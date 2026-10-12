@@ -149,8 +149,6 @@ export function relativeFlowCoefficient(c: Component, opening: number) {
 }
 /** Valves with a selectable inherent characteristic. */
 export const valveCharacteristicKinds = new Set(['valve', 'actuatedValve', 'pressureReducingValve']);
-/** Small linear resistance of valve-type branches (Pa per m³/s) that keeps their flow inverse smooth at Q = 0. */
-export const VALVE_REGULARIZATION = 1e5;
 /**
  * Pump operating point. Shared by the solver, live readings, the Inspector rating
  * and every export so all report the same quantities:
@@ -328,7 +326,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
-      linear: VALVE_REGULARIZATION + prop(c, 'laminarK') * mu / (2 * d * area) / fraction ** 2,
+      linear: prop(c, 'laminarK') * mu / (2 * d * area) / fraction ** 2,
       quadratic: prop(c, 'lossCoefficient') / fraction ** 2 * RHO / (2 * area ** 2),
       offset: c.kind === 'checkValve' && !stuckOpen ? prop(c, 'crackingPressure') : 0,
       mu,
@@ -370,14 +368,19 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       ? { linear: PUMP_INTERNAL_RESISTANCE, quadratic: RHO * G * prop(c, 'shutoffHead') * 0.5 / prop(c, 'ratedFlow') ** 2 }
       : valveTerms(b, difference >= 0);
     const linear = terms.linear, quadratic = terms.quadratic;
-    const magnitudeFlow = 2 * magnitude / (linear + Math.sqrt(linear * linear + 4 * quadratic * magnitude));
+    const magnitudeFlow = magnitude === 0 ? 0 : 2 * magnitude / (linear + Math.sqrt(linear * linear + 4 * quadratic * magnitude));
+    // A purely quadratic branch has an infinite inverse slope at zero pressure.
+    // Bound only the Newton Jacobian near zero (a 1 µPa pressure scale), leaving
+    // the actual two-K flow law and its dissipated energy unchanged. A fixed
+    // series resistance would dominate the physical loss of large-bore valves.
+    const inverseSlope = () => 1 / Math.max(1e-9, linear + 2 * quadratic * Math.max(magnitudeFlow, quadratic > 0 ? Math.sqrt(1e-6 / quadratic) : 0));
     // Closed direction: zero flow. The Jacobian keeps the branch's own slope at this |Δp|
     // (generalized Jacobian) so Newton can move node pressures back across the threshold.
     if ((dp <= atZero && !allowNegative) || (dp >= atZero && !allowPositive))
-      return { q: 0, derivative: !regularize ? 0 : closedForm ? 1 / (linear + 2 * quadratic * magnitudeFlow) : 1e-5 };
+      return { q: 0, derivative: !regularize ? 0 : closedForm ? inverseSlope() : 1e-5 };
     if (closedForm) {
       const q = Math.sign(difference) * magnitudeFlow;
-      return { q, derivative: 1 / (linear + 2 * quadratic * Math.abs(q)) };
+      return { q, derivative: inverseSlope() };
     }
     // Monotone loss(q) = dp: bracket by doubling, then Illinois (modified regula falsi) — superlinear,
     // always bracketed, ~10 loss evaluations instead of ~90 for bisection at the same tolerance.

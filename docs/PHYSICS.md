@@ -54,6 +54,8 @@ Catalog coefficients are illustrative engineering values, not manufacturer data.
 
 Steps below 1/30,000 s or more than 1,024 internal intervals in one outer step are rejected with guidance.
 
+The shaft midpoint solve uses a finite-difference chord Newton iteration with a residual tolerance of 10⁻⁸ rad/s. Trial steps backtrack when necessary to reduce the actual coupled residual across current-limiting and check-valve transitions; a chord that cannot reduce it is rebuilt locally. This avoids cycling between CV and CC supply states without changing the physical equations or convergence tolerance.
+
 **Adaptive advance.** Sandbox experiments without moving rigid bodies can advance by up to +24 h with `AdaptiveRun` (`engine.ts`). The thermal network is implicit and its energy ledger uses the implicit values, so conservation holds for any step size; the step size affects only accuracy. The step bound is the minimum of:
 
 - 30 s and twice the previous step;
@@ -142,7 +144,7 @@ Normalized temperatures with a steady element rise of x² = (I/In)²:
 - melting at θ_e ≥ 1.45²; T = `tripTime` is the melting time at 10 × In (exactly, by calibration);
 - exact update over each step (2 × 2 matrix exponential).
 
-With the default T = 0.1 s the fuse meets the IEC 60269 gG gates (16 A link, normalized):
+With the default T = 0.1 s the fuse meets the IEC 60269 gG gates (16 A link, normalized) except the 9.38 × In gate, which it misses by 15 ms:
 
 | Current | Gate | Model |
 | --- | --- | --- |
@@ -276,6 +278,8 @@ quick opening     φ = √x
 ```
 
 The K₁ term is a pressure drop linear in flow, using the upstream viscosity. Defaults: K₁ 500 for ball/gate valves, 1,500 for globe valves, regulators and swing checks, 1,000 for heat exchangers. Manual and pressure-reducing valves default to linear trim; the actuated valve is a control valve with equal-percentage trim. 0 % travel is the seat and isolates exactly. The installed characteristic is not a parameter: it follows from the network (with low valve authority an equal-percentage valve behaves nearly linearly).
+
+For a purely quadratic restriction (K₁ = 0), the inverse slope is bounded near zero pressure only in the Newton Jacobian. No artificial series resistance is added to the pressure drop or heat ledger.
 
 - **Check valve:** forward cracking pressure, no reverse flow.
 - **Actuated valve:** moves at 100/responseTime percentage points per second toward a numeric percent command; an invalid command selects the fail position. Actuator power is not modelled.

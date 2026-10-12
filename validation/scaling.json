@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-11T16:13:47.444Z",
-  "wallSeconds": 20.25,
+  "executedAt": "2026-10-12T07:07:47.455Z",
+  "wallSeconds": 28.88,
   "passed": 124,
   "total": 124,
   "results": [
@@ -1206,8 +1206,8 @@
     {
       "name": "Heat exchanger duty (counterflow ε-NTU)",
       "domain": "hydraulic",
-      "expected": 308331.98665348045,
-      "measured": 308331.98665348045,
+      "expected": 308594.97820877907,
+      "measured": 308594.97820877907,
       "absoluteError": 0,
       "relativeError": 0,
       "tolerance": "0.00010%",
@@ -1217,10 +1217,10 @@
     {
       "name": "Heat exchanger hot outlet",
       "domain": "hydraulic",
-      "expected": 71.75395379076309,
-      "measured": 71.75395379076264,
-      "absoluteError": 4.547473508864641e-13,
-      "relativeError": 6.337592938955287e-15,
+      "expected": 71.80634533303505,
+      "measured": 71.80634533303419,
+      "absoluteError": 8.668621376273222e-13,
+      "relativeError": 1.2072221940928049e-14,
       "tolerance": "0.00010%",
       "pass": true,
       "assumptions": "T_out = T_in − Q/C + viscous dissipation heating"
@@ -1234,14 +1234,14 @@
       "relativeError": null,
       "tolerance": "pass/fail",
       "pass": true,
-      "assumptions": "IAPWS 2008 μ(T) in pipe friction; flow ratio (value 1.01751)"
+      "assumptions": "IAPWS 2008 μ(T) in pipe friction; flow ratio (value 1.01757)"
     },
     {
       "name": "Heat exchanger energy residual",
       "domain": "hydraulic",
       "expected": 0,
-      "measured": 0.000001523299033578951,
-      "absoluteError": 0.000001523299033578951,
+      "measured": 0.0000015400873962789774,
+      "absoluteError": 0.0000015400873962789774,
       "relativeError": null,
       "tolerance": "±0.5",
       "pass": true,
@@ -1328,9 +1328,9 @@
       "name": "PRV outlet pressure at setpoint (≈4.9 bar supply)",
       "domain": "hydraulic",
       "expected": 150000,
-      "measured": 150000.01702453342,
-      "absoluteError": 0.01702453341567889,
-      "relativeError": 1.1349688943785925e-7,
+      "measured": 150000.01702518982,
+      "absoluteError": 0.01702518982347101,
+      "relativeError": 1.1350126548980673e-7,
       "tolerance": "1.0%",
       "pass": true,
       "assumptions": "Integral pilot action, 20 kPa band, 5 s stroke, after 60 s"
@@ -1338,10 +1338,10 @@
     {
       "name": "Adaptive pumping station (270 steps vs 7200): delivered volume",
       "domain": "multiphysics",
-      "expected": 617.714011975514,
-      "measured": 617.7139831447306,
-      "absoluteError": 0.000028830783435296325,
-      "relativeError": 4.667335186892145e-8,
+      "expected": 618.6223328979014,
+      "measured": 618.6223050397721,
+      "absoluteError": 0.000027858129328706127,
+      "relativeError": 4.5032530911398385e-8,
       "tolerance": "0.10%",
       "pass": true,
       "assumptions": "Mid-step tank levels; motor midpoint coupling"
@@ -1350,8 +1350,8 @@
       "name": "Adaptive pumping station: relative energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": 4.206223920234199e-8,
-      "absoluteError": 4.206223920234199e-8,
+      "measured": 4.230835641939801e-8,
+      "absoluteError": 4.230835641939801e-8,
       "relativeError": null,
       "tolerance": "±0.00001",
       "pass": true,

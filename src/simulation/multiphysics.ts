@@ -424,11 +424,14 @@ export class Multiphysics {
         // a stale Jacobian from a running motor contracts slowly after the contactor opens (measured: 8 coupled
         // solves per step instead of ~1.2).
         let jac = this.chord && this.chord.h === h && this.chord.n === motors.length && this.chord.key === discrete ? this.chord.jac : undefined, lastNorm = Infinity;
+        let candidate: ReturnType<typeof residualAt> | undefined;
         for (let k = 0; k < 32 && motors.length; k++) {
-          const { r, f, trial } = residualAt(midpoint); this.couplingIterations = k + 1;
+          const { r, f, trial } = candidate ?? residualAt(midpoint); this.couplingIterations = k + 1;
           const norm = Math.max(...f.map(Math.abs));
           if (norm < 1e-8) { accepted = r; acceptedTrial = trial; converged = true; break; }
+          let fresh = false;
           if (!jac || norm > 0.25 * lastNorm) {
+            fresh = true;
             jac = motors.map(() => motors.map(() => 0));
             for (let j = 0; j < motors.length; j++) {
               const probe = [...midpoint], eps = Math.max(1e-5, Math.abs(midpoint[j]) * 1e-5); probe[j] += eps;
@@ -439,7 +442,27 @@ export class Multiphysics {
           }
           lastNorm = norm;
           const d = solveLinear(jac, f.map(v => -v));
-          midpoint = midpoint.map((v, i) => v + d[i]);
+          const base = midpoint;
+          // Current limiting and pump check valves make the residual piecewise smooth.
+          // A full Newton step can jump across a CV/CC boundary and cycle between
+          // active sets. Backtrack until the actual coupled residual decreases.
+          // Retain the trial for the next iteration: ordinary full steps cost no
+          // additional electrical/hydraulic or spatial solve.
+          let scale = 1, decreased = false;
+          for (let backtrack = 0; backtrack < 16; backtrack++) {
+            midpoint = base.map((v, i) => v + scale * d[i]);
+            candidate = residualAt(midpoint);
+            const nextNorm = Math.max(...candidate.f.map(Math.abs));
+            if (nextNorm < norm || nextNorm < 1e-8) { decreased = true; break; }
+            scale *= 0.5;
+          }
+          if (!decreased) {
+            // A fresh local Jacobian that cannot reduce the residual would only repeat the same step.
+            if (fresh) break;
+            // A reused chord can point away from the root after regulation changes.
+            // Retry from the accepted iterate with a fresh local Jacobian.
+            midpoint = base; candidate = undefined; jac = undefined;
+          }
         }
         if (!converged) throw Error('Electromechanical midpoint coupling failed to converge.');
         accepted = accepted ?? this.solve(s, midpoint, controls, levels, loads, h);

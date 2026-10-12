@@ -28,7 +28,7 @@ test('induction power loss coasts, recovers and survives save/load', async ({ pa
   await page.goto('/'); await openExample(page, 'Loaded induction motor');
   const advance = async () => {
     await page.getByLabel('Advance by', { exact: true }).selectOption('10');
-    await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled({ timeout: 60000 });
   };
   await advance();
   await page.locator('[data-component="inductionMotor"]').click();

@@ -18,6 +18,7 @@
     "audit:parameters": "node scripts/parameter-audit.mjs",
     "benchmark:spatial": "node scripts/benchmark-spatial.mjs",
     "validate:examples": "node scripts/check-examples.mjs",
+    "validate:presets": "node scripts/check-presets.mjs",
     "check": "scripts/check.sh",
     "check:quick": "tsc --noEmit --incremental --tsBuildInfoFile node_modules/.cache/tsc.tsbuildinfo -p . && vitest run --changed",
     "check:fast": "scripts/check.sh --no-e2e",

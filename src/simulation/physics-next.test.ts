@@ -10,7 +10,7 @@ const rel = (a: number, b: number) => Math.abs(a / b - 1);
 
 describe("two-K valve loss with water viscosity", () => {
   it("at low Reynolds number a valve passes flow in the inverse ratio of viscosity (published μ)", () => {
-    // Laminar-dominated: tiny head, K∞ ≈ 0, large K₁. Δp = (R + K₁·μ/(2dA))·Q with R = 1e5 Pa·s/m³.
+    // Laminar-dominated: tiny head, K∞ ≈ 0, large K₁. Δp = K₁·μ/(2dA)·Q.
     const b = new Builder(), valves: Component[] = [];
     for (const temperature of [80, 10]) {
       const source = b.add("tank", { capacity: 100, volume: 50, surfaceArea: 10, elevation: 0.01, initialTemperature: temperature, loss: 0 });
@@ -23,7 +23,7 @@ describe("two-K valve loss with water viscosity", () => {
     // Driving pressure: ρ_ref·g·z + g·m/A with m = 50 L × published density (971.80 / 999.70 kg/m³).
     for (const [v, mu, density] of [[valves[0], 0.35404e-3, 971.8], [valves[1], 1.3059e-3, 999.7]] as const) {
       const head = 1000 * 9.80665 * 0.01 + 9.80665 * 0.05 * density / 10;
-      const linear = 1e5 + 1e6 * mu / (2 * 0.004 * area), expected = head / linear; // K∞ term negligible here
+      const linear = 1e6 * mu / (2 * 0.004 * area), expected = head / linear; // K∞ term negligible here
       expect(rel(s.multiphysics.hydraulic.readings[v.id].flow, expected)).toBeLessThan(5e-3);
       expect(s.multiphysics.hydraulic.readings[v.id].reynolds).toBeLessThan(100);
     }

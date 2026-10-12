@@ -1,6 +1,6 @@
 # Executed scale-validation campaign
 
-Executed: 2026-10-11T16:13:47.444Z. 124/124 checks passed in 20.25 s wall time.
+Executed: 2026-10-12T07:07:47.455Z. 124/124 checks passed in 28.88 s wall time.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -113,10 +113,10 @@ Executed: 2026-10-11T16:13:47.444Z. 124/124 checks passed in 20.25 s wall time.
 | breaker trip time at 4 × In | protection | 6.6978077 | 6.7 | 2.192e-3 | 3.273e-4 | 0.20% or ±0.016666666666666666 | PASS | Thermal image θ' = ((I/In)² − θ)/τ from cold; detection at the 1/60 s step |
 | motorProtector trip time at 7.2 × In | protection | 10 | 10 | 7.638e-14 | 7.638e-15 | 0.20% or ±0.016666666666666666 | PASS | Thermal image θ' = ((I/In)² − θ)/τ from cold; detection at the 1/60 s step |
 | Thermal port: resistor temperature on heat sink | thermal | 40.564407 | 40.564406 | 9.689e-9 | 2.389e-10 | 0.010% | PASS | 40 W; series port conductances 4 and 50 W/K; sink 3.3 W/K to air |
-| Heat exchanger duty (counterflow ε-NTU) | hydraulic | 308331.99 | 308331.99 | 0.000e+0 | 0.000e+0 | 0.00010% | PASS | Inlets 80 °C / 10 °C plus feed-pipe dissipation; zero-volume pipes |
-| Heat exchanger hot outlet | hydraulic | 71.753954 | 71.753954 | 4.547e-13 | 6.338e-15 | 0.00010% | PASS | T_out = T_in − Q/C + viscous dissipation heating |
-| Hot (80 °C) stream flows faster than cold (10 °C) through identical feeds | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | IAPWS 2008 μ(T) in pipe friction; flow ratio (value 1.01751) |
-| Heat exchanger energy residual | hydraulic | 0 | 0.000001523299 | 1.523e-6 | — | ±0.5 | PASS | J |
+| Heat exchanger duty (counterflow ε-NTU) | hydraulic | 308594.98 | 308594.98 | 0.000e+0 | 0.000e+0 | 0.00010% | PASS | Inlets 80 °C / 10 °C plus feed-pipe dissipation; zero-volume pipes |
+| Heat exchanger hot outlet | hydraulic | 71.806345 | 71.806345 | 8.669e-13 | 1.207e-14 | 0.00010% | PASS | T_out = T_in − Q/C + viscous dissipation heating |
+| Hot (80 °C) stream flows faster than cold (10 °C) through identical feeds | hydraulic | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | IAPWS 2008 μ(T) in pipe friction; flow ratio (value 1.01757) |
+| Heat exchanger energy residual | hydraulic | 0 | 0.0000015400874 | 1.540e-6 | — | ±0.5 | PASS | J |
 | Three-phase 30 kW bank at 400 V: total power | electrical | 30000 | 30000 | 7.276e-12 | 2.425e-16 | 1.0e-7% | PASS | P = 3·(V_LL/√3)²/R = V_LL²/R |
 | Three-phase line current | electrical | 43.30127 | 43.30127 | 7.105e-15 | 1.641e-16 | 1.0e-7% | PASS | I_L = P/(√3·V_LL) |
 | AC R–L load: RMS current | electrical | 12.351673 | 12.351673 | 1.776e-15 | 1.438e-16 | 1.0e-7% | PASS | I = V/√(R² + (ωL)²), 10 Ω + 50 mH at 50 Hz |
@@ -124,7 +124,7 @@ Executed: 2026-10-11T16:13:47.444Z. 124/124 checks passed in 20.25 s wall time.
 | Induction motor 50 N·m load: torque balance | multiphysics | 50.304148 | 50.304149 | 7.418e-8 | 1.475e-9 | 0.10% | PASS | Air-gap torque = load + viscous friction at steady speed (5 s run-up) |
 | Induction motor rated-load speed within 1400–1490 rpm | multiphysics | 1 | 1 | 0.000e+0 | — | pass/fail | PASS | 4-pole, 50 Hz; slip from the per-phase equivalent circuit (value 1452.2) |
 | Induction motor run-up: relative energy residual | multiphysics | 0 | 1.3021559e-11 | 1.302e-11 | — | ±0.00001 | PASS | 1 |
-| PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.702e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
-| Adaptive pumping station (270 steps vs 7200): delivered volume | multiphysics | 617.71401 | 617.71398 | 2.883e-5 | 4.667e-8 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
-| Adaptive pumping station: relative energy residual | multiphysics | 0 | 4.2062239e-8 | 4.206e-8 | — | ±0.00001 | PASS | 1 |
+| PRV outlet pressure at setpoint (≈4.9 bar supply) | hydraulic | 150000 | 150000.02 | 1.703e-2 | 1.135e-7 | 1.0% | PASS | Integral pilot action, 20 kPa band, 5 s stroke, after 60 s |
+| Adaptive pumping station (270 steps vs 7200): delivered volume | multiphysics | 618.62233 | 618.62231 | 2.786e-5 | 4.503e-8 | 0.10% | PASS | Mid-step tank levels; motor midpoint coupling |
+| Adaptive pumping station: relative energy residual | multiphysics | 0 | 4.2308356e-8 | 4.231e-8 | — | ±0.00001 | PASS | 1 |
 | E: parameter extremes without NaN/Infinity propagation | all | 0 | 0 | 0.000e+0 | — |  | PASS | 782 boundary cases across every component; none failed |

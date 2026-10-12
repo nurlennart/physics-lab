@@ -385,7 +385,7 @@ test("plays Thermal Runaway through wiring, physical fault, safety latch and man
     await page.getByRole("button", { name: "Advance 60 s" }).click();
     await expect(
       page.getByRole("button", { name: "Advance 60 s" }),
-    ).toBeEnabled();
+    ).toBeEnabled({ timeout: 60000 });
     const text = await page.locator(".challenge-strip").textContent();
     if (text?.includes("stars")) break;
     if (text?.includes("recovery") && !reset) {

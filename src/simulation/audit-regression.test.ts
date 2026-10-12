@@ -2,6 +2,58 @@ import { describe, expect, it } from 'vitest';
 import { Builder } from './scaling-validation';
 import { solveElectrical } from './electrical';
 import { Simulation } from './engine';
+import { builtinPresets, presetComponentProps } from './presets';
+
+it('the DN100 gate-valve preset has only its physical two-K loss at 600 L/min', () => {
+  const preset = builtinPresets.find(p => p.name === 'Gate valve DN100')!;
+  const b = new Builder(), valve = b.add('valve', presetComponentProps(preset).props);
+  // Independent reference at 20 °C: K∞ = 0.2, K₁ = 500, D = 0.1 m,
+  // tabulated μ = 1.0016 mPa·s. The two-K pressure drop is 165.302 Pa.
+  const pressure = 165.30208564775725;
+  const high = b.add('tank', { capacity: 200, volume: 100, surfaceArea: 1, elevation: pressure / (1000 * 9.80665), loss: 0 });
+  const low = b.add('tank', { capacity: 200, volume: 100, surfaceArea: 1, loss: 0 });
+  b.wire(high, 'fluid', valve, 'inlet'); b.wire(valve, 'outlet', low, 'fluid');
+  const s = new Simulation(b.p);
+  expect(s.error).toBeNull();
+  expect(s.multiphysics.hydraulic.readings[valve.id].flow * 60000).toBeCloseTo(600, 4);
+  expect(s.multiphysics.hydraulic.readings[valve.id].differentialPressure).toBeCloseTo(pressure, 8);
+  expect(s.step()).toBe(true);
+  expect(s.violations).toEqual([]);
+  expect(Math.abs(s.energyResidual)).toBeLessThan(1e-4);
+});
+
+it('purely quadratic valves solve an initially zero-pressure internal branch without artificial loss', () => {
+  const b = new Builder(), high = b.add('tank', { capacity: 200, volume: 100, surfaceArea: 1, elevation: 1, loss: 0 });
+  const low = b.add('tank', { capacity: 200, volume: 100, surfaceArea: 1, loss: 0 });
+  const valves = Array.from({ length: 3 }, () => b.add('valve', { laminarK: 0, lossCoefficient: 5, diameter: 0.025 }));
+  b.wire(high, 'fluid', valves[0], 'inlet');
+  for (let i = 1; i < valves.length; i++) b.wire(valves[i - 1], 'outlet', valves[i], 'inlet');
+  b.wire(valves[2], 'outlet', low, 'fluid');
+  const s = new Simulation(b.p), area = Math.PI * 0.025 ** 2 / 4;
+  expect(s.error).toBeNull();
+  for (const valve of valves) {
+    const r = s.multiphysics.hydraulic.readings[valve.id];
+    expect(r.flow).toBeCloseTo(area * Math.sqrt(2 * 9.80665 / 15), 11);
+    expect(r.differentialPressure).toBeCloseTo(1000 * 9.80665 / 3, 6);
+  }
+  expect(s.step()).toBe(true);
+  expect(s.violations).toEqual([]);
+});
+
+it('a stiff DC shaft passes from supply current limiting into voltage regulation without Newton cycling', () => {
+  const b = new Builder();
+  const source = b.add('source', { mode: 'cvcc', voltage: 24, maxCurrent: 10 });
+  const motor = b.add('motor', { resistance: 0.01, torqueConstant: 1, inertia: 0.1, friction: 0, ratedCurrent: 10, ratedTorque: 10, maxSpeed: 50, heatCapacity: 1e6 });
+  b.series(source, motor);
+  const s = new Simulation(b.p);
+  expect(s.electrical.readings[source.id].regulation).toBe('cc');
+  for (let i = 0; i < 120; i++) expect(s.step(), s.error ?? '').toBe(true);
+  // With no load or friction, the final speed is V/k and the current vanishes.
+  expect(s.multiphysics.motors[motor.id].omega).toBeCloseTo(24, 7);
+  expect(s.electrical.readings[source.id].regulation).toBe('cv');
+  expect(s.violations).toEqual([]);
+  expect(Math.abs(s.energyResidual)).toBeLessThan(1e-7);
+});
 
 describe('independent electrical audit regressions', () => {
   it('DC capacitor leakage obeys KCL, dissipates V²/R and heats only from leakage', () => {

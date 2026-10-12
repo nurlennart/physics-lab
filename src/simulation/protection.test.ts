@@ -25,10 +25,12 @@ describe("gG fuse: element and body thermal images", () => {
   const setCurrent = (s: Simulation, _fuse: string, current: number) =>
     expect(s.refresh({ ...s.project, components: s.project.components.map((c) => c.kind === "source" ? { ...c, props: { ...c.props, current } } : c) } as Project)).toBe(true);
   const meltedAt = (s: Simulation) => s.events.find((e) => /fuse element melted/.test(e.message))?.time ?? Infinity;
-  it("meets the IEC 60269 gG time-current gates (16 A link, normalized) and the 10 × In melting time", () => {
+  it("meets the IEC 60269 gG time-current gates except 9.38 × In (16 A link, normalized) and the 10 × In melting time", () => {
     expect(cold(2.06)).toBeGreaterThanOrEqual(10); // 10 s gate: no melting before 10 s at 2.06 × In
     expect(cold(4.06)).toBeLessThanOrEqual(5); // 5 s gate: melted within 5 s at 4.06 × In
     expect(cold(5.31)).toBeGreaterThanOrEqual(0.1); // 0.1 s gate, lower current
+    // Known deviation (PHYSICS.md): the ≤ 0.1 s gate at 9.38 × In is missed by 15 ms.
+    expect(cold(9.38)).toBeCloseTo(0.115, 3);
     expect(cold(10)).toBeCloseTo(0.1, 9); // tripTime
     expect(cold(1.25)).toBe(Infinity); // conventional non-fusing current
     expect(cold(1.6)).toBeLessThan(3600); // conventional fusing current

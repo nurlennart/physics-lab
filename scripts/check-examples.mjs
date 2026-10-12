@@ -5,22 +5,24 @@ const { Simulation, starter, parseProject, serializeProject, examples, readProbe
 const reports = [];
 const selected = process.env.PHYSICS_EXAMPLES?.split(',');
 for (const example of examples.filter(e => !selected || selected.includes(e.mode))) {
-  const p = parseProject(JSON.parse(serializeProject(starter(example.mode))));
+ for (const source of ['generated', 'file']) {
+  const p = parseProject(source === 'file' ? JSON.parse(await readFile(`examples/${example.mode}.physics.json`, 'utf8')) : JSON.parse(serializeProject(starter(example.mode))));
   const s = new Simulation(p), duration = example.mode === 'automated' ? 1800 : example.mode === 'supply' ? 720 : example.mode === 'circulation' ? 300 : example.mode === 'pressure' ? 195 : 60;
   // Exercise real-time startup, then the same adaptive advance used by the sandbox UI.
   for (let i = 0; i < 60; i++) if (!s.step()) break;
   if (!s.error && !s.adaptiveUnavailable()) s.advanceAdaptive(duration - s.time);
   else for (let i = 60; i < duration * 60; i++) if (!s.step()) break;
   const probes = p.probes.map(probe => ({ name: probe.name, value: readProbe(probe, s) }));
-  const report = { mode: example.mode, simulatedSeconds: s.time, error: s.error, violations: s.violations, failed: s.failed, suppliedEnergy: s.suppliedEnergy, energyResidual: s.energyResidual, massResidual: s.multiphysics.massResidual, probes };
+  const report = { mode: example.mode, source, simulatedSeconds: s.time, error: s.error, violations: s.violations, failed: s.failed, suppliedEnergy: s.suppliedEnergy, energyResidual: s.energyResidual, massResidual: s.multiphysics.massResidual, probes };
   reports.push(report);
   console.log(JSON.stringify(report));
+ }
 }
 await mkdir('validation', { recursive: true });
 let combined = reports;
 if (selected) {
   const previous = JSON.parse(await readFile('validation/examples.json', 'utf8'));
-  combined = examples.map(e => reports.find(r => r.mode === e.mode) ?? previous.find(r => r.mode === e.mode)).filter(Boolean);
+  combined = examples.flatMap(e => ['generated', 'file'].map(source => reports.find(r => r.mode === e.mode && r.source === source) ?? previous.find(r => r.mode === e.mode && (r.source ?? 'generated') === source))).filter(Boolean);
 }
 await writeFile('validation/examples.json', JSON.stringify(combined, null, 2) + '\n');
 if (process.argv.includes('--write')) {
