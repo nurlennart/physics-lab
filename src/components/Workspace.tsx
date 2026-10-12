@@ -1109,6 +1109,10 @@ export default function Workspace() {
                           ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
                         : c.kind === "motor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A armature · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
+                        : c.kind === "flywheel"
+                          ? `${((simulation.multiphysics.shaftElements[c.id]?.kinetic ?? 0) / 1000).toFixed(2)} kJ stored · ${(simulation.multiphysics.shaftElements[c.id]?.torque ?? 0).toFixed(1)} N·m shaft`
+                        : c.kind === "dynamometer"
+                          ? `${(simulation.multiphysics.shaftElements[c.id]?.torque ?? 0).toFixed(1)} N·m · ${((simulation.multiphysics.shaftElements[c.id]?.power ?? 0) / 1000).toFixed(2)} kW absorbed`
                         : c.kind === "vfd"
                           ? (() => { const d = simulation.electrical.readings[c.id]?.drive; return d?.running ? `${d.frequency.toFixed(1)} Hz · ${d.outputCurrent.toFixed(1)} A out · ${d.inputPower.toFixed(0)} W in` : d?.energized ? "Output off · DC link charged" : "No supply"; })()
                         : c.kind === "starDeltaStarter" || c.kind === "softStarter"

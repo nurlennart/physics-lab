@@ -67,3 +67,11 @@ test('heat exchanger example opens from the water shelf and visibly recovers hea
   await expect(page.locator('.reading-caption')).toHaveText('Hot stream flow');
   await expect(page.locator('[data-component="heatExchanger"] .live-caption')).toContainText('kW heat');
 });
+test('motor test bench: flywheel and dynamometer captions show their mechanical readings', async ({ page }) => {
+  await page.goto('/'); await openExample(page, 'Motor test bench');
+  await page.getByRole('button', { name: 'Advance 60 s' }).click();
+  await expect(page.getByRole('button', { name: 'Advance 60 s' })).toBeEnabled({ timeout: 30000 });
+  await expect(page.locator('[data-component="flywheel"] .live-caption')).toContainText('kJ stored');
+  await expect(page.locator('[data-component="dynamometer"] .live-caption')).toContainText(/30\.0 N·m · 4\.\d\d kW absorbed/);
+  await expect(page.locator('[data-component="flywheel"] .live-caption')).not.toContainText(' V ');
+});
