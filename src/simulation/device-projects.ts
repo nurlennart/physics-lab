@@ -1,7 +1,7 @@
 import { connect, makeComponent, prop, uid, type Kind, type Component, type Project, type Property, type Measurement } from './model';
-export type DeviceMode = 'battery' | 'capacitor' | 'contactor' | 'transformer' | 'radiator';
+export type DeviceMode = 'battery' | 'capacitor' | 'inductor' | 'contactor' | 'transformer' | 'radiator';
 export function deviceStarter(mode: DeviceMode): Project {
-  let p: Project = { version: 3, id: uid(), name: ({ battery: 'Finite battery discharge', capacitor: 'Charging a capacitor', contactor: 'Powering a contactor', transformer: 'Isolated AC conversion', radiator: 'Cooling water with a fan' })[mode], components: [], connections: [], probes: [], assemblies: [] };
+  let p: Project = { version: 3, id: uid(), name: ({ battery: 'Finite battery discharge', capacitor: 'Charging a capacitor', inductor: 'Switching an inductor', contactor: 'Powering a contactor', transformer: 'Isolated AC conversion', radiator: 'Cooling water with a fan' })[mode], components: [], connections: [], probes: [], assemblies: [] };
   const add = (kind: Kind, x: number, y: number, props: Record<string, Property> = {}) => { const c = makeComponent(kind, x, y, p.components); c.props = { ...c.props, ...props }; p.components.push(c); return c; };
   const wire = (a: Component, ap: string, b: Component, bp: string) => { p = connect(p, { component: a.id, port: ap }, { component: b.id, port: bp }); };
   const trace = (c: Component, measurement: Measurement, name: string, color = '#22c55e') => p.probes!.push({ id: uid(), component: c.id, measurement, name, color, visible: true });
@@ -15,6 +15,13 @@ export function deviceStarter(mode: DeviceMode): Project {
     wire(source, 'a', sw, 'a'); wire(sw, 'b', resistor, 'a'); wire(resistor, 'b', cap, 'a'); wire(cap, 'b', source, 'b');
     wire(resistor, 'b', bleeder, 'a'); wire(bleeder, 'b', source, 'b');
     trace(cap, 'chargeVoltage', 'Capacitor voltage'); trace(cap, 'current', 'Charging current', '#38bdf8'); trace(cap, 'fieldEnergy', 'Stored energy', '#f59e0b');
+  } else if (mode === 'inductor') {
+    // τ = L/R ≈ 0.1 s while switched on; opening the switch lets the current freewheel through 100 Ω (τ = 10 ms).
+    const source = add('source', 50, 130, { voltage: 12 }), sw = add('switch', 300, 130), resistor = add('resistor', 550, 130, { resistance: 10 });
+    const coil = add('inductor', 820, 300, { inductance: 1, resistance: 0.5, ratedCurrent: 2 }), freewheel = add('resistor', 550, 420, { resistance: 100 });
+    wire(source, 'a', sw, 'a'); wire(sw, 'b', resistor, 'a'); wire(resistor, 'b', coil, 'a'); wire(coil, 'b', source, 'b');
+    wire(resistor, 'b', freewheel, 'a'); wire(freewheel, 'b', source, 'b');
+    trace(coil, 'current', 'Inductor current', '#38bdf8'); trace(coil, 'fieldEnergy', 'Stored energy', '#f59e0b'); trace(freewheel, 'power', 'Freewheel power', '#ef4444');
   } else if (mode === 'contactor') {
     const power = add('sourceAC', 50, 70, { voltage: 24 }), contactor = add('contactor', 350, 70), load = add('resistor', 650, 70, { resistance: 24 });
     const coil = add('source', 50, 340, { voltage: 24 }), sw = add('switch', 350, 340);

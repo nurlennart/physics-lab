@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { Builder } from './scaling-validation';
 import { Simulation, DT } from './engine';
 import { solveElectrical, solveLinear, solveComplex, nodeVoltage } from './electrical';
-import { batteryEnergy, batteryResistanceFactor } from './devices';
+import { batteryEnergy, batteryOCV, batteryResistanceFactor, selfDischargeCurrent } from './devices';
 import { parseProject } from './projects';
 import { readProbe } from './measurements';
 
 const run = (s: Simulation, seconds: number) => { for (let i = 0; i < Math.round(seconds / DT); i++) expect(s.step(), s.error ?? '').toBe(true); };
 describe('finite battery', () => {
   it('discharges with midpoint OCV, stores I²R as heat and closes the whole-system ledger', () => {
-    const b = new Builder(), battery = b.add('battery', { capacityAh: 0.1, initialSOC: 50, polarizationResistance: 0, resistanceActivation: 0, heatCapacity: 1000, loss: 0 }), load = b.add('resistor', { resistance: 6, loss: 0 });
+    const b = new Builder(), battery = b.add('battery', { capacityAh: 0.1, initialSOC: 50, polarizationResistance: 0, resistanceActivation: 0, selfDischarge: 0, coulombicEfficiency: 100, heatCapacity: 1000, loss: 0 }), load = b.add('resistor', { resistance: 6, loss: 0 });
     b.series(battery, load);
     const s = new Simulation(b.p), initial = batteryEnergy(battery, 0.5);
     expect(s.error).toBeNull(); run(s, 1);
@@ -30,7 +30,8 @@ describe('finite battery', () => {
       b.series(charger, battery);
       const s = new Simulation(b.p); run(s, 0.1);
       expect(s.devices.batteries[battery.id]).toBeCloseTo(1, 12);
-      expect(s.electrical.readings[battery.id].current).toBeCloseTo(0, 10);
+      // At full only the trickle that offsets self-discharge flows.
+      expect(s.electrical.readings[battery.id].current).toBeCloseTo(selfDischargeCurrent(battery) / 0.97, 15);
       expect(Math.abs(s.energyResidual)).toBeLessThan(1e-8);
     }
     const b = new Builder(), battery = b.add('battery', { initialSOC: 0 }), load = b.add('resistor', { resistance: 10 }); b.series(battery, load);
@@ -38,7 +39,7 @@ describe('finite battery', () => {
     expect(s.devices.batteries[battery.id]).toBe(0); expect(s.electrical.readings[load.id].power).toBeCloseTo(0, 12);
   });
   it('advances a long discharge adaptively: analytic SOC, exact empty boundary, closed ledger', () => {
-    const b = new Builder(), battery = b.add('battery', { capacityAh: 1, initialSOC: 80, polarizationResistance: 0, resistanceActivation: 0, heatCapacity: 1e6, loss: 0 }), load = b.add('resistor', { resistance: 6, ratedPower: 1e3, heatCapacity: 1e6, loss: 0 });
+    const b = new Builder(), battery = b.add('battery', { capacityAh: 1, initialSOC: 80, polarizationResistance: 0, resistanceActivation: 0, selfDischarge: 0, coulombicEfficiency: 100, heatCapacity: 1e6, loss: 0 }), load = b.add('resistor', { resistance: 6, ratedPower: 1e3, heatCapacity: 1e6, loss: 0 });
     b.series(battery, load);
     const s = new Simulation(b.p);
     expect(s.adaptiveUnavailable()).toBeNull();
@@ -64,7 +65,7 @@ describe('battery polarization and temperature', () => {
   it('follows the one-RC model under constant current and relaxes after the current stops', () => {
     // Constant-current charge (2 A) then open circuit: v₁(t) = I·R₁·(1 − e^(−t/τ₁)), V = E(s) + R₀·I + v₁.
     const b = new Builder(), charger = b.add('source', { mode: 'cc', current: 2, voltage: 30 });
-    const battery = b.add('battery', { capacityAh: 100, initialSOC: 50, polarizationResistance: 0.015, polarizationTimeConstant: 30, resistanceActivation: 0, heatCapacity: 1e5, loss: 0 });
+    const battery = b.add('battery', { capacityAh: 100, initialSOC: 50, polarizationResistance: 0.015, polarizationTimeConstant: 30, resistanceActivation: 0, selfDischarge: 0, coulombicEfficiency: 100, heatCapacity: 1e5, loss: 0 });
     b.series(charger, battery);
     const s = new Simulation(b.p), E = (soc: number) => 11 + 2 * soc;
     run(s, 30);
@@ -107,6 +108,39 @@ describe('battery polarization and temperature', () => {
       const E = 11 + 2 * 0.8, r0 = 0.02 * factor(ambient), R = r0 + 2 * DT / (2 * 3600 * 20);
       expect(s.electrical.readings[load.id].current).toBeCloseTo(E / (1 + R), 9);
     }
+  });
+});
+describe('battery chemistry, charge acceptance and self-discharge', () => {
+  it('follows its open-circuit curve and integrates it exactly for the chemical energy', () => {
+    const b = new Builder(), nmc = b.add('battery', { chemistry: 'nmc', emptyVoltage: 3, fullVoltage: 4.2, capacityAh: 1 }), lfp = b.add('battery', { chemistry: 'lfp', emptyVoltage: 2.5, fullVoltage: 3.65, capacityAh: 1 });
+    expect(batteryOCV(nmc, 0.5).voltage).toBeCloseTo(3 + 1.2 * 0.654, 12); // between 0.6 (40 %) and 0.708 (60 %)
+    expect(batteryOCV(lfp, 0.5).voltage).toBeCloseTo(2.5 + 1.15 * 0.718, 12); // LFP plateau ≈ 3.33 V
+    // Midpoint quadrature of Q·∫E ds on a fine grid.
+    for (const c of [nmc, lfp]) {
+      let quadrature = 0;
+      for (let i = 0; i < 100000; i++) quadrature += 3600 * batteryOCV(c, (i + 0.5) / 100000 * 0.73).voltage * 0.73 / 100000;
+      expect(batteryEnergy(c, 0.73) / quadrature - 1).toBeLessThan(1e-9);
+    }
+  });
+  it('stores only the coulombic share of the charge and turns the rest into heat', () => {
+    const b = new Builder(), charger = b.add('source', { mode: 'cc', current: 2, voltage: 30 });
+    const battery = b.add('battery', { capacityAh: 10, initialSOC: 50, coulombicEfficiency: 90, selfDischarge: 0, polarizationResistance: 0, heatCapacity: 1e5, loss: 0 });
+    b.series(charger, battery);
+    const s = new Simulation(b.p);
+    run(s, 60);
+    expect(s.devices.batteries[battery.id]).toBeCloseTo(0.5 + 0.9 * 2 * s.time / 36000, 12);
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-9 * s.suppliedEnergy);
+    // The tenth not stored heats the pack on top of the I²R loss: ≈ 0.1 × 12 V × 2 A.
+    expect(s.electrical.readings[battery.id].heatPower! - 4 * 0.02).toBeCloseTo(0.1 * 2 * batteryOCV(battery, s.devices.batteries[battery.id]).voltage, 2);
+  });
+  it('self-discharges at its monthly rate, turning chemical energy into heat', () => {
+    const b = new Builder(), battery = b.add('battery', { capacityAh: 10, initialSOC: 60, selfDischarge: 3, heatCapacity: 1e5, loss: 0 });
+    const s = new Simulation(b.p);
+    s.advanceAdaptive(86400);
+    expect(s.devices.batteries[battery.id]).toBeCloseTo(0.6 - 0.03 / 30, 10);
+    // The chemical energy lost became heat inside the pack (no external supply, no ambient loss).
+    expect(Math.abs(s.storedEnergy)).toBeLessThan(1e-6);
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-6);
   });
 });
 describe('powered DC contactor', () => {

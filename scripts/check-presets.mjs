@@ -112,9 +112,12 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       const initial = v.initialSOC / 100, delta = v.fullVoltage - v.emptyVoltage;
       const r = (v.emptyVoltage + delta * initial) / Math.min(1, v.maxCurrent / 10), resistor = load(b, r);
       b.series(c, resistor); s = simulation(b); run(s);
-      // Independent reference: RK4 over the two states, charge and the R₁ ∥ C₁ polarization voltage (20 °C).
-      const q = v.capacityAh * 3600, r1 = v.polarizationResistance, c1 = r1 > 0 ? v.polarizationTimeConstant / r1 : 0;
-      const rate = ([soc, vp]) => { const current = -(v.emptyVoltage + delta * soc + vp) / (r + v.internalResistance); return [current / q, r1 > 0 ? (current - vp / r1) / c1 : 0]; };
+      // Independent reference: RK4 over the two states, charge and the R₁ ∥ C₁ polarization voltage (20 °C), with the
+      // documented open-circuit tables (docs/PHYSICS.md) and self-discharge; discharge only, so charge efficiency is moot.
+      const curves = { linear: [[0, 1], [0, 1]], nmc: [[0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.375, 0.458, 0.517, 0.6, 0.708, 0.833, 1]], lfp: [[0, 0.05, 0.1, 0.2, 0.5, 0.8, 0.95, 1], [0, 0.545, 0.636, 0.682, 0.718, 0.745, 0.773, 1]] };
+      const ocv = (soc) => { const [xs, fs] = curves[v.chemistry]; const k = Math.min(xs.length - 2, xs.findIndex((x, i) => i === xs.length - 1 || soc < xs[i + 1])); return v.emptyVoltage + delta * (fs[k] + (fs[k + 1] - fs[k]) * (soc - xs[k]) / (xs[k + 1] - xs[k])); };
+      const q = v.capacityAh * 3600, r1 = v.polarizationResistance, c1 = r1 > 0 ? v.polarizationTimeConstant / r1 : 0, leak = q * v.selfDischarge / 100 / (30 * 86400);
+      const rate = ([soc, vp]) => { const current = -(ocv(soc) + vp) / (r + v.internalResistance); return [(current - leak) / q, r1 > 0 ? (current - vp / r1) / c1 : 0]; };
       let state = [initial, 0];
       for (let i = 0, n = Math.round(s.time / 1e-3), dt = s.time / n; i < n; i++) {
         const k1 = rate(state), k2 = rate(state.map((x, j) => x + dt / 2 * k1[j])), k3 = rate(state.map((x, j) => x + dt / 2 * k2[j])), k4 = rate(state.map((x, j) => x + dt * k3[j]));

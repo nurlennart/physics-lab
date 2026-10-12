@@ -7,20 +7,20 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": 1.4586021279683337e-10,
+    "energyResidual": 1.21985976875294e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "State of charge",
-        "value": 62.82149677757746
+        "value": 62.82142828058155
       },
       {
         "name": "Chemical energy",
-        "value": 5259.613457715148
+        "value": 5259.60741310934
       },
       {
         "name": "Load power",
-        "value": 24.766101211487943
+        "value": 24.766095516877307
       }
     ]
   },
@@ -32,20 +32,20 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": 1.4586021279683337e-10,
+    "energyResidual": 1.21985976875294e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "State of charge",
-        "value": 62.82149677757746
+        "value": 62.82142828058155
       },
       {
         "name": "Chemical energy",
-        "value": 5259.613457715148
+        "value": 5259.60741310934
       },
       {
         "name": "Load power",
-        "value": 24.766101211487943
+        "value": 24.766095516877307
       }
     ]
   },
@@ -56,21 +56,21 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 0.9044688036277576,
-    "energyResidual": 3.97140098584714e-11,
+    "suppliedEnergy": 0.9044688036277586,
+    "energyResidual": 4.185257695965561e-11,
     "massResidual": 0,
     "probes": [
       {
         "name": "Capacitor voltage",
-        "value": 10.909071074317055
+        "value": 10.909071074317056
       },
       {
         "name": "Charging current",
-        "value": 1.0909071074317053e-8
+        "value": 1.0909071074317054e-8
       },
       {
         "name": "Stored energy",
-        "value": 0.05950391585225053
+        "value": 0.05950391585225055
       }
     ]
   },
@@ -81,21 +81,71 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 0.9044688036277576,
-    "energyResidual": 3.97140098584714e-11,
+    "suppliedEnergy": 0.9044688036277586,
+    "energyResidual": 4.185257695965561e-11,
     "massResidual": 0,
     "probes": [
       {
         "name": "Capacitor voltage",
-        "value": 10.909071074317055
+        "value": 10.909071074317056
       },
       {
         "name": "Charging current",
-        "value": 1.0909071074317053e-8
+        "value": 1.0909071074317054e-8
       },
       {
         "name": "Stored energy",
-        "value": 0.05950391585225053
+        "value": 0.05950391585225055
+      }
+    ]
+  },
+  {
+    "mode": "inductor",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 820.9643609842655,
+    "energyResidual": -4.780531526193954e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Inductor current",
+        "value": 1.1363197313262725
+      },
+      {
+        "name": "Stored energy",
+        "value": 0.645610502688485
+      },
+      {
+        "name": "Freewheel power",
+        "value": 0.0032322598510961175
+      }
+    ]
+  },
+  {
+    "mode": "inductor",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 820.9643609842655,
+    "energyResidual": -4.780531526193954e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Inductor current",
+        "value": 1.1363197313262725
+      },
+      {
+        "name": "Stored energy",
+        "value": 0.645610502688485
+      },
+      {
+        "name": "Freewheel power",
+        "value": 0.0032322598510961175
       }
     ]
   },

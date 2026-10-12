@@ -21,8 +21,8 @@ Physics Lab is a static single-page application (React 19, TypeScript, Vite). Th
 | `integrity.ts` | Live vs Reset-only edits, challenge locks, catalog rules, cross-parameter checks |
 | `engine.ts` | `Simulation`: step scheduling, thermal solve, protection, ratings, energy ledger, telemetry, adaptive advance (`AdaptiveRun`), `FixedClock` |
 | `electrical.ts`, `electrical-core.ts` | Public electrical API; union-find islands, real and complex MNA, CV/CC active set, harmonic solves |
-| `linear-algebra.ts` | Scaled dense real and complex solves and a small symmetric eigen-decomposition shared by all solvers |
-| `device-circuits.ts`, `devices.ts` | Batteries, powered contactors, transformers and radiator fans as MNA branches; battery charge and polarization, capacitor charge and contactor state, advanced after each accepted interval, and their energy functions |
+| `linear-algebra.ts` | Scaled dense real and complex solves, the matrix exponential and a Lyapunov solver shared by all solvers |
+| `device-circuits.ts`, `devices.ts` | Batteries, powered contactors, transformers and radiator fans as MNA branches; battery charge and polarization, capacitor charge, inductor current and contactor state, advanced after each accepted interval, and their energy functions |
 | `induction.ts`, `converters.ts` | Dynamic induction machine; star-delta and soft starters, variable-frequency drive |
 | `filament.ts` | Tungsten filament lamp |
 | `multiphysics.ts` | Coupled substeps: motor shafts, tanks, valves, midpoint Newton coupling of electrical, hydraulic and spatial loads |

@@ -37,7 +37,11 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "chemicalEnergy": return batteryEnergy(c, s.devices.batteries[c.id] ?? 0);
     case "polarizationVoltage": return s.devices.polarization[c.id] ?? 0;
     case "chargeVoltage": return s.devices.capacitors[c.id] ?? null;
-    case "fieldEnergy": { const v = s.devices.capacitors[c.id]; return v === undefined ? null : 0.5 * prop(c, "capacitance") * v * v; }
+    case "fieldEnergy": {
+      // ½·C·V² of a capacitor's dielectric, ½·L·I² of an inductor's winding current.
+      const value = c.kind === "inductor" ? s.devices.inductors[c.id] : s.devices.capacitors[c.id];
+      return value === undefined ? null : 0.5 * prop(c, c.kind === "inductor" ? "inductance" : "capacitance") * value * value;
+    }
     case "coilVoltage": return r?.coilVoltage ?? null;
     case "coilCurrent": return r?.coilCurrent ?? null;
     case "secondaryVoltage": return r?.secondaryVoltage ?? null;

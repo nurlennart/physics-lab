@@ -1,7 +1,7 @@
 /** New multi-circuit devices expand into ordinary MNA branches; state stays in the engine. */
 import { definitions, prop, type Component, type Project } from './model';
 import { solveElectricalCore, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
-import { batteryResistanceFactor, polarizationBranch } from './devices';
+import { batteryChargeStep, batteryEnergy, batteryOCV, batteryResistanceFactor, polarizationBranch, selfDischargeCurrent } from './devices';
 
 type Expansion = { project: Project; coils: Map<string, string> };
 const cache = new WeakMap<Project, Expansion>();
@@ -36,12 +36,14 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
   const failures = { ...failed }, models = { ...runtime.sourceModels };
   for (const c of project.components) {
     if (c.kind === 'battery') {
-      const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, h = runtime.devices?.h ?? 0, charge = 3600 * prop(c, 'capacityAh'), dv = prop(c, 'fullVoltage') - prop(c, 'emptyVoltage');
+      // Midpoint OCV over the step: E(s₀) behind (dE/ds)·h/(2Q); the polarization branch as its exact step average.
+      const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, h = runtime.devices?.h ?? 0, charge = 3600 * prop(c, 'capacityAh'), ocv = batteryOCV(c, soc);
       const temperature = runtime.temperatures?.[c.id] ?? 20, branch = polarizationBranch(c, temperature, h), vp = runtime.devices?.polarization?.[c.id] ?? 0;
       models[c.id] = {
-        voltage: prop(c, 'emptyVoltage') + dv * soc + (branch ? branch.emfWeight * vp : 0),
-        resistance: prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + dv * h / (2 * charge) + (branch?.seriesResistance ?? 0),
-        lower: soc <= 1e-14 ? 0 : -Infinity, upper: soc >= 1 - 1e-14 ? 0 : Infinity,
+        voltage: ocv.voltage + (branch ? branch.emfWeight * vp : 0),
+        resistance: prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + ocv.slope * h / (2 * charge) + (branch?.seriesResistance ?? 0),
+        // A full battery accepts only the trickle that offsets its self-discharge (an ideal charge termination).
+        lower: soc <= 1e-14 ? 0 : -Infinity, upper: soc >= 1 - 1e-14 ? selfDischargeCurrent(c) * 100 / prop(c, 'coulombicEfficiency') : Infinity,
       };
     }
     if (c.kind === 'contactor') {
@@ -56,12 +58,17 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
     const r = result.readings[c.id];
     if (!r) continue;
     if (c.kind === 'battery') {
-      // Ohmic R₀ heat plus the polarization branch's R₁ heat; the rest changes chemical and polarization energy.
+      // Storage changes exactly as the engine will advance them (chemical energy from the state of charge, the
+      // polarization branch's field); the rest of the terminal energy heats the pack: ohmic and polarization loss,
+      // charge-acceptance and self-discharge loss.
       const temperature = runtime.temperatures?.[c.id] ?? 20, h = runtime.devices?.h ?? 0, branch = polarizationBranch(c, temperature, h);
-      const polarizationHeat = branch && h > 0 ? branch.step(runtime.devices?.polarization?.[c.id] ?? 0, r.current).heat / h : 0;
-      const heat = r.current ** 2 * prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + polarizationHeat;
+      const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, next = Math.max(0, Math.min(1, batteryChargeStep(c, soc, r.current, h)));
+      const storage = h > 0
+        ? (batteryEnergy(c, next) - batteryEnergy(c, soc)) / h + (branch ? branch.step(runtime.devices?.polarization?.[c.id] ?? 0, r.current).energy / h : 0)
+        : batteryOCV(c, soc).voltage * r.current;
+      const heat = r.power - storage;
       r.heatPower = heat;
-      r.chemicalPower = r.power - heat;
+      r.chemicalPower = storage;
       chemical += r.chemicalPower;
       result.sourcePower += r.power; // Battery energy is internal storage, rather than an external supply.
       result.dissipatedPower += heat;

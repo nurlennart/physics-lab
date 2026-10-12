@@ -6,32 +6,34 @@ const PREVIEW_STEP = 1 / 60;
 /** Charge, polarization and contact mechanics advance only after an accepted physical interval. */
 export class Devices {
   active = false;
-  /** Battery state of charge (0–1) and polarization voltage (V); capacitor dielectric voltage (V). */
+  /** Battery state of charge (0–1) and polarization voltage (V); capacitor dielectric voltage (V); inductor current (A). */
   batteries: Record<string, number> = {};
   polarization: Record<string, number> = {};
   capacitors: Record<string, number> = {};
+  inductors: Record<string, number> = {};
   contactors: Record<string, { closed: boolean; elapsed: number; requested: boolean }> = {};
   /** Energy change of electrochemical and electrostatic storage since reset (J). */
   storedChange = 0;
   initialize(project: Project) {
-    this.active = project.components.some(c => c.kind === "battery" || c.kind === "contactor" || c.kind === "capacitor");
+    this.active = project.components.some(c => ["battery", "contactor", "capacitor", "inductor"].includes(c.kind));
     for (const c of project.components) {
       if (c.kind === 'battery') { this.batteries[c.id] = prop(c, 'initialSOC') / 100; this.polarization[c.id] = 0; }
       if (c.kind === 'capacitor') this.capacitors[c.id] = prop(c, 'chargeVoltage');
+      if (c.kind === 'inductor') this.inductors[c.id] = 0;
       if (c.kind === 'contactor') this.contactors[c.id] = { closed: false, elapsed: 0, requested: false };
     }
   }
   runtime(h = 0): Pick<ElectricalRuntime, 'devices'> {
-    return { devices: { batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
+    return { devices: { batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
   }
   checkpoint() {
-    return structuredClone({ batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, contactors: this.contactors, storedChange: this.storedChange });
+    return structuredClone({ batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
   }
   boundaryTime(project: Project, electrical: ElectricalResult, h: number) {
     if (!this.active) return h;
     let limit = h;
     for (const c of project.components.filter(c => c.kind === 'battery')) {
-      const soc = this.batteries[c.id], rate = (electrical.readings[c.id]?.current ?? 0) / (3600 * prop(c, 'capacityAh'));
+      const soc = this.batteries[c.id], rate = batteryChargeStep(c, soc, electrical.readings[c.id]?.current ?? 0, 1) - soc;
       const next = soc + rate * h;
       if (next < -1e-14) limit = Math.min(limit, -soc / rate);
       if (next > 1 + 1e-14) limit = Math.min(limit, (1 - soc) / rate);
@@ -55,7 +57,7 @@ export class Devices {
     for (const c of project.components) {
       const r = electrical.readings[c.id];
       if (c.kind === 'battery' && r) {
-        const before = this.batteries[c.id], next = before + r.current * h / (3600 * prop(c, 'capacityAh'));
+        const before = this.batteries[c.id], next = batteryChargeStep(c, before, r.current, h);
         if (next < -1e-9 || next > 1 + 1e-9) throw Error(`${c.name}: battery charge left its physical bounds.`);
         this.batteries[c.id] = Math.max(0, Math.min(1, next));
         this.storedChange += batteryEnergy(c, this.batteries[c.id]) - batteryEnergy(c, before);
@@ -66,11 +68,17 @@ export class Devices {
           this.polarization[c.id] = step.voltage;
         }
       }
-      // A capacitor outside a solved DC network (an AC island, a failed element) holds its charge.
+      // Outside a solved DC network (an AC island) a capacitor holds its charge and an inductor its current; a failed
+      // inductor's interrupted current is dumped at the failure.
       if (c.kind === 'capacitor' && r?.chargeCurrent !== undefined) {
         const before = this.capacitors[c.id], capacitance = prop(c, 'capacitance'), next = before + r.chargeCurrent * h / capacitance;
         this.capacitors[c.id] = next;
         this.storedChange += 0.5 * capacitance * (next * next - before * before);
+      }
+      if (c.kind === 'inductor' && r?.inductanceVoltage !== undefined) {
+        const before = this.inductors[c.id], inductance = prop(c, 'inductance'), next = before + r.inductanceVoltage * h / inductance;
+        this.inductors[c.id] = next;
+        this.storedChange += 0.5 * inductance * (next * next - before * before);
       }
       if (c.kind === 'contactor') {
         const state = this.contactors[c.id], voltage = Math.abs(r?.coilVoltage ?? 0), rated = prop(c, 'coilVoltage');
@@ -109,9 +117,45 @@ export function polarizationBranch(c: Component, temperature: number, h: number)
     },
   };
 }
-/** Integral of the declared linear OCV(SOC), referenced to an empty battery. */
+/**
+ * Normalized open-circuit curves f(s), E(s) = E_empty + (E_full − E_empty)·f(s), linear between the tabulated states of
+ * charge. NMC/graphite (3.0–4.2 V per cell) rises steeply from empty, then gently; LFP (2.5–3.65 V) is a flat plateau
+ * with steep ends. Typical cell data, not a specific manufacturer's.
+ */
+const OCV_CURVES: Record<string, [number[], number[]]> = {
+  linear: [[0, 1], [0, 1]],
+  nmc: [[0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.375, 0.458, 0.517, 0.6, 0.708, 0.833, 1]],
+  lfp: [[0, 0.05, 0.1, 0.2, 0.5, 0.8, 0.95, 1], [0, 0.545, 0.636, 0.682, 0.718, 0.745, 0.773, 1]],
+};
+const ocvCurve = (c: Component) => OCV_CURVES[String(c.props.chemistry ?? 'linear')] ?? OCV_CURVES.linear;
+/** Open-circuit voltage at a state of charge and its slope dE/ds there (the segment above s; at full, the last one). */
+export function batteryOCV(c: Component, soc: number) {
+  const [s, f] = ocvCurve(c), span = prop(c, 'fullVoltage') - prop(c, 'emptyVoltage'), x = Math.max(0, Math.min(1, soc));
+  const k = Math.min(s.length - 2, s.findIndex((_, i) => i === s.length - 1 || x < s[i + 1]));
+  const slope = (f[k + 1] - f[k]) / (s[k + 1] - s[k]);
+  return { voltage: prop(c, 'emptyVoltage') + span * (f[k] + slope * (x - s[k])), slope: span * slope };
+}
+/** Chemical energy Q·∫₀ˢ E ds (exact for the piecewise-linear curve), referenced to an empty battery. */
 export function batteryEnergy(c: Component, soc: number) {
-  return 3600 * prop(c, 'capacityAh') * (prop(c, 'emptyVoltage') * soc + 0.5 * (prop(c, 'fullVoltage') - prop(c, 'emptyVoltage')) * soc * soc);
+  const [s, f] = ocvCurve(c), x = Math.max(0, Math.min(1, soc));
+  let area = 0;
+  for (let i = 0; i + 1 < s.length && s[i] < x; i++) {
+    const end = Math.min(x, s[i + 1]), fEnd = f[i] + (f[i + 1] - f[i]) * (end - s[i]) / (s[i + 1] - s[i]);
+    area += 0.5 * (f[i] + fEnd) * (end - s[i]);
+  }
+  return 3600 * prop(c, 'capacityAh') * (prop(c, 'emptyVoltage') * x + (prop(c, 'fullVoltage') - prop(c, 'emptyVoltage')) * area);
+}
+/**
+ * State of charge after h with the mean terminal current I (into +): on charge only the coulombic efficiency η of the
+ * charge is stored (the rest drives side reactions), and a charged battery self-discharges at its monthly rate.
+ */
+export function batteryChargeStep(c: Component, soc: number, current: number, h: number) {
+  const stored = current > 0 ? current * prop(c, 'coulombicEfficiency') / 100 : current;
+  return soc + (stored - (soc > 0 ? selfDischargeCurrent(c) : 0)) * h / (3600 * prop(c, 'capacityAh'));
+}
+/** Internal self-discharge current of a charged battery (A). */
+export function selfDischargeCurrent(c: Component) {
+  return 3600 * prop(c, 'capacityAh') * prop(c, 'selfDischarge') / 100 / (30 * 86400);
 }
 export function radiatorUA(c: Component, electrical: ElectricalResult) {
   const voltage = Math.abs(electrical.readings[c.id]?.voltage ?? 0), powered = (electrical.readings[c.id]?.fanPower ?? 0) > 0;

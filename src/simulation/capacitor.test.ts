@@ -122,6 +122,22 @@ describe('DC capacitor', () => {
     expect(s.devices.capacitors[cap.id]).toBe(2);
   });
 
+  it('destroys a reverse-biased or AC-operated electrolytic capacitor, but not a film one', () => {
+    for (const [polarized, reversed, fails] of [[true, false, false], [true, true, true], [false, true, false]] as const) {
+      const b = new Builder(), source = b.add('source', { voltage: 12 }), r = b.add('resistor', resistor(100)), cap = b.add('capacitor', { capacitance: 1e-3, polarized });
+      if (reversed) { b.wire(source, 'a', r, 'a'); b.wire(r, 'b', cap, 'b'); b.wire(cap, 'a', source, 'b'); } else b.series(source, r, cap);
+      const s = new Simulation(b.p);
+      run(s, 1);
+      expect(!!s.failed[cap.id]).toBe(fails);
+      if (fails) expect(s.events.some(e => /reverse-biased/.test(e.message))).toBe(true);
+    }
+    const ac = new Builder(), mains = ac.add('sourceAC', { voltage: 24 }), electrolytic = ac.add('capacitor', { polarized: true });
+    ac.series(mains, electrolytic);
+    const t = new Simulation(ac.p);
+    run(t, DT);
+    expect(t.failed[electrolytic.id]).toBeTruthy();
+  });
+
   it('keeps capacitance Reset-only (it defines stored energy) and the AC phasor model unchanged', () => {
     const b = new Builder(), source = b.add('source', { voltage: 12 }), r = b.add('resistor', resistor(1000)), cap = b.add('capacitor');
     b.series(source, r, cap);

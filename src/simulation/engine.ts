@@ -29,6 +29,8 @@ function freeze<T>(value: T): T {
 export const DT = 1 / 60;
 /** Largest step the adaptive integrator may take (thermal/electrical/control systems only). */
 export const MAX_ADAPTIVE_STEP = 30;
+/** Reverse dielectric voltage an aluminium electrolytic capacitor withstands (V). */
+export const ELECTROLYTIC_REVERSE_LIMIT = 1;
 export interface AdaptiveOptions {
   /** Largest temperature change of any thermal mass per step (K). */
   tolerance?: number;
@@ -137,10 +139,11 @@ export interface RunawayState {
  * Magnetic (instantaneous) release. The setting k·In is the RMS value of a symmetric current, as on
  * breaker curves (IEC 60898/60947-2); the release responds to the instantaneous current, so on AC it
  * trips when |i(t)| ≥ √2·k·In. An asymmetric switch-on current (DC offset of a motor inrush) can
- * therefore trip a release whose setting lies above the symmetric RMS current. DC: |i| ≥ k·In.
+ * therefore trip a release whose setting lies above the symmetric RMS current. DC: peak |i| ≥ k·In.
  */
 function magneticRelease(r: ElectricalReading, current: number, setting: number) {
-  if (!r.ac) return { trip: current >= setting, message: `${current.toFixed(1)} A reached the instantaneous setting of ${setting.toFixed(1)} A` };
+  // DC: the step's largest instantaneous current when storage transients resolve it (capacitor inrush), else |i|.
+  if (!r.ac) { const peak = Math.max(current, r.peakCurrent ?? 0); return { trip: peak >= setting, message: `${peak.toFixed(1)} A reached the instantaneous setting of ${setting.toFixed(1)} A` }; }
   const peak = r.peakCurrent ?? Math.SQRT2 * current, threshold = Math.SQRT2 * setting;
   return { trip: peak >= threshold, message: `instantaneous current peak of ${peak.toFixed(1)} A reached √2 × the ${setting.toFixed(1)} A RMS setting (${threshold.toFixed(1)} A)` };
 }
@@ -174,6 +177,8 @@ export class Simulation {
   filaments: Record<string, number> = {};
   /** Tanks currently spilling over their rim (for start/stop events). */
   overflowing: Record<string, boolean> = {};
+  /** Inductors whose current is being interrupted with no path but the switching arc (logged once each time). */
+  interruptions: Record<string, boolean> = {};
   /** Largest |dT/dt| of any thermal mass in the last step (K/s). */
   thermalRate = Infinity;
   sampleInterval = 0.25;
@@ -244,6 +249,7 @@ export class Simulation {
     this.breakers = {};
     this.filaments = {};
     this.overflowing = {};
+    this.interruptions = {};
     this.thermalRate = Infinity;
     this.sampleInterval = 0.25;
     this.faults = {};
@@ -417,6 +423,11 @@ export class Simulation {
         const current = Math.abs(this.electrical.readings[c.id]?.chargeCurrent ?? 0);
         if (current > 1e-15) limit = Math.min(limit, 0.01 * Math.max(1, Math.abs(this.devices.capacitors[c.id] ?? 0)) * prop(c, "capacitance") / current);
       }
+      // Inductor: at most 1 % of its current scale (≥ 1 % of its rating) per step.
+      if (c.kind === "inductor") {
+        const voltage = Math.abs(this.electrical.readings[c.id]?.inductanceVoltage ?? 0);
+        if (voltage > 1e-15) limit = Math.min(limit, 0.01 * Math.max(0.01 * prop(c, "ratedCurrent"), Math.abs(this.devices.inductors[c.id] ?? 0)) * prop(c, "inductance") / voltage);
+      }
       // Contactor coil near a pickup or dropout threshold: resolve the crossing (timers then end substeps exactly).
       if (c.kind === "contactor") {
         const state = this.devices.contactors[c.id], voltage = Math.abs(this.electrical.readings[c.id]?.coilVoltage ?? 0), rated = prop(c, "coilVoltage");
@@ -474,7 +485,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -797,6 +808,12 @@ export class Simulation {
     for (const c of p.components) {
       const r = this.electrical.readings[c.id],
         temp = this.temperatures[c.id] ?? 20;
+      if (c.kind === "inductor") {
+        const energy = -(r?.fieldPower ?? 0) * dt;
+        if (r?.interrupted && !this.interruptions[c.id] && energy > 1e-9)
+          this.log(`${c.name}: ${Math.sqrt(2 * energy / prop(c, "inductance")).toPrecision(3)} A interrupted with no current path — its field energy ½·L·I² = ${energy.toPrecision(3)} J went into the switching arc (booked as inductor heat). A freewheeling path across the inductor protects the switch.`, "warning");
+        this.interruptions[c.id] = !!r?.interrupted;
+      }
       this.componentEnergy[c.id] =
         (this.componentEnergy[c.id] ?? 0) +
         (isSource(c) ? -(r?.power ?? 0) : (r?.power ?? 0)) * dt;
@@ -829,6 +846,11 @@ export class Simulation {
       if (c.kind === "tank" && (temp > 95 || temp < 1)) {
         this.error = `${c.name}: water left the supported liquid range (1–95°C). Simulation paused.`;
         this.violation(this.error, "error");
+      }
+      // An electrolytic capacitor's oxide dielectric withstands only about 1 V of reverse bias.
+      if (c.kind === "capacitor" && c.props.polarized && !this.failed[c.id] && (r?.ac || (this.devices.capacitors[c.id] ?? 0) < -ELECTROLYTIC_REVERSE_LIMIT)) {
+        this.fail(c.id, `${c.name}: ${r?.ac ? "electrolytic capacitor on AC, reverse-biased every half cycle" : `electrolytic capacitor reverse-biased to ${(this.devices.capacitors[c.id] ?? 0).toFixed(2)} V`} — dielectric breakdown, vented and failed open. Mind its polarity (terminal a is +) or use a non-polarized capacitor.`);
+        changed = true;
       }
       if (c.kind === "battery" && temp > prop(c, "maxTemperature") && !this.failed[c.id]) { this.fail(c.id, `${c.name}: battery overtemperature; protection disconnected the pack.`); changed = true; }
       if (r && !isSource(c)) {

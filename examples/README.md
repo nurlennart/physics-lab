@@ -4,6 +4,7 @@ Open **File → Starters & examples** in the app for descriptions and suggested 
 
 - `battery`: finite charge, polarization sag and recovery, internal heating and chemical-energy accounting.
 - `capacitor`: RC charging and bleeder discharge, stored field energy and the charging loss.
+- `inductor`: RL current rise, freewheeling decay and, without the freewheeling path, an interrupted current's arc.
 - `contactor`: an actual DC coil switches a separate AC load.
 - `transformer`: isolated AC conversion, winding/core losses and secondary measurements.
 - `radiator`: water cooling driven by actual fan electrical supply.

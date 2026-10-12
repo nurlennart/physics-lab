@@ -1,7 +1,7 @@
 import { definitions, isSource, perPoleKinds, prop, terminalKey, type Component, type Project } from "./model";
 import { actualResistance } from "./parameters";
 import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, type MachineParams } from "./induction";
-import { solveComplex, solveLinear, symmetricEigen } from "./linear-algebra";
+import { expm, preciseDot, solveComplex, solveLinear, solveLyapunov } from "./linear-algebra";
 export { solveComplex, solveLinear } from "./linear-algebra";
 type Cx = [number, number];
 type HarmonicBranch = { current: Cx; across: Cx; secondaryCurrent?: Cx; secondaryAcross?: Cx };
@@ -22,8 +22,13 @@ export function inductionCircuit(c: Component, frequency: number, omega: number)
 }
 export interface ElectricalReading {
   inputPower?: number;
-  /** DC capacitors: current into the dielectric (excluding leakage) and power into its field energy ½·C·v². */
-  chargeCurrent?: number; fieldPower?: number;
+  /**
+   * DC storage: a capacitor's current into its dielectric (excluding leakage), an inductor's voltage across its inductance,
+   * the power into their field energy ½·C·v² or ½·L·i², and an inductor current interrupted with no path but its arc.
+   */
+  chargeCurrent?: number; inductanceVoltage?: number; fieldPower?: number; interrupted?: boolean;
+  /** DC steps with storage: variance of the contact current within the step (A²); peakCurrent is then its largest |i|. */
+  currentVariance?: number;
   heatPower?: number; chemicalPower?: number; coilVoltage?: number; coilCurrent?: number; coilPower?: number; secondaryVoltage?: number; secondaryCurrent?: number; fanPower?: number;
   voltage: number;
   current: number;
@@ -46,7 +51,7 @@ export interface ElectricalReading {
   machine?: { torque: number; statorCopper: number; rotorCopper: number; slip: number; psiS?: [number, number]; psiR?: [number, number]; lineRatio?: number };
   /** AC: complex RMS current phasor of the conducting path (A), referred to the supply angle ωt. */
   currentPhasor?: [number, number];
-  /** AC, coupled steps: largest instantaneous line current |i(t)| over the step (A), across all substeps. */
+  /** Largest instantaneous current |i(t)| over the step (A), across all substeps: AC line current, or DC with storage. */
   peakCurrent?: number;
   /** AC islands fed by a drive: the drive's id (its output angle is the phasor reference). */
   supply?: string;
@@ -127,10 +132,11 @@ class Union {
 }
 export interface ElectricalRuntime {
   /**
-   * Stateful devices over the interval h: battery charge and polarization voltage; `capacitors`: stored dielectric voltage (V), stamped as a charged
-   * capacitor; a capacitor without stored state is steady DC (open apart from its leakage).
+   * Stateful devices over the interval h: battery charge and polarization voltage; `capacitors`: dielectric voltage (V)
+   * and `inductors`: winding current (A). Without stored state a capacitor is steady DC (open apart from its leakage)
+   * and an inductor its winding resistance.
    */
-  devices?: { batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; h: number };
+  devices?: { batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
   sourceModels?: Record<string, { voltage: number; resistance: number; lower: number; upper: number }>;
   contacts?: Record<string, boolean>;
   faults?: Record<string, string>;
@@ -156,6 +162,10 @@ export interface ElectricalRuntime {
 }
 /** DC insulation (self-discharge) leakage of a capacitor, across its terminals (Ω). */
 export const CAPACITOR_LEAKAGE = 1e9;
+/** Path across an energized inductor that carries an interrupted current: the switching arc and winding capacitance (Ω). */
+export const INDUCTOR_BREAKDOWN = 1e6;
+/** Charged capacitors and energized inductors per DC network (the step solves a dense n(n+1)/2 Lyapunov system). */
+export const MAX_STORAGE = 16;
 export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? c.props.mode : "ideal") as "ideal" | "internal" | "cvcc" | "cc";
 /** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
 export const sourceLimit = (c: Component) => sourceMode(c) === "cc" ? prop(c, "current") : sourceMode(c) === "cvcc" ? prop(c, "maxCurrent") : Infinity;
@@ -234,8 +244,12 @@ export function solveElectricalCore(
     islandPhases = new Map<string, 3>(),
     references: Record<string, string> = {};
   const resistances: Record<string, number> = {};
-  /** Charged capacitors solved in a DC island: step-average and end dielectric voltage over the interval h. */
-  const dielectric = new Map<string, { mean: number; final?: number; h: number }>();
+  /** Storage elements solved in a DC island: dielectric voltage or inductor current at the start, on average and at the end of h. */
+  const stored = new Map<string, { initial: number; mean: number; final?: number; h: number; interrupted: boolean }>();
+  /** Within-step deviation of branch currents from their averages: variance (A²) and start and end deviations (A). */
+  const deviations = new Map<string, { variance: number; start: number; end: number }>();
+  /** Engine state: a capacitor's dielectric voltage or an inductor's current; undefined for a steady DC solve. */
+  const stateOf = (c: Component) => c.kind === "capacitor" ? runtime.devices?.capacitors?.[c.id] : c.kind === "inductor" ? runtime.devices?.inductors?.[c.id] : undefined;
   // A capacitor's resistance is its ESR; its DC insulation leakage is a separate parallel path.
   const resistanceOf = (c: Component) => {
     if (resistances[c.id] !== undefined) return resistances[c.id];
@@ -739,8 +753,8 @@ export function solveElectricalCore(
         j = indices.get(col);
       if (i !== undefined && j !== undefined) a[i][j] += v;
     };
-    for (const c of members.filter((c) => !isSource(c) && c.kind !== "vfd" && c.kind !== "capacitor")) {
-      // Steady DC: an inductor is its winding resistance.
+    for (const c of members.filter((c) => !isSource(c) && c.kind !== "vfd" && c.kind !== "capacitor" && !(c.kind === "inductor" && stateOf(c) !== undefined))) {
+      // Steady DC (no engine state): an inductor is its winding resistance.
       const resistance = resistanceOf(c);
       const motor = c.kind === "motor" ? runtime.motors?.[c.id] : undefined;
       const duty = motor?.duty ?? 1;
@@ -758,44 +772,60 @@ export function solveElectricalCore(
         if (qi !== undefined) b[qi] -= norton;
       }
     }
-    // Capacitors: insulation leakage across the terminals; a charged dielectric (engine state) behind its ESR is
-    // stamped below at its step-average voltage.
-    const capacitors = members.filter((c) => c.kind === "capacitor");
-    for (const c of capacitors) {
-      const p = node(c.id, "a"), q = node(c.id, "b");
-      stamp(p, p, 1 / CAPACITOR_LEAKAGE); stamp(q, q, 1 / CAPACITOR_LEAKAGE);
-      stamp(p, q, -1 / CAPACITOR_LEAKAGE); stamp(q, p, -1 / CAPACITOR_LEAKAGE);
+    // Storage elements. Capacitors: insulation leakage across the terminals and, with engine state, a charged
+    // dielectric behind its ESR. Inductors with engine state: their winding current, with a breakdown path across
+    // the terminals that carries an interrupted current (the switching arc). Both are stamped at their step averages.
+    const conduct = (c: Component, g: number) => { const p = node(c.id, "a"), q = node(c.id, end(c)); stamp(p, p, g); stamp(q, q, g); stamp(p, q, -g); stamp(q, p, -g); };
+    for (const c of members.filter((c) => c.kind === "capacitor")) conduct(c, 1 / CAPACITOR_LEAKAGE);
+    const storage = members.filter((c) => stateOf(c) !== undefined), h = Math.max(0, runtime.devices?.h ?? 0);
+    if (storage.length > MAX_STORAGE) throw Error(`More than ${MAX_STORAGE} charged capacitors and inductors in one DC network. Split the circuit.`);
+    for (const c of storage) if (c.kind === "inductor") conduct(c, 1 / INDUCTOR_BREAKDOWN);
+    const initial = new Map(storage.map((c) => [c.id, stateOf(c)!])), mean = new Map(initial);
+    const ports = (c: Component) => [indices.get(node(c.id, "a")), indices.get(node(c.id, "b"))] as const;
+    const across = (x: number[], c: Component) => {
+      const [pi, qi] = ports(c);
+      return (pi !== undefined ? x[pi] : 0) - (qi !== undefined ? x[qi] : 0);
+    };
+    // Dielectric ESR conductances are state-independent; the storage values enter the right-hand side only.
+    const held = a.map((row) => [...row]);
+    for (const c of storage) if (c.kind === "capacitor") {
+      const g = 1 / resistanceOf(c), [pi, qi] = ports(c);
+      if (pi !== undefined) { held[pi][pi] += g; if (qi !== undefined) held[pi][qi] -= g; }
+      if (qi !== undefined) { held[qi][qi] += g; if (pi !== undefined) held[qi][pi] -= g; }
     }
-    const charged = capacitors.filter((c) => runtime.devices?.capacitors?.[c.id] !== undefined), h = Math.max(0, runtime.devices?.h ?? 0);
-    const stored = (c: Component) => runtime.devices!.capacitors![c.id];
-    const mean = new Map(charged.map((c) => [c.id, stored(c)]));
+    /** Right-hand-side terms of storage elements at the given values (a dielectric's Norton current, an inductor's current). */
+    const storageTerms = (rhs: number[], values: Map<string, number>, elements = storage) => {
+      for (const c of elements) {
+        const [pi, qi] = ports(c), value = values.get(c.id)!, j = c.kind === "capacitor" ? value / resistanceOf(c) : -value;
+        if (pi !== undefined) rhs[pi] += j;
+        if (qi !== undefined) rhs[qi] -= j;
+      }
+      return rhs;
+    };
     // Branch variable k is the current *into* terminal a (negative while delivering).
     // CV row: Va − Vb − Rᵢ·I = Vset. CC row: I = −limit·direction.
     // CV/CC crossover is an active-set iteration, as in a regulated laboratory supply.
     const fixed: (number | null)[] = sources.map((s) => shorted(s) && sourceLimit(s) < Infinity ? -sourceLimit(s) : null);
-    /** Source rows for the present CV/CC state. */
-    const assemble = (a: number[][], b: number[]) => {
-      const am = a.map((row) => [...row]), bm = [...b];
+    /** Source rows of the matrix for the present CV/CC state; nodes no element stamps are pinned to 0 V. */
+    const assembleMatrix = (a: number[][]) => {
+      const am = a.map((row) => [...row]);
       sources.forEach((s, i) => {
-        const k = unknown.length + i,
-          p = indices.get(node(s.id, "a")),
-          q = indices.get(node(s.id, "b"));
+        const k = unknown.length + i, p = indices.get(node(s.id, "a")), q = indices.get(node(s.id, "b"));
         if (p !== undefined) am[p][k] += 1;
         if (q !== undefined) am[q][k] -= 1;
-        if (fixed[i] !== null) {
-          am[k][k] = 1;
-          bm[k] = fixed[i]!;
-          return;
-        }
+        if (fixed[i] !== null) { am[k][k] = 1; return; }
         if (p !== undefined) am[k][p] += 1;
         if (q !== undefined) am[k][q] -= 1;
         am[k][k] -= runtime.sourceModels?.[s.id]?.resistance ?? prop(s, "internalResistance");
-        // Three-phase: the per-phase (star-equivalent) EMF is V_LL/√3.
-        bm[k] = runtime.sourceModels?.[s.id]?.voltage ?? (s.kind === "source3" ? prop(s, "lineVoltage") / Math.sqrt(3) : prop(s, "voltage"));
       });
-      // Nodes no element stamps (an unpowered drive input, an open machine terminal) are pinned to 0 V.
-      for (let i = 0; i < unknown.length; i++) if (am[i].every((v) => v === 0) && bm[i] === 0) am[i][i] = 1;
-      return { am, bm };
+      for (let i = 0; i < unknown.length; i++) if (am[i].every((v) => v === 0)) am[i][i] = 1;
+      return am;
+    };
+    /** Source rows of the right-hand side: the set current, or the EMF (three-phase: the per-phase V_LL/√3). */
+    const assembleRhs = (b: number[]) => {
+      const bm = [...b];
+      sources.forEach((s, i) => (bm[unknown.length + i] = fixed[i] !== null ? fixed[i]! : runtime.sourceModels?.[s.id]?.voltage ?? (s.kind === "source3" ? prop(s, "lineVoltage") / Math.sqrt(3) : prop(s, "voltage"))));
+      return bm;
     };
     const regulate = (a: number[][], b: number[]) => {
       let x: number[] = [], am: number[][] = a, bm: number[] = b;
@@ -804,7 +834,7 @@ export function solveElectricalCore(
         const state = JSON.stringify(fixed);
         if (visited.has(state)) throw Error(`DC regulation did not converge: repeated CV/CC state for ${sources.map(s => s.name).join(", ")}.`);
         visited.add(state);
-        ({ am, bm } = assemble(a, b));
+        am = assembleMatrix(a); bm = assembleRhs(b);
         x = size ? solveLinear(am, bm) : [];
         let changed = false;
         sources.forEach((s, i) => {
@@ -836,66 +866,96 @@ export function solveElectricalCore(
       }
     };
     /**
-     * Charged capacitors over the interval h. For the present CV/CC state the network seen by the dielectrics is
-     * linear: open-circuit port voltages E and port impedance Z = Z_net + diag(ESR), so C·dv/dt = Z⁻¹·(E − v).
-     * In the coordinates w = C^(½)·v this is dw/dt = T⁻¹·(C^(½)·E − w) with the symmetric T = C^(½)·Z·C^(½), whose
-     * eigenvalues are the time constants τ_m of the modes. Each mode relaxes exactly:
-     *   w_m(t) = ε_m + (w₀,m − ε_m)·e^(−t/τ_m),  mean  w̄_m = ε_m + (w₀,m − ε_m)·(1 − e^(−z))/z,  z = h/τ_m.
-     * Each dielectric is stamped at its step-average voltage v̄ behind its ESR, and its charge current is exactly
-     * C·(v₁ − v₀)/h. Every step-average voltage and current of the linear network is then exact for any h, including
-     * charge exchanged between capacitors and transients far shorter than the step (no ringing). Only voltages
-     * enter, read directly from the open network, so leakage-slow and contact-fast modes are both accurate. E and Z
+     * Storage over the interval h. For the present CV/CC state the network is linear in the storage state x
+     * (dielectric voltages, inductor currents): C·dv/dt and L·di/dt follow from the network as ẋ = A·x + g. With
+     * the start rate ẋ₀ and Φ₁ = ∫₀ʰ e^(As) ds, Φ₂ = ∫₀ʰ∫₀ᵗ e^(As) ds dt (one Van Loan exponential), the step is
+     *   x(h) = x₀ + Φ₁·ẋ₀,   x̄ = x₀ + Φ₂·ẋ₀/h,
+     * exact for any h: RC and RL transients far shorter than the step, charge exchanged between capacitors and LC
+     * ringing included, without numerical ringing. Formed from the start rate, slow leakage modes and modes heading
+     * for a huge voltage keep their digits. Each storage element is stamped at its step average, so every
+     * step-average voltage and current of the network is exact. Every element current is affine in x, so the
+     * state covariance over the step (Lyapunov: A·W + W·Aᵀ = z(h)·z(h)ᵀ − ẋ₀·Zᵀ − Z·ẋ₀ᵀ, z = x − x₀, Z = ∫z) gives
+     * each element's exact ∫i² (heat, RMS current for protection) and its start and end currents (peaks). A and g
      * depend only on the CV/CC state, so the result is final once that state repeats.
      */
-    const ports = (c: Component) => [indices.get(node(c.id, "a")), indices.get(node(c.id, "b"))] as const;
-    const across = (x: number[], c: Component) => {
-      const [pi, qi] = ports(c);
-      return (pi !== undefined ? x[pi] : 0) - (qi !== undefined ? x[qi] : 0);
+    /** Branch currents of an element for a solution with the sources off: their linear dependence on the storage state. */
+    const linearCurrents = (e: Component, x: number[], values: Map<string, number>): [string, number][] => {
+      if (e.kind === "vfd" || e.kind === "inductionMotor" || e.kind === "transformer") return [];
+      if (isSource(e)) return [[e.id, x[unknown.length + sources.indexOf(e)]]];
+      const p = indices.get(node(e.id, "a")), q = indices.get(node(e.id, end(e))), voltage = (p !== undefined ? x[p] : 0) - (q !== undefined ? x[q] : 0);
+      if (e.kind === "motor") return [[e.id, (runtime.motors?.[e.id]?.duty ?? 1) ** 2 * voltage / resistanceOf(e)]];
+      if (e.kind === "capacitor") {
+        const leak = voltage / CAPACITOR_LEAKAGE, dielectric = values.has(e.id) ? (voltage - values.get(e.id)!) / resistanceOf(e) : 0;
+        return [[e.id, leak + dielectric], [`${e.id}#leak`, leak], [`${e.id}#dielectric`, dielectric]];
+      }
+      if (e.kind === "inductor" && values.has(e.id)) {
+        const breakdown = voltage / INDUCTOR_BREAKDOWN, winding = values.get(e.id)!;
+        return [[e.id, winding + breakdown], [`${e.id}#winding`, winding], [`${e.id}#breakdown`, breakdown]];
+      }
+      return [[e.id, voltage / resistanceOf(e)]];
     };
-    const stampDielectric = (a: number[][], b: number[], c: Component, voltage: number) => {
-      const g = 1 / resistanceOf(c), [pi, qi] = ports(c);
-      if (pi !== undefined) { a[pi][pi] += g; if (qi !== undefined) a[pi][qi] -= g; b[pi] += g * voltage; }
-      if (qi !== undefined) { a[qi][qi] += g; if (pi !== undefined) a[qi][pi] -= g; b[qi] -= g * voltage; }
-    };
-    // Fraction of the way to the settled value: at the end, 1 − e^(−z), and on average, 1 − φ(z) = (z − 1 + e^(−z))/z.
-    // Written relative to w₀, so a mode settling toward a huge voltage (a current source into the leakage) keeps its digits.
-    const reached = (z: number) => -Math.expm1(-z), averaged = (z: number) => z < 1e-4 ? z * (0.5 - z / 6 + z * z / 24) : 1 + Math.expm1(-z) / z;
-    const final = new Map<string, number>();
+    let step: { final: Map<string, number>; covariance: number[][]; z: number[]; Z: number[]; sensitivity: Map<string, number[]>; interrupted: Set<string> } | undefined;
     const integrate = () => {
-      // The network with every dielectric branch removed.
-      const open = assemble(a, b), root = charged.map((c) => Math.sqrt(prop(c, "capacitance")));
-      const impedance = charged.map((c) => {
-        const e = Array(size).fill(0), [pi, qi] = ports(c);
-        if (pi !== undefined) e[pi] = 1;
-        if (qi !== undefined) e[qi] = -1;
-        const x = solveLinear(open.am, e, true, true);
-        return charged.map((k) => across(x, k) + (k === c ? resistanceOf(k) : 0));
+      const am = assembleMatrix(held), base = assembleMatrix(a), rhs = assembleRhs(b), n = storage.length;
+      // Start rates. A dielectric's current is taken from the rest of the network at its terminal node (no ESR
+      // difference of nearly equal voltages), an inductor's from its terminal voltage.
+      const x0 = solveLinear(am, storageTerms([...rhs], initial));
+      const dielectricCurrent = (c: Component) => {
+        const [pi, qi] = ports(c), row = pi ?? qi;
+        if (row === undefined) return -initial.get(c.id)! / resistanceOf(c);
+        const others = storage.filter((o) => o !== c), coefficients = [...base[row]], injected = storageTerms([...rhs], initial, others)[row];
+        for (const o of others) if (o.kind === "capacitor") {
+          const [po, qo] = ports(o), g = 1 / resistanceOf(o);
+          if (po === row) { coefficients[po] += g; if (qo !== undefined) coefficients[qo] -= g; }
+          if (qo === row) { coefficients[qo] += g; if (po !== undefined) coefficients[po] -= g; }
+        }
+        const net = injected - preciseDot(coefficients, x0);
+        return row === pi ? net : -net;
+      };
+      const rate = storage.map((c) => c.kind === "capacitor" ? dielectricCurrent(c) / prop(c, "capacitance") : (across(x0, c) - resistanceOf(c) * initial.get(c.id)!) / prop(c, "inductance"));
+      // Unit responses (sources off): the system matrix A and every element's current per unit of each state.
+      const A = storage.map(() => Array(n).fill(0)), sensitivity = new Map<string, number[]>(), interrupted = new Set<string>();
+      storage.forEach((c, j) => {
+        const unit = new Map(storage.map((o) => [o.id, o === c ? 1 : 0])), x = solveLinear(am, storageTerms(Array(size).fill(0), unit, [c]), true, true);
+        storage.forEach((k, i) => (A[i][j] = k.kind === "capacitor"
+          ? (across(x, k) - unit.get(k.id)!) / resistanceOf(k) / prop(k, "capacitance")
+          : (across(x, k) - resistanceOf(k) * unit.get(k.id)!) / prop(k, "inductance")));
+        for (const e of members) for (const [key, current] of linearCurrents(e, x, unit)) (sensitivity.get(key) ?? sensitivity.set(key, Array(n).fill(0)).get(key)!)[j] = current;
+        // An inductor whose current finds no path but its own breakdown resistance is being interrupted.
+        if (c.kind === "inductor" && -across(x, c) > 0.5 * INDUCTOR_BREAKDOWN) interrupted.add(c.id);
       });
-      const T = charged.map((_, i) => charged.map((_, j) => 0.5 * (impedance[i][j] + impedance[j][i]) * root[i] * root[j]));
-      const { values, vectors } = symmetricEigen(T);
-      const project = (u: number[]) => values.map((_, m) => u.reduce((sum, ui, i) => sum + vectors[i][m] * ui, 0));
-      const back = (w: number[], i: number) => w.reduce((sum, wm, m) => sum + vectors[i][m] * wm, 0) / root[i];
-      const x0 = solveLinear(open.am, open.bm);
-      const settled = project(charged.map((c, i) => root[i] * across(x0, c))), start = project(charged.map((c, i) => root[i] * stored(c)));
-      // A mode faster than rounding resolves (τ ≤ 0) has settled within the step.
-      const relax = (f: (z: number) => number) => values.map((tau, m) => start[m] + (settled[m] - start[m]) * (tau > 0 ? f(h / tau) : 1));
-      const meanModes = relax(averaged), endModes = relax(reached);
-      charged.forEach((c, i) => { mean.set(c.id, back(meanModes, i)); final.set(c.id, back(endModes, i)); });
+      // Van Loan: exp([[A, I, 0], [0, 0, I], [0, 0, 0]]·h) holds Φ₁ and Φ₂ in its first block row.
+      const M = Array.from({ length: 3 * n }, (_, i) => Array.from({ length: 3 * n }, (_, j) =>
+        i < n && j < n ? A[i][j] * h : (i < 2 * n && j === i + n) ? h : 0));
+      const E = expm(M), apply = (offset: number) => storage.map((_, i) => rate.reduce((sum, r, j) => sum + E[i][offset + j] * r, 0));
+      const z = apply(n), Z = apply(2 * n);
+      storage.forEach((c, i) => mean.set(c.id, initial.get(c.id)! + Z[i] / h));
+      let covariance = storage.map(() => Array(n).fill(0));
+      try {
+        const W = solveLyapunov(A, storage.map((_, i) => storage.map((_, j) => z[i] * z[j] - rate[i] * Z[j] - Z[i] * rate[j])));
+        covariance = W.map((row, i) => row.map((w, j) => w - Z[i] * Z[j] / h));
+      } catch {
+        // A nearly lossless mode pair (λᵢ + λⱼ ≈ 0) leaves the within-step variance unresolved; averages stay exact.
+      }
+      step = { final: new Map(storage.map((c, i) => [c.id, initial.get(c.id)! + z[i]])), covariance, z, Z, sensitivity, interrupted };
     };
     let solved: ReturnType<typeof regulate>, integrated: string | undefined;
     for (let pass = 0; ; pass++) {
-      const ac = a.map((row) => [...row]), bc = [...b];
-      for (const c of charged) stampDielectric(ac, bc, c, mean.get(c.id)!);
-      solved = regulate(ac, bc);
+      solved = regulate(held, storageTerms([...b], mean));
       const state = JSON.stringify(fixed);
-      if (!charged.length || h === 0 || state === integrated || pass === 3) break;
+      if (!storage.length || h === 0 || state === integrated || pass === 3) break;
       integrate();
       integrated = state;
     }
     const { x, am, bm } = solved;
-    // Unsettled CV/CC state after four passes: report the charge current the network actually carries.
-    const exact = integrated === JSON.stringify(fixed);
-    for (const c of charged) dielectric.set(c.id, { mean: mean.get(c.id)!, final: exact ? final.get(c.id) : undefined, h });
+    // An unsettled CV/CC state after four passes reports what the network carries at the stamped averages.
+    const exact = integrated === JSON.stringify(fixed) ? step : undefined;
+    for (const c of storage) stored.set(c.id, { initial: initial.get(c.id)!, mean: mean.get(c.id)!, final: exact?.final.get(c.id), h, interrupted: !!exact?.interrupted.has(c.id) && Math.abs(initial.get(c.id)!) > 1e-12 });
+    if (exact) for (const [key, b] of exact.sensitivity) {
+      const quadratic = b.reduce((sum, bi, i) => sum + bi * b.reduce((inner, bj, j) => inner + exact.covariance[i][j] * bj, 0), 0);
+      const dot = (v: number[]) => b.reduce((sum, bi, i) => sum + bi * v[i], 0);
+      deviations.set(key, { variance: Math.max(0, quadratic) / h, start: -dot(exact.Z) / h, end: dot(exact.z) - dot(exact.Z) / h });
+    }
     sources.forEach((s, i) => (regulation[s.id] = fixed[i] === null ? "cv" : "cc"));
     for (let i = 0; i < size; i++)
       residual = Math.max(residual, Math.abs(am[i].reduce((sum, v, j) => sum + v * x[j], 0) - bm[i]));
@@ -931,8 +991,12 @@ export function solveElectricalCore(
     const voltage = (voltages[a] ?? 0) - (voltages[b] ?? 0);
     const activeVoltage = (voltages[a] ?? 0) - (voltages[q] ?? 0);
     const phases = islandPhases.get(islands.find(a)) ?? 1;
-    const charge = dielectric.get(c.id), stored = runtime.devices?.capacitors?.[c.id] ?? 0;
-    const chargeCurrent = !charge ? 0 : charge.final !== undefined ? prop(c, "capacitance") * (charge.final - stored) / charge.h : (activeVoltage - charge.mean) / resistanceOf(c);
+    const store = stored.get(c.id), deviation = deviations.get(c.id);
+    // Storage flow over the step: a dielectric's charge current, or the voltage across an inductance. Exact from the
+    // state change; otherwise (paused solve without interval, unsettled regulation) what the network carries.
+    const storageRate = !store ? 0 : store.final !== undefined
+      ? prop(c, c.kind === "capacitor" ? "capacitance" : "inductance") * (store.final - store.initial) / store.h
+      : c.kind === "capacitor" ? (activeVoltage - store.mean) / resistanceOf(c) : activeVoltage - resistanceOf(c) * store.mean;
     const contactCurrent =
       isSource(c)
         ? (sourceI[c.id] ?? 0)
@@ -940,17 +1004,24 @@ export function solveElectricalCore(
           ? c.kind === "motor" && runtime.motors?.[c.id]
             ? runtime.motors[c.id].duty * (runtime.motors[c.id].duty * activeVoltage - runtime.motors[c.id].emf) / prop(c, "resistance", 1)
             : c.kind === "capacitor"
-              ? activeVoltage / CAPACITOR_LEAKAGE + chargeCurrent
-              : activeVoltage / resistanceOf(c)
+              ? activeVoltage / CAPACITOR_LEAKAGE + storageRate
+              : c.kind === "inductor" && store
+                ? store.mean + activeVoltage / INDUCTOR_BREAKDOWN
+                : activeVoltage / resistanceOf(c)
           : 0;
     const current = c.kind === "relay" && end(c) === "nc" ? 0 : contactCurrent;
     const currentNC =
       c.kind === "relay" && end(c) === "nc" ? contactCurrent : 0;
+    // Absorbed power over the step. For a branch v = E + R·i the current's within-step variance adds R·var(i) to
+    // the product of the averages: the exact ∫v·i dt, so heat is ∫R·i² and protection sees the true RMS.
+    const variance = deviation?.variance ?? 0;
+    const branchResistance = isSource(c) ? runtime.sourceModels?.[c.id]?.resistance ?? prop(c, "internalResistance")
+      : c.kind === "motor" ? prop(c, "resistance", 1) / (runtime.motors?.[c.id]?.duty ?? 1) ** 2 : resistances[c.id] ?? 0;
     const power =
       phases *
-      (isSource(c)
+      ((isSource(c)
         ? voltage * contactCurrent
-        : activeVoltage * contactCurrent);
+        : activeVoltage * contactCurrent) + branchResistance * variance);
     readings[c.id] = {
       voltage,
       current,
@@ -960,15 +1031,23 @@ export function solveElectricalCore(
       voltageValid: valid,
       ...(isSource(c) ? { regulation: regulation[c.id] ?? "cv" } : resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}),
       ...(phases === 3 ? { phases: 3 as const } : {}),
+      ...(deviation ? { currentVariance: variance, peakCurrent: Math.max(Math.abs(contactCurrent + deviation.start), Math.abs(contactCurrent + deviation.end)) } : {}),
     };
-    if (c.kind === "capacitor") {
-      // Field energy changes by ½·C·(v₁² − v₀²) = I·h·(v₀ + I·h/(2C)) with the exact step charge I·h; the rest is
-      // heat: I²·ESR, leakage V²/R_leak and I·(v̄ − (v₀ + v₁)/2), the part of a transient's loop loss that the
-      // step-average current does not carry.
-      const fieldPower = charge ? chargeCurrent * (stored + chargeCurrent * charge.h / (2 * prop(c, "capacitance"))) : 0;
-      Object.assign(readings[c.id], { chargeCurrent, fieldPower, heatPower: power - fieldPower });
+    if (store) {
+      // Field energy: ½·C·(v₁² − v₀²) = i·h·(v₀ + i·h/(2C)), or ½·L·(i₁² − i₀²) = v·h·(i₀ + v·h/(2L)). Heat: ESR and
+      // leakage (capacitor), winding and breakdown path (inductor), each with its exact ∫R·i².
+      const size = prop(c, c.kind === "capacitor" ? "capacitance" : "inductance"), fieldPower = storageRate * (store.initial + storageRate * store.h / (2 * size));
+      const part = (key: string, mean: number, resistance: number) => resistance * (mean * mean + (deviations.get(`${c.id}#${key}`)?.variance ?? 0));
+      const heatPower = store.final === undefined ? power - fieldPower : c.kind === "capacitor"
+        ? part("dielectric", storageRate, resistanceOf(c)) + part("leak", activeVoltage / CAPACITOR_LEAKAGE, CAPACITOR_LEAKAGE)
+        : part("winding", store.mean, resistanceOf(c)) + part("breakdown", activeVoltage / INDUCTOR_BREAKDOWN, INDUCTOR_BREAKDOWN);
+      Object.assign(readings[c.id], c.kind === "capacitor" ? { chargeCurrent: storageRate } : { inductanceVoltage: storageRate, ...(store.interrupted ? { interrupted: true } : {}) },
+        { fieldPower, heatPower, power: fieldPower + heatPower });
       storedPower += fieldPower;
-      dissipatedPower += power - fieldPower;
+      dissipatedPower += heatPower;
+    } else if (c.kind === "capacitor") {
+      Object.assign(readings[c.id], { heatPower: power });
+      dissipatedPower += power;
     } else if (isSource(c)) sourcePower -= power;
     else dissipatedPower += power;
   }

@@ -70,6 +70,7 @@
       "variant": "standard",
       "props": {
         "capacitance": 0.001,
+        "polarized": false,
         "chargeVoltage": 0,
         "resistance": 0.05,
         "ratedVoltage": 25,

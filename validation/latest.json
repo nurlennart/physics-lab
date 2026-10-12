@@ -1,8 +1,8 @@
 {
-  "executedAt": "2026-10-12T09:30:36.167Z",
+  "executedAt": "2026-10-12T10:28:42.724Z",
   "timestepSeconds": 0.016666666666666666,
-  "passed": 92,
-  "total": 92,
+  "passed": 96,
+  "total": 96,
   "results": [
     {
       "name": "12 V / 6 Ω branch current",
@@ -360,9 +360,9 @@
       "name": "RC charge: capacitor voltage after 1 s (τ ≈ 1 s)",
       "domain": "electrical",
       "expected": 7.5852228129036465,
-      "measured": 7.585222812903642,
-      "absoluteError": 4.440892098500626e-15,
-      "relativeError": 5.854662688281188e-16,
+      "measured": 7.585222812903617,
+      "absoluteError": 2.930988785010413e-14,
+      "relativeError": 3.864077374265585e-15,
       "tolerance": 1e-9,
       "pass": true,
       "assumptions": "12 V through 1 kΩ into 1 mF (ESR 50 mΩ, 1 GΩ leakage); exact modal step of the linear network at h = 1/60 s"
@@ -370,10 +370,10 @@
     {
       "name": "RC charge: loop loss Q·V − ½·C·V² (→ ½·C·V² at full charge)",
       "domain": "electrical",
-      "expected": 0.07199999984483896,
-      "measured": 0.07200129585022805,
-      "absoluteError": 0.0000012960053890898049,
-      "relativeError": 0.000018000074887259934,
+      "expected": 0.07199999984483893,
+      "measured": 0.07200129585022874,
+      "absoluteError": 0.0000012960053898114499,
+      "relativeError": 0.000018000074897282787,
       "tolerance": 0.000002,
       "pass": true,
       "assumptions": "After 10 τ the supply has delivered Q = C·V at 12 V; tolerance covers the 1 GΩ leakage loss over 10 s (1.3 µJ)"
@@ -382,9 +382,9 @@
       "name": "Direct switch-on of 100 µF (τ = 6 µs ≪ h): voltage after one step",
       "domain": "electrical",
       "expected": 11.99999999988,
-      "measured": 11.999999999880002,
-      "absoluteError": 1.7763568394002505e-15,
-      "relativeError": 1.4802973661816783e-16,
+      "measured": 11.999999999880004,
+      "absoluteError": 3.552713678800501e-15,
+      "relativeError": 2.9605947323633566e-16,
       "tolerance": 1e-9,
       "pass": true,
       "assumptions": "Transient shorter than the step settles exactly within it, without ringing; inrush peak not resolved"
@@ -393,12 +393,45 @@
       "name": "Charge sharing between equal capacitors: field energy lost",
       "domain": "electrical",
       "expected": -0.025,
-      "measured": -0.02500000499999955,
-      "absoluteError": 4.999999549809564e-9,
-      "relativeError": 1.9999998199238256e-7,
+      "measured": -0.02500000500000132,
+      "absoluteError": 5.0000013192275095e-9,
+      "relativeError": 2.0000005276910038e-7,
       "tolerance": 0.000001,
       "pass": true,
       "assumptions": "10 V and 0 V, 1 mF each, through 1 Ω: both settle at 5 V, half the field energy is dissipated"
+    },
+    {
+      "name": "Direct switch-on of 100 µF: charging loss in the 0.01 Ω switch (1/6 of ½·C·V²)",
+      "domain": "electrical",
+      "expected": 0.0012,
+      "measured": 0.0012000000002421005,
+      "absoluteError": 2.4210061039253716e-13,
+      "relativeError": 2.0175050866044766e-10,
+      "tolerance": 1e-9,
+      "pass": true,
+      "assumptions": "Loop 0.01 Ω switch + 0.05 Ω ESR; within-step current variance from the exact state covariance gives each resistance its ∫R·i²"
+    },
+    {
+      "name": "RL rise: inductor current after 0.1 s (τ ≈ 0.1 s)",
+      "domain": "electrical",
+      "expected": 0.7553789884855163,
+      "measured": 0.7553789884855162,
+      "absoluteError": 1.1102230246251565e-16,
+      "relativeError": 1.4697562965725039e-16,
+      "tolerance": 1e-11,
+      "pass": true,
+      "assumptions": "12 V through 10 Ω into 1 H with 0.1 Ω winding and the 1 MΩ breakdown path; exact state-space step at h = 1/60 s"
+    },
+    {
+      "name": "Series RLC step: capacitor voltage at 50 ms (ζ = 0.1)",
+      "domain": "electrical",
+      "expected": 9.014493323814136,
+      "measured": 9.014530601911993,
+      "absoluteError": 0.000037278097856585646,
+      "relativeError": 0.000004135351429914072,
+      "tolerance": 0.0003,
+      "pass": true,
+      "assumptions": "R = 2 Ω total, L = 0.1 H, C = 1 mF; tolerance covers the 1 MΩ breakdown path across L (ωL/R_b = 1e-5)"
     },
     {
       "name": "Battery polarization voltage after τ₁ at 2 A",
@@ -410,6 +443,17 @@
       "tolerance": 1e-12,
       "pass": true,
       "assumptions": "R₁ = 15 mΩ, τ₁ = 30 s; exact exponential of the R₁ ∥ C₁ branch at constant current"
+    },
+    {
+      "name": "Battery charge acceptance: state of charge after 30 s at 2 A (η = 97 %)",
+      "domain": "electrical",
+      "expected": 0.5001616666666666,
+      "measured": 0.5001616666666537,
+      "absoluteError": 1.2878587085651816e-14,
+      "relativeError": 2.574884871022066e-14,
+      "tolerance": 1e-12,
+      "pass": true,
+      "assumptions": "Only the coulombic share of the charge is stored; the rest heats the pack"
     },
     {
       "name": "Coupled mass balance at dt=0.016666666666666666",

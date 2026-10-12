@@ -3,7 +3,7 @@ import { makeComponent, connect, catalog } from "./model";
 import { evaluateChallenge } from "./challenges";
 import { Simulation, DT } from "./engine";
 import { Builder } from "./scaling-validation";
-import { CAPACITOR_LEAKAGE } from "./electrical";
+import { CAPACITOR_LEAKAGE, INDUCTOR_BREAKDOWN } from "./electrical";
 export interface ValidationRow {
   name: string;
   domain: string;
@@ -379,12 +379,31 @@ export function runValidation() {
   advance(sharing, 0.1);
   add("Charge sharing between equal capacitors: field energy lost", "electrical", -0.025, sharing.devices.storedChange, 1e-6,
     "10 V and 0 V, 1 mF each, through 1 Ω: both settle at 5 V, half the field energy is dissipated");
+  add("Direct switch-on of 100 µF: charging loss in the 0.01 Ω switch (1/6 of ½·C·V²)", "electrical", 7.2e-3 / 6, direct.componentEnergy[stiffSwitch.id], 1e-9,
+    "Loop 0.01 Ω switch + 0.05 Ω ESR; within-step current variance from the exact state covariance gives each resistance its ∫R·i²");
+  // Inductors: RL rise and series-RLC ringing against closed-form solutions.
+  const rl = new Builder(), rlSource = rl.add("source", { voltage: 12 }), rlResistor = rl.add("resistor", { resistance: 10, tempCoefficient: 0, tolerance: 0 });
+  const rlCoil = rl.add("inductor", { inductance: 1, resistance: 0.1, tempCoefficient: 0 });
+  rl.series(rlSource, rlResistor, rlCoil);
+  const rising = new Simulation(rl.p), rlThevenin = 10 * INDUCTOR_BREAKDOWN / (10 + INDUCTOR_BREAKDOWN), rlDrive = 12 * INDUCTOR_BREAKDOWN / (10 + INDUCTOR_BREAKDOWN);
+  advance(rising, 0.1);
+  add("RL rise: inductor current after 0.1 s (τ ≈ 0.1 s)", "electrical", rlDrive / (rlThevenin + 0.1) * -Math.expm1(-rising.time * (rlThevenin + 0.1)), rising.devices.inductors[rlCoil.id], 1e-11,
+    "12 V through 10 Ω into 1 H with 0.1 Ω winding and the 1 MΩ breakdown path; exact state-space step at h = 1/60 s");
+  const rlc = new Builder(), rlcSource = rlc.add("source", { voltage: 10 }), rlcResistor = rlc.add("resistor", { resistance: 1.91, tempCoefficient: 0, tolerance: 0 });
+  const rlcCoil = rlc.add("inductor", { inductance: 0.1, resistance: 0.05, tempCoefficient: 0 }), rlcCap = rlc.add("capacitor", { capacitance: 1e-3, resistance: 0.04 });
+  rlc.series(rlcSource, rlcResistor, rlcCoil, rlcCap);
+  const ringing = new Simulation(rlc.p), sigma = 10, wd = Math.sqrt(1e4 - sigma ** 2);
+  advance(ringing, 0.05);
+  add("Series RLC step: capacitor voltage at 50 ms (ζ = 0.1)", "electrical", 10 * (1 - Math.exp(-sigma * ringing.time) * (Math.cos(wd * ringing.time) + sigma / wd * Math.sin(wd * ringing.time))), ringing.devices.capacitors[rlcCap.id], 3e-4,
+    "R = 2 Ω total, L = 0.1 H, C = 1 mF; tolerance covers the 1 MΩ breakdown path across L (ωL/R_b = 1e-5)");
   // Battery polarization: one-RC Thevenin branch under a constant 2 A charge.
-  const cell = new Builder(), charger = cell.add("source", { mode: "cc", current: 2, voltage: 30 }), pack = cell.add("battery", { capacityAh: 100, initialSOC: 50, resistanceActivation: 0 });
+  const cell = new Builder(), charger = cell.add("source", { mode: "cc", current: 2, voltage: 30 }), pack = cell.add("battery", { capacityAh: 100, initialSOC: 50, resistanceActivation: 0, selfDischarge: 0 });
   cell.series(charger, pack);
   const polarizing = new Simulation(cell.p);
   advance(polarizing, 30);
   add("Battery polarization voltage after τ₁ at 2 A", "electrical", 2 * 0.015 * -Math.expm1(-polarizing.time / 30), polarizing.devices.polarization[pack.id], 1e-12,
     "R₁ = 15 mΩ, τ₁ = 30 s; exact exponential of the R₁ ∥ C₁ branch at constant current");
+  add("Battery charge acceptance: state of charge after 30 s at 2 A (η = 97 %)", "electrical", 0.5 + 0.97 * 2 * polarizing.time / 360000, polarizing.devices.batteries[pack.id], 1e-12,
+    "Only the coulombic share of the charge is stored; the rest heats the pack");
   return rows;
 }

@@ -117,6 +117,7 @@
       "variant": "standard",
       "props": {
         "capacitance": 0.0001,
+        "polarized": false,
         "chargeVoltage": 0,
         "resistance": 0.05,
         "ratedVoltage": 450,

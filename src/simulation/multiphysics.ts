@@ -226,7 +226,9 @@ export class Multiphysics {
       const pump = pairs[c.id] ? hydraulic.readings[pairs[c.id]] : undefined;
       const load = (pump?.torque ?? 0) + (loads?.[i] ?? prop(c, 'loadTorque'));
       const torque = c.kind === 'inductionMotor' ? machine?.torque ?? 0 : prop(c, 'torqueConstant') * current;
-      const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper : 0) : current * current * prop(c, 'resistance');
+      // DC armature: the current's within-step variance (storage transients) adds to the copper loss; the supply-side
+      // current is duty × the armature current.
+      const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper : 0) : (current * current + (running && ctrl.duty > 0 ? (r?.currentVariance ?? 0) / ctrl.duty ** 2 : 0)) * prop(c, 'resistance');
       return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia'), angle: this.motors[c.id]?.angle ?? 0,
         ...(c.kind === 'inductionMotor' ? { psiS: this.motors[c.id]?.psiS, psiR: this.motors[c.id]?.psiR, frequency: this.motors[c.id]?.frequency, inrushPeak: this.motors[c.id]?.inrushPeak, energized: this.motors[c.id]?.energized, fluxRate: this.motors[c.id]?.fluxRate } : {}) };
     });
@@ -560,7 +562,7 @@ export class Multiphysics {
         const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
         if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
       }
-      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0, fieldPower: 0 } : {}) }])) };
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
       totalElectrical.storedPower! += (r.electrical.storedPower ?? 0) * h / dt;
@@ -573,10 +575,14 @@ export class Multiphysics {
         if (v.chemicalPower !== undefined) total.chemicalPower = (total.chemicalPower ?? 0) + v.chemicalPower * h / dt;
         if (v.heatPower !== undefined) total.heatPower = (total.heatPower ?? 0) + v.heatPower * h / dt;
         if (v.fanPower !== undefined) total.fanPower = (total.fanPower ?? 0) + v.fanPower * h / dt;
-        if (v.chargeCurrent !== undefined) { total.chargeCurrent = (total.chargeCurrent ?? 0) + v.chargeCurrent * h / dt; total.fieldPower = (total.fieldPower ?? 0) + (v.fieldPower ?? 0) * h / dt; }
+        if (v.chargeCurrent !== undefined) total.chargeCurrent = (total.chargeCurrent ?? 0) + v.chargeCurrent * h / dt;
+        if (v.inductanceVoltage !== undefined) total.inductanceVoltage = (total.inductanceVoltage ?? 0) + v.inductanceVoltage * h / dt;
+        if (v.fieldPower !== undefined) total.fieldPower = (total.fieldPower ?? 0) + v.fieldPower * h / dt;
         ambient += braking * h;
         const sum = (sums[id] ??= { current: 0, contact: 0, nc: 0, reactive: 0, apparent: 0, sign: 1, drive: { input: 0, output: 0, losses: 0, braking: 0, current: 0 } });
-        sum.current += v.current ** 2 * h; sum.contact += (v.contactCurrent ?? v.current) ** 2 * h; sum.nc += (v.currentNC ?? 0) ** 2 * h;
+        // A DC storage transient within the substep adds the current's variance to its mean square.
+        const variance = v.currentVariance ?? 0, nc = (v.currentNC ?? 0) !== 0;
+        sum.current += (v.current ** 2 + (nc ? 0 : variance)) * h; sum.contact += ((v.contactCurrent ?? v.current) ** 2 + variance) * h; sum.nc += ((v.currentNC ?? 0) ** 2 + (nc ? variance : 0)) * h;
         if (v.secondaryCurrent !== undefined) {
           const secondary = sum.secondary ??= { current: 0, voltage: 0 };
           secondary.current += v.secondaryCurrent ** 2 * h; secondary.voltage += (v.secondaryVoltage ?? 0) ** 2 * h;
@@ -592,6 +598,7 @@ export class Multiphysics {
         if (v.drive) { sum.drive.input += v.drive.inputPower * h; sum.drive.output += v.drive.outputPower * h; sum.drive.losses += v.drive.losses * h; sum.drive.braking += braking * h; sum.drive.current += v.drive.outputCurrent ** 2 * h; }
         // Magnetic releases act on the instantaneous current: track its largest value across the substeps.
         if (v.currentPhasor && v.frequency) total.peakCurrent = Math.max(total.peakCurrent ?? 0, peakOverInterval(v.currentPhasor, v.phases ?? 1, ...angleWindow(v)));
+        else if (!v.ac && v.peakCurrent !== undefined) total.peakCurrent = Math.max(total.peakCurrent ?? 0, v.peakCurrent);
       }
       // The configuration this substep ran with; a timer transition below is a switching event for the next one.
       this.acceptedKey = this.discreteKey(s, controls);

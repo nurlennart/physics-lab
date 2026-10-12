@@ -1,0 +1,204 @@
+{
+  "version": 3,
+  "id": "example-inductor",
+  "name": "Switching an inductor",
+  "components": [
+    {
+      "id": "inductor-component-1",
+      "kind": "source",
+      "name": "PS-01",
+      "x": 50,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 12,
+        "maxCurrent": 20,
+        "ratedVoltage": 240,
+        "mode": "ideal",
+        "internalResistance": 0,
+        "current": 1,
+        "maxPower": 4800,
+        "enabled": true
+      }
+    },
+    {
+      "id": "inductor-component-2",
+      "kind": "switch",
+      "name": "S-01",
+      "x": 300,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 0.01,
+        "ratedPower": 20,
+        "heatCapacity": 20,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "closed": true
+      }
+    },
+    {
+      "id": "inductor-component-3",
+      "kind": "resistor",
+      "name": "R-01",
+      "x": 550,
+      "y": 130,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 10,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2
+      }
+    },
+    {
+      "id": "inductor-component-4",
+      "kind": "inductor",
+      "name": "L-01",
+      "x": 820,
+      "y": 300,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "inductance": 1,
+        "resistance": 0.5,
+        "ratedCurrent": 2,
+        "heatCapacity": 200,
+        "loss": 1,
+        "conductance": 5,
+        "maxTemperature": 150,
+        "tempCoefficient": 0.00393,
+        "tolerance": 0
+      }
+    },
+    {
+      "id": "inductor-component-5",
+      "kind": "resistor",
+      "name": "R-02",
+      "x": 550,
+      "y": 420,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 100,
+        "ratedPower": 50,
+        "heatCapacity": 50,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "inductor-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "inductor-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "inductor-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "inductor-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "inductor-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "inductor-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "inductor-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "inductor-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "inductor-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "inductor-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "inductor-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "inductor-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "inductor-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "inductor-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "inductor-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "inductor-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "inductor-component-5",
+        "port": "b"
+      },
+      "to": {
+        "component": "inductor-component-1",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "inductor-probe-1",
+      "component": "inductor-component-4",
+      "measurement": "current",
+      "name": "Inductor current",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "inductor-probe-2",
+      "component": "inductor-component-4",
+      "measurement": "fieldEnergy",
+      "name": "Stored energy",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "inductor-probe-3",
+      "component": "inductor-component-5",
+      "measurement": "power",
+      "name": "Freewheel power",
+      "color": "#ef4444",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

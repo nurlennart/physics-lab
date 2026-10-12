@@ -17,7 +17,7 @@ export function starter(
   mode: "induction" | "starting" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode = "heat",
   challenge = false,
 ): Project {
-  if (["battery", "capacitor", "contactor", "transformer", "radiator"].includes(mode)) return deviceStarter(mode as DeviceMode);
+  if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
   if (mode === "exchanger") return heatExchangerStarter();
   if (mode === "industrial") return industrialStarter();

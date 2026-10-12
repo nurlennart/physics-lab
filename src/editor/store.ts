@@ -707,7 +707,7 @@ export const actions = {
     mode: Parameters<typeof starter>[0] = "blank",
     challenge = false,
   ) {
-    if (challenge && mode !== "battery" && mode !== "capacitor" && mode !== "contactor" && mode !== "transformer" && mode !== "radiator" && mode !== "induction" && mode !== "starting" && mode !== "acRlc" && mode !== "blank" && mode !== "automated" && mode !== "industrial" && mode !== "exchanger" && mode !== "circulation" && mode !== "mechanism" && mode !== "rotor") {
+    if (challenge && mode !== "battery" && mode !== "capacitor" && mode !== "inductor" && mode !== "contactor" && mode !== "transformer" && mode !== "radiator" && mode !== "induction" && mode !== "starting" && mode !== "acRlc" && mode !== "blank" && mode !== "automated" && mode !== "industrial" && mode !== "exchanger" && mode !== "circulation" && mode !== "mechanism" && mode !== "rotor") {
       actions.load(challengeProject(mode));
       if (state.project.challenge === mode) emit({ view: "guidebook" });
     } else actions.load(starter(mode));

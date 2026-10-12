@@ -1,6 +1,6 @@
 # Executed physics validation
 
-Executed: 2026-10-12T09:30:36.167Z. 92/92 checks passed.
+Executed: 2026-10-12T10:28:42.724Z. 96/96 checks passed.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -36,11 +36,15 @@ Executed: 2026-10-12T09:30:36.167Z. 92/92 checks passed.
 | Complete fault-and-recovery challenge | challenge | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Actual 240 s regulation, coolant reduction/loss, welded relay, independent trip, cool manual reset, 120 s recovery; no temperature script |
 | Challenge stays below critical water temperature | safety | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Independent cutoff threshold 90°C; thermal inertia retained |
 | Locked environment exploit rejected | integrity | 1 | 1 | 0.000e+0 | 0.000e+0 | 0 | PASS | Challenge initial/environment conditions validated before solver state initializes |
-| RC charge: capacitor voltage after 1 s (τ ≈ 1 s) | electrical | 7.5852228129036465 | 7.585222812903642 | 4.441e-15 | 5.855e-16 | 1e-9 | PASS | 12 V through 1 kΩ into 1 mF (ESR 50 mΩ, 1 GΩ leakage); exact modal step of the linear network at h = 1/60 s |
-| RC charge: loop loss Q·V − ½·C·V² (→ ½·C·V² at full charge) | electrical | 0.07199999984483896 | 0.07200129585022805 | 1.296e-6 | 1.800e-5 | 0.000002 | PASS | After 10 τ the supply has delivered Q = C·V at 12 V; tolerance covers the 1 GΩ leakage loss over 10 s (1.3 µJ) |
-| Direct switch-on of 100 µF (τ = 6 µs ≪ h): voltage after one step | electrical | 11.99999999988 | 11.999999999880002 | 1.776e-15 | 1.480e-16 | 1e-9 | PASS | Transient shorter than the step settles exactly within it, without ringing; inrush peak not resolved |
-| Charge sharing between equal capacitors: field energy lost | electrical | -0.025 | -0.02500000499999955 | 5.000e-9 | 2.000e-7 | 0.000001 | PASS | 10 V and 0 V, 1 mF each, through 1 Ω: both settle at 5 V, half the field energy is dissipated |
+| RC charge: capacitor voltage after 1 s (τ ≈ 1 s) | electrical | 7.5852228129036465 | 7.585222812903617 | 2.931e-14 | 3.864e-15 | 1e-9 | PASS | 12 V through 1 kΩ into 1 mF (ESR 50 mΩ, 1 GΩ leakage); exact modal step of the linear network at h = 1/60 s |
+| RC charge: loop loss Q·V − ½·C·V² (→ ½·C·V² at full charge) | electrical | 0.07199999984483893 | 0.07200129585022874 | 1.296e-6 | 1.800e-5 | 0.000002 | PASS | After 10 τ the supply has delivered Q = C·V at 12 V; tolerance covers the 1 GΩ leakage loss over 10 s (1.3 µJ) |
+| Direct switch-on of 100 µF (τ = 6 µs ≪ h): voltage after one step | electrical | 11.99999999988 | 11.999999999880004 | 3.553e-15 | 2.961e-16 | 1e-9 | PASS | Transient shorter than the step settles exactly within it, without ringing; inrush peak not resolved |
+| Charge sharing between equal capacitors: field energy lost | electrical | -0.025 | -0.02500000500000132 | 5.000e-9 | 2.000e-7 | 0.000001 | PASS | 10 V and 0 V, 1 mF each, through 1 Ω: both settle at 5 V, half the field energy is dissipated |
+| Direct switch-on of 100 µF: charging loss in the 0.01 Ω switch (1/6 of ½·C·V²) | electrical | 0.0012 | 0.0012000000002421005 | 2.421e-13 | 2.018e-10 | 1e-9 | PASS | Loop 0.01 Ω switch + 0.05 Ω ESR; within-step current variance from the exact state covariance gives each resistance its ∫R·i² |
+| RL rise: inductor current after 0.1 s (τ ≈ 0.1 s) | electrical | 0.7553789884855163 | 0.7553789884855162 | 1.110e-16 | 1.470e-16 | 1e-11 | PASS | 12 V through 10 Ω into 1 H with 0.1 Ω winding and the 1 MΩ breakdown path; exact state-space step at h = 1/60 s |
+| Series RLC step: capacitor voltage at 50 ms (ζ = 0.1) | electrical | 9.014493323814136 | 9.014530601911993 | 3.728e-5 | 4.135e-6 | 0.0003 | PASS | R = 2 Ω total, L = 0.1 H, C = 1 mF; tolerance covers the 1 MΩ breakdown path across L (ωL/R_b = 1e-5) |
 | Battery polarization voltage after τ₁ at 2 A | electrical | 0.018963616764856576 | 0.01896361676485749 | 9.125e-16 | 4.812e-14 | 1e-12 | PASS | R₁ = 15 mΩ, τ₁ = 30 s; exact exponential of the R₁ ∥ C₁ branch at constant current |
+| Battery charge acceptance: state of charge after 30 s at 2 A (η = 97 %) | electrical | 0.5001616666666666 | 0.5001616666666537 | 1.288e-14 | 2.575e-14 | 1e-12 | PASS | Only the coulombic share of the charge is stored; the rest heats the pack |
 | Coupled mass balance at dt=0.016666666666666666 | multiphysics | 0 | -1.8417267710901797e-11 | 1.842e-11 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
 | Coupled energy balance at dt=0.016666666666666666 | multiphysics | 0 | -0.0000048957307967612 | 4.896e-6 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
 | Coupled mass balance at dt=0.008333333333333333 | multiphysics | 0 | -9.180212146020494e-12 | 9.180e-12 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
