@@ -122,6 +122,18 @@ describe('DC capacitor', () => {
     expect(s.devices.capacitors[cap.id]).toBe(2);
   });
 
+  it('discharges a buffer capacitor through a lamp to exactly zero without leaving the solver precision', () => {
+    // A decaying state would otherwise reach subnormal numbers (≈ 1e-313 V after 2.4 s) and fail the residual check.
+    const b = new Builder(), battery = b.add('battery'), sw = b.add('switch'), cap = b.add('capacitor'), lamp = b.add('lamp');
+    b.series(battery, sw, lamp); b.wire(cap, 'a', lamp, 'a'); b.wire(cap, 'b', lamp, 'b');
+    const s = new Simulation(b.p);
+    run(s, 2);
+    expect(s.refresh({ ...s.project, components: s.project.components.map(c => c.id === sw.id ? { ...c, props: { ...c.props, closed: false } } : c) })).toBe(true);
+    run(s, 10);
+    expect(s.devices.capacitors[cap.id]).toBe(0);
+    closes(s, Math.abs(s.devices.storedChange)); // battery energy converted to lamp heat and light
+  });
+
   it('destroys a reverse-biased or AC-operated electrolytic capacitor, but not a film one', () => {
     for (const [polarized, reversed, fails] of [[true, false, false], [true, true, true], [false, true, false]] as const) {
       const b = new Builder(), source = b.add('source', { voltage: 12 }), r = b.add('resistor', resistor(100)), cap = b.add('capacitor', { capacitance: 1e-3, polarized });

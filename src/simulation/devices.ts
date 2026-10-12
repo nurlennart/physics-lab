@@ -3,6 +3,11 @@ import type { ElectricalResult, ElectricalRuntime } from './electrical';
 
 /** A paused solve previews the average over the next fixed step (the engine's DT), as every step reading is an average. */
 const PREVIEW_STEP = 1 / 60;
+/**
+ * A decaying stored voltage or current below 1e-30 (V or A, far below thermal noise) settles to zero. Left alone it
+ * would decay into subnormal numbers, whose lost precision the circuit solver rightly rejects.
+ */
+const settle = (value: number) => (Math.abs(value) < 1e-30 ? 0 : value);
 /** Charge, polarization and contact mechanics advance only after an accepted physical interval. */
 export class Devices {
   active = false;
@@ -65,18 +70,18 @@ export class Devices {
         if (branch) {
           const step = branch.step(this.polarization[c.id] ?? 0, r.current);
           this.storedChange += step.energy;
-          this.polarization[c.id] = step.voltage;
+          this.polarization[c.id] = settle(step.voltage);
         }
       }
       // Outside a solved DC network (an AC island) a capacitor holds its charge and an inductor its current; a failed
       // inductor's interrupted current is dumped at the failure.
       if (c.kind === 'capacitor' && r?.chargeCurrent !== undefined) {
-        const before = this.capacitors[c.id], capacitance = prop(c, 'capacitance'), next = before + r.chargeCurrent * h / capacitance;
+        const before = this.capacitors[c.id], capacitance = prop(c, 'capacitance'), next = settle(before + r.chargeCurrent * h / capacitance);
         this.capacitors[c.id] = next;
         this.storedChange += 0.5 * capacitance * (next * next - before * before);
       }
       if (c.kind === 'inductor' && r?.inductanceVoltage !== undefined) {
-        const before = this.inductors[c.id], inductance = prop(c, 'inductance'), next = before + r.inductanceVoltage * h / inductance;
+        const before = this.inductors[c.id], inductance = prop(c, 'inductance'), next = settle(before + r.inductanceVoltage * h / inductance);
         this.inductors[c.id] = next;
         this.storedChange += 0.5 * inductance * (next * next - before * before);
       }
