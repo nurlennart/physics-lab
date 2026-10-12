@@ -36,10 +36,12 @@ describe("single-phase AC impedances", () => {
     expect(s.electrical.readings[src.id].powerFactor!).toBeGreaterThan(0.99999);
     expect(Math.abs(s.electrical.readings[src.id].reactivePower!)).toBeLessThan(1e-3 * q);
   });
-  it("a capacitor blocks steady DC (only 1 GΩ insulation leakage)", () => {
+  it("a charged capacitor blocks steady DC (only 1 GΩ insulation leakage)", () => {
     const b = new Builder(), src = b.add("source", { voltage: 24 }), cap = b.add("capacitor"), r = b.add("resistor", { resistance: 10 });
     b.series(src, cap, r);
     const s = new Simulation(b.p);
+    for (let i = 0; i < 6; i++) expect(s.step()).toBe(true); // τ = 1 ms
+    expect(s.devices.capacitors[cap.id]).toBeCloseTo(24, 6);
     expect(Math.abs(s.electrical.readings[r.id].current)).toBeLessThan(1e-7);
   });
 });

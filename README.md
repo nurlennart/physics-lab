@@ -2,7 +2,7 @@
 
 A browser engineering sandbox. Build circuits, heating systems, pumped water networks, motor drives and physical mechanisms from about 60 component kinds, wire them by their terminals, and run them on one coupled, energy-conserving simulation.
 
-- **Electrical:** DC and AC (phasor) networks, single- and three-phase supplies, batteries, transformers, filament lamps, cables, fuses, breakers, relays and contactors.
+- **Electrical:** DC and AC (phasor) networks, single- and three-phase supplies, batteries, charging capacitors, transformers, filament lamps, cables, fuses, breakers, relays and contactors.
 - **Thermal:** heaters, water tanks, heat sinks, cooling jackets, pipe losses and heat exchangers.
 - **Hydraulic:** finite vented tanks with weir overflow, pipes with water inventory, valves, regulators and centrifugal pumps with cavitation.
 - **Machines:** DC motors with a speed-controlled drive, a dynamic induction motor, star-delta and soft starters, a variable-frequency drive.

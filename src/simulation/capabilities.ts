@@ -27,7 +27,8 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(isElectrical(c)
       ? (["voltage", "current", "power", "energy"] as Measurement[])
       : []),
-    ...(c.kind === "battery" ? ["stateOfCharge", "chemicalEnergy"] as Measurement[] : []),
+    ...(c.kind === "battery" ? ["stateOfCharge", "chemicalEnergy", "polarizationVoltage"] as Measurement[] : []),
+    ...(c.kind === "capacitor" ? ["chargeVoltage", "fieldEnergy"] as Measurement[] : []),
     ...(c.kind === "contactor" ? ["coilVoltage", "coilCurrent"] as Measurement[] : []),
     ...(c.kind === "transformer" ? ["secondaryVoltage", "secondaryCurrent"] as Measurement[] : []),
     ...(c.kind === "radiator" ? ["fanPower", "heatDuty"] as Measurement[] : []),
@@ -95,7 +96,7 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   return plainLabels[m] ?? m;
 }
 const plainLabels: Partial<Record<Measurement, string>> = {
-  stateOfCharge: "state of charge", chemicalEnergy: "stored chemical energy", coilVoltage: "DC coil voltage", coilCurrent: "DC coil current", secondaryVoltage: "secondary RMS voltage", secondaryCurrent: "secondary RMS current", fanPower: "fan electrical power",
+  stateOfCharge: "state of charge", chemicalEnergy: "stored chemical energy", polarizationVoltage: "polarization overpotential", chargeVoltage: "dielectric (charge) voltage", fieldEnergy: "stored field energy ½CV²", coilVoltage: "DC coil voltage", coilCurrent: "DC coil current", secondaryVoltage: "secondary RMS voltage", secondaryCurrent: "secondary RMS current", fanPower: "fan electrical power",
   positionX: "position x", positionY: "position y", displacement: "displacement", linearSpeed: "speed", velocityX: "velocity x", velocityY: "velocity y",
   acceleration: "acceleration", appliedForce: "applied force", appliedTorque: "applied torque", kineticEnergy: "kinetic energy", potentialEnergy: "potential energy",
   mechanicalResidual: "mechanical energy residual", contactImpulse: "contact impulse", jointForce: "joint force",

@@ -54,6 +54,8 @@ Catalog coefficients are illustrative engineering values, not manufacturer data.
 
 Steps below 1/30,000 s or more than 1,024 internal intervals in one outer step are rejected with guidance.
 
+**Readings are step averages.** Currents, voltages and powers describe the interval just solved. A paused solve (after an edit, before Run) previews the next 1/60 s step, so a capacitor that is about to charge shows its step-average current, not an instantaneous inrush.
+
 The shaft midpoint solve uses a finite-difference chord Newton iteration with a residual tolerance of 10⁻⁸ rad/s. Trial steps backtrack when necessary to reduce the actual coupled residual across current-limiting and check-valve transitions; a chord that cannot reduce it is rebuilt locally. This avoids cycling between CV and CC supply states without changing the physical equations or convergence tolerance.
 
 **Adaptive advance.** Sandbox experiments without moving rigid bodies can advance by up to +24 h with `AdaptiveRun` (`engine.ts`). The thermal network is implicit and its energy ledger uses the implicit values, so conservation holds for any step size; the step size affects only accuracy. The step bound is the minimum of:
@@ -63,7 +65,7 @@ The shaft midpoint solve uses a finite-difference chord Newton iteration with a 
 - a twentieth of any running timer delay, the sensor sampling interval, twice a sensor lag, 0.5 s with a PI controller;
 - τ/200 for a breaker, motor protector or fuse above 0.8 of its trip level, and a tenth of a fuse's remaining melting time;
 - tank level, valve travel, motor acceleration and the weir time constant (hydraulic and motor networks);
-- 0.2 % change in a battery's state of charge; 1 s while a contactor coil is within 5 % of rated voltage of its pickup or dropout threshold.
+- 0.2 % change in a battery's state of charge; 1 % of a capacitor's voltage (at least 1 V) per step; 1 s while a contactor coil is within 5 % of rated voltage of its pickup or dropout threshold.
 
 Any discrete change (contacts, failures, Boolean signals, CV/CC regulation) restarts at 1/60 s. Each advance is recorded as `{ at, adaptive: { duration, steps, tolerance, maxStep } }` and replays bit-identically. Rigid-body scenes and scored challenges use fixed steps.
 
@@ -80,7 +82,7 @@ Ideal wires merge nodes (union-find). Each island is solved by modified nodal an
 
 Resistive branches stamp 1/R into G; voltage sources stamp B. All ground components share one zero reference; every other island gets its own local reference, and cross-island differential probes are invalid. Unchanged solutions are cached by contact and fault state.
 
-Dense real and complex solves (`linear-algebra.ts`) equilibrate equations and unknowns with power-of-two scaling, use machine-precision-relative pivot checks, and apply bounded compensated-residual refinement to poorly scaled real systems. The normalized backward error of the original equations is checked; this is not a condition-number certificate. A short across an ideal source, or conflicting ideal sources, gives an explicit solver error and pauses the experiment instead of substituting values.
+Dense real and complex solves (`linear-algebra.ts`) equilibrate equations and unknowns with power-of-two scaling, use machine-precision-relative pivot checks, and apply bounded compensated-residual refinement to poorly scaled real systems. The normalized backward error of the original equations is checked componentwise; auxiliary sensitivity solves (the capacitor port impedances, whose right-hand sides are unit injections) use the normwise bound instead, because their exact zeros come out as rounding noise. This is not a condition-number certificate. A short across an ideal source, or conflicting ideal sources, gives an explicit solver error and pauses the experiment instead of substituting values.
 
 ### Sources
 
@@ -116,7 +118,7 @@ An island whose sources are AC is solved by complex MNA at one frequency:
 - Readings: RMS voltage and current, active power P, reactive power Q (inductive positive), power factor |P|/S. AC ratings compare apparent power √(P² + Q²).
 - **Single-phase sources** each have their own phase angle. Three of them at 0°/−120°/+120° with a common neutral form an explicit, possibly unbalanced, three-phase system; neutral current and line-to-line voltages follow from the solution.
 - **Balanced three-phase supply** (`source3`): solved as the per-phase star equivalent (V_LL/√3), powers × 3, per-pole thermal mass × 3.
-- **In DC networks** an inductor is its winding resistance and a capacitor is open (1 GΩ insulation leakage, used for both readings and heat).
+- **In DC networks** an inductor is its winding resistance; a capacitor stores charge (see [Capacitor](#capacitor)). A capacitor's DC charge is held while it sits in an AC network.
 - **Rejected with explanations:** DC and AC sources in one network; different frequencies in one network; a DC motor on AC or on a three-phase network; a three-phase induction motor without a `source3` supply. AC and DC parts that must coexist (for example a DC contactor coil switching an AC load) are separate islands.
 - **Step readings.** When a step has substeps, currents are RMS over the substeps √(Σ I²·h / Δt), powers are averages, and power factor is average real power over average apparent power.
 
@@ -174,20 +176,47 @@ The default 6 Ω / 30 W lamp settles to exactly 6 Ω and 30 W at rated voltage (
 
 R₂₀ = ρL/A (Cu or Al) with the material's α; heat capacity ρ_m·A·L·c_p; ambient UA calibrated so that the rated current (ampacity) reaches the insulation temperature limit at 30 °C ambient. Above ampacity the cable reports the violation and heats physically. Insulation damage is not modelled.
 
+### Capacitor
+
+Capacitance C in series with its ESR, with insulation leakage R_leak = 1 GΩ across the terminals. On DC the dielectric voltage v is state (`devices.ts`), set by `chargeVoltage` at reset:
+
+```
+C·dv/dt = i                  (i: current into the dielectric through the ESR)
+q = C·v,  U_field = ½·C·v²
+```
+
+**Exact steps.** For the CV/CC state of the step, the network seen by all dielectrics of an island is linear: open-circuit port voltages E and port impedance Z = Z_net + diag(ESR), read from the network with every dielectric branch removed, so C·dv/dt = Z⁻¹·(E − v). With w = C^½·v and the symmetric T = C^½·Z·C^½ (eigenvalues = mode time constants τ_m), every mode relaxes exactly:
+
+```
+w_m(h) = ε_m + (w_m(0) − ε_m)·e^(−h/τ_m)
+w̄_m    = ε_m + (w_m(0) − ε_m)·(1 − e^(−z))/z,   z = h/τ_m
+```
+
+Each dielectric is stamped at its step-average voltage v̄ behind its ESR, and its charge current is exactly C·(v₁ − v₀)/h. All step-average voltages and currents of the linear network are then exact for any step: an RC charge follows the exponential at 1/60 s or in 30 s adaptive steps; a 100 µF capacitor switched straight onto a supply (τ = 6 µs) settles within its first step; charge exchanged between capacitors decays without ringing. The quantities are formed relative to w(0), so modes heading for a huge voltage (a current source into the leakage) keep their digits. E and Z depend only on the CV/CC state; the step is final once that state repeats (at most four passes).
+
+**Energy.** ΔU_field = ½·C·(v₁² − v₀²) = i·h·(v₀ + i·h/(2C)). The rest of the terminal work heats the capacitor: I²·ESR, the leakage V²/R_leak, and I·(v̄ − (v₀ + v₁)/2), the part of a transient's loop loss that the step-average current does not carry through the network resistances. Charging through any resistance therefore loses ½·C·V², as in reality, and the ledger closes to rounding.
+
+**On AC networks** the capacitor is the phasor impedance ESR − j/(ωC) (see [AC phasor networks](#ac-phasor-networks)); its DC charge is held. Capacitance and charge voltage are Reset-only because they define stored energy. Probes: dielectric (charge) voltage and field energy.
+
+Not modelled: the inrush peak inside a step shorter than its transient (fuses and breakers see the step-average current), polarity and reverse-voltage damage of electrolytics, dielectric absorption, voltage- and frequency-dependent capacitance and ESR, and the unresolved part of a transient's loss is booked in the capacitor rather than spread over the loop resistances.
+
 ### Battery
 
-A rechargeable DC Thevenin model with capacity Q = 3600 × capacityAh coulombs and state of charge s ∈ [0, 1]:
+A rechargeable DC Thevenin model with capacity Q = 3600 × capacityAh coulombs, state of charge s ∈ [0, 1] and a one-RC polarization branch R₁ ∥ C₁ in series with the ohmic resistance R₀:
 
 ```
 E(s) = E_empty + (E_full − E_empty)·s
-V_terminal = E(s_mid) + R_internal·I
-s_next = s_old + I·h/Q
-U_chemical(s) = Q·[E_empty·s + ½(E_full − E_empty)·s²]
+V_terminal = E(s) + R₀(T)·I + v₁
+C₁·dv₁/dt = I − v₁/R₁(T),   C₁ = τ₁/R₁(20 °C)
+R(T) = R₂₀·exp(Eₐ/R·(1/T − 1/293.15 K))
+U_chemical(s) = Q·[E_empty·s + ½(E_full − E_empty)·s²],   U_pol = ½·C₁·v₁²
 ```
 
-I is positive into the positive terminal (charging). The midpoint voltage is stamped exactly as E(s_old) behind R_internal + (E_full − E_empty)·h/(2Q), so V·I·h = ΔU_chemical + I²·R_internal·h for any accepted interval; only R_internal produces heat. Empty and full events split the interval: at empty, discharge is blocked but charging remains possible, and vice versa (an ideal directional protection boundary, not a charger). The current rating trips the output; over-temperature disconnects the pack. Chemical energy is inside the system boundary: a battery discharging into a resistor shows zero external supply and equal chemical loss and thermal gain.
+I is positive into the positive terminal (charging). Over an interval h with the battery current held, both states advance exactly: the midpoint OCV is stamped as E(s_old) behind (E_full − E_empty)·h/(2Q), and the polarization branch as φ·v₁(0) behind (1 − φ)·R₁ with y = h/(R₁C₁), φ = (1 − e^(−y))/y, the exact step average of v₁. So V·I·h = ΔU_chemical + ΔU_pol + heat for any accepted interval, with heat = I²·R₀·h plus the branch's I·v̄₁·h − ΔU_pol. Under a sustained load the terminal voltage sags by R₁·I over τ₁ and recovers after the load ends. R₀ and R₁ follow the Arrhenius factor at the pack's simulated temperature (C₁ is fixed, so τ₁ follows R₁); the default Eₐ/R = 2,000 K gives 1.65 × at 0 °C and 2.9 × at −20 °C, and nothing changes at 20 °C.
 
-Not modelled: chemistry-specific plateaus, polarization RC branches, self-discharge, ageing, temperature-dependent OCV, cell balancing.
+Empty and full events split the interval: at empty, discharge is blocked but charging remains possible, and vice versa (an ideal directional protection boundary, not a charger). The current rating trips the output; over-temperature disconnects the pack. Chemical and polarization energy are inside the system boundary: a battery discharging into a resistor shows zero external supply and equal storage loss and thermal gain. Probes: state of charge, chemical energy, polarization overpotential.
+
+Not modelled: chemistry-specific OCV plateaus and knees, temperature-dependent OCV and capacity, self-discharge, charge-acceptance (coulombic) loss and gassing, ageing, cell balancing.
 
 ### Relays and powered contactors
 
@@ -486,7 +515,7 @@ The energy panel and every run check one ledger:
 
 ```
 external electrical supply + signed external mechanical work
-  = Δ(thermal + chemical + magnetic + filament storage)
+  = Δ(thermal + chemical + electrostatic + magnetic + filament storage)
   + Δ(lumped rotor kinetic) + Δ(hydraulic gravitational storage)
   + Δ(spatial kinetic + gravitational + spring storage)
   + ambient / coolant / pipe heat + external shaft load work
@@ -502,7 +531,7 @@ external electrical supply + signed external mechanical work
 
 ## Limitations
 
-- **Electrical:** single-frequency steady phasors outside induction machines; no capacitor or inductor switching transients, no network transients from supply or cable inductance, no semiconductors beyond the starter and drive models above, no arcs, contact wear or ageing.
+- **Electrical:** single-frequency steady phasors outside induction machines; DC capacitors charge and discharge, but there are no inductor transients (L·di/dt), no AC switching transients, no network transients from supply or cable inductance, inrush peaks shorter than a step are not resolved, no semiconductors beyond the starter and drive models above, no arcs, contact wear or ageing.
 - **Water:** liquid 1–95 °C only, incompressible flow with ρ_ref, constant c_p. No boiling, evaporation, freezing, sealed vessels, stratification, water hammer, spatial fluid, spills or leaks.
 - **Machines:** no saturation, core loss or single-phase machines; quasi-steady DC armature; no hydraulic turbine torque; pump curves are teaching approximations.
 - **Mechanics:** static housings only; no deformation, fracture or contact heat conduction; last-substep reaction readings.

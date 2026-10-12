@@ -1,8 +1,8 @@
 {
-  "executedAt": "2026-10-12T07:08:04.655Z",
+  "executedAt": "2026-10-12T09:30:36.167Z",
   "timestepSeconds": 0.016666666666666666,
-  "passed": 87,
-  "total": 87,
+  "passed": 92,
+  "total": 92,
   "results": [
     {
       "name": "12 V / 6 Ω branch current",
@@ -355,6 +355,61 @@
       "tolerance": 0,
       "pass": true,
       "assumptions": "Challenge initial/environment conditions validated before solver state initializes"
+    },
+    {
+      "name": "RC charge: capacitor voltage after 1 s (τ ≈ 1 s)",
+      "domain": "electrical",
+      "expected": 7.5852228129036465,
+      "measured": 7.585222812903642,
+      "absoluteError": 4.440892098500626e-15,
+      "relativeError": 5.854662688281188e-16,
+      "tolerance": 1e-9,
+      "pass": true,
+      "assumptions": "12 V through 1 kΩ into 1 mF (ESR 50 mΩ, 1 GΩ leakage); exact modal step of the linear network at h = 1/60 s"
+    },
+    {
+      "name": "RC charge: loop loss Q·V − ½·C·V² (→ ½·C·V² at full charge)",
+      "domain": "electrical",
+      "expected": 0.07199999984483896,
+      "measured": 0.07200129585022805,
+      "absoluteError": 0.0000012960053890898049,
+      "relativeError": 0.000018000074887259934,
+      "tolerance": 0.000002,
+      "pass": true,
+      "assumptions": "After 10 τ the supply has delivered Q = C·V at 12 V; tolerance covers the 1 GΩ leakage loss over 10 s (1.3 µJ)"
+    },
+    {
+      "name": "Direct switch-on of 100 µF (τ = 6 µs ≪ h): voltage after one step",
+      "domain": "electrical",
+      "expected": 11.99999999988,
+      "measured": 11.999999999880002,
+      "absoluteError": 1.7763568394002505e-15,
+      "relativeError": 1.4802973661816783e-16,
+      "tolerance": 1e-9,
+      "pass": true,
+      "assumptions": "Transient shorter than the step settles exactly within it, without ringing; inrush peak not resolved"
+    },
+    {
+      "name": "Charge sharing between equal capacitors: field energy lost",
+      "domain": "electrical",
+      "expected": -0.025,
+      "measured": -0.02500000499999955,
+      "absoluteError": 4.999999549809564e-9,
+      "relativeError": 1.9999998199238256e-7,
+      "tolerance": 0.000001,
+      "pass": true,
+      "assumptions": "10 V and 0 V, 1 mF each, through 1 Ω: both settle at 5 V, half the field energy is dissipated"
+    },
+    {
+      "name": "Battery polarization voltage after τ₁ at 2 A",
+      "domain": "electrical",
+      "expected": 0.018963616764856576,
+      "measured": 0.01896361676485749,
+      "absoluteError": 9.124645483638005e-16,
+      "relativeError": 4.8116588711852805e-14,
+      "tolerance": 1e-12,
+      "pass": true,
+      "assumptions": "R₁ = 15 mΩ, τ₁ = 30 s; exact exponential of the R₁ ∥ C₁ branch at constant current"
     },
     {
       "name": "Coupled mass balance at dt=0.016666666666666666",

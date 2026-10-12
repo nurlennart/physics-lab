@@ -2,6 +2,7 @@ import { batteryEnergy } from "./devices";
 import {
   definitions,
   isSource,
+  prop,
   type Measurement,
   type Probe,
   type Project,
@@ -9,7 +10,7 @@ import {
 import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
-  stateOfCharge: "%", chemicalEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
+  stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
   inletPressure: "bar", pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
   rpm: "RPM", reactivePower: "var", powerFactor: "1", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
@@ -34,6 +35,9 @@ export function readProbe(p: Probe, s: Simulation): number | null {
   switch (p.measurement) {
     case "stateOfCharge": return (s.devices.batteries[c.id] ?? 0) * 100;
     case "chemicalEnergy": return batteryEnergy(c, s.devices.batteries[c.id] ?? 0);
+    case "polarizationVoltage": return s.devices.polarization[c.id] ?? 0;
+    case "chargeVoltage": return s.devices.capacitors[c.id] ?? null;
+    case "fieldEnergy": { const v = s.devices.capacitors[c.id]; return v === undefined ? null : 0.5 * prop(c, "capacitance") * v * v; }
     case "coilVoltage": return r?.coilVoltage ?? null;
     case "coilCurrent": return r?.coilCurrent ?? null;
     case "secondaryVoltage": return r?.secondaryVoltage ?? null;

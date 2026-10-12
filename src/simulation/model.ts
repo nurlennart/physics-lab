@@ -82,7 +82,7 @@ export type Measurement =
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
-  | "stateOfCharge" | "chemicalEnergy" | "coilVoltage" | "coilCurrent" | "secondaryVoltage" | "secondaryCurrent" | "fanPower"
+  | "stateOfCharge" | "chemicalEnergy" | "polarizationVoltage" | "chargeVoltage" | "fieldEnergy" | "coilVoltage" | "coilCurrent" | "secondaryVoltage" | "secondaryCurrent" | "fanPower"
   | "voltage"
   | "current"
   | "currentNC"
@@ -241,7 +241,7 @@ export const definitions: Record<Kind, Definition> = {
   filter: { label: "First-order filter", category: "Automation", description: "Low-pass y' = (x − y)/τ integrated exactly on the simulation clock", spec: "τ = 5 s", cost: 6, prefix: "FLT", ports: [input("in", "number"), output("number")], defaults: { timeConstant: 5 } },
   rateLimiter: { label: "Rate limiter", category: "Automation", description: "Limits the output slew rate |dy/dt| ≤ rate (ramps setpoints and commands)", spec: "10 units/s", cost: 6, prefix: "RL", ports: [input("in", "number"), output("number")], defaults: { rate: 10 } },
   selector: { label: "Signal selector", category: "Automation", description: "Minimum, maximum or Boolean-switched selection of two numeric signals (override and fallback logic)", spec: "min · max · switch", cost: 6, prefix: "SEL", ports: [input("in", "number"), input("in2", "number"), input("select", "boolean", true), output("number")], defaults: { mode: "max" } },
-  battery: { label: "Battery", category: "Electrical", description: "Rechargeable DC battery: finite charge, linear open-circuit voltage versus SOC, internal loss and charge-boundary protection", spec: "12 V · 20 Ah · 20 mΩ", cost: 65, prefix: "BAT", ports: [...electric, heat], defaults: { capacityAh: 20, initialSOC: 80, emptyVoltage: 11, fullVoltage: 13, internalResistance: 0.02, maxCurrent: 100, maxPower: 1500, enabled: true, heatCapacity: 5000, loss: 2, conductance: 20, maxTemperature: 60 } },
+  battery: { label: "Battery", category: "Electrical", description: "Rechargeable DC battery: finite charge, linear open-circuit voltage versus SOC, ohmic and RC polarization overpotential with Arrhenius temperature dependence, charge-boundary protection", spec: "12 V · 20 Ah · 20 mΩ", cost: 65, prefix: "BAT", ports: [...electric, heat], defaults: { capacityAh: 20, initialSOC: 80, emptyVoltage: 11, fullVoltage: 13, internalResistance: 0.02, polarizationResistance: 0.015, polarizationTimeConstant: 30, resistanceActivation: 2000, maxCurrent: 100, maxPower: 1500, enabled: true, heatCapacity: 5000, loss: 2, conductance: 20, maxTemperature: 60 } },
   contactor: { label: "Powered contactor", category: "Electrical", description: "Normally-open power contact operated by a separately wired 24 V DC coil; coil power, delays and undervoltage dropout", spec: "24 V DC coil · 25 A contact", cost: 35, prefix: "KM", ports: [...electric, { id: "ca", domain: "electrical", label: "Coil A1 (+)" }, { id: "cb", domain: "electrical", label: "Coil A2 (−)" }, heat], defaults: { coilVoltage: 24, coilResistance: 144, pickupRatio: 0.8, dropoutRatio: 0.3, pickupTime: 0.02, dropoutTime: 0.02, resistance: 0.01, ratedVoltage: 690, ratedCurrent: 25, ratedPower: 20, heatCapacity: 150, loss: 1, conductance: 10, maxTemperature: 120 } },
   transformer: { label: "Transformer", category: "Electrical", description: "Isolated AC transformer with primary-referred winding impedance, magnetizing inductance and core-loss resistance; no saturation or switching inrush", spec: "230 / 24 V · 250 VA", cost: 80, prefix: "TR", ports: [...electric, { id: "sa", domain: "electrical", label: "Secondary S1 (dot)" }, { id: "sb", domain: "electrical", label: "Secondary S2" }, heat], defaults: { turnsRatio: 230 / 24, windingResistance: 2, leakageInductance: 0.015, magnetizingInductance: 20, coreResistance: 20000, ratedVoltage: 230, ratedPower: 250, ratedCurrent: 1.1, heatCapacity: 1500, loss: 2, conductance: 20, maxTemperature: 120 } },
   radiator: { label: "Fan-cooled radiator", category: "Hydraulic", description: "Zero-inventory water-to-ambient radiator with hydraulic loss, natural cooling and separately wired DC fan; fan heat goes to ambient", spec: "24 V / 30 W fan · 100 W/K", cost: 100, prefix: "RAD", ports: [...electric, ...fluid], defaults: { ratedVoltage: 24, fanRatedPower: 30, naturalUA: 5, forcedUA: 95, ambient: 20, diameter: 0.02, lossCoefficient: 8, laminarK: 1500, maxPressure: 1000000, elevation: 0 } },
@@ -328,12 +328,12 @@ export const definitions: Record<Kind, Definition> = {
   capacitor: {
     label: "Capacitor",
     category: "Electrical",
-    description: "Capacitance with series ESR: Z = ESR − j/(ωC) in AC networks; open circuit in steady DC (no charging transient is modelled)",
+    description: "Capacitance with series ESR: stores charge and ½·C·V² in DC networks (charging, discharging, 1 GΩ self-discharge leakage); Z = ESR − j/(ωC) in AC networks",
     spec: "100 µF · 450 V",
     cost: 12,
     prefix: "C",
     ports: electric,
-    defaults: { capacitance: 0.0001, resistance: 0.05, ratedVoltage: 450, ratedCurrent: 20, heatCapacity: 50, loss: 0.5, maxTemperature: 85, tempCoefficient: 0, tolerance: 0 },
+    defaults: { capacitance: 0.0001, chargeVoltage: 0, resistance: 0.05, ratedVoltage: 450, ratedCurrent: 20, heatCapacity: 50, loss: 0.5, maxTemperature: 85, tempCoefficient: 0, tolerance: 0 },
   },
   inductionMotor: {
     label: "Three-phase induction motor",

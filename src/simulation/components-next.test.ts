@@ -2,14 +2,14 @@ import { describe, it, expect } from 'vitest';
 import { Builder } from './scaling-validation';
 import { Simulation, DT } from './engine';
 import { solveElectrical, solveLinear, solveComplex, nodeVoltage } from './electrical';
-import { batteryEnergy } from './devices';
+import { batteryEnergy, batteryResistanceFactor } from './devices';
 import { parseProject } from './projects';
 import { readProbe } from './measurements';
 
 const run = (s: Simulation, seconds: number) => { for (let i = 0; i < Math.round(seconds / DT); i++) expect(s.step(), s.error ?? '').toBe(true); };
 describe('finite battery', () => {
   it('discharges with midpoint OCV, stores I²R as heat and closes the whole-system ledger', () => {
-    const b = new Builder(), battery = b.add('battery', { capacityAh: 0.1, initialSOC: 50, heatCapacity: 1000, loss: 0 }), load = b.add('resistor', { resistance: 6, loss: 0 });
+    const b = new Builder(), battery = b.add('battery', { capacityAh: 0.1, initialSOC: 50, polarizationResistance: 0, resistanceActivation: 0, heatCapacity: 1000, loss: 0 }), load = b.add('resistor', { resistance: 6, loss: 0 });
     b.series(battery, load);
     const s = new Simulation(b.p), initial = batteryEnergy(battery, 0.5);
     expect(s.error).toBeNull(); run(s, 1);
@@ -38,7 +38,7 @@ describe('finite battery', () => {
     expect(s.devices.batteries[battery.id]).toBe(0); expect(s.electrical.readings[load.id].power).toBeCloseTo(0, 12);
   });
   it('advances a long discharge adaptively: analytic SOC, exact empty boundary, closed ledger', () => {
-    const b = new Builder(), battery = b.add('battery', { capacityAh: 1, initialSOC: 80, heatCapacity: 1e6, loss: 0 }), load = b.add('resistor', { resistance: 6, ratedPower: 1e3, heatCapacity: 1e6, loss: 0 });
+    const b = new Builder(), battery = b.add('battery', { capacityAh: 1, initialSOC: 80, polarizationResistance: 0, resistanceActivation: 0, heatCapacity: 1e6, loss: 0 }), load = b.add('resistor', { resistance: 6, ratedPower: 1e3, heatCapacity: 1e6, loss: 0 });
     b.series(battery, load);
     const s = new Simulation(b.p);
     expect(s.adaptiveUnavailable()).toBeNull();
@@ -58,6 +58,55 @@ describe('finite battery', () => {
     expect(s.refresh(s.project)).toBe(true); expect(s.devices.batteries[battery.id]).toBe(soc);
     expect(readProbe({ id: 'soc', name: 'SOC', component: battery.id, measurement: 'stateOfCharge', color: '#fff', visible: true }, s)).toBeCloseTo(soc * 100, 12);
     s.reset(); expect(s.devices.batteries[battery.id]).toBe(0.8);
+  });
+});
+describe('battery polarization and temperature', () => {
+  it('follows the one-RC model under constant current and relaxes after the current stops', () => {
+    // Constant-current charge (2 A) then open circuit: v₁(t) = I·R₁·(1 − e^(−t/τ₁)), V = E(s) + R₀·I + v₁.
+    const b = new Builder(), charger = b.add('source', { mode: 'cc', current: 2, voltage: 30 });
+    const battery = b.add('battery', { capacityAh: 100, initialSOC: 50, polarizationResistance: 0.015, polarizationTimeConstant: 30, resistanceActivation: 0, heatCapacity: 1e5, loss: 0 });
+    b.series(charger, battery);
+    const s = new Simulation(b.p), E = (soc: number) => 11 + 2 * soc;
+    run(s, 30);
+    const v1 = 2 * 0.015 * -Math.expm1(-s.time / 30);
+    expect(s.devices.polarization[battery.id]).toBeCloseTo(v1, 12);
+    // Step-average terminal voltage: midpoint OCV, R₀·I and the step mean of v₁.
+    const mean = 2 * 0.015 * (1 - 30 / DT * (Math.exp(-(s.time - DT) / 30) - Math.exp(-s.time / 30)));
+    const midSOC = s.devices.batteries[battery.id] - 2 * DT / (2 * 3600 * 100);
+    expect(s.electrical.readings[battery.id].voltage).toBeCloseTo(E(midSOC) + 0.02 * 2 + mean, 9);
+    const charged = s.devices.polarization[battery.id], stop = s.time;
+    expect(s.refresh({ ...s.project, components: s.project.components.map(c => c.id === charger.id ? { ...c, props: { ...c.props, enabled: false } } : c) })).toBe(true);
+    run(s, 60);
+    expect(s.devices.polarization[battery.id]).toBeCloseTo(charged * Math.exp(-(s.time - stop) / 30), 12);
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-9 * s.suppliedEnergy);
+  });
+  it('sags further under a sustained load and recovers when the load is removed', () => {
+    const b = new Builder(), battery = b.add('battery', { heatCapacity: 1e5 }), sw = b.add('switch'), load = b.add('resistor', { resistance: 1, ratedPower: 1e4, heatCapacity: 1e5, tempCoefficient: 0 });
+    b.series(battery, sw, load);
+    const s = new Simulation(b.p), open = (closed: boolean) => s.refresh({ ...s.project, components: s.project.components.map(c => c.id === sw.id ? { ...c, props: { ...c.props, closed } } : c) });
+    run(s, DT);
+    const first = s.electrical.readings[battery.id].voltage;
+    run(s, 60);
+    const sustained = s.electrical.readings[battery.id].voltage;
+    expect(first - sustained).toBeGreaterThan(0.1); // R₁·I ≈ 0.015 Ω × 12 A
+    expect(open(false)).toBe(true);
+    run(s, DT);
+    const released = s.electrical.readings[battery.id].voltage;
+    run(s, 120);
+    expect(s.electrical.readings[battery.id].voltage - released).toBeGreaterThan(0.1); // recovery
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-9 * s.storedEnergy + 1e-6);
+  });
+  it('raises its resistance in the cold (Arrhenius, unchanged at 20 °C)', () => {
+    const factor = (t: number) => Math.exp(2000 * (1 / (t + 273.15) - 1 / 293.15));
+    const b = new Builder(), battery = b.add('battery', { polarizationResistance: 0 }), load = b.add('resistor', { resistance: 1, tempCoefficient: 0 });
+    b.series(battery, load);
+    expect(batteryResistanceFactor(battery, 20)).toBe(1);
+    expect(batteryResistanceFactor(battery, 0)).toBeCloseTo(1.648, 3);
+    for (const ambient of [20, -20]) {
+      const s = new Simulation({ ...b.p, environment: { ambient } });
+      const E = 11 + 2 * 0.8, r0 = 0.02 * factor(ambient), R = r0 + 2 * DT / (2 * 3600 * 20);
+      expect(s.electrical.readings[load.id].current).toBeCloseTo(E / (1 + R), 9);
+    }
   });
 });
 describe('powered DC contactor', () => {

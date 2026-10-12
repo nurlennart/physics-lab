@@ -10,6 +10,7 @@ test.beforeEach(async ({ page }) => {
 });
 for (const [kind, title, label] of [
   ['battery', 'Finite battery discharge', 'state of charge'],
+  ['capacitor', 'Charging a capacitor', 'stored field energy'],
   ['contactor', 'Powering a contactor', 'DC coil current'],
   ['transformer', 'Isolated AC conversion', 'secondary RMS voltage'],
   ['radiator', 'Cooling water with a fan', 'fan electrical power'],
@@ -25,6 +26,7 @@ for (const [kind, title, label] of [
   expect(state.error).toBeNull(); expect(state.time).toBeCloseTo(1, 8);
   const readings = Object.values(state.readings) as any[];
   if (kind === 'battery') expect(state.devices.batteries[Object.keys(state.devices.batteries)[0]]).toBeLessThan(0.8);
+  if (kind === 'capacitor') expect(Object.values(state.devices.capacitors)[0]).toBeCloseTo(12 * 10 / 11 * -Math.expm1(-1 / 0.9091), 3);
   if (kind === 'contactor') expect(readings.some(r => r.coilCurrent > 0)).toBe(true);
   if (kind === 'transformer') expect(readings.some(r => r.secondaryVoltage > 23 && r.secondaryVoltage < 24)).toBe(true);
   if (kind === 'radiator') expect(readings.some(r => Math.abs(r.fanPower - 30) < 1e-8)).toBe(true);

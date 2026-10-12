@@ -560,9 +560,10 @@ export class Multiphysics {
         const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
         if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
       }
-      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}) }])) };
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0, fieldPower: 0 } : {}) }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
+      totalElectrical.storedPower! += (r.electrical.storedPower ?? 0) * h / dt;
       for (const [id, v] of Object.entries(r.electrical.readings)) {
         const total = totalElectrical.readings[id];
         // A drive's braking resistor is external: its heat goes to ambient, not into the drive's heat sink.
@@ -572,6 +573,7 @@ export class Multiphysics {
         if (v.chemicalPower !== undefined) total.chemicalPower = (total.chemicalPower ?? 0) + v.chemicalPower * h / dt;
         if (v.heatPower !== undefined) total.heatPower = (total.heatPower ?? 0) + v.heatPower * h / dt;
         if (v.fanPower !== undefined) total.fanPower = (total.fanPower ?? 0) + v.fanPower * h / dt;
+        if (v.chargeCurrent !== undefined) { total.chargeCurrent = (total.chargeCurrent ?? 0) + v.chargeCurrent * h / dt; total.fieldPower = (total.fieldPower ?? 0) + (v.fieldPower ?? 0) * h / dt; }
         ambient += braking * h;
         const sum = (sums[id] ??= { current: 0, contact: 0, nc: 0, reactive: 0, apparent: 0, sign: 1, drive: { input: 0, output: 0, losses: 0, braking: 0, current: 0 } });
         sum.current += v.current ** 2 * h; sum.contact += (v.contactCurrent ?? v.current) ** 2 * h; sum.nc += (v.currentNC ?? 0) ** 2 * h;
@@ -595,7 +597,7 @@ export class Multiphysics {
       this.acceptedKey = this.discreteKey(s, controls);
       // Drive and starter states advance last: the angle window above used the substep's start angle.
       this.advanceConverters(s, h, r.electrical, commands);
-      s.devices.advance(s.project, r.electrical, h);
+      s.devices.advance(s.project, r.electrical, h, s.temperatures);
       this.lastElectrical = r.electrical;
       remaining -= h;
     }

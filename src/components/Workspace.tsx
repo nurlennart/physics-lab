@@ -54,6 +54,10 @@ function CircuitSymbol({ c }: { c: Component }) {
     <path d="M0 66H65M109 66H174M65 45V87M77 53V79M97 45V87M109 53V79" stroke={T.electricalText} strokeWidth="3" />
     <text x="87" y="110" textAnchor="middle" className="scale-label">{((simulation.devices.batteries[c.id] ?? prop(c, 'initialSOC') / 100) * 100).toFixed(1)} % charge</text>
   </g>;
+  if (c.kind === "capacitor") return <g>
+    <path d="M0 66H81M93 66H174M81 44V88M93 44V88" stroke={T.electricalText} strokeWidth="3" />
+    <text x="87" y="110" textAnchor="middle" className="scale-label">{r?.ac && r.frequency ? `X = ${(1 / (2 * Math.PI * r.frequency * prop(c, 'capacitance'))).toPrecision(3)} Ω` : `${(simulation.devices.capacitors[c.id] ?? prop(c, 'chargeVoltage')).toFixed(2)} V stored`}</text>
+  </g>;
   if (c.kind === "contactor") {
     const closed = !failed && (simulation.faults[c.id] === 'stuckClosed' || simulation.faults[c.id] !== 'stuckOpen' && simulation.devices.contactors[c.id]?.closed);
     return <g>

@@ -32,7 +32,7 @@ Limits kept on purpose, each a model limit:
 | Policy | Meaning |
 | --- | --- |
 | **live** | Conservation-safe at any time, e.g. resistance, source setpoint, valve opening, controller gains, ambient |
-| **reset** | Defines stored energy (C·T, ½Jω², mass, potential), geometry or initial state; rejected after t = 0 with an explanation |
+| **reset** | Defines stored energy (C·T, ½Jω², ½CV², mass, potential), geometry or initial state, e.g. capacitance, battery capacity and polarization branch; rejected after t = 0 with an explanation |
 | **calc** | Derived, read-only |
 | **fixed** | Constant of the implemented model |
 | *info* | Metadata not used by any equation (e.g. pipe conductivity) |

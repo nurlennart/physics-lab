@@ -1,4 +1,4 @@
-/** Dense real/complex solves shared by the electrical, thermal, hydraulic and shaft equations. */
+/** Dense real/complex solves and a small symmetric eigen-decomposition shared by the physical solvers. */
 type Cx = [number, number];
 const cadd = (a: Cx, b: Cx): Cx => [a[0] + b[0], a[1] + b[1]];
 const csub = (a: Cx, b: Cx): Cx => [a[0] - b[0], a[1] - b[1]];
@@ -56,7 +56,13 @@ function preciseDot(a: number[], b: number[]) {
   }
   return sum + error;
 }
-export function solveLinear(a: number[][], b: number[], refine = true): number[] {
+/**
+ * Gaussian elimination with equilibration, partial pivoting and bounded refinement. The scaled residual of every
+ * equation is checked componentwise (relative to that equation's own terms). `normwise` instead bounds it by the
+ * equation's coefficients times ‖x‖∞: for sensitivity solves of homogeneous systems, where an exact zero is
+ * computed as rounding noise.
+ */
+export function solveLinear(a: number[][], b: number[], refine = true, normwise = false): number[] {
   const n = b.length,
     m = a.map((r, i) => [...r, b[i]]);
   for (let i = 0; i < n; i++) {
@@ -94,15 +100,39 @@ export function solveLinear(a: number[][], b: number[], refine = true): number[]
     for (let iteration = 0; iteration < 2; iteration++) {
       const residual = b.map((v, i) => v - preciseDot(a[i], x));
       if (residual.every(v => v === 0)) break;
-      const correction = solveLinear(a, residual, false);
+      const correction = solveLinear(a, residual, false, normwise);
       for (let i = 0; i < n; i++) x[i] += correction[i];
     }
   }
   if (x.some((v) => !Number.isFinite(v)))
     throw Error("Circuit solver produced a non-finite result.");
+  const magnitude = normwise ? Math.max(0, ...x.map(Math.abs)) : 0;
   for (let i = 0; i < n; i++) {
-    const lhs = a[i].reduce((sum, v, j) => sum + v * x[j], 0), scale = Math.abs(b[i]) + a[i].reduce((sum, v, j) => sum + Math.abs(v * x[j]), 0);
+    const lhs = a[i].reduce((sum, v, j) => sum + v * x[j], 0), scale = Math.abs(b[i]) + a[i].reduce((sum, v, j) => sum + Math.abs(v) * (normwise ? magnitude : Math.abs(x[j])), 0);
     if (Math.abs(lhs - b[i]) > 256 * Number.EPSILON * Math.max(1, n) * scale) throw Error("Circuit numerical error: scaled equation residual is too large.");
   }
   return x;
+}
+/**
+ * Eigen-decomposition a = V·diag(values)·Vᵀ of a small symmetric matrix by cyclic Jacobi rotations (accurate to
+ * rounding relative to the matrix norm; columns of `vectors` are orthonormal eigenvectors).
+ */
+export function symmetricEigen(a: number[][]): { values: number[]; vectors: number[][] } {
+  const n = a.length, m = a.map((row) => [...row]), v = a.map((_, i) => a.map((_, j) => (i === j ? 1 : 0)));
+  const norm = Math.hypot(...m.flat());
+  for (let sweep = 0; sweep < 50; sweep++) {
+    let off = 0;
+    for (let p = 0; p < n; p++) for (let q = p + 1; q < n; q++) off += m[p][q] ** 2;
+    if (Math.sqrt(off) <= Number.EPSILON * norm) break;
+    for (let p = 0; p < n; p++)
+      for (let q = p + 1; q < n; q++) {
+        if (m[p][q] === 0) continue;
+        // Rotation J with tan φ = t annihilates m[p][q]: m ← Jᵀ·m·J, v ← v·J.
+        const theta = (m[q][q] - m[p][p]) / (2 * m[p][q]), t = (theta >= 0 ? 1 : -1) / (Math.abs(theta) + Math.hypot(theta, 1));
+        const c = 1 / Math.hypot(t, 1), s = t * c;
+        for (const x of [m, v]) for (let k = 0; k < n; k++) { const kp = x[k][p], kq = x[k][q]; x[k][p] = c * kp - s * kq; x[k][q] = s * kp + c * kq; }
+        for (let k = 0; k < n; k++) { const pk = m[p][k], qk = m[q][k]; m[p][k] = c * pk - s * qk; m[q][k] = s * pk + c * qk; }
+      }
+  }
+  return { values: m.map((row, i) => row[i]), vectors: v };
 }

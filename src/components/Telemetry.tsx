@@ -316,7 +316,7 @@ export default function Telemetry() {
                   Electrical supply + signed external mechanical work = thermal, chemical, rotational, gravitational and spring storage changes + external heat, contact/brake losses and exported shaft/drain energy. Electrical
                   dissipation is an internal conversion, not an additional
                   output. Signed ambient heat includes the ideal coolant
-                  reservoir. Battery chemical energy is internal storage, so battery delivery is excluded from external electrical supply. Interval endpoints use recorded samples.
+                  reservoir. Battery chemical and capacitor field energy are internal storage, so their delivery is excluded from external electrical supply. Interval endpoints use recorded samples.
                 </p>
               </div>
             </div>

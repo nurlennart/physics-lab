@@ -112,9 +112,16 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       const initial = v.initialSOC / 100, delta = v.fullVoltage - v.emptyVoltage;
       const r = (v.emptyVoltage + delta * initial) / Math.min(1, v.maxCurrent / 10), resistor = load(b, r);
       b.series(c, resistor); s = simulation(b); run(s);
-      const q = v.capacityAh * 3600;
-      const expected = delta ? (initial + v.emptyVoltage / delta) * Math.exp(-delta * s.time / (q * (r + v.internalResistance))) - v.emptyVoltage / delta : initial - v.emptyVoltage * s.time / (q * (r + v.internalResistance));
-      near(report, 'analytic discharge SOC', expected, s.devices.batteries[c.id], 0, 1e-10);
+      // Independent reference: RK4 over the two states, charge and the R₁ ∥ C₁ polarization voltage (20 °C).
+      const q = v.capacityAh * 3600, r1 = v.polarizationResistance, c1 = r1 > 0 ? v.polarizationTimeConstant / r1 : 0;
+      const rate = ([soc, vp]) => { const current = -(v.emptyVoltage + delta * soc + vp) / (r + v.internalResistance); return [current / q, r1 > 0 ? (current - vp / r1) / c1 : 0]; };
+      let state = [initial, 0];
+      for (let i = 0, n = Math.round(s.time / 1e-3), dt = s.time / n; i < n; i++) {
+        const k1 = rate(state), k2 = rate(state.map((x, j) => x + dt / 2 * k1[j])), k3 = rate(state.map((x, j) => x + dt / 2 * k2[j])), k4 = rate(state.map((x, j) => x + dt * k3[j]));
+        state = state.map((x, j) => x + dt / 6 * (k1[j] + 2 * k2[j] + 2 * k3[j] + k4[j]));
+      }
+      near(report, 'discharge SOC (RK4 reference)', state[0], s.devices.batteries[c.id], 0, 1e-10);
+      near(report, 'polarization voltage (V)', state[1], s.devices.polarization[c.id], 1e-9);
       near(report, 'external supply energy (J)', 0, s.suppliedEnergy);
       break;
     }

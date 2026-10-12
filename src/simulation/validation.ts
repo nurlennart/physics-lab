@@ -2,6 +2,8 @@ import { starter } from "./projects";
 import { makeComponent, connect, catalog } from "./model";
 import { evaluateChallenge } from "./challenges";
 import { Simulation, DT } from "./engine";
+import { Builder } from "./scaling-validation";
+import { CAPACITOR_LEAKAGE } from "./electrical";
 export interface ValidationRow {
   name: string;
   domain: string;
@@ -353,5 +355,36 @@ export function runValidation() {
     0,
     "Challenge initial/environment conditions validated before solver state initializes",
   );
+  // Capacitor storage: exact exponential steps against closed-form RC solutions.
+  const rc = new Builder(), rcSource = rc.add("source", { voltage: 12 }), rcResistor = rc.add("resistor", { resistance: 1000, tempCoefficient: 0, tolerance: 0 });
+  const rcCap = rc.add("capacitor", { capacitance: 1e-3 });
+  rc.series(rcSource, rcResistor, rcCap);
+  const charging = new Simulation(rc.p), leakDivider = CAPACITOR_LEAKAGE / (1000 + CAPACITOR_LEAKAGE), rcTau = 1e-3 * (0.05 + 1000 * leakDivider);
+  advance(charging, 1);
+  add("RC charge: capacitor voltage after 1 s (τ ≈ 1 s)", "electrical", 12 * leakDivider * -Math.expm1(-charging.time / rcTau), charging.devices.capacitors[rcCap.id], 1e-9,
+    "12 V through 1 kΩ into 1 mF (ESR 50 mΩ, 1 GΩ leakage); exact modal step of the linear network at h = 1/60 s");
+  advance(charging, 9);
+  const chargedTo = charging.devices.capacitors[rcCap.id], storedField = 0.5e-3 * chargedTo ** 2;
+  add("RC charge: loop loss Q·V − ½·C·V² (→ ½·C·V² at full charge)", "electrical", 1e-3 * chargedTo * 12 - storedField, charging.suppliedEnergy - storedField, 2e-6,
+    "After 10 τ the supply has delivered Q = C·V at 12 V; tolerance covers the 1 GΩ leakage loss over 10 s (1.3 µJ)");
+  const stiff = new Builder(), stiffSource = stiff.add("source", { voltage: 12 }), stiffSwitch = stiff.add("switch"), stiffCap = stiff.add("capacitor");
+  stiff.series(stiffSource, stiffSwitch, stiffCap);
+  const direct = new Simulation(stiff.p);
+  advance(direct, DT);
+  add("Direct switch-on of 100 µF (τ = 6 µs ≪ h): voltage after one step", "electrical", 12 * CAPACITOR_LEAKAGE / (CAPACITOR_LEAKAGE + 0.01), direct.devices.capacitors[stiffCap.id], 1e-9,
+    "Transient shorter than the step settles exactly within it, without ringing; inrush peak not resolved");
+  const pair = new Builder(), full = pair.add("capacitor", { capacitance: 1e-3, chargeVoltage: 10 }), link = pair.add("resistor", { resistance: 1, tempCoefficient: 0, tolerance: 0 }), empty = pair.add("capacitor", { capacitance: 1e-3 });
+  pair.series(full, link, empty);
+  const sharing = new Simulation(pair.p);
+  advance(sharing, 0.1);
+  add("Charge sharing between equal capacitors: field energy lost", "electrical", -0.025, sharing.devices.storedChange, 1e-6,
+    "10 V and 0 V, 1 mF each, through 1 Ω: both settle at 5 V, half the field energy is dissipated");
+  // Battery polarization: one-RC Thevenin branch under a constant 2 A charge.
+  const cell = new Builder(), charger = cell.add("source", { mode: "cc", current: 2, voltage: 30 }), pack = cell.add("battery", { capacityAh: 100, initialSOC: 50, resistanceActivation: 0 });
+  cell.series(charger, pack);
+  const polarizing = new Simulation(cell.p);
+  advance(polarizing, 30);
+  add("Battery polarization voltage after τ₁ at 2 A", "electrical", 2 * 0.015 * -Math.expm1(-polarizing.time / 30), polarizing.devices.polarization[pack.id], 1e-12,
+    "R₁ = 15 mΩ, τ₁ = 30 s; exact exponential of the R₁ ∥ C₁ branch at constant current");
   return rows;
 }

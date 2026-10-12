@@ -411,6 +411,12 @@ export class Simulation {
         const current = Math.abs(this.electrical.readings[c.id]?.current ?? 0);
         if (current > 1e-12) limit = Math.min(limit, 0.002 * 3600 * prop(c, "capacityAh") / current);
       }
+      // Capacitor: at most 1 % of its voltage scale (≥ 1 V) per step, so supply regulation changes, sensors and
+      // thresholds that follow its voltage are resolved; each step is itself exact for the linear network.
+      if (c.kind === "capacitor") {
+        const current = Math.abs(this.electrical.readings[c.id]?.chargeCurrent ?? 0);
+        if (current > 1e-15) limit = Math.min(limit, 0.01 * Math.max(1, Math.abs(this.devices.capacitors[c.id] ?? 0)) * prop(c, "capacitance") / current);
+      }
       // Contactor coil near a pickup or dropout threshold: resolve the crossing (timers then end substeps exactly).
       if (c.kind === "contactor") {
         const state = this.devices.contactors[c.id], voltage = Math.abs(this.electrical.readings[c.id]?.coilVoltage ?? 0), rated = prop(c, "coilVoltage");
@@ -468,7 +474,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -623,8 +629,8 @@ export class Simulation {
       if (demand) this.multiphysics.positions[demand.id] = Math.floor(this.time / 60) % 2 ? 80 : 40;
     }
     if (!this.solve(true, dt)) return false;
-    const chemicalBefore = this.devices.chemicalChange;
-    const devicesBefore = this.devices.active ? structuredClone({ batteries: this.devices.batteries, contactors: this.devices.contactors, chemicalChange: chemicalBefore }) : undefined;
+    const deviceStorageBefore = this.devices.storedChange;
+    const devicesBefore = this.devices.active ? this.devices.checkpoint() : undefined;
     recordFeedbackTransitions(this, oldContacts, oldHeaterPower);
 
     let coupled: ReturnType<Multiphysics["advance"]> | undefined;
@@ -732,7 +738,7 @@ export class Simulation {
       this.error = `Thermal solver: ${(e as Error).message}`;
       return false;
     }
-    this.storedEnergy += this.devices.chemicalChange - chemicalBefore;
+    this.storedEnergy += this.devices.storedChange - deviceStorageBefore;
     for (const [id, f] of Object.entries(filaments)) {
       const c = p.components.find(c => c.id === id)!;
       this.storedEnergy += filamentEnergy(c, f.u) - filamentEnergy(c, this.filaments[id] ?? FILAMENT_COLD);

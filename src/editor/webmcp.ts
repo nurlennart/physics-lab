@@ -40,7 +40,7 @@ export function registerLabTools() {
         temperatures: simulation.temperatures,
         hydraulics: simulation.multiphysics.hydraulic,
         tanks: simulation.multiphysics.tanks,
-        devices: { batteries: simulation.devices.batteries, contactors: simulation.devices.contactors },
+        devices: { batteries: simulation.devices.batteries, polarization: simulation.devices.polarization, capacitors: simulation.devices.capacitors, contactors: simulation.devices.contactors },
         /** Spill over tank rims: rate over the last step (m³/s) and cumulative volume (m³). */
         overflow: { rateM3s: simulation.multiphysics.overflowRate, volumeM3: simulation.multiphysics.overflowed },
         motors: simulation.multiphysics.motors,

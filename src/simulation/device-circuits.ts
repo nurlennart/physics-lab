@@ -1,6 +1,7 @@
 /** New multi-circuit devices expand into ordinary MNA branches; state stays in the engine. */
 import { definitions, prop, type Component, type Project } from './model';
 import { solveElectricalCore, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
+import { batteryResistanceFactor, polarizationBranch } from './devices';
 
 type Expansion = { project: Project; coils: Map<string, string> };
 const cache = new WeakMap<Project, Expansion>();
@@ -36,7 +37,12 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
   for (const c of project.components) {
     if (c.kind === 'battery') {
       const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, h = runtime.devices?.h ?? 0, charge = 3600 * prop(c, 'capacityAh'), dv = prop(c, 'fullVoltage') - prop(c, 'emptyVoltage');
-      models[c.id] = { voltage: prop(c, 'emptyVoltage') + dv * soc, resistance: prop(c, 'internalResistance') + dv * h / (2 * charge), lower: soc <= 1e-14 ? 0 : -Infinity, upper: soc >= 1 - 1e-14 ? 0 : Infinity };
+      const temperature = runtime.temperatures?.[c.id] ?? 20, branch = polarizationBranch(c, temperature, h), vp = runtime.devices?.polarization?.[c.id] ?? 0;
+      models[c.id] = {
+        voltage: prop(c, 'emptyVoltage') + dv * soc + (branch ? branch.emfWeight * vp : 0),
+        resistance: prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + dv * h / (2 * charge) + (branch?.seriesResistance ?? 0),
+        lower: soc <= 1e-14 ? 0 : -Infinity, upper: soc >= 1 - 1e-14 ? 0 : Infinity,
+      };
     }
     if (c.kind === 'contactor') {
       failures[expanded.coils.get(c.id)!] = !!failed[c.id] || runtime.faults?.[c.id] === "failedOpen";
@@ -50,7 +56,10 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
     const r = result.readings[c.id];
     if (!r) continue;
     if (c.kind === 'battery') {
-      const heat = r.current ** 2 * prop(c, 'internalResistance');
+      // Ohmic R₀ heat plus the polarization branch's R₁ heat; the rest changes chemical and polarization energy.
+      const temperature = runtime.temperatures?.[c.id] ?? 20, h = runtime.devices?.h ?? 0, branch = polarizationBranch(c, temperature, h);
+      const polarizationHeat = branch && h > 0 ? branch.step(runtime.devices?.polarization?.[c.id] ?? 0, r.current).heat / h : 0;
+      const heat = r.current ** 2 * prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + polarizationHeat;
       r.heatPower = heat;
       r.chemicalPower = r.power - heat;
       chemical += r.chemicalPower;
@@ -80,6 +89,7 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
       r.fanPower = r.power;
     }
   }
-  result.powerResidual = result.sourcePower - result.dissipatedPower - chemical;
+  result.storedPower = (result.storedPower ?? 0) + chemical;
+  result.powerResidual = result.sourcePower - result.dissipatedPower - result.storedPower;
   return result;
 }

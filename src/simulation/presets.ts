@@ -36,7 +36,7 @@ const pipe = (dn: number, length: number, family: Family) =>
 
 export const builtinPresets: ComponentPreset[] = [
   preset("battery", "Laboratory", "12 V rechargeable · 20 Ah", {}),
-  preset("battery", "Industrial", "48 V rechargeable · 100 Ah", { capacityAh: 100, emptyVoltage: 44, fullVoltage: 52, internalResistance: 0.03, maxCurrent: 200, maxPower: 10000, heatCapacity: 30000, loss: 8 }),
+  preset("battery", "Industrial", "48 V rechargeable · 100 Ah", { capacityAh: 100, emptyVoltage: 44, fullVoltage: 52, internalResistance: 0.03, polarizationResistance: 0.02, polarizationTimeConstant: 40, maxCurrent: 200, maxPower: 10000, heatCapacity: 30000, loss: 8 }),
   preset("contactor", "General-purpose", "24 V DC coil · 25 A contact", {}),
   preset("transformer", "Laboratory", "230 / 24 V · 250 VA", {}),
   preset("radiator", "Laboratory", "24 V fan · 100 W/K radiator", {}),

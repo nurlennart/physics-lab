@@ -72,18 +72,23 @@ it('a stiff DC shaft passes from supply current limiting into voltage regulation
 });
 
 describe('independent electrical audit regressions', () => {
-  it('DC capacitor leakage obeys KCL, dissipates V²/R and heats only from leakage', () => {
+  it('DC capacitor leakage obeys KCL, dissipates V²/R and, once charged, heats only from leakage', () => {
     const b = new Builder(), source = b.add('source', { voltage: 24 });
     const cap = b.add('capacitor'), load = b.add('resistor', { resistance: 10 });
     b.series(source, cap, load);
-    const s = new Simulation(b.p), expected = 24 / (1e9 + 10);
-    expect(s.error).toBeNull();
-    expect(s.electrical.readings[cap.id].current).toBeCloseTo(expected, 15);
-    expect(s.electrical.readings[cap.id].power).toBeCloseTo(expected ** 2 * 1e9, 12);
-    expect(s.electrical.readings[source.id].current).toBeCloseTo(-expected, 15);
-    expect(s.electrical.powerResidual).toBeCloseTo(0, 12);
-    expect(s.step()).toBe(true);
-    expect(s.energyResidual).toBeCloseTo(0, 9);
+    // Steady DC without stored state: open apart from the insulation leakage.
+    const steady = solveElectrical(b.p), expected = 24 / (1e9 + 10);
+    expect(steady.readings[cap.id].current).toBeCloseTo(expected, 15);
+    expect(steady.readings[cap.id].power).toBeCloseTo(expected ** 2 * 1e9, 12);
+    expect(steady.readings[source.id].current).toBeCloseTo(-expected, 15);
+    expect(steady.powerResidual).toBeCloseTo(0, 12);
+    const s = new Simulation(b.p);
+    for (let i = 0; i < 6; i++) expect(s.step()).toBe(true); // τ = 1 ms: charged
+    const v = s.electrical.readings[cap.id].voltage, leak = v / 1e9;
+    expect(s.electrical.readings[cap.id].chargeCurrent).toBeCloseTo(0, 12);
+    expect(s.electrical.readings[cap.id].current).toBeCloseTo(leak, 15);
+    expect(s.electrical.readings[cap.id].heatPower).toBeCloseTo(v * leak, 12);
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-9 * s.suppliedEnergy);
     expect(s.failed[cap.id]).toBeFalsy();
   });
 

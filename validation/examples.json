@@ -7,20 +7,20 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": -2.5272584025515243e-10,
+    "energyResidual": 1.4586021279683337e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "State of charge",
-        "value": 62.79736995175161
+        "value": 62.82149677757746
       },
       {
         "name": "Chemical energy",
-        "value": 5257.484396624443
+        "value": 5259.613457715148
       },
       {
         "name": "Load power",
-        "value": 24.87241595347129
+        "value": 24.766101211487943
       }
     ]
   },
@@ -32,20 +32,70 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": -2.5272584025515243e-10,
+    "energyResidual": 1.4586021279683337e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "State of charge",
-        "value": 62.79736995175161
+        "value": 62.82149677757746
       },
       {
         "name": "Chemical energy",
-        "value": 5257.484396624443
+        "value": 5259.613457715148
       },
       {
         "name": "Load power",
-        "value": 24.87241595347129
+        "value": 24.766101211487943
+      }
+    ]
+  },
+  {
+    "mode": "capacitor",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0.9044688036277576,
+    "energyResidual": 3.97140098584714e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Capacitor voltage",
+        "value": 10.909071074317055
+      },
+      {
+        "name": "Charging current",
+        "value": 1.0909071074317053e-8
+      },
+      {
+        "name": "Stored energy",
+        "value": 0.05950391585225053
+      }
+    ]
+  },
+  {
+    "mode": "capacitor",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 0.9044688036277576,
+    "energyResidual": 3.97140098584714e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Capacitor voltage",
+        "value": 10.909071074317055
+      },
+      {
+        "name": "Charging current",
+        "value": 1.0909071074317053e-8
+      },
+      {
+        "name": "Stored energy",
+        "value": 0.05950391585225053
       }
     ]
   },

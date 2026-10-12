@@ -2,7 +2,8 @@
 
 Open **File → Starters & examples** in the app for descriptions and suggested experiments. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
 
-- `battery`: finite charge, internal heating and chemical-energy accounting.
+- `battery`: finite charge, polarization sag and recovery, internal heating and chemical-energy accounting.
+- `capacitor`: RC charging and bleeder discharge, stored field energy and the charging loss.
 - `contactor`: an actual DC coil switches a separate AC load.
 - `transformer`: isolated AC conversion, winding/core losses and secondary measurements.
 - `radiator`: water cooling driven by actual fan electrical supply.

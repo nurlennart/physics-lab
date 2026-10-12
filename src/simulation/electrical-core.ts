@@ -1,7 +1,7 @@
 import { definitions, isSource, perPoleKinds, prop, terminalKey, type Component, type Project } from "./model";
 import { actualResistance } from "./parameters";
 import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, type MachineParams } from "./induction";
-import { solveComplex, solveLinear } from "./linear-algebra";
+import { solveComplex, solveLinear, symmetricEigen } from "./linear-algebra";
 export { solveComplex, solveLinear } from "./linear-algebra";
 type Cx = [number, number];
 type HarmonicBranch = { current: Cx; across: Cx; secondaryCurrent?: Cx; secondaryAcross?: Cx };
@@ -22,6 +22,8 @@ export function inductionCircuit(c: Component, frequency: number, omega: number)
 }
 export interface ElectricalReading {
   inputPower?: number;
+  /** DC capacitors: current into the dielectric (excluding leakage) and power into its field energy ½·C·v². */
+  chargeCurrent?: number; fieldPower?: number;
   heatPower?: number; chemicalPower?: number; coilVoltage?: number; coilCurrent?: number; coilPower?: number; secondaryVoltage?: number; secondaryCurrent?: number; fanPower?: number;
   voltage: number;
   current: number;
@@ -106,6 +108,8 @@ export interface ElectricalResult {
   nodeIslands?: Record<string, string>;
   references?: Record<string, string>;
   powerResidual?: number;
+  /** Power into electrostatic (capacitors) and electrochemical (batteries) storage (W). */
+  storedPower?: number;
   /** AC islands: complex node voltages (RMS phasors) for differential probes. */
   phasors?: Record<string, [number, number]>;
 }
@@ -122,7 +126,11 @@ class Union {
   }
 }
 export interface ElectricalRuntime {
-  devices?: { batteries: Record<string, number>; contactors: Record<string, { closed: boolean }>; h: number };
+  /**
+   * Stateful devices over the interval h: battery charge and polarization voltage; `capacitors`: stored dielectric voltage (V), stamped as a charged
+   * capacitor; a capacitor without stored state is steady DC (open apart from its leakage).
+   */
+  devices?: { batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; h: number };
   sourceModels?: Record<string, { voltage: number; resistance: number; lower: number; upper: number }>;
   contacts?: Record<string, boolean>;
   faults?: Record<string, string>;
@@ -146,6 +154,8 @@ export interface ElectricalRuntime {
   /** Lamp filament resistance relative to the configured hot resistance (filament.ts); missing = hot. */
   filaments?: Record<string, number>;
 }
+/** DC insulation (self-discharge) leakage of a capacitor, across its terminals (Ω). */
+export const CAPACITOR_LEAKAGE = 1e9;
 export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? c.props.mode : "ideal") as "ideal" | "internal" | "cvcc" | "cc";
 /** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
 export const sourceLimit = (c: Component) => sourceMode(c) === "cc" ? prop(c, "current") : sourceMode(c) === "cvcc" ? prop(c, "maxCurrent") : Infinity;
@@ -224,11 +234,12 @@ export function solveElectricalCore(
     islandPhases = new Map<string, 3>(),
     references: Record<string, string> = {};
   const resistances: Record<string, number> = {};
-  const resistanceOf = (c: Component, ac = false) => {
+  /** Charged capacitors solved in a DC island: step-average and end dielectric voltage over the interval h. */
+  const dielectric = new Map<string, { mean: number; final?: number; h: number }>();
+  // A capacitor's resistance is its ESR; its DC insulation leakage is a separate parallel path.
+  const resistanceOf = (c: Component) => {
     if (resistances[c.id] !== undefined) return resistances[c.id];
-    // DC capacitor insulation leakage is distinct from the AC series ESR. Use the
-    // same resistance for stamping, readings and thermal power accounting.
-    const r = c.kind === "capacitor" && !ac ? 1e9 : c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20) * (c.kind === "lamp" ? runtime.filaments?.[c.id] ?? 1 : 1);
+    const r = c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20) * (c.kind === "lamp" ? runtime.filaments?.[c.id] ?? 1 : 1);
     if (!Number.isFinite(r) || r <= 0)
       throw Error(`${c.name}: resistance must be positive (temperature-dependent model gives ${r.toPrecision(3)} Ω at ${(runtime.temperatures?.[c.id] ?? 20).toFixed(1)} °C).`);
     return (resistances[c.id] = r);
@@ -299,7 +310,7 @@ export function solveElectricalCore(
     if (st.kind !== "softStarter" || state?.mode !== "ramp") return 0;
     const m = motorOf.get(st.id)!, w = 2 * Math.PI * frequency;
     // Motor impedance plus the series elements between starter and motor (cable, relay): they carry line current.
-    const z = (pathOf.get(st.id) ?? []).reduce<Cx>((sum, e) => cadd(sum, e.kind === "inductor" ? [resistanceOf(e), w * prop(e, "inductance")] : e.kind === "capacitor" ? [resistanceOf(e, true), -1 / (w * prop(e, "capacitance"))] : [resistanceOf(e), 0]), inductionCircuit(m, frequency, runtime.inductionMotors?.[m.id]?.omega ?? 0).impedance);
+    const z = (pathOf.get(st.id) ?? []).reduce<Cx>((sum, e) => cadd(sum, e.kind === "inductor" ? [resistanceOf(e), w * prop(e, "inductance")] : e.kind === "capacitor" ? [resistanceOf(e), -1 / (w * prop(e, "capacitance"))] : [resistanceOf(e), 0]), inductionCircuit(m, frequency, runtime.inductionMotors?.[m.id]?.omega ?? 0).impedance);
     const k = Math.max(1e-3, Math.min(1, state.ratio ?? 1)), limit = prop(st, "currentLimit") * prop(st, "ratedCurrent");
     const forRatio = Math.sqrt(Math.max(0, (z[0] ** 2 + z[1] ** 2) / (k * k) - z[0] ** 2)) - z[1];
     const forLimit = Math.sqrt(Math.max(0, (phaseVoltage / limit) ** 2 - z[0] ** 2)) - z[1];
@@ -318,7 +329,7 @@ export function solveElectricalCore(
   };
   /** Series impedance of a passive element at angular frequency w (motor leads scaled; starter: its controlled reactance at w). */
   const passiveImpedance = (c: Component, w: number, starterX = 0): Cx => {
-    const z: Cx = isStarter(c) ? [resistanceOf(c), starterX] : c.kind === "inductor" ? [resistanceOf(c), w * prop(c, "inductance")] : c.kind === "capacitor" ? [resistanceOf(c, true), -1 / (w * prop(c, "capacitance"))] : [resistanceOf(c), 0];
+    const z: Cx = isStarter(c) ? [resistanceOf(c), starterX] : c.kind === "inductor" ? [resistanceOf(c), w * prop(c, "inductance")] : c.kind === "capacitor" ? [resistanceOf(c), -1 / (w * prop(c, "capacitance"))] : [resistanceOf(c), 0];
     const lead = leads.get(c.id);
     return lead ? [z[0] * lead.z, z[1] * lead.z] : z;
   };
@@ -728,8 +739,8 @@ export function solveElectricalCore(
         j = indices.get(col);
       if (i !== undefined && j !== undefined) a[i][j] += v;
     };
-    for (const c of members.filter((c) => !isSource(c) && c.kind !== "vfd")) {
-      // Steady DC: a capacitor is open apart from its insulation leakage (1 GΩ); an inductor is its winding resistance.
+    for (const c of members.filter((c) => !isSource(c) && c.kind !== "vfd" && c.kind !== "capacitor")) {
+      // Steady DC: an inductor is its winding resistance.
       const resistance = resistanceOf(c);
       const motor = c.kind === "motor" ? runtime.motors?.[c.id] : undefined;
       const duty = motor?.duty ?? 1;
@@ -747,18 +758,24 @@ export function solveElectricalCore(
         if (qi !== undefined) b[qi] -= norton;
       }
     }
+    // Capacitors: insulation leakage across the terminals; a charged dielectric (engine state) behind its ESR is
+    // stamped below at its step-average voltage.
+    const capacitors = members.filter((c) => c.kind === "capacitor");
+    for (const c of capacitors) {
+      const p = node(c.id, "a"), q = node(c.id, "b");
+      stamp(p, p, 1 / CAPACITOR_LEAKAGE); stamp(q, q, 1 / CAPACITOR_LEAKAGE);
+      stamp(p, q, -1 / CAPACITOR_LEAKAGE); stamp(q, p, -1 / CAPACITOR_LEAKAGE);
+    }
+    const charged = capacitors.filter((c) => runtime.devices?.capacitors?.[c.id] !== undefined), h = Math.max(0, runtime.devices?.h ?? 0);
+    const stored = (c: Component) => runtime.devices!.capacitors![c.id];
+    const mean = new Map(charged.map((c) => [c.id, stored(c)]));
     // Branch variable k is the current *into* terminal a (negative while delivering).
     // CV row: Va − Vb − Rᵢ·I = Vset. CC row: I = −limit·direction.
     // CV/CC crossover is an active-set iteration, as in a regulated laboratory supply.
     const fixed: (number | null)[] = sources.map((s) => shorted(s) && sourceLimit(s) < Infinity ? -sourceLimit(s) : null);
-    let x: number[] = [], am: number[][] = a, bm: number[] = b;
-    const visited = new Set<string>();
-    for (let iteration = 0; ; iteration++) {
-      const state = JSON.stringify(fixed);
-      if (visited.has(state)) throw Error(`DC regulation did not converge: repeated CV/CC state for ${sources.map(s => s.name).join(", ")}.`);
-      visited.add(state);
-      am = a.map((row) => [...row]);
-      bm = [...b];
+    /** Source rows for the present CV/CC state. */
+    const assemble = (a: number[][], b: number[]) => {
+      const am = a.map((row) => [...row]), bm = [...b];
       sources.forEach((s, i) => {
         const k = unknown.length + i,
           p = indices.get(node(s.id, "a")),
@@ -778,35 +795,107 @@ export function solveElectricalCore(
       });
       // Nodes no element stamps (an unpowered drive input, an open machine terminal) are pinned to 0 V.
       for (let i = 0; i < unknown.length; i++) if (am[i].every((v) => v === 0) && bm[i] === 0) am[i][i] = 1;
-      x = size ? solveLinear(am, bm) : [];
-      let changed = false;
-      sources.forEach((s, i) => {
-        const limit = sourceLimit(s), current = x[unknown.length + i];
-        const model = runtime.sourceModels?.[s.id];
-        if (model) {
-          const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0, vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
-          const emf = va - vb - model.resistance * current, tol = 1e-10 * Math.max(1, model.voltage);
-          if (fixed[i] === null && (current < model.lower - 1e-12 || current > model.upper + 1e-12)) { fixed[i] = Math.max(model.lower, Math.min(model.upper, current)); changed = true; }
-          else if (fixed[i] !== null && (fixed[i] === model.lower ? emf > model.voltage + tol : emf < model.voltage - tol)) { fixed[i] = null; changed = true; }
-          return;
-        }
-        if (limit === Infinity) return;
-        if (fixed[i] === null && Math.abs(current) > limit * (1 + 1e-12)) {
-          fixed[i] = Math.sign(current || -1) * limit;
-          changed = true;
-        } else if (fixed[i] !== null) {
-          const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0,
-            vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
-          const emf = va - vb - prop(s, "internalResistance") * current;
-          if (fixed[i]! <= 0 ? emf > prop(s, "voltage") * (1 + 1e-12) + 1e-12 : emf < prop(s, "voltage") * (1 - 1e-12) - 1e-12) {
-            fixed[i] = null;
-            changed = true;
+      return { am, bm };
+    };
+    const regulate = (a: number[][], b: number[]) => {
+      let x: number[] = [], am: number[][] = a, bm: number[] = b;
+      const visited = new Set<string>();
+      for (let iteration = 0; ; iteration++) {
+        const state = JSON.stringify(fixed);
+        if (visited.has(state)) throw Error(`DC regulation did not converge: repeated CV/CC state for ${sources.map(s => s.name).join(", ")}.`);
+        visited.add(state);
+        ({ am, bm } = assemble(a, b));
+        x = size ? solveLinear(am, bm) : [];
+        let changed = false;
+        sources.forEach((s, i) => {
+          const limit = sourceLimit(s), current = x[unknown.length + i];
+          const model = runtime.sourceModels?.[s.id];
+          if (model) {
+            const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0, vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
+            const emf = va - vb - model.resistance * current, tol = 1e-10 * Math.max(1, model.voltage);
+            if (fixed[i] === null && (current < model.lower - 1e-12 || current > model.upper + 1e-12)) { fixed[i] = Math.max(model.lower, Math.min(model.upper, current)); changed = true; }
+            else if (fixed[i] !== null && (fixed[i] === model.lower ? emf > model.voltage + tol : emf < model.voltage - tol)) { fixed[i] = null; changed = true; }
+            return;
           }
-        }
+          if (limit === Infinity) return;
+          if (fixed[i] === null && Math.abs(current) > limit * (1 + 1e-12)) {
+            fixed[i] = Math.sign(current || -1) * limit;
+            changed = true;
+          } else if (fixed[i] !== null) {
+            const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0,
+              vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
+            const emf = va - vb - prop(s, "internalResistance") * current;
+            if (fixed[i]! <= 0 ? emf > prop(s, "voltage") * (1 + 1e-12) + 1e-12 : emf < prop(s, "voltage") * (1 - 1e-12) - 1e-12) {
+              fixed[i] = null;
+              changed = true;
+            }
+          }
+        });
+        if (!changed) return { x, am, bm };
+        if (iteration >= 31) throw Error(`DC regulation did not converge for ${sources.map(s => s.name).join(", ")}; check interacting supplies and current limits.`);
+      }
+    };
+    /**
+     * Charged capacitors over the interval h. For the present CV/CC state the network seen by the dielectrics is
+     * linear: open-circuit port voltages E and port impedance Z = Z_net + diag(ESR), so C·dv/dt = Z⁻¹·(E − v).
+     * In the coordinates w = C^(½)·v this is dw/dt = T⁻¹·(C^(½)·E − w) with the symmetric T = C^(½)·Z·C^(½), whose
+     * eigenvalues are the time constants τ_m of the modes. Each mode relaxes exactly:
+     *   w_m(t) = ε_m + (w₀,m − ε_m)·e^(−t/τ_m),  mean  w̄_m = ε_m + (w₀,m − ε_m)·(1 − e^(−z))/z,  z = h/τ_m.
+     * Each dielectric is stamped at its step-average voltage v̄ behind its ESR, and its charge current is exactly
+     * C·(v₁ − v₀)/h. Every step-average voltage and current of the linear network is then exact for any h, including
+     * charge exchanged between capacitors and transients far shorter than the step (no ringing). Only voltages
+     * enter, read directly from the open network, so leakage-slow and contact-fast modes are both accurate. E and Z
+     * depend only on the CV/CC state, so the result is final once that state repeats.
+     */
+    const ports = (c: Component) => [indices.get(node(c.id, "a")), indices.get(node(c.id, "b"))] as const;
+    const across = (x: number[], c: Component) => {
+      const [pi, qi] = ports(c);
+      return (pi !== undefined ? x[pi] : 0) - (qi !== undefined ? x[qi] : 0);
+    };
+    const stampDielectric = (a: number[][], b: number[], c: Component, voltage: number) => {
+      const g = 1 / resistanceOf(c), [pi, qi] = ports(c);
+      if (pi !== undefined) { a[pi][pi] += g; if (qi !== undefined) a[pi][qi] -= g; b[pi] += g * voltage; }
+      if (qi !== undefined) { a[qi][qi] += g; if (pi !== undefined) a[qi][pi] -= g; b[qi] -= g * voltage; }
+    };
+    // Fraction of the way to the settled value: at the end, 1 − e^(−z), and on average, 1 − φ(z) = (z − 1 + e^(−z))/z.
+    // Written relative to w₀, so a mode settling toward a huge voltage (a current source into the leakage) keeps its digits.
+    const reached = (z: number) => -Math.expm1(-z), averaged = (z: number) => z < 1e-4 ? z * (0.5 - z / 6 + z * z / 24) : 1 + Math.expm1(-z) / z;
+    const final = new Map<string, number>();
+    const integrate = () => {
+      // The network with every dielectric branch removed.
+      const open = assemble(a, b), root = charged.map((c) => Math.sqrt(prop(c, "capacitance")));
+      const impedance = charged.map((c) => {
+        const e = Array(size).fill(0), [pi, qi] = ports(c);
+        if (pi !== undefined) e[pi] = 1;
+        if (qi !== undefined) e[qi] = -1;
+        const x = solveLinear(open.am, e, true, true);
+        return charged.map((k) => across(x, k) + (k === c ? resistanceOf(k) : 0));
       });
-      if (!changed) break;
-      if (iteration >= 31) throw Error(`DC regulation did not converge for ${sources.map(s => s.name).join(", ")}; check interacting supplies and current limits.`);
+      const T = charged.map((_, i) => charged.map((_, j) => 0.5 * (impedance[i][j] + impedance[j][i]) * root[i] * root[j]));
+      const { values, vectors } = symmetricEigen(T);
+      const project = (u: number[]) => values.map((_, m) => u.reduce((sum, ui, i) => sum + vectors[i][m] * ui, 0));
+      const back = (w: number[], i: number) => w.reduce((sum, wm, m) => sum + vectors[i][m] * wm, 0) / root[i];
+      const x0 = solveLinear(open.am, open.bm);
+      const settled = project(charged.map((c, i) => root[i] * across(x0, c))), start = project(charged.map((c, i) => root[i] * stored(c)));
+      // A mode faster than rounding resolves (τ ≤ 0) has settled within the step.
+      const relax = (f: (z: number) => number) => values.map((tau, m) => start[m] + (settled[m] - start[m]) * (tau > 0 ? f(h / tau) : 1));
+      const meanModes = relax(averaged), endModes = relax(reached);
+      charged.forEach((c, i) => { mean.set(c.id, back(meanModes, i)); final.set(c.id, back(endModes, i)); });
+    };
+    let solved: ReturnType<typeof regulate>, integrated: string | undefined;
+    for (let pass = 0; ; pass++) {
+      const ac = a.map((row) => [...row]), bc = [...b];
+      for (const c of charged) stampDielectric(ac, bc, c, mean.get(c.id)!);
+      solved = regulate(ac, bc);
+      const state = JSON.stringify(fixed);
+      if (!charged.length || h === 0 || state === integrated || pass === 3) break;
+      integrate();
+      integrated = state;
     }
+    const { x, am, bm } = solved;
+    // Unsettled CV/CC state after four passes: report the charge current the network actually carries.
+    const exact = integrated === JSON.stringify(fixed);
+    for (const c of charged) dielectric.set(c.id, { mean: mean.get(c.id)!, final: exact ? final.get(c.id) : undefined, h });
     sources.forEach((s, i) => (regulation[s.id] = fixed[i] === null ? "cv" : "cc"));
     for (let i = 0; i < size; i++)
       residual = Math.max(residual, Math.abs(am[i].reduce((sum, v, j) => sum + v * x[j], 0) - bm[i]));
@@ -816,7 +905,8 @@ export function solveElectricalCore(
   }
   const readings: Record<string, ElectricalReading> = {};
   let sourcePower = 0,
-    dissipatedPower = 0;
+    dissipatedPower = 0,
+    storedPower = 0;
   for (const c of cs) {
     if (c.kind === "ground" || c.kind === "junction") {
       readings[c.id] = {
@@ -841,13 +931,17 @@ export function solveElectricalCore(
     const voltage = (voltages[a] ?? 0) - (voltages[b] ?? 0);
     const activeVoltage = (voltages[a] ?? 0) - (voltages[q] ?? 0);
     const phases = islandPhases.get(islands.find(a)) ?? 1;
+    const charge = dielectric.get(c.id), stored = runtime.devices?.capacitors?.[c.id] ?? 0;
+    const chargeCurrent = !charge ? 0 : charge.final !== undefined ? prop(c, "capacitance") * (charge.final - stored) / charge.h : (activeVoltage - charge.mean) / resistanceOf(c);
     const contactCurrent =
       isSource(c)
         ? (sourceI[c.id] ?? 0)
         : active.includes(c) && c.kind !== "inductionMotor" && c.kind !== "vfd" && c.kind !== "transformer"
           ? c.kind === "motor" && runtime.motors?.[c.id]
             ? runtime.motors[c.id].duty * (runtime.motors[c.id].duty * activeVoltage - runtime.motors[c.id].emf) / prop(c, "resistance", 1)
-            : activeVoltage / resistanceOf(c)
+            : c.kind === "capacitor"
+              ? activeVoltage / CAPACITOR_LEAKAGE + chargeCurrent
+              : activeVoltage / resistanceOf(c)
           : 0;
     const current = c.kind === "relay" && end(c) === "nc" ? 0 : contactCurrent;
     const currentNC =
@@ -867,7 +961,15 @@ export function solveElectricalCore(
       ...(isSource(c) ? { regulation: regulation[c.id] ?? "cv" } : resistances[c.id] !== undefined ? { resistance: resistances[c.id] } : {}),
       ...(phases === 3 ? { phases: 3 as const } : {}),
     };
-    if (isSource(c)) sourcePower -= power;
+    if (c.kind === "capacitor") {
+      // Field energy changes by ½·C·(v₁² − v₀²) = I·h·(v₀ + I·h/(2C)) with the exact step charge I·h; the rest is
+      // heat: I²·ESR, leakage V²/R_leak and I·(v̄ − (v₀ + v₁)/2), the part of a transient's loop loss that the
+      // step-average current does not carry.
+      const fieldPower = charge ? chargeCurrent * (stored + chargeCurrent * charge.h / (2 * prop(c, "capacitance"))) : 0;
+      Object.assign(readings[c.id], { chargeCurrent, fieldPower, heatPower: power - fieldPower });
+      storedPower += fieldPower;
+      dissipatedPower += power - fieldPower;
+    } else if (isSource(c)) sourcePower -= power;
     else dissipatedPower += power;
   }
   // Conductor count is topology (thermal mass of the motor leads), independent of the starter's state.
@@ -893,7 +995,8 @@ export function solveElectricalCore(
     sourcePower,
     dissipatedPower,
     residual,
-    powerResidual: sourcePower - dissipatedPower,
+    storedPower,
+    powerResidual: sourcePower - dissipatedPower - storedPower,
     islands: groups.size,
     ...(Object.keys(phasors).length ? { phasors: Object.fromEntries([...uf.p.keys()].filter((k) => phasors[uf.find(k)]).map((k) => [k, phasors[uf.find(k)]])) } : {}),
   };

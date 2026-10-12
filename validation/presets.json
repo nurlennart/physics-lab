@@ -14,11 +14,18 @@
       ],
       "checks": [
         {
-          "label": "analytic discharge SOC",
-          "expected": 0.7999861331372893,
-          "measured": 0.7999861331372897,
-          "absoluteError": 4.440892098500626e-16,
+          "label": "discharge SOC (RK4 reference)",
+          "expected": 0.7999861334089594,
+          "measured": 0.7999861334089584,
+          "absoluteError": 9.992007221626409e-16,
           "tolerance": 1e-10
+        },
+        {
+          "label": "polarization voltage (V)",
+          "expected": -0.000490968945385717,
+          "measured": -0.0004909689449392531,
+          "absoluteError": 4.464639378684576e-13,
+          "tolerance": 1.0000490968945386e-8
         },
         {
           "label": "external supply energy (J)",
@@ -37,14 +44,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -0.0003741845771165468,
-          "absoluteError": 0.0003741845771165468,
+          "measured": 0.00005739377668009619,
+          "absoluteError": 0.00005739377668009619,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": -0.0003741845771165468,
+      "energyResidual": 0.00005739377668009619,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -56,11 +63,18 @@
       ],
       "checks": [
         {
-          "label": "analytic discharge SOC",
-          "expected": 0.7999972238752893,
-          "measured": 0.7999972238752895,
+          "label": "discharge SOC (RK4 reference)",
+          "expected": 0.7999972238889377,
+          "measured": 0.7999972238889379,
           "absoluteError": 2.220446049250313e-16,
           "tolerance": 1e-10
+        },
+        {
+          "label": "polarization voltage (V)",
+          "expected": -0.0004935054591845654,
+          "measured": -0.0004935054590967642,
+          "absoluteError": 8.780118559287287e-14,
+          "tolerance": 1.0000493505459184e-8
         },
         {
           "label": "external supply energy (J)",
@@ -79,14 +93,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 0.0002456735926685383,
-          "absoluteError": 0.0002456735926685383,
+          "measured": -0.00024929986683825214,
+          "absoluteError": 0.00024929986683825214,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": 0.0002456735926685383,
+      "energyResidual": -0.00024929986683825214,
       "massResidual": 0,
       "violations": [],
       "failed": {}
