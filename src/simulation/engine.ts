@@ -505,6 +505,12 @@ export class Simulation {
       const driver = shaft && (shaft.from.component === id ? shaft.to.component : shaft.from.component);
       return driver ? this.mechanicalMeasurement(driver, 'rpm') : undefined;
     }
+    if (metric === 'rpm' && (component.kind === 'flywheel' || component.kind === 'dynamometer')) {
+      // Shaft-train elements turn with their motor, a flywheel at motor speed / gear ratio.
+      const shaft = this.project.connections.find(w => w.domain === 'mechanical' && (w.from.component === id || w.to.component === id) && !this.disconnected.has(w.id));
+      const driver = shaft && (shaft.from.component === id ? shaft.to.component : shaft.from.component), rpm = driver ? this.mechanicalMeasurement(driver, 'rpm') : undefined;
+      return rpm === undefined ? undefined : rpm / (component.kind === 'flywheel' ? prop(component, 'gearRatio', 1) : 1);
+    }
     if (metric === 'rpm') {
       const omega = isMotor(component) ? this.multiphysics.motors[id]?.omega : b?.omega;
       return omega === undefined ? undefined : omega * 30 / Math.PI;

@@ -1,0 +1,195 @@
+{
+  "version": 3,
+  "probes": [
+    {
+      "id": "testbench-probe-1",
+      "component": "testbench-component-2",
+      "measurement": "rpm",
+      "name": "Motor speed",
+      "color": "#e9bd6a",
+      "visible": true
+    },
+    {
+      "id": "testbench-probe-2",
+      "component": "testbench-component-2",
+      "measurement": "torque",
+      "name": "Motor torque",
+      "color": "#a58ae3",
+      "visible": true
+    },
+    {
+      "id": "testbench-probe-3",
+      "component": "testbench-component-4",
+      "measurement": "torque",
+      "name": "Absorbed torque",
+      "color": "#59b99b",
+      "visible": true
+    },
+    {
+      "id": "testbench-probe-4",
+      "component": "testbench-component-4",
+      "measurement": "shaftPower",
+      "name": "Absorbed power",
+      "color": "#3ba6d8",
+      "visible": true
+    },
+    {
+      "id": "testbench-probe-5",
+      "component": "testbench-component-2",
+      "measurement": "efficiency",
+      "name": "Motor efficiency",
+      "color": "#ef9975",
+      "visible": true
+    },
+    {
+      "id": "testbench-probe-6",
+      "component": "testbench-component-2",
+      "measurement": "current",
+      "name": "Line current",
+      "color": "#d4d4d8",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "id": "example-testbench",
+  "name": "Motor test bench — flywheel and dynamometer",
+  "components": [
+    {
+      "id": "testbench-component-1",
+      "kind": "source3",
+      "name": "TS3-01",
+      "x": 40,
+      "y": 200,
+      "rotation": 0,
+      "variant": "industrial250",
+      "props": {
+        "lineVoltage": 400,
+        "frequency": 50,
+        "internalResistance": 0.005,
+        "maxCurrent": 250,
+        "maxPower": 173000,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "testbench-component-2",
+      "kind": "inductionMotor",
+      "name": "IM-01",
+      "x": 380,
+      "y": 200,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedVoltage": 400,
+        "ratedFrequency": 50,
+        "poles": 4,
+        "ratedPower": 7500,
+        "ratedCurrent": 14.4,
+        "ratedTorque": 49,
+        "statorResistance": 0.71,
+        "statorReactance": 1.17,
+        "magnetizingReactance": 33.5,
+        "rotorResistance": 0.809,
+        "rotorReactance": 5.79,
+        "rotorResistance2": 0.816,
+        "rotorReactance2": 0.858,
+        "coreResistance": 1160,
+        "inertia": 0.045,
+        "friction": 0.002,
+        "loadTorque": 0,
+        "maxSpeed": 330,
+        "heatCapacity": 25000,
+        "loss": 18,
+        "conductance": 30,
+        "maxTemperature": 155,
+        "enabled": true
+      }
+    },
+    {
+      "id": "testbench-component-3",
+      "kind": "flywheel",
+      "name": "FW-01",
+      "x": 380,
+      "y": 470,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "inertia": 0.99,
+        "gearRatio": 1,
+        "gearEfficiency": 100,
+        "friction": 0.002,
+        "maxSpeed": 314
+      }
+    },
+    {
+      "id": "testbench-component-4",
+      "kind": "dynamometer",
+      "name": "DY-01",
+      "x": 720,
+      "y": 200,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "absorber": "eddyCurrent",
+        "torqueSetpoint": 30,
+        "ratedTorque": 140,
+        "ratedSpeed": 250.3,
+        "ratedPower": 35000,
+        "maxSpeed": 785.4,
+        "inertia": 0.05
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "testbench-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "testbench-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "testbench-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "testbench-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "testbench-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "testbench-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "testbench-connection-3",
+      "domain": "mechanical",
+      "from": {
+        "component": "testbench-component-2",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "testbench-component-3",
+        "port": "shaft"
+      }
+    },
+    {
+      "id": "testbench-connection-4",
+      "domain": "mechanical",
+      "from": {
+        "component": "testbench-component-2",
+        "port": "shaft"
+      },
+      "to": {
+        "component": "testbench-component-4",
+        "port": "shaft"
+      }
+    }
+  ]
+}

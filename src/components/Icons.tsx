@@ -9,12 +9,12 @@ import {
   Earth,
   Shield,
   Activity,
-  Box, Move, RotateCw, Cable,
+  Box, Move, RotateCw, Cable, Disc3, CircleGauge,
   type LucideIcon,
 } from "lucide-react";
 import type { Kind } from "../simulation/model";
 export const kindIcons: Record<Kind, LucideIcon> = {
-  rigidBody: Box, positionSensor: Move, speedSensor: RotateCw, forceActuator: Activity,
+  rigidBody: Box, positionSensor: Move, speedSensor: RotateCw, forceActuator: Activity, flywheel: Disc3, dynamometer: CircleGauge,
   motor: Fan, pump: Waves, pipe: Pipette, valve: ToggleRight, checkValve: Shield,
   actuatedValve: ToggleRight, fluidJunction: GitBranch, pressureSensor: Gauge,
   flowSensor: Activity, levelSensor: Container, pid: Activity,

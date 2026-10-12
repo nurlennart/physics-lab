@@ -93,6 +93,12 @@ export const builtinPresets: ComponentPreset[] = [
   preset("source3", "General-purpose", "Workshop supply 400 V 3~ 32 A", { lineVoltage: 400, maxCurrent: 32, maxPower: 22000, internalResistance: 0.05 }),
   preset("source3", "Industrial", "Transformer 630 kVA (400 V)", { lineVoltage: 400, maxCurrent: 910, maxPower: 630000, internalResistance: 0.0025 }),
   preset("pipe", "General-purpose", "Insulated DN25 · 20 m (8 cells)", { diameter: 0.025, length: 20, thermalUA: 2, segments: 8, inventory: true }),
+  preset("flywheel", "Laboratory", "Steel disc Ø400 × 50 mm · direct", { inertia: 0.99, gearRatio: 1, gearEfficiency: 100, friction: 0.002, maxSpeed: 314 }, "Solid steel disc: m = 49 kg, J = ½·m·r²."),
+  preset("flywheel", "Industrial", "Conveyor drive 40 kg·m² · 20:1 helical reducer", { inertia: 40, gearRatio: 20, gearEfficiency: 94, friction: 0.5, maxSpeed: 15.7 }, "Drum, belt and load inertia at the drum shaft; two helical stages at about 97 % each. The motor sees 0.1 kg·m²."),
+  preset("dynamometer", "Laboratory", "Eddy-current 50 N·m · 15 kW · 2,865 RPM", { absorber: "eddyCurrent", ratedTorque: 50, ratedSpeed: 300, ratedPower: 15000, inertia: 0.0127, maxSpeed: 1885, torqueSetpoint: 20 }, "Water-cooled eddy-current brake class (e.g. Magtrol WB 115): peak torque at the rated speed."),
+  preset("dynamometer", "High-capacity", "Eddy-current 560 N·m · 140 kW · 2,390 RPM", { absorber: "eddyCurrent", ratedTorque: 560, ratedSpeed: 250.3, ratedPower: 140000, inertia: 0.2, maxSpeed: 785.4, torqueSetpoint: 200 }, "Water-cooled eddy-current brake class (e.g. Magtrol 4 WB 15)."),
+  preset("dynamometer", "Industrial", "Electric AC dynamometer 300 N·m · 75 kW", { absorber: "electric", ratedTorque: 300, ratedSpeed: 250, ratedPower: 75000, inertia: 0.35, maxSpeed: 628, torqueSetpoint: 100 }, "Inverter-fed AC machine in absorbing (braking) mode: full torque down to standstill."),
+  preset("dynamometer", "General-purpose", "Water brake 1,000 N·m · 300 kW", { absorber: "waterBrake", ratedTorque: 1000, ratedSpeed: 314, ratedPower: 300000, inertia: 0.4, maxSpeed: 628, torqueSetpoint: 800 }, "Hydraulic absorber: torque ∝ speed² at a given water fill; the set torque applies at the rated speed."),
 ];
 
 /** Properties a preset may carry: everything except operating commands and assignments. */

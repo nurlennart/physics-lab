@@ -23,6 +23,9 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.kind === "heatExchanger" ? ["heatDuty"] as Measurement[] : []),
     ...(c.kind === "pump" ? ["npsh"] as Measurement[] : []),
     ...(c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? ["rpm", "shaftPower", "efficiency", "energyResidual"] as Measurement[] : []),
+    ...(c.kind === "motor" || c.kind === "inductionMotor" ? ["torque"] as Measurement[] : []),
+    ...(c.kind === "flywheel" ? ["rpm", "torque", "kineticEnergy"] as Measurement[] : []),
+    ...(c.kind === "dynamometer" ? ["rpm", "torque", "shaftPower", "energy"] as Measurement[] : []),
     ...(["sourceAC", "source3", "inductor", "capacitor", "inductionMotor"].includes(c.kind) || isElectrical(c) ? ["reactivePower", "powerFactor"] as Measurement[] : []),
     ...(isElectrical(c)
       ? (["voltage", "current", "power", "energy"] as Measurement[])
@@ -90,7 +93,10 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   if (m === "voltage") return three ? "phase-to-neutral RMS voltage" : ac ? "RMS voltage" : "voltage (AC: RMS)";
   if (m === "current") return three ? "RMS line current" : ac ? "RMS current" : "current (AC: signed RMS line)";
   if (m === "angularVelocity") return "body angular speed";
-  if (m === "rpm") return c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? "shaft speed" : "body rotational speed";
+  if (m === "rpm") return ["motor", "inductionMotor", "pump", "flywheel", "dynamometer"].includes(c.kind) ? "shaft speed" : "body rotational speed";
+  if (m === "torque") return c.kind === "dynamometer" ? "absorbed torque" : c.kind === "flywheel" ? "flywheel shaft torque" : "electromagnetic torque";
+  if (c.kind === "dynamometer" && m === "shaftPower") return "absorbed power";
+  if (c.kind === "dynamometer" && m === "energy") return "absorbed energy";
   if (m === "power" && c.kind === "transformer") return "transformer loss power";
   if (m === "power") return three ? "real power (3~ total)" : ac ? "real power" : "real power (3~: total)";
   if (m === "reactivePower") return three ? "reactive power (3~ total)" : "reactive power";

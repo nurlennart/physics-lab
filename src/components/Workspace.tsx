@@ -135,6 +135,16 @@ function CircuitSymbol({ c }: { c: Component }) {
       </g>
     );
   }
+  if (c.kind === "flywheel" || c.kind === "dynamometer") {
+    // Shaft-train elements turn with their motor (a flywheel at motor speed / gear ratio).
+    const wire = simulation.project.connections.find(w => w.domain === "mechanical" && !simulation.disconnected.has(w.id) && (w.from.component === c.id || w.to.component === c.id));
+    const motor = wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component] : undefined;
+    const ratio = c.kind === "flywheel" ? prop(c, "gearRatio", 1) : 1, angle = ((motor?.angle ?? 0) / ratio * 180 / Math.PI) % 360, element = simulation.multiphysics.shaftElements[c.id];
+    const speed = motor ? `${(motor.omega / ratio * 30 / Math.PI).toFixed(0)} RPM` : "not coupled";
+    return c.kind === "flywheel"
+      ? <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><circle cx="87" cy="66" r="36" fill={T.n5} stroke={T.mechanicalText} strokeWidth="3"/><circle cx="87" cy="66" r="9" fill={T.mechanicalText}/><path d="M87 36V96M57 66H117" stroke={T.mechanicalText} strokeWidth="2" transform={`rotate(${angle},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{speed}{ratio !== 1 ? ` · ${ratio}:1` : ""}</text></g>
+      : <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><rect x="47" y="34" width="80" height="64" rx="8" fill={T.n5} stroke={T.mechanicalText} strokeWidth="2"/><path d="M87 66L87 44" stroke={T.mechanicalText} strokeWidth="3" transform={`rotate(${Math.min(270, (element?.torque ?? 0) / prop(c, "ratedTorque") * 270) - 135},87,66)`}/><circle cx="87" cy="66" r="4" fill={T.mechanicalText}/><text x="87" y="112" textAnchor="middle" className="scale-label">{speed}</text><text x="87" y="126" textAnchor="middle" className="scale-label">{(element?.torque ?? 0).toFixed(1)} N·m · {((element?.power ?? 0) / 1000).toFixed(2)} kW</text></g>;
+  }
   if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
     // The drawn rotor turns by the accumulated rotation of the driving motor (not speed × elapsed time).
     // A pump without a driving motor has no modelled shaft speed (hydraulic back-driving is not modelled).

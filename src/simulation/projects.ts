@@ -12,9 +12,10 @@ import {
   type Kind,
   type Project,
   type Component,
+  type Measurement,
 } from "./model";
 export function starter(
-  mode: "induction" | "starting" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode = "heat",
+  mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode = "heat",
   challenge = false,
 ): Project {
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator"].includes(mode)) return deviceStarter(mode as DeviceMode);
@@ -51,6 +52,21 @@ export function starter(
     p.components.push(c);
     return c;
   };
+  if (mode === "testbench") {
+    // A 7.5 kW IE3 motor started direct-on-line against a steel flywheel and an eddy-current dynamometer.
+    p.name = "Motor test bench — flywheel and dynamometer";
+    const source = add("source3", 40, 200);
+    source.variant = "industrial250";
+    source.props = { ...catalog(source).props };
+    const motor = add("inductionMotor", 380, 200), flywheel = add("flywheel", 380, 470, { inertia: 0.99 }), dyno = add("dynamometer", 720, 200, { torqueSetpoint: 30 });
+    p = connect(p, { component: source.id, port: "a" }, { component: motor.id, port: "a" });
+    p = connect(p, { component: motor.id, port: "b" }, { component: source.id, port: "b" });
+    p = connect(p, { component: motor.id, port: "shaft" }, { component: flywheel.id, port: "shaft" });
+    p = connect(p, { component: motor.id, port: "shaft" }, { component: dyno.id, port: "shaft" });
+    const trace = (c: Component, measurement: Measurement, name: string, color: string) => ({ id: uid(), component: c.id, measurement, name, color, visible: true });
+    p.probes = [trace(motor, "rpm", "Motor speed", "#e9bd6a"), trace(motor, "torque", "Motor torque", "#a58ae3"), trace(dyno, "torque", "Absorbed torque", "#59b99b"), trace(dyno, "shaftPower", "Absorbed power", "#3ba6d8"), trace(motor, "efficiency", "Motor efficiency", "#ef9975"), trace(motor, "current", "Line current", "#d4d4d8")];
+    return p;
+  }
   if (mode === "starting") {
     // One 400 V supply, three ways to start the same 7.5 kW motor against 12 N·m.
     p.name = "Starting a motor three ways — star-delta, soft starter, drive";
@@ -411,7 +427,7 @@ export function validateProbes(p: Project) {
     ids.add(probe.id);
     if (
       ![
-        "pressure", "inletPressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
+        "pressure", "inletPressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "torque", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
         'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',
         "voltage",
         "current",

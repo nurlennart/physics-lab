@@ -386,6 +386,30 @@ All motors share one shaft model: J·dω/dt = τ_e − τ_pump − τ_load − b
 
 A coasting 7.5 kW motor stops at t = (J/b)·ln(1 + b·ω₀/T_L) within one step; zero-load coasting follows ω₀·e^(−bt/J). The drawn rotor turns by the integrated angle ∫ω dt.
 
+### Flywheel and dynamometer
+
+Both attach directly to a motor shaft (`drivetrain.ts`), next to an optional pump; a shaft that drives a spatial rotor cannot carry them, since the rigid body supplies its own inertia and loads.
+
+**Flywheel / driven inertia.** Inertia J and viscous bearing drag b at the flywheel's own shaft, coupled directly or through a gear stage of ratio i (motor speed / flywheel speed) and efficiency η:
+
+```
+J_m·α = T_e − b_m·ω − T_load − k·T_t,   T_t = (J/i²)·α + (b/i²)·ω
+k = 1/η while the motor drives the flywheel (T_t·ω ≥ 0), k = η while the flywheel drives back
+mesh loss (k − 1)·T_t·ω ≥ 0 and bearing drag b·(ω/i)² → ambient;  E_kin = ½·J·(ω/i)²
+```
+
+The motor therefore sees J/i², needs T/η to accelerate the flywheel and receives only η·T when it coasts back: gear losses occur in both directions, as in a real reducer (about 96–98 % per helical stage). The direction is chosen consistently with the solved acceleration inside the midpoint shaft iteration, so the ledger is exact. A flywheel slows a run-up exactly as the first-order reference J·dω/dt = T(ω) predicts. The DC speed controller's gain uses the whole shaft inertia. Overspeed above the flywheel's safe speed is reported. Not modelled: shaft and coupling compliance (torsional oscillation), backlash, gear-stage inertia.
+
+**Dynamometer.** A test-bench brake with rotor inertia (on the motor shaft) that absorbs and measures torque; absorbed power leaves through its cooling (exported work). The set torque comes from the numeric torque input when wired. Absorbers, with rated torque T_r at rated speed ω_r and power rating P_r:
+
+| Absorber | Torque | Standstill |
+| --- | --- | --- |
+| Electric (AC dynamometer, braking) | min(T_set, T_r, P_r/ω) | holds a stalled shaft like static friction |
+| Eddy-current brake | min(T_set, T_r·2x/(1 + x²), P_r/ω),  x = ω/ω_r | no torque |
+| Water brake | min(T_set·x², T_r, P_r/ω) | no torque |
+
+The eddy-current envelope is small at low speed and peaks at the rated speed, then the brake is power-limited, as in published water-cooled eddy-current dynamometer data (e.g. Magtrol WB series: 140 N·m, 35 kW at 2,390 RPM, rotor 0.05 kg·m²). Speed-dependent torques are evaluated at the midpoint speed (implicit, stable for a stiff brake); an electric absorber's constant torque uses the opposing-load logic above. Probes: absorbed torque, speed, absorbed power and energy; motors also report their electromagnetic torque. Absorbed power above the rating and overspeed are reported. Not modelled: speed-controlled and motoring (four-quadrant) operation, excitation dynamics, the cooling water's temperature.
+
 ### DC motor
 
 Brushed DC armature, quasi-steady (no inductance), with optional duty d:

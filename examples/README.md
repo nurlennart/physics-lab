@@ -11,6 +11,7 @@ Open **File → Starters & examples** in the app for descriptions and suggested 
 - `acRlc`: compatible series RLC circuit with RMS supply measurements and power-factor traces.
 - `induction`: standard 7.5 kW motor on the 250 A supply variant, 35 N·m direct-on-line load.
 - `starting`: the same motor started by star-delta, soft starter and variable-frequency drive from one supply.
+- `testbench`: the 7.5 kW motor started against a steel flywheel and loaded by an eddy-current dynamometer: run-up, torque, absorbed power and efficiency.
 - `light`, `heat`: electrical basics and electrical-to-thermal energy transfer.
 - `automated`: temperature feedback with independent safety isolation.
 - `transfer`, `pressure`, `supply`: powered water transfer, pressure feedback, and autonomous level control.

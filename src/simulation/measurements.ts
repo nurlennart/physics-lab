@@ -13,7 +13,7 @@ export const units: Record<Measurement, string> = {
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
   inletPressure: "bar", pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
-  rpm: "RPM", reactivePower: "var", powerFactor: "1", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
+  rpm: "RPM", torque: "N·m", reactivePower: "var", powerFactor: "1", heatDuty: "W", npsh: "m", impellerPower: "W", mechanicalLoss: "W", hydraulicEfficiency: "%", overflow: "L/min", overflowVolume: "L", shaftPower: "W", hydraulicPower: "W", efficiency: "%", transferredVolume: "L",
   massResidual: "kg", energyResidual: "J", velocity: "m/s", reynolds: "1", frictionFactor: "1", position: "%",
   voltage: "V",
   nodeVoltage: "V",
@@ -25,6 +25,7 @@ export const units: Record<Measurement, string> = {
   state: "bool",
   signal: "signal",
 };
+const isMotorKind = (c: { kind: string }) => c.kind === "motor" || c.kind === "inductionMotor";
 export { measurements } from "./capabilities";
 import { measurements } from "./capabilities";
 export function readProbe(p: Probe, s: Simulation): number | null {
@@ -57,7 +58,13 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case 'acceleration': { const b = s.spatial.readings[c.id]; return b ? Math.hypot(b.ax, b.ay) : null; }
     case 'appliedForce': { if (c.kind === 'forceActuator') return c.props.axis === 'torque' ? null : Math.abs(s.spatial.actuatorReadings[c.id] ?? 0); const b = s.spatial.readings[c.id]; return b ? Math.hypot(b.forceX, b.forceY) : null; }
     case 'appliedTorque': return c.kind === 'forceActuator' ? c.props.axis === 'torque' ? s.spatial.actuatorReadings[c.id] ?? 0 : null : s.spatial.readings[c.id]?.torque ?? null;
-    case 'kineticEnergy': return s.spatial.readings[c.id]?.kinetic ?? null;
+    case 'kineticEnergy': {
+      if (c.kind !== 'flywheel') return s.spatial.readings[c.id]?.kinetic ?? null;
+      const rpm = s.mechanicalMeasurement(c.id, 'rpm');
+      return rpm === undefined ? 0 : 0.5 * prop(c, 'inertia') * (rpm * Math.PI / 30) ** 2;
+    }
+    // Motors: electromagnetic (air-gap) torque. Dynamometer: absorbed torque. Flywheel: torque at its own shaft.
+    case "torque": return isMotorKind(c) ? motor?.torque ?? 0 : s.multiphysics.shaftElements[c.id]?.torque ?? 0;
     case 'potentialEnergy': return s.spatial.readings[c.id]?.potential ?? null;
     case 'mechanicalResidual': return s.spatial.residual;
     case 'contactImpulse': return s.spatial.readings[c.id]?.contactImpulse ?? null;
@@ -69,7 +76,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "level": return s.hydraulicMeasurement(c.id, "level") ?? null;
     case "fluidTemperature": return s.fluidTemperatureMeasurement(c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id) ?? null;
     case "rpm": return s.mechanicalMeasurement(c.id, "rpm") ?? null;
-    case "shaftPower": return motor?.shaftPower ?? h?.shaftPower ?? null;
+    case "shaftPower": return c.kind === "dynamometer" ? s.multiphysics.shaftElements[c.id]?.power ?? 0 : motor?.shaftPower ?? h?.shaftPower ?? null;
     // Pump quantities come from the shared pumpCurve() operating point (see hydraulic.ts).
     case "hydraulicPower": return h?.hydraulicPower ?? 0;
     case "impellerPower": return h?.impellerPower ?? 0;
@@ -98,6 +105,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
         : (s.temperatures[c.id] ?? null);
     case "energy":
       if (c.kind === 'forceActuator') return s.spatial.brakeEnergy[c.id] ?? 0;
+      if (c.kind === 'dynamometer') return s.multiphysics.shaftElements[c.id]?.energy ?? 0;
       return s.componentEnergy[c.id] ?? 0;
     case "state": {
       if (c.kind === "contactor") return s.failed[c.id] ? 0 : s.faults[c.id] === "stuckClosed" ? 1 : s.faults[c.id] === "stuckOpen" ? 0 : Number(s.devices.contactors[c.id]?.closed ?? false);

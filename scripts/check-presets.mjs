@@ -221,6 +221,38 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       assert(r.efficiency > 0 && r.efficiency <= v.efficiency);
       break;
     }
+    case 'flywheel': {
+      // Run-up through the gear stage: J·dω/dt = k(V − kω)/R − (b + drag/(i²η))·ω with J = J_m + J/(i²η) while the
+      // motor accelerates the flywheel (independent first-order reference). Motor: k = 1, R = 1, b = 0.
+      const i = v.gearRatio, eta = v.gearEfficiency / 100, target = 0.8 * v.maxSpeed * i, jm = 0.01;
+      const motor = b.add('motor', { resistance: 1, torqueConstant: 1, emfConstant: 1, inertia: jm, friction: 0, ratedVoltage: target * 2, ratedCurrent: 1e6, ratedPower: 1e9, ratedTorque: 1e6, maxSpeed: target * 2, heatCapacity: 1e8, maxTemperature: 5000 });
+      const supply = source(b, target); b.series(supply, motor); b.wire(motor, 'shaft', c, 'shaft');
+      s = simulation(b);
+      const inertia = jm + v.inertia / (i * i * eta), damping = 1 + v.friction / (i * i * eta), t = 2 * inertia / damping;
+      run(s, t);
+      // Midpoint integration at h = 1/60 s: second-order error ≈ (h/τ)²/12 per time constant; allow (h/τ)²/4.
+      near(report, 'motor speed during run-up (rad/s)', target / damping * -Math.expm1(-s.time * damping / inertia), s.multiphysics.motors[motor.id].omega, Math.max(1e-6, (damping / inertia / 60) ** 2 / 4));
+      near(report, 'flywheel kinetic energy ½J(ω/i)² (J)', 0.5 * v.inertia * (s.multiphysics.motors[motor.id].omega / i) ** 2, s.multiphysics.kineticEnergy(s.project) - 0.5 * jm * s.multiphysics.motors[motor.id].omega ** 2, 1e-9);
+      break;
+    }
+    case 'dynamometer': {
+      // Steady absorbed torque: a DC motor (k = 1, R = 0.05 Ω) settles where k(V − kω)/R = T_dyno(ω) at about the rated speed.
+      const speed = v.ratedSpeed, demand = v.absorber === 'waterBrake' ? v.torqueSetpoint : Math.min(v.torqueSetpoint, v.ratedTorque);
+      const motor = b.add('motor', { resistance: 0.05, torqueConstant: 1, emfConstant: 1, inertia: 0.05, friction: 0, ratedVoltage: speed * 2, ratedCurrent: 1e6, ratedPower: 1e9, ratedTorque: 1e6, maxSpeed: v.maxSpeed, heatCapacity: 1e8, maxTemperature: 5000 });
+      const supply = source(b, speed + 0.05 * demand); b.series(supply, motor); b.wire(motor, 'shaft', c, 'shaft');
+      s = simulation(b); run(s, 20);
+      const absorbed = (w) => v.absorber === 'electric' ? Math.min(v.torqueSetpoint, v.ratedTorque, v.ratedPower / w)
+        : v.absorber === 'waterBrake' ? Math.min(v.torqueSetpoint * (w / speed) ** 2, v.ratedTorque, v.ratedPower / w)
+        : Math.min(v.torqueSetpoint, v.ratedTorque * 2 * (w / speed) / (1 + (w / speed) ** 2), v.ratedPower / w);
+      // Independent steady speed: bisection on (V − ω)/R = T(ω).
+      let lo = 0.5 * speed, hi = 1.5 * speed;
+      for (let k = 0; k < 200; k++) { const w = (lo + hi) / 2; if ((speed + 0.05 * demand - w) / 0.05 > absorbed(w)) lo = w; else hi = w; }
+      const w = (lo + hi) / 2, omega = s.multiphysics.motors[motor.id].omega;
+      near(report, 'steady speed (rad/s)', w, omega, 1e-6);
+      near(report, 'absorbed torque (N·m)', absorbed(w), s.multiphysics.shaftElements[c.id].torque, 1e-5);
+      near(report, 'absorbed power (W)', absorbed(w) * w, s.multiphysics.shaftElements[c.id].power, 1e-5);
+      break;
+    }
     default: throw Error(`Missing operating fixture for ${p.kind}`);
   }
   healthy(s, report);

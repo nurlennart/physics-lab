@@ -1,5 +1,5 @@
 export type Kind =
-  | "rigidBody" | "positionSensor" | "speedSensor" | "forceActuator"
+  | "rigidBody" | "positionSensor" | "speedSensor" | "forceActuator" | "flywheel" | "dynamometer"
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator"
@@ -80,7 +80,7 @@ export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
-  | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume"
+  | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume" | "torque"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
   | "stateOfCharge" | "chemicalEnergy" | "polarizationVoltage" | "chargeVoltage" | "fieldEnergy" | "coilVoltage" | "coilCurrent" | "secondaryVoltage" | "secondaryCurrent" | "fanPower"
   | "voltage"
@@ -209,6 +209,8 @@ export const definitions: Record<Kind, Definition> = {
   rigidBody: { label: 'Rigid body', category: 'Mechanical', description: 'Spatial rectangle, circle, convex polygon, beam, wheel or structural boundary; real mass, inertia and collision geometry', spec: 'SI geometry · static / dynamic / kinematic', cost: 25, prefix: 'RB', ports: [shaft], defaults: { forceX: 0, forceY: 0, appliedTorque: 0, brakeDamping: 0 } },
   positionSensor: { label: 'Position sensor', category: 'Sensors', description: 'Actual world position of the target body; selected x or y axis in metres', spec: 'm output', cost: 12, prefix: 'XS', ports: [output('number', 'm')], defaults: { ...sensing, axis: 'y', resolution: 0.00001 } },
   speedSensor: { label: 'Shaft speed sensor', category: 'Sensors', description: 'Calculated target body or motor rotational speed; same shaft state in both views', spec: 'RPM output', cost: 12, prefix: 'WS', ports: [output('number', 'RPM')], defaults: { ...sensing, resolution: 0.001 } },
+  flywheel: { label: "Flywheel / driven inertia", category: "Mechanical", description: "Rotating inertia on a motor shaft, directly coupled or through a gear stage (ratio, efficiency): stores ½·J·ω², the motor sees J/i²; bearing drag and gear mesh losses go to ambient", spec: "1 kg·m² · Ø400 mm steel disc · direct", cost: 60, prefix: "FW", ports: [shaft], defaults: { inertia: 1, gearRatio: 1, gearEfficiency: 100, friction: 0.002, maxSpeed: 314 } },
+  dynamometer: { label: "Dynamometer (test-bench brake)", category: "Mechanical", description: "Shaft brake that absorbs and measures torque: electric (constant torque, holds a stalled shaft), eddy-current (torque rises with speed to its rated speed, constant power above) or water brake (∝ speed²); numeric torque command input; absorbed power leaves through its cooling", spec: "140 N·m · 35 kW · 2,390 RPM eddy-current", cost: 900, prefix: "DY", ports: [shaft, input("torque", "number", true)], defaults: { absorber: "eddyCurrent", torqueSetpoint: 50, ratedTorque: 140, ratedSpeed: 250.3, ratedPower: 35000, maxSpeed: 785.4, inertia: 0.05 } },
   forceActuator: { label: 'Force / brake actuator', category: 'Mechanical', description: 'Explicit external force or torque source with optional control input and viscous brake; work and heat are accounted', spec: 'N or N·m · declared external supply', cost: 18, prefix: 'FA', ports: [input('in', 'number', true)], defaults: { target: '', axis: 'y', value: 0, damping: 0, maxForce: 10000, enabled: true } },
   motor: { label: "DC motor", category: "Electrical", description: "Brushed DC motor: 24 V laboratory, 48 V traction and 180 V industrial models; quasi-steady armature, back EMF, shaft inertia and copper heat; PWM speed drive (PI, 150 % current limit) on optional speed command", spec: "24 V · 20 A · 0.08 N·m/A", cost: 65, prefix: "M", ports: [...electric, shaft, heat, input("enable", "boolean", true), input("speed", "number", true)], defaults: { conductance: 20, resistance: 1.2, torqueConstant: 0.08, emfConstant: 0.08, inertia: 0.006, friction: 0.0005, loadTorque: 0, ratedVoltage: 24, ratedCurrent: 20, ratedTorque: 1.6, ratedPower: 500, maxSpeed: 400, heatCapacity: 500, loss: 2, maxTemperature: 120, enabled: true, speedControl: false, speedCommand: 2500 }, variants: [
     { id: "traction48", label: "Traction DC 48 V", cost: 180, spec: "48 V · 40 A limit · 6 N·m torque limit", overrides: { torqueConstant: 0.15, emfConstant: 0.15, inertia: 0.025, friction: 0.001, ratedVoltage: 48, ratedCurrent: 40, ratedTorque: 6, ratedPower: 2000, heatCapacity: 1800, loss: 5 } },
@@ -1060,9 +1062,12 @@ export function connectionError(
   if (pa.domain === "mechanical") {
     const motor = isMotor(a!) ? a! : isMotor(b!) ? b! : undefined;
     const load = motor?.id === a!.id ? b! : a!;
-    if (!motor || !['pump', 'rigidBody'].includes(load.kind)) return 'Connect a motor shaft to a pump or spatial rotor.';
+    if (!motor || !['pump', 'rigidBody', 'flywheel', 'dynamometer'].includes(load.kind)) return 'Connect a motor shaft to a pump, flywheel, dynamometer or spatial rotor.';
+    // A spatial rotor carries the shaft dynamics in the rigid-body world; flywheels and dynamometers act on the motor's own shaft equation.
+    const others = project.connections.filter(w => w.domain === 'mechanical' && [w.from.component, w.to.component].includes(motor.id)).map(w => project.components.find(c => c.id === (w.from.component === motor.id ? w.to.component : w.from.component))?.kind);
+    if ((load.kind === 'rigidBody' && others.some(k => k === 'flywheel' || k === 'dynamometer')) || (['flywheel', 'dynamometer'].includes(load.kind) && others.includes('rigidBody'))) return 'A shaft driving a spatial rotor cannot also carry a flywheel or dynamometer; the spatial body supplies its inertia and loads.';
     if (load.kind === 'rigidBody' && (!load.spatial || load.spatial.type !== 'dynamic' || load.spatial.fixedRotation)) return 'A spatial shaft needs a dynamic body with free rotation.';
-    if (project.connections.some(w => w.domain === 'mechanical' && (w.from.component === load.id || w.to.component === load.id || ([w.from.component, w.to.component].includes(motor.id) && project.components.some(c => [w.from.component, w.to.component].includes(c.id) && c.kind === load.kind))))) return 'A shaft supports one motor, one pump and one spatial rotor; a load accepts one shaft.';
+    if (project.connections.some(w => w.domain === 'mechanical' && (w.from.component === load.id || w.to.component === load.id || ([w.from.component, w.to.component].includes(motor.id) && project.components.some(c => [w.from.component, w.to.component].includes(c.id) && c.kind === load.kind))))) return 'A shaft supports one motor and at most one each of pump, flywheel, dynamometer and spatial rotor; a load accepts one shaft.';
   }
   if (pa.domain === "control") {
     if (pa.direction !== "out" || pb.direction !== "in")

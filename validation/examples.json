@@ -490,6 +490,80 @@
     ]
   },
   {
+    "mode": "testbench",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 356836.3859661285,
+    "energyResidual": -0.00004813174018636346,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Motor speed",
+        "value": 1479.247496498679
+      },
+      {
+        "name": "Motor torque",
+        "value": 30.61049647054545
+      },
+      {
+        "name": "Absorbed torque",
+        "value": 30
+      },
+      {
+        "name": "Absorbed power",
+        "value": 4647.233975994302
+      },
+      {
+        "name": "Motor efficiency",
+        "value": 90.00111156423517
+      },
+      {
+        "name": "Line current",
+        "value": 10.245682665539809
+      }
+    ]
+  },
+  {
+    "mode": "testbench",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 356836.3859661285,
+    "energyResidual": -0.00004813174018636346,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Motor speed",
+        "value": 1479.247496498679
+      },
+      {
+        "name": "Motor torque",
+        "value": 30.61049647054545
+      },
+      {
+        "name": "Absorbed torque",
+        "value": 30
+      },
+      {
+        "name": "Absorbed power",
+        "value": 4647.233975994302
+      },
+      {
+        "name": "Motor efficiency",
+        "value": 90.00111156423517
+      },
+      {
+        "name": "Line current",
+        "value": 10.245682665539809
+      }
+    ]
+  },
+  {
     "mode": "light",
     "source": "generated",
     "simulatedSeconds": 60,

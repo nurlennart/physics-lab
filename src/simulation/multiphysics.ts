@@ -8,6 +8,7 @@ import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './
 import { kellDensity, inventoryVolume } from './water';
 import type { Simulation } from './engine';
 import { shaftBody } from './spatial-model';
+import { dynamometerTorque, holdsAtStandstill, reflectedFlywheel, shaftInertia, shaftTrain, trainAcceleration, trainKineticEnergy } from './drivetrain';
 /** `angle` is the accumulated rotor rotation (rad) since reset, used for drawing. */
 export interface MotorState {
   omega: number; current: number; torque: number; load: number; shaftPower: number; copperPower: number; duty: number; acceleration: number; angle: number;
@@ -15,6 +16,8 @@ export interface MotorState {
   psiS?: Cx; psiR?: Cx[]; frequency?: number; inrushPeak?: number; energized?: boolean; fluxRate?: number;
   /** Speed-controlled DC drive: integral part of the armature current reference (A). */
   speedIntegral?: number;
+  /** Shaft train: dynamometer torque absorbed at the midpoint speed (N·m, opposing), flywheel transmitted torque and gear factor. */
+  dynamometerTorque?: number; transmitted?: number; gear?: number;
 }
 /** Below this speed (rad/s) a rotor counts as at rest for the opposing load. */
 const OMEGA_REST = 1e-9;
@@ -71,7 +74,22 @@ export class Multiphysics {
   get massResidual() { return Object.values(this.tanks).reduce((s, t) => s + t.mass, 0) + this.removedMass - this.initialMass; }
   get kinetic() { return this.kineticEnergy(this.lastProject); }
   private lastProject?: Project;
-  kineticEnergy(p?: Project) { return p ? p.components.filter(c => isMotor(c) && !shaftBody(p, c.id)).reduce((s, c) => s + 0.5 * prop(c, 'inertia') * (this.motors[c.id]?.omega ?? 0) ** 2, 0) : 0; }
+  kineticEnergy(p?: Project) {
+    return p ? p.components.filter(c => isMotor(c) && !shaftBody(p, c.id)).reduce((s, c) => {
+      const omega = this.motors[c.id]?.omega ?? 0;
+      return s + 0.5 * prop(c, 'inertia') * omega ** 2 + trainKineticEnergy(shaftTrain(p, c.id), omega);
+    }, 0) : 0;
+  }
+  /** Flywheels and dynamometers: speed, torque and power over the last step, absorbed energy (J). */
+  shaftElements: Record<string, { omega: number; torque: number; power: number; energy: number; kinetic?: number }> = {};
+  /** Bearing drag and gear mesh losses of flywheels (J), released to ambient. */
+  drivetrainLoss = 0;
+  /** Set torque of a dynamometer: its wired numeric torque command, else its set-torque parameter (N·m). */
+  private dynamometerSet(s: Simulation, c: Component) {
+    if (!s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === 'torque')) return prop(c, 'torqueSetpoint');
+    const command = s.automation.input(c, 'torque', s);
+    return command.valid && typeof command.value === 'number' ? Math.max(0, command.value) : 0;
+  }
   /** Tank gravitational energy Φ = g(z·m + m²/(2ρ_ref·A)), consistent with the network flow work (Boussinesq). */
   potential(p: Project) { return p.components.filter(c => c.kind === 'tank').reduce((s, c) => { const v = (this.tanks[c.id]?.mass ?? 0) / RHO; return s + RHO * G * (prop(c, 'elevation') * v + v * v / (2 * prop(c, 'surfaceArea'))); }, 0); }
   private controls(s: Simulation) {
@@ -93,7 +111,9 @@ export class Multiphysics {
    */
   private dcSpeedGains(c: Component) {
     const bandwidth = 20;
-    return { kp: prop(c, 'inertia') * bandwidth / prop(c, 'torqueConstant'), corner: bandwidth / 4, limit: 1.5 * prop(c, 'ratedCurrent') };
+    // The whole shaft's inertia (flywheel, dynamometer rotor) sets the loop gain for the same bandwidth.
+    const inertia = this.lastProject ? shaftInertia(c, shaftTrain(this.lastProject, c.id)) : prop(c, 'inertia');
+    return { kp: inertia * bandwidth / prop(c, 'torqueConstant'), corner: bandwidth / 4, limit: 1.5 * prop(c, 'ratedCurrent') };
   }
   private dcCurrentReference(c: Component, command: number, omega: number) {
     const g = this.dcSpeedGains(c);
@@ -223,13 +243,18 @@ export class Multiphysics {
       const machine = c.kind === 'inductionMotor' && running ? r?.machine : undefined;
       // DC: armature current from back EMF. Induction: line current and air-gap torque from the equivalent circuit.
       const current = c.kind === 'inductionMotor' ? (machine ? r.current : 0) : running ? (ctrl.duty * r.voltage - prop(c, 'emfConstant') * omega[i]) / prop(c, 'resistance') : 0;
-      const pump = pairs[c.id] ? hydraulic.readings[pairs[c.id]] : undefined;
-      const load = (pump?.torque ?? 0) + (loads?.[i] ?? prop(c, 'loadTorque'));
+      const pump = pairs[c.id] ? hydraulic.readings[pairs[c.id]] : undefined, train = shaftTrain(s.project, c.id, s.disconnected), dyno = train.dynamometer;
+      // Speed-dependent absorbers act at the midpoint speed (implicit, stable for a stiff brake); an electric
+      // dynamometer's constant torque is an opposing load with hold-at-rest (opposingLoads).
+      const dynamometer = dyno && !holdsAtStandstill(dyno) ? Math.sign(omega[i]) * dynamometerTorque(dyno, omega[i], this.dynamometerSet(s, dyno)) : 0;
+      const load = (pump?.torque ?? 0) + (loads?.[i] ?? prop(c, 'loadTorque')) + dynamometer;
       const torque = c.kind === 'inductionMotor' ? machine?.torque ?? 0 : prop(c, 'torqueConstant') * current;
+      const linkedBody = shaftBody(s.project, c.id), coupled = linkedBody ? undefined : trainAcceleration(prop(c, 'inertia'), train, torque - load - prop(c, 'friction') * omega[i], omega[i]);
       // DC armature: the current's within-step variance (storage transients) adds to the copper loss; the supply-side
       // current is duty × the armature current.
       const copperPower = c.kind === 'inductionMotor' ? (machine ? machine.statorCopper + machine.rotorCopper + machine.coreLoss : 0) : (current * current + (running && ctrl.duty > 0 ? (r?.currentVariance ?? 0) / ctrl.duty ** 2 : 0)) * prop(c, 'resistance');
-      return { omega: omega[i], current, torque, load, shaftPower: shaftBody(s.project, c.id) ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : load * omega[i], copperPower, duty: ctrl.duty, acceleration: shaftBody(s.project, c.id) ? this.motors[c.id]?.acceleration ?? 0 : (torque - load - prop(c, 'friction') * omega[i]) / prop(c, 'inertia'), angle: this.motors[c.id]?.angle ?? 0,
+      return { omega: omega[i], current, torque, load, shaftPower: linkedBody ? (torque - prop(c, 'friction') * omega[i]) * omega[i] : (load + coupled!.gear * coupled!.transmitted) * omega[i], copperPower, duty: ctrl.duty, acceleration: linkedBody ? this.motors[c.id]?.acceleration ?? 0 : coupled!.acceleration, angle: this.motors[c.id]?.angle ?? 0,
+        dynamometerTorque: dynamometer, transmitted: coupled?.transmitted ?? 0, gear: coupled?.gear ?? 1,
         ...(c.kind === 'inductionMotor' ? { psiS: this.motors[c.id]?.psiS, psiR: this.motors[c.id]?.psiR, frequency: this.motors[c.id]?.frequency, inrushPeak: this.motors[c.id]?.inrushPeak, energized: this.motors[c.id]?.energized, fluxRate: this.motors[c.id]?.fluxRate } : {}) };
     });
     return { electrical, hydraulic, state, speeds };
@@ -260,13 +285,44 @@ export class Multiphysics {
     }
   }
   /**
+   * Shaft-train accounting over an accepted substep. Dynamometer: absorbed torque (its share of the opposing
+   * load for an electric absorber, else its speed-dependent torque) × midpoint speed leaves as exported work.
+   * Flywheel: bearing drag and the gear mesh loss (k − 1)·T_t·ω go to ambient; its kinetic energy is in the
+   * shaft's kinetic energy. Returns the heat released to ambient (J).
+   */
+  private advanceTrain(s: Simulation, c: Component, m: MotorState, opposing: number, electricShare: number, start: number, omega: number, next: number, h: number) {
+    const train = shaftTrain(s.project, c.id, s.disconnected), dyno = train.dynamometer, flywheel = train.flywheel;
+    let heat = 0;
+    if (dyno) {
+      const speedTorque = m.dynamometerTorque ?? 0, torque = opposing * electricShare + speedTorque;
+      this.externalShaftWork += speedTorque * omega * h;
+      const previous = this.shaftElements[dyno.id]?.energy ?? 0;
+      this.shaftElements[dyno.id] = { omega: next, torque: Math.abs(torque), power: torque * omega, energy: previous + torque * omega * h };
+      if (Math.abs(next) > prop(dyno, 'maxSpeed')) s.violation(`${dyno.name}: maximum speed exceeded.`);
+      if (torque * omega > prop(dyno, 'ratedPower') * 1.001) s.violation(`${dyno.name}: absorbed power above its rating.`);
+    }
+    if (flywheel) {
+      const f = reflectedFlywheel(flywheel), acceleration = (next - start) / h;
+      const transmitted = f.inertia * acceleration + f.drag * omega, loss = f.drag * omega * omega + ((m.gear ?? 1) - 1) * transmitted * omega;
+      this.drivetrainLoss += loss * h;
+      heat += loss * h;
+      const previous = this.shaftElements[flywheel.id]?.energy ?? 0, speed = next / f.ratio;
+      // The flywheel shaft carries i·T_t; the gear loss stays on the motor side of the mesh.
+      this.shaftElements[flywheel.id] = { omega: speed, torque: Math.abs(transmitted * f.ratio), power: transmitted * omega, energy: previous + transmitted * omega * h, kinetic: 0.5 * prop(flywheel, 'inertia') * speed * speed };
+      if (Math.abs(speed) > prop(flywheel, 'maxSpeed')) s.violation(`${flywheel.name}: maximum safe speed exceeded.`);
+    }
+    return heat;
+  }
+  /**
    * Opposing load: magnitude T_L resists the current direction of rotation and supplies no energy.
    * At rest it acts as static friction: it balances any net drive up to T_L (rotor held), and beyond
    * that resists the breakaway direction. Externally driven reverse rotation stays possible.
    */
   private opposingLoads(s: Simulation, old: number[], controls: ReturnType<Multiphysics['controls']>, linked: (string | undefined)[], h = 0) {
     const motors = s.project.components.filter(isMotor);
-    const magnitude = motors.map(c => Math.max(0, prop(c, 'loadTorque')));
+    // Opposing magnitude: the external load plus an electric dynamometer's set torque (both hold a stalled shaft).
+    const electric = motors.map((c, i) => { const d = shaftTrain(s.project, c.id, s.disconnected).dynamometer; return d && holdsAtStandstill(d) ? dynamometerTorque(d, old[i], this.dynamometerSet(s, d)) : 0; });
+    const magnitude = motors.map((c, i) => Math.max(0, prop(c, 'loadTorque')) + electric[i]);
     const loads = motors.map((c, i) => Math.abs(old[i]) > OMEGA_REST ? Math.sign(old[i]) * magnitude[i] : 0);
     const held = motors.map(() => false);
     if (motors.some((c, i) => Math.abs(old[i]) <= OMEGA_REST)) {
@@ -278,7 +334,7 @@ export class Multiphysics {
         else loads[i] = Math.sign(drive) * magnitude[i];
       });
     }
-    return { loads, held };
+    return { loads, held, electric, magnitude };
   }
   /**
    * Advance an induction machine's flux linkages over an accepted step (midpoint values from the
@@ -399,7 +455,7 @@ export class Multiphysics {
       let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s), s.devices.eventLimit(s.project));
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
-      const { loads, held } = this.opposingLoads(s, old, controls, linked, h);
+      const { loads, held, electric, magnitude } = this.opposingLoads(s, old, controls, linked, h);
       const discrete = motors.map((c, i) => `${controls[c.id].enabled ? 1 : 0}${Math.sign(loads[i])}${held[i] ? 'h' : ''}`).join('|') + JSON.stringify([Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running)]);
       const snapshot = linked.some(Boolean) ? s.spatial.checkpoint() : undefined;
       let accepted: ReturnType<Multiphysics['solve']> | undefined;
@@ -499,8 +555,8 @@ export class Multiphysics {
         let next = linked[i] ? s.spatial.readings[linked[i]!].omega : held[i] ? 0 : 2 * midpoint[i] - old[i];
         // Arrival at rest after a split stopping step: remove the round-off remainder.
         if (!linked[i] && loads[i] !== 0 && Math.abs(old[i]) > OMEGA_REST && (Math.sign(next) === -Math.sign(old[i]) || Math.abs(next) <= 1e-9 * Math.max(1, Math.abs(old[i])))) {
-          // The load catches the rotor: the overshoot's kinetic energy goes to the load (exported work).
-          this.externalShaftWork += 0.5 * prop(c, 'inertia') * next * next;
+          // The load catches the rotor: the overshoot's kinetic energy (whole shaft train) goes to the load (exported work).
+          this.externalShaftWork += 0.5 * shaftInertia(c, shaftTrain(s.project, c.id, s.disconnected)) * next * next;
           next = 0;
         }
         const acceleration = (next - old[i]) / h;
@@ -517,6 +573,7 @@ export class Multiphysics {
         if (c.kind === 'inductionMotor') heatEnergy[c.id] += this.advanceFlux(c, r.electrical.readings[c.id], midpoint[i], h, angleWindow(r.electrical.readings[c.id]));
         // Work exported by the opposing load: loads[i]·ω ≥ 0 while moving, zero while held at rest.
         this.externalShaftWork += loads[i] * midpoint[i] * h;
+        ambient += this.advanceTrain(s, c, m, loads[i], magnitude[i] > 0 ? electric[i] / magnitude[i] : 0, old[i], midpoint[i], next, h);
         if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);
         if (Math.abs(m.torque) > prop(c, 'ratedTorque') * 1.001) s.automation.status[c.id] = 'overloaded';
       });

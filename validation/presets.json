@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 68,
-    "coveredPresets": 68,
-    "scenarios": 112,
-    "passed": 112,
+    "presets": 74,
+    "coveredPresets": 74,
+    "scenarios": 118,
+    "passed": 118,
     "failed": 0
   },
   "reports": [
@@ -2089,6 +2089,286 @@
       "pass": true,
       "time": 1.0000000000000013,
       "energyResidual": 7.050537931263534e-11,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Steel disc Ø400 × 50 mm · direct",
+      "presets": [
+        "builtin:flywheel:Steel disc Ø400 × 50 mm · direct"
+      ],
+      "checks": [
+        {
+          "label": "motor speed during run-up (rad/s)",
+          "expected": 216.90567877848088,
+          "measured": 216.9072527006012,
+          "absoluteError": 0.001573922120314819,
+          "tolerance": 0.015123216188632634
+        },
+        {
+          "label": "flywheel kinetic energy ½J(ω/i)² (J)",
+          "expected": 23289.134355690618,
+          "measured": 23289.134355690618,
+          "absoluteError": 0,
+          "tolerance": 0.00002329913435569062
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000002662014594534412,
+          "absoluteError": 0.000002662014594534412,
+          "tolerance": 273.1512357205259
+        }
+      ],
+      "pass": true,
+      "time": 1.9999999999999978,
+      "energyResidual": 0.000002662014594534412,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Conveyor drive 40 kg·m² · 20:1 helical reducer",
+      "presets": [
+        "builtin:flywheel:Conveyor drive 40 kg·m² · 20:1 helical reducer"
+      ],
+      "checks": [
+        {
+          "label": "motor speed during run-up (rad/s)",
+          "expected": 217.1703922563971,
+          "measured": 217.28646434594572,
+          "absoluteError": 0.11607208954862358,
+          "tolerance": 1.1163836361023332
+        },
+        {
+          "label": "flywheel kinetic energy ½J(ω/i)² (J)",
+          "expected": 2360.6703793980973,
+          "measured": 2360.6703793980973,
+          "absoluteError": 0,
+          "tolerance": 0.0000023706703793980973
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 2.7929218049393967e-7,
+          "absoluteError": 2.7929218049393967e-7,
+          "tolerance": 31.817873856938434
+        }
+      ],
+      "pass": true,
+      "time": 0.2333333333333333,
+      "energyResidual": 2.7929218049393967e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Eddy-current 50 N·m · 15 kW · 2,865 RPM",
+      "presets": [
+        "builtin:dynamometer:Eddy-current 50 N·m · 15 kW · 2,865 RPM"
+      ],
+      "checks": [
+        {
+          "label": "steady speed (rad/s)",
+          "expected": 300,
+          "measured": 299.9999999991236,
+          "absoluteError": 8.76411831995938e-10,
+          "tolerance": 0.00030000999999999997
+        },
+        {
+          "label": "absorbed torque (N·m)",
+          "expected": 20,
+          "measured": 20,
+          "absoluteError": 0,
+          "tolerance": 0.00020001
+        },
+        {
+          "label": "absorbed power (W)",
+          "expected": 6000,
+          "measured": 6000.000000010712,
+          "absoluteError": 1.0712028597481549e-8,
+          "tolerance": 0.060000010000000006
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000008027025614865124,
+          "absoluteError": 0.000008027025614865124,
+          "tolerance": 630.3090499988518
+        }
+      ],
+      "pass": true,
+      "time": 20.000000000000146,
+      "energyResidual": 0.000008027025614865124,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Eddy-current 560 N·m · 140 kW · 2,390 RPM",
+      "presets": [
+        "builtin:dynamometer:Eddy-current 560 N·m · 140 kW · 2,390 RPM"
+      ],
+      "checks": [
+        {
+          "label": "steady speed (rad/s)",
+          "expected": 250.3,
+          "measured": 250.30000000000004,
+          "absoluteError": 2.842170943040401e-14,
+          "tolerance": 0.00025031
+        },
+        {
+          "label": "absorbed torque (N·m)",
+          "expected": 200,
+          "measured": 200,
+          "absoluteError": 0,
+          "tolerance": 0.00200001
+        },
+        {
+          "label": "absorbed power (W)",
+          "expected": 50060,
+          "measured": 50060,
+          "absoluteError": 0,
+          "tolerance": 0.5006000100000001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 6.927875801920891e-7,
+          "absoluteError": 6.927875801920891e-7,
+          "tolerance": 5287.441362498376
+        }
+      ],
+      "pass": true,
+      "time": 20.000000000000146,
+      "energyResidual": 6.927875801920891e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Electric AC dynamometer 300 N·m · 75 kW",
+      "presets": [
+        "builtin:dynamometer:Electric AC dynamometer 300 N·m · 75 kW"
+      ],
+      "checks": [
+        {
+          "label": "steady speed (rad/s)",
+          "expected": 250,
+          "measured": 249.99999999999997,
+          "absoluteError": 2.842170943040401e-14,
+          "tolerance": 0.00025001
+        },
+        {
+          "label": "absorbed torque (N·m)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.00100001
+        },
+        {
+          "label": "absorbed power (W)",
+          "expected": 25000,
+          "measured": 24999.999999999996,
+          "absoluteError": 3.637978807091713e-12,
+          "tolerance": 0.25000001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000001166015863418579,
+          "absoluteError": 0.000001166015863418579,
+          "tolerance": 2677.499999994925
+        }
+      ],
+      "pass": true,
+      "time": 20.000000000000146,
+      "energyResidual": 0.000001166015863418579,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Water brake 1,000 N·m · 300 kW",
+      "presets": [
+        "builtin:dynamometer:Water brake 1,000 N·m · 300 kW"
+      ],
+      "checks": [
+        {
+          "label": "steady speed (rad/s)",
+          "expected": 314,
+          "measured": 313.99999999999994,
+          "absoluteError": 5.684341886080802e-14,
+          "tolerance": 0.00031401
+        },
+        {
+          "label": "absorbed torque (N·m)",
+          "expected": 800,
+          "measured": 799.9999999999995,
+          "absoluteError": 4.547473508864641e-13,
+          "tolerance": 0.00800001
+        },
+        {
+          "label": "absorbed power (W)",
+          "expected": 251200,
+          "measured": 251199.99999999983,
+          "absoluteError": 1.7462298274040222e-10,
+          "tolerance": 2.51200001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0000038137659430503845,
+          "absoluteError": 0.0000038137659430503845,
+          "tolerance": 28530.12851569655
+        }
+      ],
+      "pass": true,
+      "time": 20.000000000000146,
+      "energyResidual": -0.0000038137659430503845,
       "massResidual": 0,
       "violations": [],
       "failed": {}
