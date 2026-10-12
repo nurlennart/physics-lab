@@ -1,71 +1,93 @@
 # Architecture
 
-The shared spatial identity, Planck engine, bidirectional shaft solve, scheduling and version 4 persistence are documented in [Phase 3A](PHASE3A.md). The original electrical/thermal/hydraulic architecture below remains in use.
+Physics Lab is a static single-page application (React 19, TypeScript, Vite). There is no backend: projects, presets and recovery copies live in the browser or in downloaded files. The simulation runs on the main thread, outside React.
 
-## Modules
+## Principles
 
-| Module                     | Responsibility                                                                                                         |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `simulation/model.ts`      | Component definitions, SI properties, typed electrical/thermal/control ports, connection validation                    |
-| `simulation/electrical.ts` | Wire union-find, circuit islands, modified nodal analysis, pivoted matrix solve, calculated readings                   |
-| `simulation/engine.ts`     | Deterministic simulation state, coupled thermal solve, protection, energy integration, telemetry and diagnostics       |
-| `simulation/challenges.ts` | Assignment data, scenario callbacks/configuration, measured-feedback/causal-protection evaluation, transparent scoring |
-| `simulation/projects.ts`   | Starters, v1→v2 migration and validated project schema, JSON and CSV file delivery                                     |
-| `simulation/replay.ts`     | Reproducible reset and timestamped editor-input playback                                                               |
-| `editor/store.ts`          | External React store, project edits, selection, history, clock transport and input recording                           |
-| `simulation/parameters.ts` | Parameter metadata (unit, group, policy, validity domain, display conversion), derived relationships, actual resistance, calculated readouts |
-| `simulation/presets.ts`    | Built-in engineering families and validated user presets (definition → instance configuration; runtime state stays in the engine) |
-| `simulation/scaling-validation.ts` | Executed scale campaign (Experiments A–E, scaling matrices) shared by tests and `scripts/validate-scaling.mjs` |
-| `components/ParameterEditor.tsx` | Grouped engineering Inspector: engineering-notation inputs, lock reasons, ratings bars, calculated values, presets, environment |
-| `editor/webmcp.ts`         | Optional browser-native structured access to existing laboratory actions                                               |
-| `components/Workspace.tsx` | SVG schematic rendering, pan/zoom, placement, selection, terminal interaction and routing                              |
-| `components/Inspector.tsx` | Editable model properties and calculated component instrumentation                                                     |
-| `components/Telemetry.tsx` | Actual recorded measurements, events, chart channels and energy balance                                                |
+- **Simulation state lives outside rendering.** `Simulation` (`engine.ts`) owns all physical state; the editor store owns the simulation and the clock; React components observe through `useSyncExternalStore` and never compute physics.
+- **Configuration is immutable.** The engine receives a deeply frozen, validated copy of the project. Every replacement (edit, undo, import) passes the same integrity checks (`integrity.ts`). Runtime state (temperatures, inventories, shaft speeds, controller memory, faults) is kept separately.
+- **One clock.** The physics advances in fixed 1/60 s steps (or recorded adaptive steps), independent of the frame rate. Rendering and wall time never enter the equations. See [PHYSICS.md § Time integration](PHYSICS.md#time-integration).
+- **SI inside.** Solvers use SI; `units.ts` converts for display.
 
-## State and clock
+## Source layout
 
-Project construction and initial conditions are separate from the mutable `Simulation` class. React never calculates physics. The external editor store owns the simulation and a fixed-step accumulator; React observes its state through `useSyncExternalStore`.
+### `src/simulation/`: models and engine
 
-The simulation advances at 1/60 s with an independent render loop. Instrument updates are throttled to 20 Hz; SVG dragging updates on input, and flow indicators use CSS. Slow frames have bounded catch-up: at most 0.25 wall-clock seconds are accumulated per frame. Speed multiplication changes the number of steps, never timestep size. Pause clears the accumulator. Reset restores the current project's initial conditions, clears faults and measurements, and creates a new replay origin.
+| Module | Responsibility |
+| --- | --- |
+| `model.ts` | Component catalog: kinds, typed ports (electrical, thermal, hydraulic, shaft, control), catalog variants, connection validation |
+| `parameters.ts` | Parameter metadata: unit, display conversion, group, editing policy, validity domain, derived relationships |
+| `presets.ts` | Built-in engineering families and validated user presets |
+| `integrity.ts` | Live vs Reset-only edits, challenge locks, catalog rules, cross-parameter checks |
+| `engine.ts` | `Simulation`: step scheduling, thermal solve, protection, ratings, energy ledger, telemetry, adaptive advance (`AdaptiveRun`), `FixedClock` |
+| `electrical.ts`, `electrical-core.ts` | Public electrical API; union-find islands, real and complex MNA, CV/CC active set, harmonic solves |
+| `linear-algebra.ts` | Scaled dense real and complex solves shared by all solvers |
+| `device-circuits.ts`, `devices.ts` | Batteries, powered contactors, transformers and radiator fans as MNA branches; their accepted state and energy functions |
+| `induction.ts`, `converters.ts` | Dynamic induction machine; star-delta and soft starters, variable-frequency drive |
+| `filament.ts` | Tungsten filament lamp |
+| `multiphysics.ts` | Coupled substeps: motor shafts, tanks, valves, midpoint Newton coupling of electrical, hydraulic and spatial loads |
+| `hydraulic.ts`, `water.ts` | Hydraulic topology and network solve, pump curve, enthalpy transport, tank boundaries; water properties |
+| `spatial-model.ts`, `spatial.ts` | Spatial configuration and validation; the Planck world, mechanical readings and energy |
+| `automation.ts` | Typed control graph: sensors, logic, timers, PID, signal blocks, independent cutoff |
+| `capabilities.ts`, `measurements.ts` | Measurement contract shared by menus, imports and runtime; probe resolution |
+| `projects.ts`, `hydraulic-projects.ts`, `spatial-projects.ts`, `device-projects.ts` | Starters and challenge scaffolds; project parsing, migration and file delivery |
+| `challenges.ts`, `spatial-challenges.ts`, `scoring.ts`, `learning.ts` | Assignment definitions, evaluation and scoring; mission scaffolds and guidebooks |
+| `replay.ts` | Run archives and deterministic replay |
+| `validation.ts`, `hydraulic-validation.ts`, `spatial-validation.ts`, `scaling-validation.ts` | Executable validation campaigns shared by tests and `scripts/` |
 
-Per step: read temperature sensors; evaluate the typed acyclic control graph on simulation time; apply relay and safety contacts; solve/cache DC MNA; solve the coupled thermal matrix; integrate energy; evaluate ratings and limits; immediately re-solve failed branches; update challenge state; record targeted probes. The editor runs challenge rules after steps and pauses at completion.
+### `src/editor/`: editing logic without React
 
-## Ports and coupling
+| Module | Responsibility |
+| --- | --- |
+| `store.ts` | External store: project edits, selection, undo history, clock transport, input recording, advance and replay |
+| `geometry.ts` | Schematic module dimensions, terminal positions and the wire router |
+| `assemblies.ts` | Duplicate, copy/paste and reusable assemblies with ID and reference remapping |
+| `spatial-layout.ts` | Automatic placement of equipment housings in the Physical view |
+| `engineering.ts` | Engineering-notation number entry and display |
+| `webmcp.ts` | Optional browser tool registration (feature-detected WebMCP) for structured access to lab actions |
 
-Electrical ports exchange node potentials and branch currents through the circuit equations. Ideal wires union nodes; resistive branches and voltage sources join circuit islands. All ground components share one zero reference; otherwise each independent island uses a local reference.
+### `src/components/`: user interface
 
-Thermal connections explicitly link one immersion heater to one water tank. Multiple heaters may share a tank. Passive electrical dissipation enters a thermal mass once. Coupled heat transfer is stamped symmetrically into one thermal matrix, ensuring equal-and-opposite exchange. No visual connection has an unimplemented physical domain.
+`Workspace.tsx` (schematic SVG), `PhysicalView.tsx` (spatial view, tools and inspector), `Inspector.tsx` and `ParameterEditor.tsx`, `Library.tsx`, `Telemetry.tsx` (charts, events, energy balance), `Challenges.tsx` and `Learning.tsx` (assignments, example shelf, guidebooks), `Models.tsx` (in-app model reference), `ErrorBoundary.tsx` (per-pane recovery). `src/theme/` holds the design tokens; see [DESIGN.md](DESIGN.md).
 
-## Editing and persistence
+## Clock and editor loop
 
-History stores at most 60 immutable project snapshots. Duplicate/copy/paste remaps independent component IDs, internal connections, routes and sensor targets. External wires and thermal targets are omitted; saved reusable assemblies follow the same rule. Routing is orthogonal, selected connections can be deleted, and connections validate both endpoint domains and immersion compatibility.
+The store runs a fixed-step accumulator on `requestAnimationFrame`. Each frame adds elapsed wall time × speed, capped at 0.25 s, and executes whole 1/60 s steps within a 12 ms work budget; an overloaded scene slows the simulation clock rather than changing the step. Pause clears the accumulator. Instrument updates are throttled to 20 Hz.
 
-Version 2 projects include routes, probes, reusable assemblies, model variants, identity, name, components, connections, initial properties, and optional challenge ID. Imports enforce component counts, wire counts, finite bounded properties, unique IDs, valid ports, duplicate-wire rules, tank capacity and immersion compatibility. Version 1 files migrate with validated catalog defaults. Projects download as JSON. A labeled device recovery copy uses browser storage; it is not cloud persistence. Telemetry exports as CSV.
+Long advances and replays run in yielding batches, so the browser stays responsive and every step is still executed. Reset restores the project's initial conditions, clears faults and measurements, and starts a new replay origin.
 
-Replay stores editor project snapshots with simulation timestamps and reconstructs the final state by resetting the origin and executing identical fixed steps and inputs. Adjacent same-timestamp project edits coalesce without discarding fault/reset inputs. Replay includes fault injections, wire faults, manual latch resets, controller states and pulse commands, and supports up to two simulation hours. It does not promise arbitrary timeline scrubbing or persistent recorded runs across reloads.
+## Editing
 
-## Sandbox editing policy
+- **History:** up to 60 immutable project snapshots for undo and redo.
+- **Live vs Reset edits:** live parameters may change at any time without injecting energy; parameters that define stored energy, mass, geometry or initial state are rejected after t = 0 until Reset. See [SANDBOX.md](SANDBOX.md).
+- **Assemblies:** duplicate, copy/paste and saved assemblies remap component IDs, internal connections, routes, sensor targets and joints; external links are omitted.
+- **Limits:** 100 components, 300 connections, 100 joints, 250 electrical unknowns per island, 120 hydraulic branches and 200 hydraulic nodes. Dense direct solves are appropriate at this size.
 
-Free Sandbox edits are validated by parameter metadata (`parameters.ts`). Live parameters are conservation-safe at any time. Reset parameters define stored energy, mass or initial state, and the engine's `physicsSignature` rejects them after t = 0. Calculated parameters are recomputed by `applyDerived` on every edit and import. Challenge projects keep the original catalog-locked sets in `integrity.ts`. Thermal/electrical/control experiments can advance with `AdaptiveRun` (event-aware, recorded for replay). See [SANDBOX.md](SANDBOX.md).
+### Wire routing
 
-## Limits and tradeoffs
+`routeAll()` in `geometry.ts` routes all wires of a project on a sparse orthogonal grid built from module bounds, terminal and stub coordinates and lanes in wide channels:
 
-100 components, 300 connections, 250 electrical unknowns per island; newest 14,400 measurements and 500 log events retained. Dense matrix solves are appropriate at this scene size. Typed arrays, sparse solvers, workers, WASM, and GPU rendering should be introduced only after profiling demonstrates a bottleneck.
+- wires leave each terminal in the direction it faces (a short stub, rotation-aware) and avoid module bodies, captions and foreign terminals;
+- A* over (node, heading) penalizes bends, crossings, running along wires of other nets, and passing obstacles; wires of one net (union-find over terminals) may share a lane;
+- searches run in a bounded window first, then a wider one, then with soft obstacles; each search is capped;
+- wires are routed shortest first, without rip-up;
+- results are memoized per (components, connections) pair, so dragging re-routes only when the project changes.
 
-No Rust, WebGPU, or mechanical engine is introduced for the initial electrical/thermal slice. A future hydraulic solver can introduce pressure/flow ports and conserved fluid volumes; a mechanical solver should use an established rigid-body engine. These are architectural extension points, not claimed capabilities of this build.
+Hand-placed bend points override the router for one wire and stay at absolute positions when modules move. Wires are drawn a second time clipped to module bodies, so a wire that does cross a module stays visible.
 
-## Phase 2 modules and extension interfaces
+## Persistence
 
-`automation.ts` owns typed valid/invalid signals, sensor filtering, controller/timer/latch memory, contact commands and fault state. `integrity.ts` centralizes live controls, Reset-only physical configuration, challenge environment and paid model rules. `measurements.ts` resolves explicit branch or node/reference probes into values with invalid-state propagation. `editor/assemblies.ts` and `editor/geometry.ts` implement independently testable construction operations. `validation.ts` runs complete engine experiments and generates quantitative results via `scripts/validate-physics.mjs`.
+- **Projects** are versioned JSON (`version` 3 for schematic projects, 4 with spatial geometry). Versions 1–4 load; older files migrate by filling catalog defaults. Imports validate counts, IDs, ports, property domains, dependencies and challenge integrity, and reject unknown properties by name. Files are limited to 2 MB.
+- **Run archives:** Save after running writes the validated origin, timestamped inputs (edits, faults, resets, pulses, impulses, adaptive advances) and duration. Import replays them through the current engine to rebuild every dynamic state; imported scores are never trusted. Archives hold up to 30 simulated days and 5,000 inputs. **File → Export scenario configuration** writes the initial model only.
+- Replay is deterministic within the same runtime; cross-platform bitwise identity is not guaranteed. There is no timeline scrubbing.
+- A labelled recovery copy and user presets use `localStorage`. Telemetry exports as CSV.
+- **Telemetry** keeps the whole run: above 14,400 samples the history is decimated and the sample interval doubles.
 
-Engine project state is deeply frozen and detached from editor state. Project replacements and editor/history/import boundaries enforce integrity; physics steps operate on that validated immutable construction. Real time and rendering cannot advance controllers during pause. Fast-forward yields between 12 ms batches without skipping fixed steps. Relay contacts have resistance/thermal mass, independent cutoff sensing never uses the ordinary controller's output, and a cooling jacket couples an ideal reservoir through thermal conductance.
+## Deployment
 
-New conserved hydraulic quantities can use the same simulation-clock sensor/control/measurement interfaces. A future hydraulic solver should add mass and advected enthalpy accounting to the scheduler explicitly; current cooling is only a thermal boundary and must not be advertised as fluid dynamics. See PHASE2-AUDIT.md for the full equations, response quantization and limitations.
+`npm run build` produces a static bundle in `dist/`. The Docker image (`Dockerfile`, `compose.yaml`) builds it with Node and serves it with nginx on port 8080. Releases deploy tags through `scripts/deploy.sh`; see [WORKFLOW.md](WORKFLOW.md).
 
-## Phase 2B extension
+## Extension points
 
-The existing engine now owns `Multiphysics` runtime beside temperatures and automation. `hydraulic.ts` separates terminal topology, monotone branch laws, damped pressure solve, inventory events and enthalpy transport from rendering. `multiphysics.ts` solves motor back EMF through existing MNA and pump torque through implicit midpoint shaft equations. `units.ts` centralizes new SI/display conversion. The outer clock, editor, automation DAG and probes are shared across all domains. Version 3 scenarios migrate older configurations; separate run archives restore dynamic state through validated replay. See [Phase 2B model and scheduling documentation](PHASE2B.md).
-
-## Additional electrical and cooling devices
-
-`electrical.ts` preserves the public API while `electrical-core.ts` assembles circuit equations. `linear-algebra.ts` provides shared scaled dense solves. `device-circuits.ts` expands finite batteries, separate contactor coils and radiator fan loads into those equations; transformer windings are coupled directly in MNA. `devices.ts` owns accepted battery charge and contactor timing beside `Multiphysics`. Charge boundary events share the coupled event loop, and chemical storage participates in the existing energy ledger. See [models and limitations](DEVICES.md).
+- A Web Worker for the simulation becomes worthwhile only if measured scene cost demands it; every caption, probe and inspector field would then read results asynchronously.
+- Spatial fluids, moving equipment with fluid inventory and damage models would need a conservative mass, momentum and energy exchange between the hydraulic network and the rigid-body world.

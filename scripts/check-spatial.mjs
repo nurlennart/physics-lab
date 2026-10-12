@@ -14,5 +14,5 @@ for (const mode of (process.env.PHYSICS_MODES ?? 'mechanism,rotor,descent,lift,r
   reports.push(report);
   console.log(JSON.stringify({ ...report, bodies: Object.values(report.bodies).map(b => ({ x: b.x, y: b.y, omega: b.omega, vy: b.vy })) }));
 }
-await writeFile('validation/phase3a-scenarios.json', JSON.stringify({ executedAt: new Date().toISOString(), reports }, null, 2) + '\n');
+await writeFile('validation/spatial.json', JSON.stringify({ executedAt: new Date().toISOString(), reports }, null, 2) + '\n');
 if (reports.some(r => r.error || r.violations.length || (r.challenge && !r.challenge.complete))) process.exitCode = 1;

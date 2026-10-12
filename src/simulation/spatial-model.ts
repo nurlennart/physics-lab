@@ -107,5 +107,3 @@ export function spatialError(p: Project): string | null {
   return null;
 }
 export function spatialSignature(p: Project) { return JSON.stringify({ world: p.world, bodies: p.components.filter(c => c.spatial).map(c => ({ id: c.id, spatial: c.spatial })) }); }
-/** Phase 3B boundary contract only: no spatial water is instantiated in 3A. */
-export interface SpatialFluidExchange { boundary: string; component: string; massKg: number; momentum: Point; energyJ: number; position: Point; velocity: Point; temperatureK: number; }

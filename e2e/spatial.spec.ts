@@ -93,7 +93,6 @@ test('physical and schematic views preserve shared motor, body, thermal and repl
   const download = page.waitForEvent('download'); await page.getByRole('button', { name: 'Save project', exact: true }).click(); const file = await download;
   await page.getByRole('button', { name: 'New empty experiment' }).click(); await page.locator('input[type=file]').setInputFiles((await file.path())!); await expect(page.getByRole('status')).toContainText('restored', { timeout: 30000 });
   expect((await read(page)).spatial.bodies).toEqual(live.spatial.bodies);
-  await page.screenshot({ path: '/tmp/phase3a-physical-rotor.png' });
 });
 test('constructs a hinge with world anchors, inspects limits and undoes deletion', async ({ page }) => {
   await page.getByRole('button', { name: 'New empty experiment' }).click(); await page.getByRole('button', { name: 'Physical view', exact: true }).click();

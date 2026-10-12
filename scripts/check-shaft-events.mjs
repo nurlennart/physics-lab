@@ -17,5 +17,5 @@ const reports=[];
  reports.push({name:'Overspeed motor regenerative braking', time:s.time, initialMechanicalJ:initial, finalMechanicalJ:s.spatial.energy, finalOmega:s.spatial.readings[rotor.id].omega, current:s.multiphysics.motors[m.id].current, signedElectricalSupplyJ:s.suppliedEnergy, thermalAndAmbientJ:s.storedEnergy+s.ambientEnergy, brakeHeatJ:s.spatial.dampingLoss, residualJ:s.energyResidual, error:s.error, violations:s.violations, pass:s.spatial.readings[rotor.id].omega<350 && s.suppliedEnergy<0 && Math.abs(s.energyResidual)<0.001});
 }
 console.log(JSON.stringify(reports,null,2));
-await writeFile('validation/phase3a-shaft-events.json',JSON.stringify({executedAt:new Date().toISOString(),reports},null,2)+'\n');
+await writeFile('validation/shaft-events.json',JSON.stringify({executedAt:new Date().toISOString(),reports},null,2)+'\n');
 if(reports.some(r=>!r.pass||r.error||r.violations.length))process.exitCode=1;

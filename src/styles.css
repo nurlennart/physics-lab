@@ -2539,7 +2539,7 @@ select option {
   letter-spacing: 0.3px;
   color: var(--thermal-text);
 }
-/* Phase 2: compact instrumentation and control hardware. */
+/* Compact instrumentation and control hardware. */
 .control,
 .terminal.control {
   color: var(--mechanical-text);

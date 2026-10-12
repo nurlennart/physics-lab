@@ -1,6 +1,6 @@
 # Design system
 
-The interface is an instrument panel: **colour means physics, grey means chrome.** The mockup that this system implements is the "Physics Lab redesign" canvas (workspace while running, plus the design-system board).
+The interface is an instrument panel: **colour means physics, grey means chrome.**
 
 ## Tokens
 
@@ -40,6 +40,3 @@ Radii `--r-sm` 6, `--r-md` 9, `--r-lg` 12 px. Touch targets at least 32 px on de
 - **Status bar:** run state, counts, cost, solver timing, warnings, residual.
 - **Phones (≤ 580 px):** run controls stay in the header (step button hidden); library and inspector open over the workspace only, the inspector as a bottom sheet.
 
-## Migration history
-
-The overhaul shipped in four releases: (1) tokens, mapping the previous 419 ad-hoc colours to roles by hue and lightness; (2) shell; (3) canvas; (4) inspector, telemetry, dialogs and mobile.

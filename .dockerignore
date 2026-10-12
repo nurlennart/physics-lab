@@ -2,7 +2,6 @@ node_modules
 dist
 .git
 .sites-runtime
-.openai
 *.tar.gz
 playwright-report
 test-results

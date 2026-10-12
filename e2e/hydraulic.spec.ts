@@ -38,7 +38,6 @@ test('industrial pumping starter exposes larger motors and calculates uphill flo
   expect(pump.shaftPower).toBeGreaterThanOrEqual(pump.hydraulicPower);
   expect(Math.abs(state.massResidualKg)).toBeLessThan(1e-6);
   await expect(page.getByLabel('Component variant')).toBeDisabled();
-  await page.screenshot({ path: '/tmp/physics-industrial-pumping.png' });
 });
 test('hydraulic starter transfers finite inventory, exposes probes, valve response and fault coasting', async ({ page }) => {
   const p = await importExperiment(page, 'transfer');
@@ -57,7 +56,6 @@ test('hydraulic starter transfers finite inventory, exposes probes, valve respon
   await page.getByRole('button', { name: 'Single simulation step' }).click();
   const coast = await read(page); expect(coast.motors[motor.id].omega).toBeGreaterThan(0); expect(coast.motors[motor.id].current).toBe(0);
   await page.getByRole('button', { name: 'Energy balance' }).click(); await expect(page.locator('.energy-panel')).toContainText('Mass residual');
-  await page.screenshot({ path: '/tmp/phase2b-hydraulic-workspace.png' });
 });
 test('saving a live hydraulic experiment restores fluid, motor and fault state', async ({ page }) => {
   await importExperiment(page, 'transfer'); await advance(page, 2); const before = await read(page);

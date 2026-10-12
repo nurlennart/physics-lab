@@ -13,7 +13,6 @@ test('mission starts empty, offers optional hints, and accepts equipment purchas
   await page.getByRole('button', { name: 'Start assignment' }).first().click();
   const guide = page.getByRole('dialog', { name: 'Challenge guidebook' });
   await expect(guide).toContainText('The lights are out');
-  await page.screenshot({ path: "/tmp/physics-mission-guidebook.png" });
   await expect(guide).toContainText('€0 / €100 spent');
   await expect(guide).toContainText('Full economy points at €68 or less');
   await expect(guide.getByText('A circuit needs a complete return path to its source.')).not.toBeVisible();
@@ -33,7 +32,6 @@ test('example shelf fits a phone and filters mechanisms', async ({ page }) => {
   await page.getByRole('button', { name: 'Starters & examples', exact: true }).click();
   await page.getByRole('button', { name: 'Mechanisms', exact: true }).click();
   await expect(page.locator('.example-card')).toHaveCount(5);
-  await page.screenshot({ path: '/tmp/physics-example-shelf-mobile.png' });
   await expect(page.getByRole('button', { name: 'Open Gravity playground' })).toBeVisible();
   const bounds = await page.getByRole('dialog').boundingBox();
   expect(bounds!.width).toBeLessThanOrEqual(390);
@@ -68,5 +66,4 @@ test('heat exchanger example opens from the water shelf and visibly recovers hea
   await expect(page.getByLabel('Heat-transfer conductance UA', { exact: true })).toHaveValue('5000');
   await expect(page.locator('.reading-caption')).toHaveText('Hot stream flow');
   await expect(page.locator('[data-component="heatExchanger"] .live-caption')).toContainText('kW heat');
-  await page.screenshot({ path: '/tmp/physics-heat-exchanger-example.png' });
 });

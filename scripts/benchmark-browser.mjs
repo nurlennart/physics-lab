@@ -27,5 +27,5 @@ for (const count of [10,50,100]) {
   console.log(JSON.stringify(reports.at(-1)));
 }
 await browser.close();
-await writeFile('validation/phase3a-browser-performance.json',JSON.stringify({executedAt:new Date().toISOString(),baseURL,reports},null,2)+'\n');
+await writeFile('validation/browser-benchmark.json',JSON.stringify({executedAt:new Date().toISOString(),baseURL,reports},null,2)+'\n');
 if(reports.some(r=>r.error))process.exitCode=1;

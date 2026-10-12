@@ -18,5 +18,5 @@ const p = mechanicalStarter('mechanism'), s = new Simulation(p), initial = s.spa
 for (let i = 0; i < 600 * 60; i++) if (!s.step()) break;
 const longRun = { seconds: s.time, wallMs: performance.now() - start, initialMechanicalJ: initial, residualJ: s.energyResidual, relativeResidual: Math.abs(s.energyResidual) / initial, error: s.error, violations: s.violations, bodies: s.spatial.readings, joints: s.spatial.jointReadings };
 console.log(JSON.stringify({ longRun }));
-await writeFile('validation/phase3a-performance.json', JSON.stringify({ executedAt: new Date().toISOString(), environment: { node: process.version, cpu: cpus()[0]?.model, platform: process.platform, note: 'Node solver-only timings, concurrent work may affect wall time; not a browser FPS claim' }, benchmarks, longRun }, null, 2) + '\n');
+await writeFile('validation/spatial-benchmark.json', JSON.stringify({ executedAt: new Date().toISOString(), environment: { node: process.version, cpu: cpus()[0]?.model, platform: process.platform, note: 'Node solver-only timings, concurrent work may affect wall time; not a browser FPS claim' }, benchmarks, longRun }, null, 2) + '\n');
 if (benchmarks.some(r => r.error || r.violations.length) || longRun.error || longRun.violations.length || longRun.relativeResidual > 0.005) process.exitCode = 1;

@@ -1,9 +1,0 @@
-
- RUN  v5.0.3 /home/physics/physics-lab
-
-
- Test Files  1 passed (1)
-      Tests  11 passed (11)
-   Start at  16:42:05
-   Duration  9.51s (tests 93%, transform 5%, import 1%)
-

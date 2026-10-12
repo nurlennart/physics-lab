@@ -7,7 +7,8 @@ Open **File → Starters & examples** in the app for descriptions and suggested 
 - `transformer`: isolated AC conversion, winding/core losses and secondary measurements.
 - `radiator`: water cooling driven by actual fan electrical supply.
 - `acRlc`: compatible series RLC circuit with RMS supply measurements and power-factor traces.
-- `induction`: standard motor, existing 250 A supply variant, and 35 N·m direct-on-line load; startup current warning is retained.
+- `induction`: standard 7.5 kW motor on the 250 A supply variant, 35 N·m direct-on-line load.
+- `starting`: the same motor started by star-delta, soft starter and variable-frequency drive from one supply.
 - `light`, `heat`: electrical basics and electrical-to-thermal energy transfer.
 - `automated`: temperature feedback with independent safety isolation.
 - `transfer`, `pressure`, `supply`: powered water transfer, pressure feedback, and autonomous level control.

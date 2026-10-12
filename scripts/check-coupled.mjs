@@ -13,5 +13,5 @@ for (const mode of (process.env.PHYSICS_MODES ?? 'transfer,pressure,supply,circu
   reports.push(report);
   console.log(JSON.stringify({ mode, time: report.time, wallMs: report.wallMs, error: report.error, violations: report.violations, massResidual: report.massResidual, energyResidual: report.energyResidual, metrics: report.metrics, challenge: report.challenge }));
 }
-await writeFile('validation/phase2b-coupled.json', JSON.stringify({ executedAt: new Date().toISOString(), reports }, null, 2) + '\n');
+await writeFile('validation/coupled.json', JSON.stringify({ executedAt: new Date().toISOString(), reports }, null, 2) + '\n');
 if (reports.some(r => r.error || r.violations.length || (r.challenge && !r.challenge.complete))) process.exitCode = 1;

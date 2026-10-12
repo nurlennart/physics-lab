@@ -248,7 +248,6 @@ test("mobile workspace remains usable without horizontal overflow", async ({
   await expect(
     page.getByRole("button", { name: "Pause", exact: true }),
   ).toBeVisible();
-  await page.screenshot({ path: "/tmp/physics-lab-mobile.png" });
 });
 test("closed-loop starter exposes actual faults, probes, independent safety and replay", async ({
   page,
@@ -413,5 +412,4 @@ test("plays Thermal Runaway through wiring, physical fault, safety latch and man
   await expect(page.locator(".event-log")).toContainText(
     "safety latch manually reset",
   );
-  await page.screenshot({ path: "/tmp/phase2-challenge-complete.png" });
 });
