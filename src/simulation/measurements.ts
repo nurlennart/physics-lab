@@ -11,6 +11,7 @@ import {
 import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
+  incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
@@ -37,6 +38,18 @@ export function readProbe(p: Probe, s: Simulation): number | null {
   const r = s.electrical.readings[c.id];
   const h = s.multiphysics.hydraulic.readings[c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id], motor = s.multiphysics.motors[c.id];
   switch (p.measurement) {
+    case 'incidentEnergy': return s.devices.solar[c.id]?.generated ?? 0;
+    case 'inputPower': return r?.solar?.inputPower ?? null;
+    case 'outputPower': return r?.solar?.outputPower ?? null;
+    case 'conversionLoss': return r?.heatPower ?? null;
+    case 'mppPower': return r?.solar?.mppPower ?? null;
+    case 'mppVoltage': return r?.solar?.mppVoltage ?? null;
+    case 'mppCurrent': return r?.solar?.mppCurrent ?? null;
+    case 'incidentPower': return r?.solar?.irradiation ?? null;
+    case 'trackingEfficiency': return r?.solar?.trackingEfficiency === undefined ? null : r.solar.trackingEfficiency * 100;
+    case 'generatedEnergy': return c.kind === 'solarPanel' ? s.devices.solar[c.id]?.output ?? 0 : s.devices.solar[c.id]?.generated ?? 0;
+    case 'outputEnergy': return s.devices.solar[c.id]?.output ?? 0;
+    case 'lostEnergy': return s.devices.solar[c.id]?.lost ?? 0;
     case "returnTemperature": return h?.returnTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.returnTemperature - 273.15;
     case "supplyTemperature": return h?.supplyTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.supplyTemperature - 273.15;
     case "excessTemperature": return h?.excessTemperature ?? null;
@@ -94,7 +107,8 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "mechanicalLoss": return h?.mechanicalLoss ?? 0;
     case "hydraulicEfficiency": return h?.hydraulicEfficiency === null || h?.hydraulicEfficiency === undefined ? null : h.hydraulicEfficiency * 100;
     // A circulator: instantaneous wire-to-water efficiency, net hydraulic power over electrical input P1 (not the EEI).
-    case "efficiency": if (c.kind === "circulator") return r && r.power > 1e-9 && h ? Math.max(0, h.hydraulicPower) / r.power * 100 : null;
+    case "efficiency": if (r?.solar) return r.solar.efficiency * 100;
+      if (c.kind === "circulator") return r && r.power > 1e-9 && h ? Math.max(0, h.hydraulicPower) / r.power * 100 : null;
       return motor ? r && r.power > 1e-9 ? motor.shaftPower / r.power * 100 : null : h?.efficiency === null || h?.efficiency === undefined ? null : h.efficiency * 100;
     case "reactivePower": return r?.ac ? (isSource(c) ? -(r.reactivePower ?? 0) : r.reactivePower ?? 0) : r ? 0 : null;
     case "powerFactor": return r?.ac ? r.powerFactor ?? null : r && Math.abs(r.power) > 1e-12 ? 1 : null;
@@ -121,6 +135,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
       if (c.kind === 'dynamometer') return s.multiphysics.shaftElements[c.id]?.energy ?? 0;
       return s.componentEnergy[c.id] ?? 0;
     case "state": {
+      if (r?.solar) return Number(r.solar.running);
       if (c.kind === "electricBoiler") return Number((s.multiphysics.boilers[c.id]?.stages ?? 0) > 0 && !s.multiphysics.boilers[c.id]?.fault);
       if (c.kind === "contactor") return s.failed[c.id] ? 0 : s.faults[c.id] === "stuckClosed" ? 1 : s.faults[c.id] === "stuckOpen" ? 0 : Number(s.devices.contactors[c.id]?.closed ?? false);
       if (c.kind === "checkValve") return h ? Number(h.flow > 1e-12) : null;

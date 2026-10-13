@@ -369,7 +369,7 @@ export class Simulation {
       if (c.kind === "filter") limit = Math.min(limit, Math.max(DT, prop(c, "timeConstant") / 5));
       if (prop(c, "lag") > 0) limit = Math.min(limit, Math.max(DT, prop(c, "lag") * 2));
       // Battery: at most 0.2 % state-of-charge change per step (its open-circuit voltage follows the charge).
-      if (c.kind === "battery") {
+      if ((c.kind === "battery" || c.kind === "lfpBattery")) {
         const current = Math.abs(this.electrical.readings[c.id]?.current ?? 0);
         if (current > 1e-12) limit = Math.min(limit, 0.002 * 3600 * prop(c, "capacityAh") / current);
       }
@@ -452,7 +452,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -785,6 +785,7 @@ export class Simulation {
         else if (!this.events.some(e => e.message === warning)) this.log(warning, "warning");
       }
     }
+    this.ambientEnergy += p.components.filter(c => c.kind === 'solarPanel').reduce((sum, c) => sum + (this.electrical.readings[c.id]?.heatPower ?? 0) * dt, 0);
     this.time += dt;
     this.energy += this.electrical.dissipatedPower * dt;
     this.suppliedEnergy += this.electrical.sourcePower * dt;
@@ -808,7 +809,7 @@ export class Simulation {
       }
       this.componentEnergy[c.id] =
         (this.componentEnergy[c.id] ?? 0) +
-        (isSource(c) ? -(r?.power ?? 0) : (r?.power ?? 0)) * dt;
+        ((isSource(c) || c.kind === "solarPanel") ? -(r?.power ?? 0) : (r?.power ?? 0)) * dt;
       if (isSource(c) && r && !this.failed[c.id]) {
         const mode = sourceMode(c);
         const current = Math.abs(r.current), rating = prop(c, "maxCurrent", 20);

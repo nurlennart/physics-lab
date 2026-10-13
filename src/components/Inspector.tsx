@@ -1,3 +1,4 @@
+import { SolarInspector } from './SolarInspector';
 import { BoilerInspector } from './BoilerInspector';
 import { PanelRadiatorInspector } from './PanelRadiatorInspector';
 import { T } from "../theme/tokens";
@@ -152,6 +153,7 @@ export default function Inspector() {
           </div>
         ) : (
           <>
+            <SolarInspector c={c} />
             {c.kind === "electricBoiler" && <BoilerInspector c={c} />}
             {c.kind === "panelRadiator" && <PanelRadiatorInspector c={c} />}
             <div className="inspector-section">

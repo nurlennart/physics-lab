@@ -1,4 +1,6 @@
 /** New multi-circuit devices expand into ordinary MNA branches; state stays in the engine. */
+import { solveSolar } from './solar-circuits';
+import { solarKinds } from './solar';
 import { definitions, prop, type Component, type Project } from './model';
 import { solveElectricalCore, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { batteryChargeStep, batteryEnergy, batteryOCV, batteryResistanceFactor, polarizationBranch, selfDischargeCurrent } from './devices';
@@ -57,11 +59,11 @@ function solveConstantPower(project: Project, expanded: Project, failures: Recor
   const units = project.components.filter(c => c.kind === 'circulator');
   const demand = (c: Component) => runtime.circulators?.[c.id] ?? 0;
   for (const c of units) if (!(demand(c) > 0)) failures[c.id] = true;
-  const loads: Record<string, number> = {}, undervoltage = new Set<string>();
+  const loads: Record<string, number> = { ...runtime.loadResistances }, undervoltage = new Set<string>();
   for (const c of units) if (!failures[c.id]) loads[c.id] = prop(c, 'ratedVoltage') ** 2 / demand(c);
   const off = (c: Component) => { undervoltage.add(c.id); failures[c.id] = true; delete loads[c.id]; };
   let result = solveElectricalCore(expanded, failures, { ...runtime, loadResistances: loads });
-  for (let k = 0; Object.keys(loads).length; k++) {
+  for (let k = 0; units.some(c => loads[c.id] !== undefined); k++) {
     let change = 0, dropped = false;
     for (const c of units.filter(c => loads[c.id] !== undefined)) {
       const r = result.readings[c.id], v = Math.abs(r?.voltage ?? 0);
@@ -82,12 +84,13 @@ function solveConstantPower(project: Project, expanded: Project, failures: Recor
   for (const id of undervoltage) if (result.readings[id]) result.readings[id].undervoltage = true;
   return result;
 }
-export function solveElectrical(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
+function solveDevices(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
   if (!project.components.some(special)) return solveElectricalCore(project, failed, runtime);
   const expanded = expand(project);
   const failures = { ...failed }, models = { ...runtime.sourceModels };
   for (const c of project.components) {
     if (c.kind === 'battery') {
+      if (c.props.cells && runtime.devices?.solar?.[c.id]?.mode === 'overcurrent') failures[c.id] = true;
       // Midpoint OCV over the step: E(s₀) behind (dE/ds)·h/(2Q); the polarization branch as its exact step average.
       const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, h = runtime.devices?.h ?? 0, charge = 3600 * prop(c, 'capacityAh'), ocv = batteryOCV(c, soc);
       const temperature = runtime.temperatures?.[c.id] ?? 20, branch = polarizationBranch(c, temperature, h), vp = runtime.devices?.polarization?.[c.id] ?? 0;
@@ -95,7 +98,8 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
         voltage: ocv.voltage + (branch ? branch.emfWeight * vp : 0),
         resistance: prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + ocv.slope * h / (2 * charge) + (branch?.seriesResistance ?? 0),
         // A full battery accepts only the trickle that offsets its self-discharge (an ideal charge termination).
-        lower: soc <= 1e-14 ? 0 : -Infinity, upper: soc >= 1 - 1e-14 ? selfDischargeCurrent(c) * 100 / prop(c, 'coulombicEfficiency') : Infinity,
+        lower: soc <= 1e-14 || (c.props.cells && (temperature < prop(c, 'minDischargeTemperature') || temperature > prop(c, 'maxTemperature') || ocv.voltage <= prop(c, 'bmsLowVoltage'))) ? 0 : c.props.cells ? -prop(c, 'dischargeCurrentLimit') : -Infinity,
+        upper: soc >= 1 - 1e-14 ? selfDischargeCurrent(c) * 100 / prop(c, 'coulombicEfficiency') : c.props.cells ? temperature < prop(c, 'minChargeTemperature') || temperature > prop(c, 'maxTemperature') || ocv.voltage >= prop(c, 'bmsHighVoltage') ? 0 : prop(c, 'chargeCurrentLimit') : Infinity,
       };
     }
     if (c.kind === 'contactor') {
@@ -108,7 +112,28 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
     const ids = expanded.boilers.get(c.id)!;
     for (let i = 0; i < 4; i++) failures[ids[i]] = !!failed[c.id] || runtime.boilerTrips?.has(c.id) || runtime.faults?.[c.id] === 'failedOpen' || (i < 3 && i >= (runtime.boilers?.[c.id] ?? 0));
   }
-  const result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  let result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  const overcurrentCandidates = new Set<string>();
+  const bmsVoltage = new Map<string, string>();
+  for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
+    const r = result.readings[c.id]; if (!r) continue;
+    if (r.current <= -prop(c, 'dischargeCurrentLimit') * (1 - 1e-10) || r.current >= prop(c, 'chargeCurrentLimit') * (1 - 1e-10) || Math.abs(r.power) > prop(c, 'maxPower') * (1 + 1e-10)) overcurrentCandidates.add(c.id);
+    if (r.current < -1e-9 && r.voltage < prop(c, 'bmsLowVoltage')) { models[c.id].lower = 0; bmsVoltage.set(c.id, 'BMS low voltage'); }
+    if (r.current > 1e-9 && r.voltage > prop(c, 'bmsHighVoltage')) { models[c.id].upper = 0; bmsVoltage.set(c.id, 'BMS high voltage'); }
+  }
+  if (bmsVoltage.size) result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  const bmsTrips = new Set(overcurrentCandidates);
+  for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
+    const r = result.readings[c.id];
+    if (r && (r.current <= -prop(c, 'dischargeCurrentLimit') * (1 - 1e-10) || r.current >= prop(c, 'chargeCurrentLimit') * (1 - 1e-10))) { failures[c.id] = true; bmsTrips.add(c.id); }
+  }
+  for (const id of bmsTrips) failures[id] = true;
+  if (bmsTrips.size) result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
+    const r = result.readings[c.id]; if (!r) continue;
+    const mode = bmsTrips.has(c.id) || runtime.devices?.solar?.[c.id]?.mode === 'overcurrent' ? 'overcurrent' : bmsVoltage.get(c.id) ?? (r.current > 1e-9 ? 'charging' : r.current < -1e-9 ? 'discharging' : 'idle / BMS limited');
+    r.solar = { inputPower: Math.max(0, r.power), outputPower: Math.max(0, -r.power), efficiency: 0, mode, running: mode === 'charging' || mode === 'discharging' };
+  }
   for (const c of project.components.filter(c => c.kind === 'electricBoiler')) {
     const ids = expanded.boilers.get(c.id)!, stages = ids.slice(0, 3).map(id => result.readings[id]), aux = result.readings[ids[3]];
     if (stages.some(r => r?.phases === 3)) throw Error(`${c.name}: use three explicit 230 V AC sources at 0/−120/+120° with a shared neutral; the balanced source cannot represent individual heating stages.`);
@@ -173,4 +198,8 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
   result.storedPower = (result.storedPower ?? 0) + chemical;
   result.powerResidual = result.sourcePower - result.dissipatedPower - result.storedPower;
   return result;
+}
+
+export function solveElectrical(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
+  return project.components.some(c => solarKinds.includes(c.kind)) ? solveSolar(project, failed, runtime, solveDevices) : solveDevices(project, failed, runtime);
 }

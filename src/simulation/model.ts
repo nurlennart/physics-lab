@@ -1,4 +1,5 @@
 export type Kind =
+  | "solarPanel" | "lfpBattery" | "mpptController" | "inverter" | "batteryProtection"
   | "rigidBody" | "positionSensor" | "speedSensor" | "forceActuator" | "flywheel" | "dynamometer"
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
@@ -80,6 +81,7 @@ export interface Connection {
   route?: Point[];
 }
 export type Measurement =
+  | "incidentEnergy" | "inputPower" | "outputPower" | "conversionLoss" | "mppPower" | "mppVoltage" | "mppCurrent" | "trackingEfficiency" | "incidentPower" | "generatedEnergy" | "outputEnergy" | "lostEnergy"
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
   | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
@@ -211,6 +213,12 @@ const shaft: Port = { id: "shaft", domain: "mechanical", label: "Rotating shaft"
 const sensing = { target: "", minRange: -1000000, maxRange: 1000000, resolution: 0.001, lag: 0, noise: 0, sampleInterval: 0 };
 const valveDefaults = { opening: 100, diameter: 0.025, lossCoefficient: 5, laminarK: 500, maxPressure: 1000000, elevation: 0 };
 export const definitions: Record<Kind, Definition> = {
+  solarPanel: { label: "Solar Panel (PV)", category: "Electrical", prefix: "PV", cost: 120, description: "Nonlinear single-diode photovoltaic module. Irradiance and cell temperature set its I–V curve; the connected network determines the operating point.", spec: "450 W · 44.6 V MPP · 52.9 V open circuit", ports: electric, defaults: { voc: 52.9, isc: 10.74, vmp: 44.6, imp: 10.09, irradiance: 1000, cellTemperature: 25, voltageCoefficient: -0.0024, currentCoefficient: 0.0004, area: 1.998108, shading: 0, enabled: true } },
+  lfpBattery: { label: "LiFePO4 Battery", category: "Electrical", prefix: "LFP", cost: 700, description: "Finite rechargeable LFP storage with plateau OCV, terminal resistance, current limits and a simplified integrated BMS. Reference pack needs an external BMS; see provenance.", spec: "12.8 V · 100 Ah · 4 cells", ports: [...electric, heat], defaults: { capacityAh: 100, initialSOC: 50, cells: 4, emptyVoltage: 10, fullVoltage: 14.6, internalResistance: 0.0008, chemistry: "lfp", coulombicEfficiency: 99.5, selfDischarge: 0, polarizationResistance: 0, polarizationTimeConstant: 30, resistanceActivation: 0, maxCurrent: 200, chargeCurrentLimit: 50, dischargeCurrentLimit: 100, maxPower: 2560, enabled: true, heatCapacity: 14000, loss: 3, conductance: 20, maxTemperature: 50, minChargeTemperature: 5, minDischargeTemperature: -20, bmsLowVoltage: 11.2, bmsHighVoltage: 15 }, variants: [{ id: "eightCell", label: "25.6 V / 100 Ah", cost: 1400, spec: "8 cells · 2.56 kWh nominal", overrides: { cells: 8, emptyVoltage: 20, fullVoltage: 29.2, internalResistance: 0.0016, bmsLowVoltage: 22.4, bmsHighVoltage: 30, heatCapacity: 28000, maxPower: 5120 } }] },
+  mpptController: { label: "MPPT Charge Controller", category: "Electrical", prefix: "MPPT", cost: 100, description: "Independent averaged buck converter with perturb-and-observe tracking, current limiting and bulk/absorption/float regulation.", spec: "100 V PV · 20 A output · 12/24 V", ports: [...electric, { id: "oa", domain: "electrical", label: "Battery +" }, { id: "ob", domain: "electrical", label: "Battery −" }, heat], defaults: { maxInputVoltage: 100, maxInputCurrent: 20, maxCurrent: 20, conversionEfficiency: 98, absorptionVoltage: 14.2, floatVoltage: 13.5, absorptionTime: 1800, rebulkVoltage: 13.2, minVoltage: 8, startupHeadroom: 5, runningHeadroom: 1, trackingStep: 0.25, trackingInterval: 0.2, initialTrackingVoltage: 40, enabled: true, heatCapacity: 600, loss: 2, conductance: 20, maxTemperature: 60 }, variants: [{ id: "24V", label: "24 V battery profile", cost: 100, spec: "28.4 V absorption · 27 V float", overrides: { absorptionVoltage: 28.4, floatVoltage: 27, rebulkVoltage: 26.4, minVoltage: 16 } }] },
+  inverter: { label: "DC/AC Inverter", category: "Electrical", prefix: "INV", cost: 160, description: "Averaged DC to sinusoidal AC conversion through the electrical network, load-dependent losses and independent undervoltage/overload protection.", spec: "24 V → 230 V / 50 Hz · 400 W · 500 VA", ports: [...electric, { id: "oa", domain: "electrical", label: "AC line" }, { id: "ob", domain: "electrical", label: "AC neutral" }, heat], defaults: { voltage: 230, frequency: 50, ratedPower: 400, ratedApparentPower: 500, surgePower: 900, surgeTime: 2, peakEfficiency: 90, idlePower: 6.5, standbyPower: 1.5, standby: false, minVoltage: 18.6, restartVoltage: 21.8, maxInputVoltage: 34, enabled: true, heatCapacity: 1800, loss: 3, conductance: 20, maxTemperature: 65 } },
+  batteryProtection: { label: "Battery Protection Switch", category: "Electrical", prefix: "BPS", cost: 50, description: "Independent downstream DC-load isolation with voltage hysteresis, current and temperature trips. Connect reference to bus negative. Remote enable is optional.", spec: "65 A · low voltage disconnect", ports: [...electric, { id: "reference", domain: "electrical", label: "Bus negative sense" }, input("enable", "boolean", true), heat], defaults: { disconnectVoltage: 11.8, restartVoltage: 12.8, ratedCurrent: 65, resistance: 0.002, enabled: true, heatCapacity: 200, loss: 1, conductance: 10, maxTemperature: 65 } },
+
   electricBoiler: {
     label: "Electric heating boiler", category: "Thermal", prefix: "EB", cost: 650,
     description: "Bosch Tronic Heat 3000 9 reference: three 3 kW resistive stages, internal water and metal inertia, supply thermostat and independent manual-reset limiter. External pump required.",
@@ -1063,11 +1071,11 @@ export const terminalKey = (t: Terminal) => `${t.component}:${t.port}`;
 export const isElectrical = (c: Component) =>
   definitions[c.kind].ports.some((p) => p.domain === "electrical") &&
   !["ground", "junction"].includes(c.kind);
-export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3" || c.kind === "sourceAC" || c.kind === "battery";
+export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3" || c.kind === "sourceAC" || c.kind === "battery" || c.kind === "lfpBattery";
 /** Machines with a rotating shaft driven by the electrical network. */
 export const isMotor = (c: Component) => c.kind === "motor" || c.kind === "inductionMotor";
 export const isThermalMass = (c: Component) =>
-  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || (isElectrical(c) && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator" && c.kind !== "electricBoiler");
+  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || c.kind === "lfpBattery" || (isElectrical(c) && c.kind !== "solarPanel" && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator" && c.kind !== "electricBoiler");
 /** Components whose catalog data describe one pole/conductor; a three-phase island has three. */
 export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter", "inductor", "capacitor"]);
 /** Contact conductance of a thermal port (W/K); a well-mixed tank's own side is ideal. */

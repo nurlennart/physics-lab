@@ -1,3 +1,4 @@
+import { solarStarter, solarTitles, type SolarMode } from './solar-projects';
 import { deviceStarter, type DeviceMode } from "./device-projects";
 import { compatibleTarget, legacyUnavailableMeasurement } from "./capabilities";
 import { hydraulicStarter, industrialStarter, heatExchangerStarter, type HydraulicMode } from "./hydraulic-projects";
@@ -15,9 +16,10 @@ import {
   type Measurement,
 } from "./model";
 export function starter(
-  mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode = "heat",
+  mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode = "heat",
   challenge = false,
 ): Project {
+  if (mode in solarTitles) return solarStarter(mode as SolarMode);
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
   if (mode === "exchanger") return heatExchangerStarter();
@@ -437,6 +439,7 @@ export function validateProbes(p: Project) {
         "power",
         "bodyTemperature", "temperature",
         "energy",
+        "incidentEnergy", "inputPower", "outputPower", "conversionLoss", "mppPower", "mppVoltage", "mppCurrent", "trackingEfficiency", "incidentPower", "generatedEnergy", "outputEnergy", "lostEnergy",
         "stateOfCharge", "chemicalEnergy", "polarizationVoltage", "chargeVoltage", "fieldEnergy", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower",
         "state",
         "signal",

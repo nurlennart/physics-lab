@@ -308,7 +308,7 @@ export class Multiphysics {
       const demand = Object.fromEntries(circulators.filter(c => plan[c.id].powered).map(c => [c.id, plan[c.id].running ? circulatorInput(c, this.circulatorMechanical(c, plan[c.id], hydraulic.readings[c.id]?.shaftPower ?? 0, h)) : prop(c, 'standbyPower')]));
       electrical = solveElectrical(s.project, s.failed, {
         ...s.devices.runtime(h),
-        contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, filaments: s.filamentRatios(), open: s.openDevices(),
+        contacts: { ...s.automation.contacts, ...Object.fromEntries(s.project.components.filter(c => c.kind === 'batteryProtection').map(c => { const v = s.automation.input(c, 'enable', s); return [c.id, s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === 'enable') ? v.valid && v.value === true : c.props.enabled !== false]; })) }, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, filaments: s.filamentRatios(), open: s.openDevices(),
         motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { enabled: controls[c.id].enabled, duty: this.dcDuty(c, controls[c.id].command, omega[i]), emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
         inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), h }]] : [])),
         ...this.converterRuntime(s),
@@ -774,7 +774,7 @@ export class Multiphysics {
         const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
         if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
       }
-      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.heatingPower !== undefined ? { heatingPower: 0, auxiliaryPower: 0 } : {}), ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.heatingPower !== undefined ? { heatingPower: 0, auxiliaryPower: 0 } : {}), ...(v.solar ? { solar: { ...v.solar, inputPower: 0, outputPower: 0, irradiation: 0 } } : {}), ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
       totalElectrical.storedPower! += (r.electrical.storedPower ?? 0) * h / dt;
@@ -783,6 +783,10 @@ export class Multiphysics {
         // A drive's braking resistor is external: its heat goes to ambient, not into the drive's heat sink.
         const braking = v.drive?.braking ?? 0;
         total.power += (v.power - braking) * h / dt;
+        if (v.solar && total.solar) {
+          const inputPower = total.solar.inputPower + v.solar.inputPower * h / dt, outputPower = total.solar.outputPower + v.solar.outputPower * h / dt, irradiation = (total.solar.irradiation ?? 0) + (v.solar.irradiation ?? 0) * h / dt;
+          total.solar = { ...v.solar, inputPower, outputPower, irradiation, efficiency: inputPower > 1e-9 ? outputPower / inputPower : 0 };
+        }
         if (v.heatingPower !== undefined) { total.heatingPower = (total.heatingPower ?? 0) + v.heatingPower * h / dt; total.auxiliaryPower = (total.auxiliaryPower ?? 0) + (v.auxiliaryPower ?? 0) * h / dt; }
         if (v.inputPower !== undefined) total.inputPower = (total.inputPower ?? 0) + v.inputPower * h / dt;
         if (v.chemicalPower !== undefined) total.chemicalPower = (total.chemicalPower ?? 0) + v.chemicalPower * h / dt;

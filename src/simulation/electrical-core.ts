@@ -16,6 +16,7 @@ export const inductionCircuit = (c: Component, frequency: number, omega: number)
 export interface ElectricalReading {
   /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
   stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
+  solar?: { trackingActive?: boolean; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
   inputPower?: number;
   /**
    * DC storage: a capacitor's current into its dielectric (excluding leakage), an inductor's voltage across its inductance,
@@ -133,7 +134,7 @@ export interface ElectricalRuntime {
    * and `inductors`: winding current (A). Without stored state a capacitor is steady DC (open apart from its leakage)
    * and an inductor its winding resistance.
    */
-  devices?: { batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
+  devices?: { solar?: Record<string, import("./solar").SolarState>; batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
   sourceModels?: Record<string, { voltage: number; resistance: number; lower: number; upper: number }>;
   /** Resistance of expanded constant-power loads (electric circulators) for this solve (Ω); overrides the stored value. */
   loadResistances?: Record<string, number>;
@@ -843,34 +844,58 @@ export function solveElectricalCore(
         if (visited.has(state)) throw Error(`DC regulation did not converge: repeated CV/CC state for ${sources.map(s => s.name).join(", ")}.`);
         visited.add(state);
         am = assembleMatrix(a); bm = assembleRhs(b);
-        x = size ? solveLinear(am, bm) : [];
-        let changed = false;
+        try { x = size ? solveLinear(am, bm) : []; }
+        catch (cause) {
+          // Parallel current-limited sources can all enter CC during active-set updates, leaving the
+          // island voltage undetermined. Restore the compliance row with the least bound violation.
+          // This is a pivot of the same physical constraints, never a conductance or energy correction.
+          if (!(cause instanceof Error) || !cause.message.startsWith('Singular circuit') || !fixed.some(v => v !== null)) throw cause;
+          let best: { index: number; score: number; x: number[]; am: number[][]; bm: number[] } | undefined;
+          for (let j = 0; j < sources.length; j++) {
+            if (fixed[j] === null) continue;
+            const held = fixed[j]; fixed[j] = null;
+            try {
+              const trialMatrix = assembleMatrix(a), trialRhs = assembleRhs(b), trial = solveLinear(trialMatrix, trialRhs);
+              const score = sources.reduce((sum, s, i) => { const m = runtime.sourceModels?.[s.id], limit = sourceLimit(s), current = trial[unknown.length + i]; return sum + Math.max(0, (m?.lower ?? -limit) - current, current - (m?.upper ?? limit)); }, 0);
+              if (!best || score < best.score) best = { index: j, score, x: trial, am: trialMatrix, bm: trialRhs };
+            } catch { /* This row did not restore rank. */ }
+            fixed[j] = held;
+          }
+          if (!best) throw cause;
+          fixed[best.index] = null; x = best.x; am = best.am; bm = best.bm;
+        }
+        let pivot: { index: number; next: number | null; score: number } | undefined;
+        const update = (index: number, next: number | null, score: number) => {
+          // Preserve first-pivot ordering for small networks; large parallel banks use the most
+          // violated normalized constraint to avoid repeatedly pivoting nearby supplies.
+          if (!pivot || (sources.length > 8 && score > pivot.score)) pivot = { index, next, score };
+        };
         sources.forEach((s, i) => {
           const limit = sourceLimit(s), current = x[unknown.length + i];
           const model = runtime.sourceModels?.[s.id];
           if (model) {
             const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0, vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
             const emf = va - vb - model.resistance * current, tol = 1e-10 * Math.max(1, model.voltage);
-            if (fixed[i] === null && (current < model.lower - 1e-12 || current > model.upper + 1e-12)) { fixed[i] = Math.max(model.lower, Math.min(model.upper, current)); changed = true; }
-            else if (fixed[i] !== null && (fixed[i] === model.lower ? emf > model.voltage + tol : emf < model.voltage - tol)) { fixed[i] = null; changed = true; }
+            if (fixed[i] === null && (current < model.lower - 1e-12 || current > model.upper + 1e-12)) { const next = Math.max(model.lower, Math.min(model.upper, current)); update(i, next, Math.abs(current - next) / Math.max(1, Math.abs(next))); }
+            else if (fixed[i] !== null && (fixed[i] === model.lower ? emf > model.voltage + tol : emf < model.voltage - tol)) { update(i, null, Math.abs(emf - model.voltage) / Math.max(1, Math.abs(model.voltage))); }
             return;
           }
           if (limit === Infinity) return;
           if (fixed[i] === null && Math.abs(current) > limit * (1 + 1e-12)) {
-            fixed[i] = Math.sign(current || -1) * limit;
-            changed = true;
+            const next = Math.sign(current || -1) * limit;
+            update(i, next, Math.abs(current - next) / Math.max(1, limit));
           } else if (fixed[i] !== null) {
             const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0,
               vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
             const emf = va - vb - prop(s, "internalResistance") * current;
             if (fixed[i]! <= 0 ? emf > prop(s, "voltage") * (1 + 1e-12) + 1e-12 : emf < prop(s, "voltage") * (1 - 1e-12) - 1e-12) {
-              fixed[i] = null;
-              changed = true;
+              update(i, null, Math.abs(emf - prop(s, "voltage")) / Math.max(1, Math.abs(prop(s, "voltage"))));
             }
           }
         });
-        if (!changed) return { x, am, bm };
-        if (iteration >= 31) throw Error(`DC regulation did not converge for ${sources.map(s => s.name).join(", ")}; check interacting supplies and current limits.`);
+        if (!pivot) return { x, am, bm };
+        fixed[pivot.index] = pivot.next;
+        if (iteration >= Math.max(31, 4 * sources.length)) throw Error(`DC regulation did not converge for ${sources.map(s => s.name).join(", ")}; check interacting supplies and current limits.`);
       }
     };
     /**

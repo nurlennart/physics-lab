@@ -176,9 +176,13 @@ export function componentError(c: Component): string | null {
     if (!Number.isInteger(prop(c, 'maxStages'))) return 'Boiler stage limit must be an integer.';
     if (prop(c, 'resetTemperature') >= prop(c, 'tripTemperature')) return 'Boiler reset temperature must be below its trip temperature.';
   }
-  if (c.kind === "battery" && prop(c, "fullVoltage") < prop(c, "emptyVoltage")) return "Battery full voltage must be at least its empty voltage.";
+  if ((c.kind === "battery" || c.kind === "lfpBattery") && prop(c, "fullVoltage") < prop(c, "emptyVoltage")) return "Battery full voltage must be at least its empty voltage.";
   if (c.kind === "contactor" && prop(c, "dropoutRatio") >= prop(c, "pickupRatio")) return "Contactor dropout must be below pickup.";
   if (c.kind === "motor" && prop(c, "torqueConstant") !== prop(c, "emfConstant")) return "SI motor torque and EMF constants must match for energy consistency.";
+  if (c.kind === 'solarPanel' && !(prop(c, 'voc') > prop(c, 'vmp') && prop(c, 'isc') > prop(c, 'imp'))) return 'PV ratings require Voc > Vmpp and Isc > Impp.';
+  if (c.kind === 'mpptController' && !(prop(c, 'absorptionVoltage') >= prop(c, 'floatVoltage') && prop(c, 'floatVoltage') > prop(c, 'rebulkVoltage'))) return 'Charge profile requires absorption ≥ float > rebulk voltage.';
+  if ((c.kind === 'inverter' || c.kind === 'batteryProtection') && prop(c, 'restartVoltage') <= prop(c, c.kind === 'inverter' ? 'minVoltage' : 'disconnectVoltage')) return 'Restart voltage must exceed disconnect voltage.';
+  if (c.kind === 'lfpBattery' && (!Number.isInteger(prop(c, 'cells')) || prop(c, 'bmsLowVoltage') >= prop(c, 'bmsHighVoltage'))) return 'BMS requires an integer cell count and upper voltage above lower voltage.';
   const derived = derivedError(c);
   if (derived) return derived;
   if (c.kind === "tank" && c.props.vented !== true) return "Sealed pressurized tanks are unsupported; use a vented tank.";

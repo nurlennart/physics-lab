@@ -70,6 +70,30 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
   const b = fixture(), c = b.preset(p), v = c.props;
   let s;
   switch (p.kind) {
+    case 'solarPanel': {
+      const resistor = load(b, v.vmp / v.imp); b.series(c, resistor); s = simulation(b);
+      near(report, 'STC MPP power (W)', v.vmp * v.imp, -s.electrical.readings[c.id].power, 1e-7); run(s); break;
+    }
+    case 'lfpBattery': {
+      b.series(c, load(b, v.cells * 2)); s = simulation(b); const before = s.devices.batteries[c.id]; run(s);
+      assert(s.devices.batteries[c.id] < before); assert(s.electrical.readings[c.id].heatPower >= 0); break;
+    }
+    case 'mpptController': {
+      const pv = b.add('solarPanel'), battery = b.add('lfpBattery', {}, v.absorptionVoltage > 20 ? 'eightCell' : 'standard');
+      b.wire(pv, 'a', c, 'a'); b.wire(pv, 'b', c, 'b'); b.wire(c, 'oa', battery, 'a'); b.wire(c, 'ob', battery, 'b');
+      s = simulation(b); run(s); const r = s.electrical.readings[c.id].solar;
+      near(report, 'DC/DC conversion efficiency', v.conversionEfficiency / 100, r.outputPower / r.inputPower, 1e-8); break;
+    }
+    case 'inverter': {
+      const dc = source(b, 25.6), resistor = load(b, v.voltage ** 2 / 100);
+      b.wire(dc, 'a', c, 'a'); b.wire(dc, 'b', c, 'b'); b.wire(c, 'oa', resistor, 'a'); b.wire(c, 'ob', resistor, 'b');
+      s = simulation(b); run(s); near(report, 'regulated AC load power (W)', 100, s.electrical.readings[resistor.id].power, 1e-8); break;
+    }
+    case 'batteryProtection': {
+      const dc = source(b, 13.2), resistor = load(b, 10);
+      b.wire(dc, 'a', c, 'a'); b.wire(dc, 'b', c, 'reference'); b.wire(c, 'b', resistor, 'a'); b.wire(resistor, 'b', dc, 'b');
+      s = simulation(b); run(s); near(report, 'protected DC current (A)', 13.2 / (10 + v.resistance), s.electrical.readings[c.id].current); break;
+    }
     case 'electricBoiler': {
       for (const [i, phase] of [0, -120, 120].entries()) {
         const mains = b.add('sourceAC', { voltage: 230, phase, maxCurrent: 63 });

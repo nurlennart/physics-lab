@@ -1,0 +1,380 @@
+{
+  "version": 3,
+  "id": "example-solarExperiment",
+  "name": "Solar performance experiment",
+  "components": [
+    {
+      "id": "solarExperiment-component-1",
+      "kind": "solarPanel",
+      "name": "Solar Panel (PV)",
+      "x": 70,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "solarExperiment-component-2",
+      "kind": "mpptController",
+      "name": "MPPT Charge Controller",
+      "x": 390,
+      "y": 110,
+      "rotation": 0,
+      "variant": "24V",
+      "props": {
+        "maxInputVoltage": 100,
+        "maxInputCurrent": 20,
+        "maxCurrent": 20,
+        "conversionEfficiency": 98,
+        "absorptionVoltage": 28.4,
+        "floatVoltage": 27,
+        "absorptionTime": 1800,
+        "rebulkVoltage": 26.4,
+        "minVoltage": 16,
+        "startupHeadroom": 5,
+        "runningHeadroom": 1,
+        "trackingStep": 0.25,
+        "trackingInterval": 0.2,
+        "initialTrackingVoltage": 40,
+        "enabled": true,
+        "heatCapacity": 600,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarExperiment-component-3",
+      "kind": "lfpBattery",
+      "name": "LiFePO4 Battery",
+      "x": 710,
+      "y": 110,
+      "rotation": 0,
+      "variant": "eightCell",
+      "props": {
+        "capacityAh": 100,
+        "initialSOC": 50,
+        "cells": 8,
+        "emptyVoltage": 20,
+        "fullVoltage": 29.2,
+        "internalResistance": 0.0016,
+        "chemistry": "lfp",
+        "coulombicEfficiency": 99.5,
+        "selfDischarge": 0,
+        "polarizationResistance": 0,
+        "polarizationTimeConstant": 30,
+        "resistanceActivation": 0,
+        "maxCurrent": 200,
+        "chargeCurrentLimit": 50,
+        "dischargeCurrentLimit": 100,
+        "maxPower": 5120,
+        "enabled": true,
+        "heatCapacity": 28000,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 50,
+        "minChargeTemperature": 5,
+        "minDischargeTemperature": -20,
+        "bmsLowVoltage": 22.4,
+        "bmsHighVoltage": 30,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarExperiment-component-4",
+      "kind": "solarPanel",
+      "name": "Warm PV · lower irradiance",
+      "x": 70,
+      "y": 470,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 600,
+        "cellTemperature": 60,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "solarExperiment-component-5",
+      "kind": "mpptController",
+      "name": "Second MPPT Charge Controller",
+      "x": 390,
+      "y": 470,
+      "rotation": 0,
+      "variant": "24V",
+      "props": {
+        "maxInputVoltage": 100,
+        "maxInputCurrent": 20,
+        "maxCurrent": 20,
+        "conversionEfficiency": 98,
+        "absorptionVoltage": 28.4,
+        "floatVoltage": 27,
+        "absorptionTime": 1800,
+        "rebulkVoltage": 26.4,
+        "minVoltage": 16,
+        "startupHeadroom": 5,
+        "runningHeadroom": 1,
+        "trackingStep": 0.25,
+        "trackingInterval": 0.2,
+        "initialTrackingVoltage": 40,
+        "enabled": true,
+        "heatCapacity": 600,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarExperiment-component-6",
+      "kind": "lfpBattery",
+      "name": "Second LiFePO4 Battery",
+      "x": 710,
+      "y": 470,
+      "rotation": 0,
+      "variant": "eightCell",
+      "props": {
+        "capacityAh": 100,
+        "initialSOC": 50,
+        "cells": 8,
+        "emptyVoltage": 20,
+        "fullVoltage": 29.2,
+        "internalResistance": 0.0016,
+        "chemistry": "lfp",
+        "coulombicEfficiency": 99.5,
+        "selfDischarge": 0,
+        "polarizationResistance": 0,
+        "polarizationTimeConstant": 30,
+        "resistanceActivation": 0,
+        "maxCurrent": 200,
+        "chargeCurrentLimit": 50,
+        "dischargeCurrentLimit": 100,
+        "maxPower": 5120,
+        "enabled": true,
+        "heatCapacity": 28000,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 50,
+        "minChargeTemperature": 5,
+        "minDischargeTemperature": -20,
+        "bmsLowVoltage": 22.4,
+        "bmsHighVoltage": 30,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "solarExperiment-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarExperiment-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarExperiment-component-2",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-2",
+        "port": "oa"
+      },
+      "to": {
+        "component": "solarExperiment-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-2",
+        "port": "ob"
+      },
+      "to": {
+        "component": "solarExperiment-component-3",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-4",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarExperiment-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarExperiment-component-5",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-5",
+        "port": "oa"
+      },
+      "to": {
+        "component": "solarExperiment-component-6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarExperiment-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "solarExperiment-component-5",
+        "port": "ob"
+      },
+      "to": {
+        "component": "solarExperiment-component-6",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "solarExperiment-probe-1",
+      "component": "solarExperiment-component-1",
+      "measurement": "outputPower",
+      "name": "PV generated power",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-2",
+      "component": "solarExperiment-component-2",
+      "measurement": "outputPower",
+      "name": "Charger output",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-3",
+      "component": "solarExperiment-component-3",
+      "measurement": "stateOfCharge",
+      "name": "Battery SOC",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-4",
+      "component": "solarExperiment-component-3",
+      "measurement": "chemicalEnergy",
+      "name": "Stored chemical energy",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-5",
+      "component": "solarExperiment-component-3",
+      "measurement": "current",
+      "name": "Battery current (+ charging)",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-6",
+      "component": "solarExperiment-component-1",
+      "measurement": "voltage",
+      "name": "Solar Panel (PV) operating voltage",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-7",
+      "component": "solarExperiment-component-1",
+      "measurement": "mppPower",
+      "name": "Solar Panel (PV) available MPP",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-8",
+      "component": "solarExperiment-component-2",
+      "measurement": "trackingEfficiency",
+      "name": "MPPT Charge Controller tracking efficiency",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-9",
+      "component": "solarExperiment-component-4",
+      "measurement": "voltage",
+      "name": "Warm PV · lower irradiance operating voltage",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-10",
+      "component": "solarExperiment-component-4",
+      "measurement": "mppPower",
+      "name": "Warm PV · lower irradiance available MPP",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "solarExperiment-probe-11",
+      "component": "solarExperiment-component-5",
+      "measurement": "trackingEfficiency",
+      "name": "Second MPPT Charge Controller tracking efficiency",
+      "color": "#38bdf8",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

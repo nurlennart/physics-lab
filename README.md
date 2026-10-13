@@ -3,6 +3,7 @@
 A browser engineering sandbox. Build circuits, heating systems, pumped water networks, motor drives and physical mechanisms from about 60 component kinds, wire them by their terminals, and run them on one coupled, energy-conserving simulation.
 
 - **Electrical:** DC and AC (phasor) networks, single- and three-phase supplies, batteries, dynamic capacitors and inductors, transformers, filament lamps, cables, fuses, breakers, relays and contactors.
+- **Solar energy:** nonlinear PV panels, independent MPPT charge controllers, LiFePO4 storage with BMS, DC/AC inverters and downstream protection; four connectable examples with energy accounting and linked datasheet provenance ([models and limitations](docs/SOLAR-ENERGY.md)).
 - **Thermal:** a Bosch Tronic Heat 3000 9 reference electric boiler with staged mains loading, internal water/element inertia and manual-reset protection; Kermi therm-x2 panel radiators with their registered EN 442 output, water and steel inventory and charted pressure drop; heaters, water tanks, heat sinks, cooling jackets, pipe losses and heat exchangers.
 - **Hydraulic:** finite vented tanks with weir overflow, pipes with water inventory, valves, regulators, centrifugal pumps with cavitation and standalone electric circulators (proportional or constant pressure, power-limited, on DC or single-phase AC).
 - **Machines:** DC motors with a speed-controlled drive, a dynamic double-cage induction motor calibrated to IE3 data, star-delta and soft starters, a variable-frequency drive, flywheels with gear stages and dynamometers.

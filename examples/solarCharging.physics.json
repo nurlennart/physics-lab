@@ -1,0 +1,192 @@
+{
+  "version": 3,
+  "id": "example-solarCharging",
+  "name": "Basic solar charging",
+  "components": [
+    {
+      "id": "solarCharging-component-1",
+      "kind": "solarPanel",
+      "name": "Solar Panel (PV)",
+      "x": 70,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "solarCharging-component-2",
+      "kind": "mpptController",
+      "name": "MPPT Charge Controller",
+      "x": 390,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "maxInputVoltage": 100,
+        "maxInputCurrent": 20,
+        "maxCurrent": 20,
+        "conversionEfficiency": 98,
+        "absorptionVoltage": 14.2,
+        "floatVoltage": 13.5,
+        "absorptionTime": 1800,
+        "rebulkVoltage": 13.2,
+        "minVoltage": 8,
+        "startupHeadroom": 5,
+        "runningHeadroom": 1,
+        "trackingStep": 0.25,
+        "trackingInterval": 0.2,
+        "initialTrackingVoltage": 40,
+        "enabled": true,
+        "heatCapacity": 600,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarCharging-component-3",
+      "kind": "lfpBattery",
+      "name": "LiFePO4 Battery",
+      "x": 710,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "capacityAh": 100,
+        "initialSOC": 50,
+        "cells": 4,
+        "emptyVoltage": 10,
+        "fullVoltage": 14.6,
+        "internalResistance": 0.0008,
+        "chemistry": "lfp",
+        "coulombicEfficiency": 99.5,
+        "selfDischarge": 0,
+        "polarizationResistance": 0,
+        "polarizationTimeConstant": 30,
+        "resistanceActivation": 0,
+        "maxCurrent": 200,
+        "chargeCurrentLimit": 50,
+        "dischargeCurrentLimit": 100,
+        "maxPower": 2560,
+        "enabled": true,
+        "heatCapacity": 14000,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 50,
+        "minChargeTemperature": 5,
+        "minDischargeTemperature": -20,
+        "bmsLowVoltage": 11.2,
+        "bmsHighVoltage": 15,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "solarCharging-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCharging-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarCharging-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarCharging-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCharging-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarCharging-component-2",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarCharging-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCharging-component-2",
+        "port": "oa"
+      },
+      "to": {
+        "component": "solarCharging-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarCharging-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCharging-component-2",
+        "port": "ob"
+      },
+      "to": {
+        "component": "solarCharging-component-3",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "solarCharging-probe-1",
+      "component": "solarCharging-component-1",
+      "measurement": "outputPower",
+      "name": "PV generated power",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarCharging-probe-2",
+      "component": "solarCharging-component-2",
+      "measurement": "outputPower",
+      "name": "Charger output",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "solarCharging-probe-3",
+      "component": "solarCharging-component-3",
+      "measurement": "stateOfCharge",
+      "name": "Battery SOC",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "solarCharging-probe-4",
+      "component": "solarCharging-component-3",
+      "measurement": "chemicalEnergy",
+      "name": "Stored chemical energy",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "solarCharging-probe-5",
+      "component": "solarCharging-component-3",
+      "measurement": "current",
+      "name": "Battery current (+ charging)",
+      "color": "#06b6d4",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

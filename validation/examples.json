@@ -1,5 +1,357 @@
 [
   {
+    "mode": "solarCharging",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119886.47999999995,
+    "energyResidual": -3.92901711165905e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 271.83987932636575
+      },
+      {
+        "name": "Charger output",
+        "value": 266.4030817163304
+      },
+      {
+        "name": "Battery SOC",
+        "value": 50.33166666666718
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 2344231.1629407248
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 20
+      }
+    ]
+  },
+  {
+    "mode": "solarCharging",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119886.47999999995,
+    "energyResidual": -3.92901711165905e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 271.83987932636575
+      },
+      {
+        "name": "Charger output",
+        "value": 266.4030817163304
+      },
+      {
+        "name": "Battery SOC",
+        "value": 50.33166666666718
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 2344231.1629407248
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 20
+      }
+    ]
+  },
+  {
+    "mode": "solarOffGrid",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119886.48,
+    "energyResidual": 3.346940502524376e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 449.9272000016548
+      },
+      {
+        "name": "Charger output",
+        "value": 440.9286560164758
+      },
+      {
+        "name": "Battery SOC",
+        "value": 50.191999439853106
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 4675083.886486892
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 11.600224760274843
+      },
+      {
+        "name": "Inverter DC input",
+        "value": 110.43055554949558
+      },
+      {
+        "name": "AC useful load",
+        "value": 100
+      },
+      {
+        "name": "DC useful load",
+        "value": 21.63219144177449
+      }
+    ]
+  },
+  {
+    "mode": "solarOffGrid",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119886.48,
+    "energyResidual": 3.346940502524376e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 449.9272000016548
+      },
+      {
+        "name": "Charger output",
+        "value": 440.9286560164758
+      },
+      {
+        "name": "Battery SOC",
+        "value": 50.191999439853106
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 4675083.886486892
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 11.600224760274843
+      },
+      {
+        "name": "Inverter DC input",
+        "value": 110.43055554949558
+      },
+      {
+        "name": "AC useful load",
+        "value": 100
+      },
+      {
+        "name": "DC useful load",
+        "value": 21.63219144177449
+      }
+    ]
+  },
+  {
+    "mode": "solarCirculation",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119886.47999999995,
+    "energyResidual": 1.5404082454040235e-9,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 268.45750858167133
+      },
+      {
+        "name": "Charger output",
+        "value": 263.0883583879304
+      },
+      {
+        "name": "Battery SOC",
+        "value": 20.320632037603655
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 915751.7674053857
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 19.328472269347415
+      },
+      {
+        "name": "Circulator electrical power",
+        "value": 8.832654514478653
+      },
+      {
+        "name": "Circulation flow",
+        "value": 12.201420302846515
+      }
+    ]
+  },
+  {
+    "mode": "solarCirculation",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 119886.47999999995,
+    "energyResidual": 1.5404082454040235e-9,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 268.45750858167133
+      },
+      {
+        "name": "Charger output",
+        "value": 263.0883583879304
+      },
+      {
+        "name": "Battery SOC",
+        "value": 20.320632037603655
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 915751.7674053857
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 19.328472269347415
+      },
+      {
+        "name": "Circulator electrical power",
+        "value": 8.832654514478653
+      },
+      {
+        "name": "Circulation flow",
+        "value": 12.201420302846515
+      }
+    ]
+  },
+  {
+    "mode": "solarExperiment",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 191818.36800000002,
+    "energyResidual": 1.1350493878126144e-9,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 449.937859273746
+      },
+      {
+        "name": "Charger output",
+        "value": 440.9391020958037
+      },
+      {
+        "name": "Battery SOC",
+        "value": 50.27416957922583
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 4682954.726483535
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 16.555314767672407
+      },
+      {
+        "name": "Solar Panel (PV) operating voltage",
+        "value": 44.5
+      },
+      {
+        "name": "Solar Panel (PV) available MPP",
+        "value": 450.01399999999984
+      },
+      {
+        "name": "MPPT Charge Controller tracking efficiency",
+        "value": 99.98996711528564
+      },
+      {
+        "name": "Warm PV · lower irradiance operating voltage",
+        "value": 38.5
+      },
+      {
+        "name": "Warm PV · lower irradiance available MPP",
+        "value": 232.0406285445886
+      },
+      {
+        "name": "Second MPPT Charge Controller tracking efficiency",
+        "value": 99.96164677035331
+      }
+    ]
+  },
+  {
+    "mode": "solarExperiment",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 191818.36800000002,
+    "energyResidual": 1.1350493878126144e-9,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 449.937859273746
+      },
+      {
+        "name": "Charger output",
+        "value": 440.9391020958037
+      },
+      {
+        "name": "Battery SOC",
+        "value": 50.27416957922583
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 4682954.726483535
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": 16.555314767672407
+      },
+      {
+        "name": "Solar Panel (PV) operating voltage",
+        "value": 44.5
+      },
+      {
+        "name": "Solar Panel (PV) available MPP",
+        "value": 450.01399999999984
+      },
+      {
+        "name": "MPPT Charge Controller tracking efficiency",
+        "value": 99.98996711528564
+      },
+      {
+        "name": "Warm PV · lower irradiance operating voltage",
+        "value": 38.5
+      },
+      {
+        "name": "Warm PV · lower irradiance available MPP",
+        "value": 232.0406285445886
+      },
+      {
+        "name": "Second MPPT Charge Controller tracking efficiency",
+        "value": 99.96164677035331
+      }
+    ]
+  },
+  {
     "mode": "boiler",
     "source": "generated",
     "simulatedSeconds": 60,
@@ -966,29 +1318,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4988.785087251311,
-    "energyResidual": 0.0016896423325079013,
-    "massResidual": -2.8279600883251987e-11,
+    "suppliedEnergy": 4988.785088550221,
+    "energyResidual": 0.0016895888254566671,
+    "massResidual": -2.8109070626669563e-11,
     "probes": [
       {
         "name": "Destination level",
-        "value": 42.42864302689265
+        "value": 42.428643061317445
       },
       {
         "name": "Delivery flow",
-        "value": 48.60193710015706
+        "value": 48.601937101691526
       },
       {
         "name": "Motor current",
-        "value": 3.2846066583880016
+        "value": 3.284606658356723
       },
       {
         "name": "Delivery pressure",
-        "value": 0.3139358756862941
+        "value": 0.3139358756791573
       },
       {
         "name": "Destination water",
-        "value": 20.00647804335256
+        "value": 20.00647804334625
       }
     ]
   },
@@ -999,29 +1351,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4988.785087251311,
-    "energyResidual": 0.0016896423325079013,
-    "massResidual": -2.8279600883251987e-11,
+    "suppliedEnergy": 4988.785088550221,
+    "energyResidual": 0.0016895888254566671,
+    "massResidual": -2.8109070626669563e-11,
     "probes": [
       {
         "name": "Destination level",
-        "value": 42.42864302689265
+        "value": 42.428643061317445
       },
       {
         "name": "Delivery flow",
-        "value": 48.60193710015706
+        "value": 48.601937101691526
       },
       {
         "name": "Motor current",
-        "value": 3.2846066583880016
+        "value": 3.284606658356723
       },
       {
         "name": "Delivery pressure",
-        "value": 0.3139358756862941
+        "value": 0.3139358756791573
       },
       {
         "name": "Destination water",
-        "value": 20.00647804335256
+        "value": 20.00647804334625
       }
     ]
   },
@@ -1032,29 +1384,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 8486.683506901285,
-    "energyResidual": 0.027990239208179446,
-    "massResidual": 6.921538897586288e-10,
+    "suppliedEnergy": 8486.200680731888,
+    "energyResidual": 0.0300130694439531,
+    "massResidual": 6.879190550534986e-10,
     "probes": [
       {
         "name": "Destination level",
-        "value": 62.62427775801934
+        "value": 62.62428644631175
       },
       {
         "name": "Delivery flow",
-        "value": 20.19818385442005
+        "value": 20.233101833254366
       },
       {
         "name": "Motor current",
-        "value": 3.3264660747970614
+        "value": 2.779962007841889
       },
       {
         "name": "Delivery pressure",
-        "value": 0.34816006968597496
+        "value": 0.34910832965308597
       },
       {
         "name": "Destination water",
-        "value": 20.008061002230363
+        "value": 20.008062506526926
       }
     ]
   },
@@ -1065,29 +1417,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 8486.683506901285,
-    "energyResidual": 0.027990239208179446,
-    "massResidual": 6.921538897586288e-10,
+    "suppliedEnergy": 8486.200680731888,
+    "energyResidual": 0.0300130694439531,
+    "massResidual": 6.879190550534986e-10,
     "probes": [
       {
         "name": "Destination level",
-        "value": 62.62427775801934
+        "value": 62.62428644631175
       },
       {
         "name": "Delivery flow",
-        "value": 20.19818385442005
+        "value": 20.233101833254366
       },
       {
         "name": "Motor current",
-        "value": 3.3264660747970614
+        "value": 2.779962007841889
       },
       {
         "name": "Delivery pressure",
-        "value": 0.34816006968597496
+        "value": 0.34910832965308597
       },
       {
         "name": "Destination water",
-        "value": 20.008061002230363
+        "value": 20.008062506526926
       }
     ]
   },
@@ -1098,13 +1450,13 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 12745.603623997305,
-    "energyResidual": 0.015877573591978944,
-    "massResidual": -5.155271765033831e-9,
+    "suppliedEnergy": 12745.60359765401,
+    "energyResidual": 0.015877549921924583,
+    "massResidual": -5.1548170176829444e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 38.89626745511236
+        "value": 38.89626734521707
       },
       {
         "name": "Delivery flow",
@@ -1116,11 +1468,11 @@
       },
       {
         "name": "Delivery pressure",
-        "value": 0.24198976730968447
+        "value": 0.2419897671175798
       },
       {
         "name": "Destination water",
-        "value": 20.007157552373542
+        "value": 20.00715755236729
       }
     ]
   },
@@ -1131,13 +1483,13 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 12745.603623997305,
-    "energyResidual": 0.015877573591978944,
-    "massResidual": -5.155271765033831e-9,
+    "suppliedEnergy": 12745.60359765401,
+    "energyResidual": 0.015877549921924583,
+    "massResidual": -5.1548170176829444e-9,
     "probes": [
       {
         "name": "Destination level",
-        "value": 38.89626745511236
+        "value": 38.89626734521707
       },
       {
         "name": "Delivery flow",
@@ -1149,11 +1501,11 @@
       },
       {
         "name": "Delivery pressure",
-        "value": 0.24198976730968447
+        "value": 0.2419897671175798
       },
       {
         "name": "Destination water",
-        "value": 20.007157552373542
+        "value": 20.00715755236729
       }
     ]
   },
@@ -1238,41 +1590,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 100980.76790030826,
-    "energyResidual": 0.0027262994917691685,
+    "suppliedEnergy": 100980.76792625937,
+    "energyResidual": 0.002725928385189036,
     "massResidual": -1.3005774235352874e-10,
     "probes": [
       {
         "name": "Destination level",
-        "value": 30.949081002856115
+        "value": 30.94908101143049
       },
       {
         "name": "Delivery flow",
-        "value": 312.71232995347634
+        "value": 312.71232997693323
       },
       {
         "name": "Motor current",
-        "value": 8.569933037775607
+        "value": 8.569933037549665
       },
       {
         "name": "Delivery pressure",
-        "value": 1.4136270014111052
+        "value": 1.4136270012643228
       },
       {
         "name": "Destination water",
-        "value": 20.024034559536062
+        "value": 20.02403455952998
       },
       {
         "name": "Motor RPM",
-        "value": 2678.8389094955396
+        "value": 2678.83890949441
       },
       {
         "name": "Shaft power",
-        "value": 1165.1097708728237
+        "value": 1165.1097708425398
       },
       {
         "name": "Hydraulic power",
-        "value": 886.5821096338656
+        "value": 886.5821096126596
       }
     ]
   },
@@ -1283,41 +1635,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 100980.76790030826,
-    "energyResidual": 0.0027262994917691685,
+    "suppliedEnergy": 100980.76792625937,
+    "energyResidual": 0.002725928385189036,
     "massResidual": -1.3005774235352874e-10,
     "probes": [
       {
         "name": "Destination level",
-        "value": 30.949081002856115
+        "value": 30.94908101143049
       },
       {
         "name": "Delivery flow",
-        "value": 312.71232995347634
+        "value": 312.71232997693323
       },
       {
         "name": "Motor current",
-        "value": 8.569933037775607
+        "value": 8.569933037549665
       },
       {
         "name": "Delivery pressure",
-        "value": 1.4136270014111052
+        "value": 1.4136270012643228
       },
       {
         "name": "Destination water",
-        "value": 20.024034559536062
+        "value": 20.02403455952998
       },
       {
         "name": "Motor RPM",
-        "value": 2678.8389094955396
+        "value": 2678.83890949441
       },
       {
         "name": "Shaft power",
-        "value": 1165.1097708728237
+        "value": 1165.1097708425398
       },
       {
         "name": "Hydraulic power",
-        "value": 886.5821096338656
+        "value": 886.5821096126596
       }
     ]
   },
@@ -1329,28 +1681,28 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": 0.31766782274644356,
-    "massResidual": -1.1823431123048067e-11,
+    "energyResidual": 0.31744829079980263,
+    "massResidual": -1.2732925824820995e-11,
     "probes": [
       {
         "name": "Cooled hot water",
-        "value": 71.53947164658564
+        "value": 71.53947165841777
       },
       {
         "name": "Warmed cold water",
-        "value": 18.63455136558059
+        "value": 18.634551353747952
       },
       {
         "name": "Recovered heat",
-        "value": 305589.92765418487
+        "value": 305589.9276481219
       },
       {
         "name": "Hot stream flow",
-        "value": 498.0198947853045
+        "value": 498.019894706712
       },
       {
         "name": "Cold stream flow",
-        "value": 489.79880515593914
+        "value": 489.7988050800909
       }
     ]
   },
@@ -1362,28 +1714,28 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 0,
-    "energyResidual": 0.31766782274644356,
-    "massResidual": -1.1823431123048067e-11,
+    "energyResidual": 0.31744829079980263,
+    "massResidual": -1.2732925824820995e-11,
     "probes": [
       {
         "name": "Cooled hot water",
-        "value": 71.53947164658564
+        "value": 71.53947165841777
       },
       {
         "name": "Warmed cold water",
-        "value": 18.63455136558059
+        "value": 18.634551353747952
       },
       {
         "name": "Recovered heat",
-        "value": 305589.92765418487
+        "value": 305589.9276481219
       },
       {
         "name": "Hot stream flow",
-        "value": 498.0198947853045
+        "value": 498.019894706712
       },
       {
         "name": "Cold stream flow",
-        "value": 489.79880515593914
+        "value": 489.7988050800909
       }
     ]
   },

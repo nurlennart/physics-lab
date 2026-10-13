@@ -18,6 +18,7 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   motor: Fan, pump: Waves, pipe: Pipette, valve: ToggleRight, checkValve: Shield,
   actuatedValve: ToggleRight, fluidJunction: GitBranch, pressureSensor: Gauge,
   flowSensor: Activity, levelSensor: Container, pid: Activity,
+  solarPanel: Zap, lfpBattery: BatteryCharging, mpptController: Activity, inverter: Waves, batteryProtection: Shield,
   battery: BatteryCharging, contactor: ToggleRight, transformer: Waves, radiator: Fan, circulator: RefreshCw,
   source: BatteryCharging,
   resistor: Zap,

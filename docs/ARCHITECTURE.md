@@ -23,6 +23,7 @@ Physics Lab is a static single-page application (React 19, TypeScript, Vite). Th
 | `electrical.ts`, `electrical-core.ts` | Public electrical API; union-find islands, real and complex MNA, CV/CC active set, harmonic solves |
 | `linear-algebra.ts` | Scaled dense real and complex solves, the matrix exponential and a Lyapunov solver shared by all solvers |
 | `device-circuits.ts`, `devices.ts` | Batteries, powered contactors, transformers and radiator fans as MNA branches; battery charge and polarization, capacitor charge, inductor current and contactor state, advanced after each accepted interval, and their energy functions |
+| `solar.ts`, `solar-circuits.ts`, `solar-provenance.ts`, `solar-projects.ts` | Single-diode PV, averaged MPPT/inverter and protection MNA expansion, manufacturer provenance and solar starters; memory in `Devices` |
 | `induction.ts`, `converters.ts` | Dynamic induction machine; star-delta and soft starters, variable-frequency drive |
 | `filament.ts` | Tungsten filament lamp |
 | `boiler.ts` | Bosch TH3000 reference boiler controller, safety latch and implicit element/water coupling (state in Multiphysics) |

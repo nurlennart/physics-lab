@@ -29,10 +29,14 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.kind === "flywheel" ? ["rpm", "torque", "kineticEnergy"] as Measurement[] : []),
     ...(c.kind === "dynamometer" ? ["rpm", "torque", "shaftPower", "energy"] as Measurement[] : []),
     ...(["sourceAC", "source3", "inductor", "capacitor", "inductionMotor"].includes(c.kind) || isElectrical(c) ? ["reactivePower", "powerFactor"] as Measurement[] : []),
+    ...(['solarPanel', 'mpptController', 'inverter', 'batteryProtection'].includes(c.kind) ? ['inputPower', 'outputPower', 'conversionLoss', 'efficiency', 'generatedEnergy', 'outputEnergy', 'lostEnergy'] as Measurement[] : []),
+    ...(c.kind === 'solarPanel' ? ['mppPower', 'mppVoltage', 'mppCurrent', 'incidentPower', 'incidentEnergy'] as Measurement[] : []),
+    ...(c.kind === 'mpptController' ? ['trackingEfficiency', 'secondaryVoltage', 'secondaryCurrent'] as Measurement[] : []),
+    ...(c.kind === 'inverter' ? ['secondaryVoltage', 'secondaryCurrent'] as Measurement[] : []),
     ...(isElectrical(c)
       ? (["voltage", "current", "power", "energy"] as Measurement[])
       : []),
-    ...(c.kind === "battery" ? ["stateOfCharge", "chemicalEnergy", "polarizationVoltage"] as Measurement[] : []),
+    ...((c.kind === "battery" || c.kind === "lfpBattery") ? ["stateOfCharge", "chemicalEnergy", "polarizationVoltage"] as Measurement[] : []),
     ...(c.kind === "capacitor" ? ["chargeVoltage", "fieldEnergy"] as Measurement[] : []),
     ...(c.kind === "inductor" ? ["fieldEnergy"] as Measurement[] : []),
     ...(c.kind === "contactor" ? ["coilVoltage", "coilCurrent"] as Measurement[] : []),
@@ -111,6 +115,7 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   return plainLabels[m] ?? m;
 }
 const plainLabels: Partial<Record<Measurement, string>> = {
+  incidentEnergy: 'incident solar energy', inputPower: 'input power', outputPower: 'output power', conversionLoss: 'conversion loss / rejected sunlight', mppPower: 'available MPP power', mppVoltage: 'MPP voltage', mppCurrent: 'MPP current', trackingEfficiency: 'MPP tracking efficiency', incidentPower: 'incident sunlight', generatedEnergy: 'generated / input electrical energy', outputEnergy: 'output electrical energy', lostEnergy: 'dissipated / rejected energy',
   supplyTemperature: "supply (inlet) water temperature", excessTemperature: "excess temperature over the air (EN 442 ΔT)", heatInput: "heat delivered by the water flow, ṁ·c_p·(T_in − T_out)",
   returnTemperature: "return temperature", elementTemperature: "element temperature", heatingStages: "active heating stages", heatingPower: "element electrical power", heatLoss: "shell heat loss",
   stateOfCharge: "state of charge", chemicalEnergy: "stored chemical energy", polarizationVoltage: "polarization overpotential", chargeVoltage: "dielectric (charge) voltage", fieldEnergy: "stored field energy", coilVoltage: "DC coil voltage", coilCurrent: "DC coil current", secondaryVoltage: "secondary RMS voltage", secondaryCurrent: "secondary RMS current", fanPower: "fan electrical power",
@@ -143,6 +148,7 @@ export function inspectorMeasurements(c: Component, ac: boolean, hydraulicConnec
  * state quantities (temperatures, levels, positions, residuals) stay visible.
  */
 export const operatingMeasurements = new Set<Measurement>([
+  'inputPower', 'outputPower', 'conversionLoss', 'trackingEfficiency',
   "heatingPower", "heatingStages", "heatLoss", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower", "voltage", "current", "currentNC", "power", "reactivePower", "powerFactor", "energy", "nodeVoltage",
   "flow", "velocity", "reynolds", "frictionFactor", "differentialPressure", "inletPressure", "heatDuty", "heatInput", "npsh",
   "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "hydraulicPower", "shaftPower", "efficiency", "rpm",

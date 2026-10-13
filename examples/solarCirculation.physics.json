@@ -1,0 +1,427 @@
+{
+  "version": 3,
+  "id": "example-solarCirculation",
+  "name": "Solar-powered circulation",
+  "components": [
+    {
+      "id": "solarCirculation-component-1",
+      "kind": "solarPanel",
+      "name": "Solar Panel (PV)",
+      "x": 70,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "solarCirculation-component-2",
+      "kind": "mpptController",
+      "name": "MPPT Charge Controller",
+      "x": 390,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "maxInputVoltage": 100,
+        "maxInputCurrent": 20,
+        "maxCurrent": 20,
+        "conversionEfficiency": 98,
+        "absorptionVoltage": 14.2,
+        "floatVoltage": 13.5,
+        "absorptionTime": 1800,
+        "rebulkVoltage": 13.2,
+        "minVoltage": 8,
+        "startupHeadroom": 5,
+        "runningHeadroom": 1,
+        "trackingStep": 0.25,
+        "trackingInterval": 0.2,
+        "initialTrackingVoltage": 40,
+        "enabled": true,
+        "heatCapacity": 600,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarCirculation-component-3",
+      "kind": "lfpBattery",
+      "name": "LiFePO4 Battery",
+      "x": 710,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "capacityAh": 100,
+        "initialSOC": 20,
+        "cells": 4,
+        "emptyVoltage": 10,
+        "fullVoltage": 14.6,
+        "internalResistance": 0.0008,
+        "chemistry": "lfp",
+        "coulombicEfficiency": 99.5,
+        "selfDischarge": 0,
+        "polarizationResistance": 0,
+        "polarizationTimeConstant": 30,
+        "resistanceActivation": 0,
+        "maxCurrent": 200,
+        "chargeCurrentLimit": 50,
+        "dischargeCurrentLimit": 100,
+        "maxPower": 2560,
+        "enabled": true,
+        "heatCapacity": 14000,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 50,
+        "minChargeTemperature": 5,
+        "minDischargeTemperature": -20,
+        "bmsLowVoltage": 11.2,
+        "bmsHighVoltage": 15,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarCirculation-component-4",
+      "kind": "batteryProtection",
+      "name": "DC load protection",
+      "x": 710,
+      "y": 400,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "disconnectVoltage": 11.8,
+        "restartVoltage": 12.8,
+        "ratedCurrent": 65,
+        "resistance": 0.002,
+        "enabled": true,
+        "heatCapacity": 200,
+        "loss": 1,
+        "conductance": 10,
+        "maxTemperature": 65,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarCirculation-component-5",
+      "kind": "circulator",
+      "name": "12 V DC circulator",
+      "x": 1030,
+      "y": 400,
+      "rotation": 0,
+      "variant": "dc12",
+      "props": {
+        "mode": "constantSpeed",
+        "headSetpoint": 4,
+        "speedSetting": 100,
+        "minSpeed": 30,
+        "enabled": true,
+        "ratedSpeed": 418.88,
+        "ratedFlow": 0.00015713,
+        "shutoffHead": 5,
+        "efficiency": 0.3,
+        "mechanicalLoss": 2,
+        "curvePoints": "",
+        "npshRequired": 0.5,
+        "ratedVoltage": 12,
+        "minVoltage": 9,
+        "ratedPower": 19,
+        "standbyPower": 0.5,
+        "motorEfficiency": 70,
+        "inertia": 0.00001,
+        "rampTime": 1,
+        "maxPressure": 300000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "solarCirculation-component-6",
+      "kind": "pipe",
+      "name": "Supply pipe · 10 m",
+      "x": 1030,
+      "y": 700,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarCirculation-component-7",
+      "kind": "valve",
+      "name": "Loop balancing valve",
+      "x": 710,
+      "y": 700,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.02,
+        "lossCoefficient": 5,
+        "laminarK": 500,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
+      }
+    },
+    {
+      "id": "solarCirculation-component-8",
+      "kind": "pipe",
+      "name": "Return pipe · 10 m",
+      "x": 390,
+      "y": 700,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20,
+        "ambientMode": "inherit"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "solarCirculation-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarCirculation-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarCirculation-component-2",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-2",
+        "port": "oa"
+      },
+      "to": {
+        "component": "solarCirculation-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-2",
+        "port": "ob"
+      },
+      "to": {
+        "component": "solarCirculation-component-3",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-3",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarCirculation-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarCirculation-component-4",
+        "port": "reference"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarCirculation-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "solarCirculation-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarCirculation-component-5",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-9",
+      "domain": "hydraulic",
+      "from": {
+        "component": "solarCirculation-component-5",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "solarCirculation-component-6",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-10",
+      "domain": "hydraulic",
+      "from": {
+        "component": "solarCirculation-component-6",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "solarCirculation-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-11",
+      "domain": "hydraulic",
+      "from": {
+        "component": "solarCirculation-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "solarCirculation-component-8",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "solarCirculation-connection-12",
+      "domain": "hydraulic",
+      "from": {
+        "component": "solarCirculation-component-8",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "solarCirculation-component-5",
+        "port": "inlet"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "solarCirculation-probe-1",
+      "component": "solarCirculation-component-1",
+      "measurement": "outputPower",
+      "name": "PV generated power",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarCirculation-probe-2",
+      "component": "solarCirculation-component-2",
+      "measurement": "outputPower",
+      "name": "Charger output",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "solarCirculation-probe-3",
+      "component": "solarCirculation-component-3",
+      "measurement": "stateOfCharge",
+      "name": "Battery SOC",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "solarCirculation-probe-4",
+      "component": "solarCirculation-component-3",
+      "measurement": "chemicalEnergy",
+      "name": "Stored chemical energy",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "solarCirculation-probe-5",
+      "component": "solarCirculation-component-3",
+      "measurement": "current",
+      "name": "Battery current (+ charging)",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "solarCirculation-probe-6",
+      "component": "solarCirculation-component-5",
+      "measurement": "power",
+      "name": "Circulator electrical power",
+      "color": "#ef4444",
+      "visible": true
+    },
+    {
+      "id": "solarCirculation-probe-7",
+      "component": "solarCirculation-component-5",
+      "measurement": "flow",
+      "name": "Circulation flow",
+      "color": "#06b6d4",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

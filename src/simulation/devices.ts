@@ -1,3 +1,4 @@
+import { advanceSolar, initialSolarState, solarKinds, type SolarState } from './solar';
 import { prop, type Component, type Project } from './model';
 import type { ElectricalResult, ElectricalRuntime } from './electrical';
 
@@ -11,6 +12,7 @@ const settle = (value: number) => (Math.abs(value) < 1e-30 ? 0 : value);
 /** Charge, polarization and contact mechanics advance only after an accepted physical interval. */
 export class Devices {
   active = false;
+  solar: Record<string, SolarState> = {};
   /** Battery state of charge (0–1) and polarization voltage (V); capacitor dielectric voltage (V); inductor current (A). */
   batteries: Record<string, number> = {};
   polarization: Record<string, number> = {};
@@ -20,26 +22,35 @@ export class Devices {
   /** Energy change of electrochemical and electrostatic storage since reset (J). */
   storedChange = 0;
   initialize(project: Project) {
-    this.active = project.components.some(c => ["battery", "contactor", "capacitor", "inductor"].includes(c.kind));
+    this.active = project.components.some(c => ["battery", "lfpBattery", "solarPanel", "mpptController", "inverter", "batteryProtection", "contactor", "capacitor", "inductor"].includes(c.kind));
     for (const c of project.components) {
-      if (c.kind === 'battery') { this.batteries[c.id] = prop(c, 'initialSOC') / 100; this.polarization[c.id] = 0; }
+      if (solarKinds.includes(c.kind)) this.solar[c.id] = initialSolarState(c);
+      if ((c.kind === 'battery' || c.kind === 'lfpBattery')) { this.batteries[c.id] = prop(c, 'initialSOC') / 100; this.polarization[c.id] = 0; }
       if (c.kind === 'capacitor') this.capacitors[c.id] = prop(c, 'chargeVoltage');
       if (c.kind === 'inductor') this.inductors[c.id] = 0;
       if (c.kind === 'contactor') this.contactors[c.id] = { closed: false, elapsed: 0, requested: false };
     }
   }
   runtime(h = 0): Pick<ElectricalRuntime, 'devices'> {
-    return { devices: { batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
+    return { devices: { solar: this.solar, batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
   }
   checkpoint() {
-    return structuredClone({ batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
+    return structuredClone({ solar: this.solar, batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
   }
   boundaryTime(project: Project, electrical: ElectricalResult, h: number) {
     if (!this.active) return h;
     let limit = h;
-    for (const c of project.components.filter(c => c.kind === 'battery')) {
+    for (const c of project.components.filter(c => (c.kind === 'battery' || c.kind === 'lfpBattery'))) {
       const soc = this.batteries[c.id], rate = batteryChargeStep(c, soc, electrical.readings[c.id]?.current ?? 0, 1) - soc;
       const next = soc + rate * h;
+      if (c.kind === 'lfpBattery' && Math.abs(rate) > 1e-15) {
+        // A small custom pack can traverse an OCV knee inside a fixed step. Resolve the chemical
+        // timescale in fixed as well as adaptive runs, and split at every slope discontinuity.
+        limit = Math.min(limit, 0.002 / Math.abs(rate));
+        for (const boundary of ocvCurve(c)[0]) {
+          if (rate > 0 && soc < boundary - 1e-12 && next > boundary + 1e-14 || rate < 0 && soc > boundary + 1e-12 && next < boundary - 1e-14) limit = Math.min(limit, (boundary - soc) / rate);
+        }
+      }
       if (next < -1e-14) limit = Math.min(limit, -soc / rate);
       if (next > 1 + 1e-14) limit = Math.min(limit, (1 - soc) / rate);
     }
@@ -55,13 +66,18 @@ export class Devices {
       const remaining = prop(c, state.requested ? 'pickupTime' : 'dropoutTime') - state.elapsed;
       if (remaining > 1e-12) limit = Math.min(limit, remaining);
     }
+    for (const c of project.components) {
+      if (c.kind === 'mpptController') limit = Math.min(limit, Math.max(1e-8, prop(c, 'trackingInterval') - this.solar[c.id].elapsed));
+      if (c.kind === 'inverter' && this.solar[c.id].overload > 0 && this.solar[c.id].overload < prop(c, 'surgeTime')) limit = Math.min(limit, prop(c, 'surgeTime') - this.solar[c.id].overload);
+    }
     return limit;
   }
   advance(project: Project, electrical: ElectricalResult, h: number, temperatures: Record<string, number> = {}) {
     if (!this.active) return;
+    advanceSolar(project, this.solar, electrical, h);
     for (const c of project.components) {
       const r = electrical.readings[c.id];
-      if (c.kind === 'battery' && r) {
+      if ((c.kind === 'battery' || c.kind === 'lfpBattery') && r) {
         const before = this.batteries[c.id], next = batteryChargeStep(c, before, r.current, h);
         if (next < -1e-9 || next > 1 + 1e-9) throw Error(`${c.name}: battery charge left its physical bounds.`);
         this.batteries[c.id] = Math.max(0, Math.min(1, next));
@@ -136,7 +152,7 @@ const ocvCurve = (c: Component) => OCV_CURVES[String(c.props.chemistry ?? 'linea
 /** Open-circuit voltage at a state of charge and its slope dE/ds there (the segment above s; at full, the last one). */
 export function batteryOCV(c: Component, soc: number) {
   const [s, f] = ocvCurve(c), span = prop(c, 'fullVoltage') - prop(c, 'emptyVoltage'), x = Math.max(0, Math.min(1, soc));
-  const k = Math.min(s.length - 2, s.findIndex((_, i) => i === s.length - 1 || x < s[i + 1]));
+  const k = Math.min(s.length - 2, s.findIndex((_, i) => i === s.length - 1 || x + (c.props.cells ? 1e-12 : 0) < s[i + 1]));
   const slope = (f[k + 1] - f[k]) / (s[k + 1] - s[k]);
   return { voltage: prop(c, 'emptyVoltage') + span * (f[k] + slope * (x - s[k])), slope: span * slope };
 }

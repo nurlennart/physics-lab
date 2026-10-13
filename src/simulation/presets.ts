@@ -35,6 +35,13 @@ const pipe = (dn: number, length: number, family: Family) =>
   preset("pipe", family, `DN${dn} · ${length} m steel`, { diameter: dn / 1000, length, roughness: 0.000045, material: "steel", maxPressure: dn >= 100 ? 1600000 : 1000000 });
 
 export const builtinPresets: ComponentPreset[] = [
+  preset('solarPanel', 'General-purpose', 'Solar Panel (PV) · 450 W', {}),
+  preset('lfpBattery', 'General-purpose', 'LiFePO4 Battery · 12.8 V / 100 Ah', {}),
+  preset('lfpBattery', 'General-purpose', 'LiFePO4 Battery · 25.6 V / 100 Ah', {}, '', 'eightCell'),
+  preset('mpptController', 'General-purpose', 'MPPT Charge Controller · 12 V / 20 A', {}),
+  preset('mpptController', 'General-purpose', 'MPPT Charge Controller · 24 V / 20 A', {}, '', '24V'),
+  preset('inverter', 'General-purpose', 'DC/AC Inverter · 24 V / 500 VA', {}),
+  preset('batteryProtection', 'General-purpose', 'Battery Protection Switch · 65 A', {}),
   preset("battery", "Laboratory", "12 V rechargeable · 20 Ah", {}),
   preset("battery", "Industrial", "48 V rechargeable · 100 Ah", { capacityAh: 100, chemistry: "lfp", emptyVoltage: 40, fullVoltage: 58.4, coulombicEfficiency: 99.5, selfDischarge: 2, internalResistance: 0.03, polarizationResistance: 0.02, polarizationTimeConstant: 40, maxCurrent: 200, maxPower: 10000, heatCapacity: 30000, loss: 8 }),
   preset("contactor", "General-purpose", "24 V DC coil · 25 A contact", {}),

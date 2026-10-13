@@ -1,12 +1,243 @@
 {
   "summary": {
-    "presets": 81,
-    "coveredPresets": 81,
-    "scenarios": 125,
-    "passed": 125,
+    "presets": 88,
+    "coveredPresets": 88,
+    "scenarios": 132,
+    "passed": 132,
     "failed": 0
   },
   "reports": [
+    {
+      "name": "Solar Panel (PV) · 450 W",
+      "presets": [
+        "builtin:solarPanel:Solar Panel (PV) · 450 W"
+      ],
+      "checks": [
+        {
+          "label": "STC MPP power (W)",
+          "expected": 450.014,
+          "measured": 450.01400000092997,
+          "absoluteError": 9.299583325628191e-10,
+          "tolerance": 0.0000450114
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0002137658259471209,
+          "absoluteError": 0.0002137658259471209,
+          "tolerance": 9.990539999999992
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0002137658259471209,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "LiFePO4 Battery · 12.8 V / 100 Ah",
+      "presets": [
+        "builtin:lfpBattery:LiFePO4 Battery · 12.8 V / 100 Ah"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0010235494723703554,
+          "absoluteError": 0.0010235494723703554,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0.0010235494723703554,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "LiFePO4 Battery · 25.6 V / 100 Ah",
+      "presets": [
+        "builtin:lfpBattery:LiFePO4 Battery · 25.6 V / 100 Ah"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0001911106230444659,
+          "absoluteError": 0.0001911106230444659,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0001911106230444659,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "MPPT Charge Controller · 12 V / 20 A",
+      "presets": [
+        "builtin:mpptController:MPPT Charge Controller · 12 V / 20 A"
+      ],
+      "checks": [
+        {
+          "label": "DC/DC conversion efficiency",
+          "expected": 0.98,
+          "measured": 0.9799999999135572,
+          "absoluteError": 8.644274185343193e-11,
+          "tolerance": 1.98e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -4.1245584725402296e-10,
+          "absoluteError": 4.1245584725402296e-10,
+          "tolerance": 9.990539999999992
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -4.1245584725402296e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "MPPT Charge Controller · 24 V / 20 A",
+      "presets": [
+        "builtin:mpptController:MPPT Charge Controller · 24 V / 20 A"
+      ],
+      "checks": [
+        {
+          "label": "DC/DC conversion efficiency",
+          "expected": 0.98,
+          "measured": 0.9800000000580241,
+          "absoluteError": 5.802414104749687e-11,
+          "tolerance": 1.98e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.184616849059239e-10,
+          "absoluteError": 1.184616849059239e-10,
+          "tolerance": 9.990539999999992
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 1.184616849059239e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "DC/AC Inverter · 24 V / 500 VA",
+      "presets": [
+        "builtin:inverter:DC/AC Inverter · 24 V / 500 VA"
+      ],
+      "checks": [
+        {
+          "label": "regulated AC load power (W)",
+          "expected": 100,
+          "measured": 100,
+          "absoluteError": 0,
+          "tolerance": 0.0000010099999999999999
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000008273959181437016,
+          "absoluteError": 0.000008273959181437016,
+          "tolerance": 0.5521527777475304
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.000008273959181437016,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Battery Protection Switch · 65 A",
+      "presets": [
+        "builtin:batteryProtection:Battery Protection Switch · 65 A"
+      ],
+      "checks": [
+        {
+          "label": "protected DC current (A)",
+          "expected": 1.319736052789442,
+          "measured": 1.3197360527898994,
+          "absoluteError": 4.574118861455645e-13,
+          "tolerance": 2.319736052789442e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.0008568627308777129,
+          "absoluteError": 0.0008568627308777129,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.0008568627308777129,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
     {
       "name": "12 V rechargeable · 20 Ah",
       "presets": [

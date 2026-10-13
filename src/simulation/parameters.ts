@@ -276,7 +276,32 @@ const options = {
   conductor: [{ value: "copper", label: "Copper" }, { value: "aluminium", label: "Aluminium" }],
   pipeMaterial: [{ value: "steel", label: "Commercial steel (ε 45 µm)" }, { value: "stainless", label: "Stainless steel (ε 15 µm)" }, { value: "copper", label: "Copper (ε 1.5 µm)" }, { value: "pvc", label: "PVC / PE (ε 1.5 µm)" }, { value: "castIron", label: "Cast iron (ε 260 µm)" }, { value: "concrete", label: "Concrete (ε 1 mm)" }],
 };
+const solarParameters: Record<string, [string, string, number, number, EditPolicy?]> = {
+ voc: ["STC open circuit voltage", "V", 1, 200], isc: ["STC short circuit current", "A", 0.01, 100], vmp: ["STC MPP voltage", "V", 0.1, 200], imp: ["STC MPP current", "A", 0.001, 100], irradiance: ["Irradiance", "W/m²", 0, 1500], cellTemperature: ["Cell temperature", "°C", -40, 85], voltageCoefficient: ["Voc temperature coefficient", "1/K", -0.01, 0], currentCoefficient: ["Isc temperature coefficient", "1/K", 0, 0.005], area: ["Aperture area", "m²", 0.01, 100], shading: ["Uniform shaded fraction", "%", 0, 100], cells: ["Series cell count", "1", 1, 32, "reset"],
+ chargeCurrentLimit: ["Charge current limit", "A", 0.01, 1000], dischargeCurrentLimit: ["Discharge current limit", "A", 0.01, 1000], minChargeTemperature: ["Minimum charging temperature", "°C", -40, 50], minDischargeTemperature: ["Minimum discharge temperature", "°C", -40, 50], bmsLowVoltage: ["BMS discharge cutoff", "V", 0, 200], bmsHighVoltage: ["BMS charging cutoff", "V", 0, 200],
+ maxInputVoltage: ["Maximum input voltage", "V", 1, 1000], maxInputCurrent: ["Maximum input current", "A", 0.01, 1000], conversionEfficiency: ["Converter efficiency", "%", 1, 100], absorptionVoltage: ["Absorption voltage", "V", 1, 200], floatVoltage: ["Float voltage", "V", 1, 200], rebulkVoltage: ["Rebulk voltage", "V", 1, 200], absorptionTime: ["Absorption duration (assumed)", "s", 1, 86400], startupHeadroom: ["Startup voltage headroom", "V", 0, 20], runningHeadroom: ["Running voltage headroom", "V", 0, 20], trackingStep: ["P&O voltage perturbation", "V", 0.01, 2], trackingInterval: ["P&O sample interval", "s", 0.05, 10], initialTrackingVoltage: ["Initial PV tracking voltage", "V", 1, 200, "reset"], ratedApparentPower: ["Continuous apparent power", "VA", 1, 100000], surgePower: ["Surge power", "W", 1, 100000], surgeTime: ["Surge duration (assumed)", "s", 0.01, 60], peakEfficiency: ["Peak conversion efficiency", "%", 10, 99], idlePower: ["No-load consumption", "W", 0.01, 1000], restartVoltage: ["Restart voltage", "V", 0.01, 200], disconnectVoltage: ["Load disconnect voltage", "V", 0.01, 200],
+};
+for (const [key, [label, unit, min, max, policy]] of Object.entries(solarParameters)) if (!base[key]) base[key] = { label, description: label + ". See solar model provenance for manufacturer data and assumptions.", unit, group: "configuration", policy: policy ?? "live", domain: [min, max], limitReason: "Validated averaged solar model envelope." };
+base.standby = { label: "Standby", description: "AC output off, DC electronics powered at standby consumption.", group: "operating", policy: "live" };
+
 const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
+  solarPanel: { area: { label: 'Aperture area', description: 'Incident sunlight is irradiance times this aperture area; keep area compatible with the STC electrical ratings.', unit: 'm²', domain: [0.01, 100], typical: [1, 3] } },
+  lfpBattery: {
+    internalResistance: { label: 'Pack ohmic resistance', description: 'Series cell/connector resistance; I²R heats the battery thermal mass.' },
+    maxPower: { label: 'BMS terminal power limit', description: 'Maximum absolute charge or discharge terminal power. Exceeding it isolates the pack and latches the electrical-overload trip until Reset.' },
+    maxCurrent: { description: 'Additional absolute pack current protection rating; directional charge/discharge BMS thresholds may be lower.' },
+  },
+  mpptController: {
+    maxCurrent: { label: 'Maximum battery output current', description: 'Averaged converter output current limit; excess available solar power is curtailed at the PV port.' },
+    minVoltage: { label: 'Minimum battery voltage', description: 'No conversion below this measured battery-side voltage, including a missing or reversed battery.' },
+  },
+  inverter: {
+    voltage: { label: 'AC output RMS voltage', description: 'Regulated sinusoidal AC output RMS voltage.' },
+    minVoltage: { label: 'DC shutdown voltage', description: 'Input undervoltage shutdown threshold; restart requires the separately configured higher recovery voltage.' },
+    ratedPower: { description: 'Continuous AC active power. A short overload is allowed only within surge power and duration limits.' },
+    standbyPower: { description: 'DC consumption with explicit standby enabled and the AC output disabled; automatic ECO polling is omitted.' },
+  },
+  batteryProtection: { resistance: { label: 'Closed contact resistance', description: 'On-state contact resistance. I²R heats this independent protection device.' } },
   electricBoiler: {
     heatCapacity: { label: "Element heat capacity", description: "Assumed immersed element thermal inertia; defines stored energy.", policy: "reset" },
     vesselHeatCapacity: { description: "Assumed wetted steel thermal inertia, lumped with the fully mixed water." },
@@ -512,6 +537,7 @@ export function applyDerived(kind: Kind, props: Record<string, Property>): Recor
 }
 /** Side effects of editing one key that are part of its definition (e.g. a material preset). */
 export function editEffects(kind: Kind, key: string, value: Property): Record<string, Property> {
+  if (kind === 'lfpBattery' && key === 'cells' && typeof value === 'number') return { emptyVoltage: 2.5 * value, fullVoltage: 3.65 * value, bmsLowVoltage: 2.8 * value, bmsHighVoltage: 3.75 * value, internalResistance: 0.0002 * value };
   if (kind === "pipe" && key === "material" && typeof value === "string" && value in pipeRoughness) return { roughness: pipeRoughness[value] };
   if (kind === "cable" && key === "area" && typeof value === "number" && value > 0) return { ratedCurrent: Math.round(cableAmpacity(value) * 10) / 10 };
   return {};

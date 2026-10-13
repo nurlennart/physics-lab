@@ -9,6 +9,11 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 for (const [kind, title, label] of [
+  ['solarPanel', 'Basic solar charging', 'Model provenance & limitations'],
+  ['lfpBattery', 'Basic solar charging', 'state of charge'],
+  ['mpptController', 'Basic solar charging', 'MPP tracking efficiency'],
+  ['inverter', 'Off-grid solar system', 'DC/AC Inverter'],
+  ['batteryProtection', 'Off-grid solar system', 'conducting'],
   ['electricBoiler', 'Bosch boiler and ALPHA2 heating loop', 'Manufacturer specifications'],
   ['panelRadiator', 'Bosch boiler, ALPHA2 and Kermi radiator', 'Manufacturer data (Kermi Technik)'],
   ['battery', 'Finite battery discharge', 'state of charge'],
@@ -36,6 +41,8 @@ for (const [kind, title, label] of [
     await expect(page.getByTestId('panel-basis-fitted')).toContainText('Kermi Profil-K line');
     expect((Object.values(state.hydraulics.readings) as any[]).some(r => r.duty > 0 && r.supplyTemperature > r.returnTemperature)).toBe(true);
   }
+  if (kind === 'solarPanel') { await expect(page.getByRole('img', { name: 'PV I-V and P-V curves with operating point and maximum power point' })).toBeVisible(); expect(readings.some(r => r.solar?.outputPower > 200)).toBe(true); }
+  if (kind === 'inverter') expect(readings.some(r => r.solar?.inputPower > 100 && r.solar?.outputPower === 100)).toBe(true);
   if (kind === 'battery') expect(state.devices.batteries[Object.keys(state.devices.batteries)[0]]).toBeLessThan(0.8);
   if (kind === 'capacitor') expect(Object.values(state.devices.capacitors)[0]).toBeCloseTo(12 * 10 / 11 * -Math.expm1(-1 / 0.9091), 3);
   // Steady winding current: 12 V through 10.01 Ω into 0.5 Ω ∥ 100 Ω, reached after 1 s ≈ 10 τ.

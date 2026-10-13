@@ -84,7 +84,26 @@ function CircuitSymbol({ c }: { c: Component }) {
       <text x="87" y="126" textAnchor="middle" className="symbol-readout dim">{hasStarted() ? `${(h?.duty ?? 0).toFixed(0)} W to room` : `Φ₅₀ ${prop(c, 'ratedOutput').toFixed(0)} W · n ${prop(c, 'exponent').toFixed(3)}`}</text>
     </g>;
   }
-  if (c.kind === "battery") return <g>
+  if (c.kind === 'solarPanel') return <g>
+    <path d="M0 66H42M132 66H174" stroke={T.electricalText} strokeWidth="3" />
+    <rect x="42" y="38" width="90" height="56" rx="2" fill={T.n5} stroke={T.electricalText} strokeWidth="2" />
+    {[60, 78, 96, 114].map(x => <path key={x} d={`M${x} 38V94`} stroke={T.electricalText} />)}
+    <path d="M42 56H132M42 75H132M61 18L71 28M91 14V28M121 18L111 28" stroke={T.electricalText} />
+    <text x="87" y="112" textAnchor="middle" className="scale-label">{prop(c, 'irradiance').toFixed(0)} W/m² · {prop(c, 'cellTemperature')} °C</text>
+  </g>;
+  if (c.kind === 'mpptController' || c.kind === 'inverter') return <g>
+    <path d="M0 40H42M0 92H42M132 40H174M132 92H174" stroke={T.electricalText} strokeWidth="2" />
+    <rect x="42" y="30" width="90" height="72" rx="4" fill={T.n5} stroke={T.electricalText} strokeWidth="2" />
+    <path d="M48 96L126 36M52 48H72M52 55H72" stroke={T.electricalText} />
+    {c.kind === 'inverter' ? <path d="M100 81Q105 63 110 81Q115 99 120 81" stroke={T.electricalText} fill="none" /> : <path d="M102 78H122M102 85H122" stroke={T.electricalText} />}
+    <text x="87" y="119" textAnchor="middle" className="scale-label">{hasStarted() ? r?.solar?.mode ?? 'off' : c.kind === 'inverter' ? 'DC → AC' : 'PV → battery'}</text>
+  </g>;
+  if (c.kind === 'batteryProtection') return <g>
+    <path d={r?.solar?.running ? 'M0 66H174' : 'M0 66H60L110 43M114 66H174'} stroke={T.electricalText} strokeWidth="3" fill="none" />
+    <path d="M87 0V25M76 25H98" stroke={T.electricalText} />
+    <text x="87" y="110" textAnchor="middle" className="scale-label">{hasStarted() ? r?.solar?.mode ?? 'off' : 'Protected DC branch'}</text>
+  </g>;
+  if (c.kind === "battery" || c.kind === "lfpBattery") return <g>
     <path d="M0 66H65M109 66H174M65 45V87M77 53V79M97 45V87M109 53V79" stroke={T.electricalText} strokeWidth="3" />
     <text x="87" y="110" textAnchor="middle" className="scale-label">{((simulation.devices.batteries[c.id] ?? prop(c, 'initialSOC') / 100) * 100).toFixed(1)} % charge</text>
   </g>;

@@ -684,3 +684,7 @@ external electrical supply + signed external mechanical work
 ### Electric central heating boiler
 
 The Bosch Tronic Heat 3000 9 reference uses the existing MNA solver for three independent resistive stages and the enthalpy solver for coupled element/water storage. See [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for source specifications, equations, controller timing, protection, conservation, sealed-loop pressure references and limitations.
+
+## Solar energy extension
+
+See [SOLAR-ENERGY.md](SOLAR-ENERGY.md) for the calibrated single-diode PV, averaged MPPT and inverter, LFP/BMS and independent distribution protection. Incident sunlight is an external input; rejected sunlight leaves to the prescribed cell-temperature reservoir. All converters and loads use the electrical solver.

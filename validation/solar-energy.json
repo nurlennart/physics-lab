@@ -1,0 +1,203 @@
+{
+  "model": "Solar energy system",
+  "references": {
+    "solarPanel": {
+      "reference": "Trina Solar Vertex S+ TSM-450NEG9R.28, TSM_EN_2024_A_S1",
+      "url": "https://static.trinasolar.com/sites/default/files/Datasheet_Vertex%20S%2B_NEG9R.28_EN_2024_A_S1_web.pdf",
+      "facts": "STC 450 W, Voc 52.9 V, Isc 10.74 A, Vmpp 44.6 V, Impp 10.09 A. Voc −0.24%/K, Isc +0.04%/K; area 1762 × 1134 mm. Published NOCT point: 344 W at 800 W/m², nominal cell temperature 43°C.",
+      "assumptions": "Series resistance and diode ideality voltage fitted to STC points and stationary MPP; infinite shunt resistance. Temperature scaling uses Voc and Isc coefficients, not an independently forced power coefficient. Shading is uniform irradiance reduction; bypass diodes, mismatch and local maxima are omitted. Cell temperature is prescribed by an external reservoir. Unconverted sunlight leaves that reservoir; no thermal panel dynamics."
+    },
+    "lfpBattery": {
+      "reference": "Victron Lithium Battery Smart 12.8/100 and 25.6/100",
+      "url": "https://www.victronenergy.com/upload/documents/Datasheet-12,8-&-25,6-Volt-lithium-iron-phosphate-batteries-Smart-EN.pdf",
+      "facts": "100 Ah, 4/8 cells, 1280/2560 Wh nominal; 0.8/1.6 mΩ. Maximum charge/discharge 200 A; recommended charge ≤50 A, discharge ≤100 A. Charge +5…50°C, discharge −20…50°C; end of discharge 11.2/22.4 V; recommended absorption 14.2/28.4 V and float 13.5/27 V.",
+      "assumptions": "The reference pack REQUIRES an external BMS. This generic component bundles a simplified directional BMS and configurable overcurrent isolation, with immediate thermal recovery. SOC curve is a typical LFP plateau, not a measured manufacturer curve. Coulombic efficiency 99.5%, lumped heat capacity and UA are assumed. Published 92% round-trip efficiency is not forced; actual efficiency depends on current, voltage and losses. Cold capacity derating, cell imbalance, ageing and hysteresis omitted."
+    },
+    "mpptController": {
+      "reference": "Victron SmartSolar MPPT 100/20",
+      "url": "https://www.victronenergy.com/media/pg/Manual_SmartSolar_MPPT_75-10_up_to_100-20/en/technical-specifications.html",
+      "facts": "100 V maximum PV Voc, 20 A PV short-circuit/output current limits; nominal 290 W at 12 V / 580 W at 24 V; peak efficiency 98%; startup PV > battery +5 V, running +1 V. Full output to 40°C, operating to 60°C.",
+      "assumptions": "Educational perturb-and-observe voltage tracker, not proprietary firmware; 0.25 V perturbations every 0.2 s. Constant 98% converter efficiency; no standby consumption or gradual thermal derating. Absorption duration 1800 s assumed. Profiles use battery-recommended LFP voltages. Galvanically separate averaged ports; reference hardware is common-negative. No equalization or integrated load output."
+    },
+    "inverter": {
+      "reference": "Victron Phoenix / Inverter VE.Direct 24/500, 230 V",
+      "url": "https://www.victronenergy.com/upload/documents/Datasheet-Phoenix-Inverter-VE.Direct-250VA-1200VA-EN.pdf",
+      "facts": "500 VA / 400 W continuous at 25°C; 350 W at 40°C; 900 W peak; 230 V, 50/60 Hz; 90% peak efficiency, 6.5 W idle, 1.5 W ECO; low shutdown/restart 18.6/21.8 V, upper input 34 V.",
+      "assumptions": "Ideal sinusoidal RMS output; switching, harmonics, DC ripple and inverter startup inrush omitted. Nonnegative idle + quadratic apparent-load loss, peak efficiency placed at half rated load (assumed). Two-second surge duration assumed, not published. Overload latches until reset. Explicit standby disables output; automatic ECO polling and temperature derating omitted."
+    },
+    "batteryProtection": {
+      "reference": "Victron Smart BatteryProtect 12/24 V 65 A (behavior reference)",
+      "url": "https://www.victronenergy.com/battery_protect/smart-battery-protect",
+      "facts": "Independent downstream load protection; distinct from battery cell BMS. Reference family includes a 65 A continuous variant and configurable low voltage programs.",
+      "assumptions": "Immediate 11.8 V disconnect / 12.8 V recovery, 2 mΩ on resistance, thermal capacity/UA and 65°C cutoff are educational choices. Overcurrent latches until reset. Remote enable is a logical signal. Bidirectional ideal contact; reference hardware is unidirectional and must not directly switch inverter input. Use inverter remote control in a real installation. Quiescent power, delays and reverse-current protections omitted."
+    }
+  },
+  "fitted": {
+    "idealityVoltage": 2.854151273649425,
+    "seriesResistance": 0.02921672573654366
+  },
+  "rows": [
+    {
+      "category": "Fitting constraint",
+      "name": "STC Isc",
+      "expected": 10.74,
+      "measured": 10.739999988860527,
+      "error": 1.1139473343746431e-8,
+      "tolerance": 1e-7,
+      "unit": "A",
+      "pass": true
+    },
+    {
+      "category": "Fitting constraint",
+      "name": "STC Voc",
+      "expected": 52.9,
+      "measured": 52.9,
+      "error": 0,
+      "tolerance": 1e-7,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "category": "Fitting constraint",
+      "name": "STC Vmpp",
+      "expected": 44.6,
+      "measured": 44.599999999999994,
+      "error": 7.105427357601002e-15,
+      "tolerance": 1e-7,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "category": "Fitting constraint",
+      "name": "STC Impp",
+      "expected": 10.09,
+      "measured": 10.089999999999998,
+      "error": 1.7763568394002505e-15,
+      "tolerance": 1e-7,
+      "unit": "A",
+      "pass": true
+    },
+    {
+      "category": "Withheld manufacturer reference",
+      "name": "NOCT power",
+      "expected": 344,
+      "measured": 335.2615515753418,
+      "error": 8.738448424658202,
+      "tolerance": 10.32,
+      "unit": "W",
+      "pass": true
+    },
+    {
+      "category": "Withheld manufacturer reference",
+      "name": "NOCT Voc",
+      "expected": 50.2,
+      "measured": 49.93938435322188,
+      "error": 0.26061564677812044,
+      "tolerance": 0.753,
+      "unit": "V",
+      "pass": true
+    },
+    {
+      "category": "Withheld manufacturer reference",
+      "name": "NOCT Isc",
+      "expected": 8.66,
+      "measured": 8.653862348580192,
+      "error": 0.00613765141980771,
+      "tolerance": 0.0866,
+      "unit": "A",
+      "pass": true
+    },
+    {
+      "category": "Withheld manufacturer reference",
+      "name": "Pmax temperature coefficient near STC",
+      "expected": -0.29,
+      "measured": -0.30513459025059975,
+      "error": 0.015134590250599766,
+      "tolerance": 0.06,
+      "unit": "%/K",
+      "pass": true
+    },
+    {
+      "category": "Analytical network",
+      "name": "230 V / 264.5 Ω AC load",
+      "expected": 200,
+      "measured": 200,
+      "error": 0,
+      "tolerance": 1e-7,
+      "unit": "W",
+      "pass": true
+    },
+    {
+      "category": "Calibration assumption",
+      "name": "Inverter peak at half load",
+      "expected": 0.9,
+      "measured": 0.9000000000508547,
+      "error": 5.0854653821374995e-11,
+      "tolerance": 1e-8,
+      "unit": "1",
+      "pass": true
+    },
+    {
+      "category": "Conservation",
+      "name": "20 s coupled run at h=0.1",
+      "expected": 0,
+      "measured": -3.1650415621697903e-10,
+      "error": 3.1650415621697903e-10,
+      "tolerance": 0.001,
+      "unit": "J",
+      "pass": true
+    },
+    {
+      "category": "Conservation",
+      "name": "1200 s solar + night global energy residual",
+      "expected": 0,
+      "measured": 9.313225746154785e-10,
+      "error": 9.313225746154785e-10,
+      "tolerance": 0.01,
+      "unit": "J",
+      "pass": true
+    },
+    {
+      "category": "Behavior",
+      "name": "Sunlight charges battery while serving both loads",
+      "expected": 1,
+      "measured": 1,
+      "error": 0,
+      "tolerance": 0,
+      "unit": "boolean",
+      "pass": true
+    },
+    {
+      "category": "Behavior",
+      "name": "Night draws down stored chemical charge",
+      "expected": 1,
+      "measured": 1,
+      "error": 0,
+      "tolerance": 0,
+      "unit": "boolean",
+      "pass": true
+    },
+    {
+      "category": "Conservation",
+      "name": "20 s coupled run at h=0.05",
+      "expected": 0,
+      "measured": 8.512870408594608e-10,
+      "error": 8.512870408594608e-10,
+      "tolerance": 0.001,
+      "unit": "J",
+      "pass": true
+    },
+    {
+      "category": "Timestep convergence",
+      "name": "SOC difference h=0.1 versus h=0.05 after 20 s",
+      "expected": 0,
+      "measured": 9.015010959956271e-14,
+      "error": 9.015010959956271e-14,
+      "tolerance": 0.000002,
+      "unit": "1",
+      "pass": true
+    }
+  ],
+  "pass": true,
+  "limitations": "NOCT is a manufacturer table reference, not an independent laboratory trace. Peak-efficiency load location and SOC curve are assumptions. Fixed maximum tolerances are stated per row; fitting constraints are not held-out validation."
+}

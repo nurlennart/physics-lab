@@ -274,7 +274,7 @@ export default function Telemetry() {
                 </strong>
               </div>
               {[
-                { name: "Electrical supplied", value: delta("supplied") },
+                { name: s.project.components.some(c => c.kind === "solarPanel") ? "External supply (including sunlight)" : "Electrical supplied", value: delta("supplied") },
                 { name: 'External mechanical work (signed)', value: delta('spatialExternal') },
                 { name: 'Spatial kinetic / potential / spring Δ', value: delta('spatialEnergy') },
                 { name: 'Contact, stop and brake heat', value: delta('mechanicalLoss') },
@@ -316,7 +316,7 @@ export default function Telemetry() {
                   Electrical supply + signed external mechanical work = thermal, chemical, rotational, gravitational and spring storage changes + external heat, contact/brake losses and exported shaft/drain energy. Electrical
                   dissipation is an internal conversion, not an additional
                   output. Signed ambient heat includes the ideal coolant
-                  reservoir. Battery chemical and capacitor field energy are internal storage, so their delivery is excluded from external electrical supply. Interval endpoints use recorded samples.
+                  reservoir. In PV experiments the external supply includes incident sunlight; unconverted sunlight leaves to the prescribed cell-temperature reservoir and is included in ambient heat. Battery chemical and capacitor field energy are internal storage, so their delivery is excluded from external electrical supply. Interval endpoints use recorded samples.
                 </p>
               </div>
             </div>
