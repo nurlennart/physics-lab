@@ -14,15 +14,15 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.spatial ? ['rpm', 'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce'] as Measurement[] : []),
     ...(c.kind === 'forceActuator' ? ['appliedForce', 'appliedTorque', 'energy'] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic") ? ["pressure", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
-    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "pressureReducingValve", "heatExchanger", "radiator"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
+    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "circulator", "pressureReducingValve", "heatExchanger", "radiator"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic" && p.id === "inlet") || c.kind === "heatExchanger" ? ["flow", "inletPressure"] as Measurement[] : []),
     ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
     ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
-    ...(c.kind === "pump" ? ["hydraulicPower", "impellerPower", "mechanicalLoss", "hydraulicEfficiency"] as Measurement[] : []),
+    ...(c.kind === "pump" || c.kind === "circulator" ? ["hydraulicPower", "impellerPower", "mechanicalLoss", "hydraulicEfficiency"] as Measurement[] : []),
     ...(c.kind === "actuatedValve" || c.kind === "pressureReducingValve" ? ["position"] as Measurement[] : []),
     ...(c.kind === "heatExchanger" ? ["heatDuty"] as Measurement[] : []),
-    ...(c.kind === "pump" ? ["npsh"] as Measurement[] : []),
-    ...(c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" ? ["rpm", "shaftPower", "efficiency", "energyResidual"] as Measurement[] : []),
+    ...(c.kind === "pump" || c.kind === "circulator" ? ["npsh"] as Measurement[] : []),
+    ...(c.kind === "motor" || c.kind === "inductionMotor" || c.kind === "pump" || c.kind === "circulator" ? ["rpm", "shaftPower", "efficiency", "energyResidual"] as Measurement[] : []),
     ...(c.kind === "motor" || c.kind === "inductionMotor" ? ["torque"] as Measurement[] : []),
     ...(c.kind === "flywheel" ? ["rpm", "torque", "kineticEnergy"] as Measurement[] : []),
     ...(c.kind === "dynamometer" ? ["rpm", "torque", "shaftPower", "energy"] as Measurement[] : []),
@@ -93,7 +93,8 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   if (m === "voltage") return three ? "phase-to-neutral RMS voltage" : ac ? "RMS voltage" : "voltage (AC: RMS)";
   if (m === "current") return three ? "RMS line current" : ac ? "RMS current" : "current (AC: signed RMS line)";
   if (m === "angularVelocity") return "body angular speed";
-  if (m === "rpm") return ["motor", "inductionMotor", "pump", "flywheel", "dynamometer"].includes(c.kind) ? "shaft speed" : "body rotational speed";
+  if (m === "rpm") return c.kind === "circulator" ? "rotor speed" : ["motor", "inductionMotor", "pump", "flywheel", "dynamometer"].includes(c.kind) ? "shaft speed" : "body rotational speed";
+  if (m === "efficiency" && c.kind === "circulator") return "wire-to-water efficiency (net hydraulic power / P1)";
   if (m === "torque") return c.kind === "dynamometer" ? "absorbed torque" : c.kind === "flywheel" ? "flywheel shaft torque" : "electromagnetic torque";
   if (c.kind === "dynamometer" && m === "shaftPower") return "absorbed power";
   if (c.kind === "dynamometer" && m === "energy") return "absorbed energy";

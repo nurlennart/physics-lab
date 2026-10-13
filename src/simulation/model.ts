@@ -2,7 +2,7 @@ export type Kind =
   | "rigidBody" | "positionSensor" | "speedSensor" | "forceActuator" | "flywheel" | "dynamometer"
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
-  | "battery" | "contactor" | "transformer" | "radiator"
+  | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
   | "source"
   | "source3"
   | "sourceAC"
@@ -220,6 +220,9 @@ export const definitions: Record<Kind, Definition> = {
   pump: { label: "Centrifugal pump", category: "Hydraulic", description: "Shaft-driven quadratic head curve with affinity scaling and built-in reverse-flow check; zero-volume wetted inventory", spec: "8 m shutoff · 60 L/min · 2,865 RPM", cost: 70, prefix: "P", ports: [...fluid, shaft], defaults: { ratedSpeed: 300, ratedFlow: 0.001, shutoffHead: 8, efficiency: 0.7, mechanicalLoss: 2, maxPressure: 1000000, elevation: 0, curvePoints: "", npshRequired: 2 }, variants: [
     { id: "industrial", label: "Industrial transfer pump", cost: 360, spec: "35 m shutoff · 360 L/min reference flow · 2,865 RPM", overrides: { ratedFlow: 0.006, shutoffHead: 35, efficiency: 0.78, mechanicalLoss: 1.9 } },
     { id: "highCapacity", label: "High-capacity process pump", cost: 2400, spec: "30 m shutoff · 3,000 L/min reference flow · 1,475 RPM", overrides: { ratedSpeed: 154.5, ratedFlow: 0.05, shutoffHead: 30, efficiency: 0.82, mechanicalLoss: 1.5, maxPressure: 1600000 } },
+  ] },
+  circulator: { label: "Circulator pump (electric)", category: "Hydraulic", description: "Standalone wet-rotor circulator with integrated EC motor and controller: proportional pressure, constant pressure or constant speed; input power limit, soft start and undervoltage lockout; draws its input power from the network, motor losses heat the pumped water", spec: "230 V · 3–34 W · 6 m · 2.8 m³/h", cost: 190, prefix: "CP", ports: [...electric, ...fluid, input("enable", "boolean", true), input("speed", "number", true)], defaults: { mode: "proportionalPressure", headSetpoint: 4, speedSetting: 100, minSpeed: 25, enabled: true, ratedSpeed: 471.24, ratedFlow: 0.00055556, shutoffHead: 6, efficiency: 0.55, mechanicalLoss: 2, curvePoints: "", npshRequired: 0.5, ratedVoltage: 230, minVoltage: 180, ratedPower: 34, standbyPower: 2.2, motorEfficiency: 80, inertia: 0.00002, rampTime: 2, maxPressure: 1000000, elevation: 0 }, variants: [
+    { id: "dc12", label: "12 V DC solar circulator", cost: 60, spec: "12 V DC · 19 W · 5 m · 0.8 m³/h · constant speed", overrides: { mode: "constantSpeed", minSpeed: 30, ratedSpeed: 418.88, ratedFlow: 0.00015713, shutoffHead: 5, efficiency: 0.3, ratedVoltage: 12, minVoltage: 9, ratedPower: 19, standbyPower: 0.5, motorEfficiency: 70, inertia: 0.00001, rampTime: 1, maxPressure: 300000 } },
   ] },
   pipe: { label: "Pipe", category: "Hydraulic", description: "Darcy–Weisbach pipe with laminar/transition/turbulent friction, explicit physical length and water inventory in mixing cells (thermal transport delay)", spec: "5 m · Ø25 mm", cost: 12, prefix: "PL", ports: fluid, defaults: { length: 5, diameter: 0.025, roughness: 0.000045, maxPressure: 1000000, material: "steel", conductivity: 45, insulation: 0, thermalUA: 0, ambient: 20, elevation: 0, inventory: true, segments: 4, initialTemperature: 20 } },
   heatExchanger: { label: "Heat exchanger", category: "Hydraulic", description: "Two-stream ε-NTU heat exchanger (counter- or parallel-flow); each stream is a hydraulic branch with quadratic pressure loss; no wetted inventory", spec: "2 kW/K · counterflow", cost: 160, prefix: "HX", ports: [
@@ -960,7 +963,7 @@ const costDrivers: Partial<Record<Kind, (p: Record<string, Property>) => number>
   heater: p => +p.ratedPower, resistor: p => +p.ratedPower, lamp: p => +p.ratedPower, meter: () => 1,
   source: p => +p.ratedVoltage * +p.maxCurrent, fuse: p => +p.ratedCurrent, switch: p => +p.ratedPower,
   relay: p => +p.ratedCurrent * +p.ratedVoltage, safety: p => +p.ratedCurrent * +p.ratedVoltage,
-  motor: p => +p.ratedPower, pump: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
+  motor: p => +p.ratedPower, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
   cooler: p => +p.conductance, pipe: p => +p.length * (+p.diameter) ** 1.5, valve: p => (+p.diameter) ** 2,
   checkValve: p => (+p.diameter) ** 2, actuatedValve: p => (+p.diameter) ** 2, cable: p => +p.area * +p.length,
 };
@@ -1028,7 +1031,7 @@ export const isSource = (c: Component) => c.kind === "source" || c.kind === "sou
 /** Machines with a rotating shaft driven by the electrical network. */
 export const isMotor = (c: Component) => c.kind === "motor" || c.kind === "inductionMotor";
 export const isThermalMass = (c: Component) =>
-  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || (isElectrical(c) && !isSource(c) && c.kind !== "radiator");
+  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || (isElectrical(c) && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator");
 /** Components whose catalog data describe one pole/conductor; a three-phase island has three. */
 export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter", "inductor", "capacitor"]);
 /** Contact conductance of a thermal port (W/K); a well-mixed tank's own side is ideal. */

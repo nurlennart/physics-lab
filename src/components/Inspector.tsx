@@ -30,6 +30,7 @@ import {
   probeUnit,
 } from "../simulation/measurements";
 import { pumpCurve } from "../simulation/hydraulic";
+import { basisLabels, circulatorHead, circulatorMode, circulatorModelBasis, powerLimitedSpeed, targetHead } from "../simulation/circulator";
 import { ComponentIcon } from "./Icons";
 export default function Inspector() {
   const s = useLab(),
@@ -245,6 +246,30 @@ export default function Inspector() {
                   <p className="field-hint" data-testid="pump-check-note">Built-in check: reverse flow is blocked.{Math.abs(flow) < 1e-12 && reverse > 50 ? ` Check closed, holding ${(reverse / 100000).toFixed(3)} bar of reverse pressure.` : ""}</p>
                 </>;
               })()}</div>;
+            })()}
+            {c.kind === "circulator" && (() => {
+              // Maximum curve (rated speed, bent by the input power limit), the controller's setpoint line and the
+              // curve at the present speed, all from the same functions as the simulation.
+              const state = simulation.multiphysics.circulators[c.id], view = simulation.multiphysics.circulatorView[c.id], omega = state?.omega ?? 0;
+              const max = prop(c, "ratedSpeed"), qMax = prop(c, "ratedFlow") * Math.SQRT2, headMax = Math.max(0.1, circulatorHead(c, max, 0)), mode = circulatorMode(c);
+              const x = (q: number) => 20 + 215 * q / qMax, y = (head: number) => 115 - 95 * Math.max(0, head) / headMax;
+              const curve = (f: (q: number) => number) => Array.from({ length: 41 }, (_, i) => { const q = qMax * i / 40; return `${x(q)},${y(f(q))}`; }).join(" ");
+              const flow = Math.max(0, h?.flow ?? 0), r = simulation.electrical.readings[c.id];
+              return <div className="inspector-section" data-testid="circulator-section"><div className="section-label">Circulator curves and control</div>
+                <svg viewBox="0 0 260 145" role="img" aria-label="Circulator maximum curve, control setpoint line and operating point">
+                  <path d="M20 15V115H240" fill="none" stroke={T.n11}/>
+                  <polyline points={curve(q => circulatorHead(c, Math.min(max, powerLimitedSpeed(c, q)), q))} fill="none" stroke={T.hydraulicText} strokeWidth="2"/>
+                  {mode !== "constantSpeed" && <polyline points={curve(q => targetHead(c, q))} fill="none" stroke={T.n13} strokeDasharray="4 3"/>}
+                  {started && omega > 0 && <polyline points={curve(q => circulatorHead(c, omega, q))} fill="none" stroke={T.hydraulic} strokeWidth="1"/>}
+                  {started && <circle cx={x(flow)} cy={y(-(h?.differentialPressure ?? 0) / 9806.65)} r="4" fill={T.electricalText}/>}
+                  <text x="20" y="137" fill={T.n13} fontSize="10">0 → {(qMax * 60000).toFixed(1)} L/min · {headMax.toFixed(2)} m shutoff</text>
+                </svg>
+                <p className="field-hint">Solid: maximum curve (rated speed; bends down where the {prop(c, "ratedPower")} W input limit applies). {mode !== "constantSpeed" ? "Dashed: the controller's setpoint line. " : ""}Thin: curve at the present speed; dot: operating point (net head).</p>
+                {started && state?.lockedOut && <p className="field-hint warn" data-testid="circulator-lockout">Undervoltage lockout: the electronics are off; restart once the supply is back above {(prop(c, "minVoltage") * 1.05).toFixed(0)} V.</p>}
+                {started && view && !state?.lockedOut && <p className="field-hint" data-testid="circulator-status">{view.running ? `${(omega * 30 / Math.PI).toFixed(0)} RPM (target ${(view.target * 30 / Math.PI).toFixed(0)}) · P1 ${(r?.power ?? 0).toFixed(1)} W, of which ${(view.motorLoss).toFixed(1)} W motor and electronics loss into the water` : `Stopped · electronics standby ${(r?.power ?? 0).toFixed(1)} W`}.</p>}
+                <div className="section-label">Model basis</div>
+                {circulatorModelBasis(c).map(b => <p key={b.kind} className="field-hint" data-testid={`circulator-basis-${b.kind}`}><strong>{basisLabels[b.kind]}:</strong> {b.text}</p>)}
+              </div>;
             })()}
             <RatingIndicators c={c} />
             <ModelAndPresets c={c} />

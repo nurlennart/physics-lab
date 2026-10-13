@@ -308,6 +308,72 @@
     ]
   },
   {
+    "mode": "circulator",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 91739.86953852748,
+    "energyResidual": -3.3849067992974824e-8,
+    "massResidual": 4.2871306504821405e-10,
+    "probes": [
+      {
+        "name": "Circulated flow",
+        "value": 21.394056756056717
+      },
+      {
+        "name": "Pump Δp (rise negative)",
+        "value": -0.32199217716642853
+      },
+      {
+        "name": "Pump input P1",
+        "value": 29.564126722489238
+      },
+      {
+        "name": "Wire-to-water efficiency",
+        "value": 38.83489709204813
+      },
+      {
+        "name": "Boiler temperature",
+        "value": 20.376316205904477
+      }
+    ]
+  },
+  {
+    "mode": "circulator",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 91739.86953852748,
+    "energyResidual": -3.3849067992974824e-8,
+    "massResidual": 4.2871306504821405e-10,
+    "probes": [
+      {
+        "name": "Circulated flow",
+        "value": 21.394056756056717
+      },
+      {
+        "name": "Pump Δp (rise negative)",
+        "value": -0.32199217716642853
+      },
+      {
+        "name": "Pump input P1",
+        "value": 29.564126722489238
+      },
+      {
+        "name": "Wire-to-water efficiency",
+        "value": 38.83489709204813
+      },
+      {
+        "name": "Boiler temperature",
+        "value": 20.376316205904477
+      }
+    ]
+  },
+  {
     "mode": "acRlc",
     "source": "generated",
     "simulatedSeconds": 60,

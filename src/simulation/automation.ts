@@ -484,6 +484,7 @@ export class Automation {
 export function allowedFaults(c: Component): FaultType[] {
   if (c.kind === "contactor") return ["stuckClosed", "stuckOpen", "failedOpen"];
   if (c.kind === "radiator") return ["coolingFailed"];
+  if (c.kind === "circulator") return ["motorFailure", "controlLost"];
   if (c.kind === "battery" || c.kind === "transformer") return ["failedOpen"];
   if (c.kind === "breaker" || c.kind === "motorProtector") return ["stuckClosed", "failedOpen"];
   if (["relay", "safety"].includes(c.kind))

@@ -2,7 +2,7 @@
 import { build } from "esbuild";
 import { writeFile } from "node:fs/promises";
 const bundle = await build({
-  stdin: { contents: 'export { definitions } from "./src/simulation/model"; export { paramSpec, derivedReadouts } from "./src/simulation/parameters"; export { builtinPresets } from "./src/simulation/presets"; export { pumpRatingReadouts } from "./src/simulation/hydraulic"; export { liveProperties, configurableProperties } from "./src/simulation/integrity";', resolveDir: process.cwd() },
+  stdin: { contents: 'export { definitions } from "./src/simulation/model"; export { paramSpec, derivedReadouts } from "./src/simulation/parameters"; export { builtinPresets } from "./src/simulation/presets"; export { pumpRatingReadouts } from "./src/simulation/hydraulic"; export { circulatorRatingReadouts } from "./src/simulation/circulator"; export { liveProperties, configurableProperties } from "./src/simulation/integrity";', resolveDir: process.cwd() },
   bundle: true, platform: "node", format: "esm", write: false,
 });
 const m = await import("data:text/javascript;base64," + Buffer.from(bundle.outputFiles[0].text).toString("base64"));
@@ -22,7 +22,7 @@ for (const [kind, d] of Object.entries(m.definitions)) {
   const locked = keys.filter((k) => !m.liveProperties.has(k) && !m.configurableProperties.has(k) && !["derived", "fixed"].includes(m.paramSpec(kind, k).policy));
   totals.params += keys.length; for (const p of ["live", "reset", "derived", "fixed"]) totals[p] += by(p).length;
   const probe = { id: "x", kind, name: "x", x: 0, y: 0, rotation: 0, props: d.defaults };
-  const readouts = [...m.derivedReadouts(probe), ...(kind === "pump" ? m.pumpRatingReadouts(probe) : [])].map((r) => r.label);
+  const readouts = [...m.derivedReadouts(probe), ...(kind === "pump" ? m.pumpRatingReadouts(probe) : []), ...(kind === "circulator" ? m.circulatorRatingReadouts(probe) : [])].map((r) => r.label);
   out += `| ${d.label} (\`${kind}\`) | ${domainOf(kind, d)} | ${by("live").join(", ") || "—"} | ${by("reset").join(", ") || "—"} | ${by("derived").join(", ") || "—"} | ${by("fixed").join(", ") || "—"} | ${locked.join(", ") || "—"} | ${specs.filter((s) => s.domain && s.policy !== "derived").map((s) => `${s.key} ${fmt(s)}`).join("; ") || "—"} | ${readouts.join(", ") || "—"} | ${1 + (d.variants?.length ?? 0)} | ${m.builtinPresets.filter((p) => p.kind === kind).length} |\n`;
 }
 out += `\n**Totals:** ${Object.keys(m.definitions).length} component kinds, ${totals.params} parameters — ${totals.live} live, ${totals.reset} reset-to-edit, ${totals.derived} calculated, ${totals.fixed} fixed model constants. Every parameter has metadata (enforced by \`sandbox.test.ts\`).\n`;

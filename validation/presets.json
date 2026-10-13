@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 74,
-    "coveredPresets": 74,
-    "scenarios": 118,
-    "passed": 118,
+    "presets": 77,
+    "coveredPresets": 77,
+    "scenarios": 121,
+    "passed": 121,
     "failed": 0
   },
   "reports": [
@@ -221,6 +221,160 @@
       "time": 1.0000000000000013,
       "energyResidual": -0.000011680748684739228,
       "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating circulator 230 V · 6 m · proportional pressure",
+      "presets": [
+        "builtin:circulator:Heating circulator 230 V · 6 m · proportional pressure"
+      ],
+      "checks": [
+        {
+          "label": "input power P1 = P0 + P_shaft/η_m (W)",
+          "expected": 32.27683095369452,
+          "measured": 32.276830955322126,
+          "absoluteError": 1.6276047176688735e-9,
+          "tolerance": 0.00003228683095369452
+        },
+        {
+          "label": "motor loss into the water (W)",
+          "expected": 8.215366192366506,
+          "measured": 8.215366191064426,
+          "absoluteError": 1.30208022142142e-9,
+          "tolerance": 0.000008225366192366506
+        },
+        {
+          "label": "terminal voltage (V)",
+          "expected": 230,
+          "measured": 230,
+          "absoluteError": 0,
+          "tolerance": 2.4000000000000003e-7
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": -9.833911462919787e-12,
+          "absoluteError": 9.833911462919787e-12,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 3.9058090095522857e-10,
+          "absoluteError": 3.9058090095522857e-10,
+          "tolerance": 1.5850020953054833
+        }
+      ],
+      "pass": true,
+      "time": 11.000000000000126,
+      "energyResidual": 3.9058090095522857e-10,
+      "massResidual": -9.833911462919787e-12,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating circulator 230 V · constant pressure 3 m",
+      "presets": [
+        "builtin:circulator:Heating circulator 230 V · constant pressure 3 m"
+      ],
+      "checks": [
+        {
+          "label": "input power P1 = P0 + P_shaft/η_m (W)",
+          "expected": 27.300524000662804,
+          "measured": 27.300523994791998,
+          "absoluteError": 5.870806063512646e-9,
+          "tolerance": 0.000027310524000662804
+        },
+        {
+          "label": "motor loss into the water (W)",
+          "expected": 7.220104794261754,
+          "measured": 7.220104798958399,
+          "absoluteError": 4.696644850810117e-9,
+          "tolerance": 0.000007230104794261754
+        },
+        {
+          "label": "terminal voltage (V)",
+          "expected": 230,
+          "measured": 230,
+          "absoluteError": 0,
+          "tolerance": 2.4000000000000003e-7
+        },
+        {
+          "label": "held head (m)",
+          "expected": 3,
+          "measured": 2.99999999995231,
+          "absoluteError": 4.7689852067378524e-11,
+          "tolerance": 0.00300001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 8.65156835061498e-11,
+          "absoluteError": 8.65156835061498e-11,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -3.0211875223784546e-9,
+          "absoluteError": 3.0211875223784546e-9,
+          "tolerance": 1.3533367188114653
+        }
+      ],
+      "pass": true,
+      "time": 11.000000000000126,
+      "energyResidual": -3.0211875223784546e-9,
+      "massResidual": 8.65156835061498e-11,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Solar circulator 12 V DC · 19 W",
+      "presets": [
+        "builtin:circulator:Solar circulator 12 V DC · 19 W"
+      ],
+      "checks": [
+        {
+          "label": "input power P1 = P0 + P_shaft/η_m (W)",
+          "expected": 10.478278908328674,
+          "measured": 10.478278908328674,
+          "absoluteError": 0,
+          "tolerance": 0.000010488278908328674
+        },
+        {
+          "label": "motor loss into the water (W)",
+          "expected": 3.493483672498602,
+          "measured": 3.493483672498602,
+          "absoluteError": 0,
+          "tolerance": 0.0000035034836724986018
+        },
+        {
+          "label": "terminal voltage (V)",
+          "expected": 12,
+          "measured": 12,
+          "absoluteError": 0,
+          "tolerance": 2.2000000000000002e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": -3.278159965702798e-10,
+          "absoluteError": 3.278159965702798e-10,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 5.156402860251319e-9,
+          "absoluteError": 5.156402860251319e-9,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 7.999999999999977,
+      "energyResidual": 5.156402860251319e-9,
+      "massResidual": -3.278159965702798e-10,
       "violations": [],
       "failed": {}
     },

@@ -1,8 +1,9 @@
+import { applyDerived } from './parameters';
 import { connect, makeComponent, prop, uid, type Kind, type Component, type Project, type Property, type Measurement } from './model';
-export type DeviceMode = 'battery' | 'capacitor' | 'inductor' | 'contactor' | 'transformer' | 'radiator';
+export type DeviceMode = 'battery' | 'capacitor' | 'inductor' | 'contactor' | 'transformer' | 'radiator' | 'circulator';
 export function deviceStarter(mode: DeviceMode): Project {
-  let p: Project = { version: 3, id: uid(), name: ({ battery: 'Finite battery discharge', capacitor: 'Charging a capacitor', inductor: 'Switching an inductor', contactor: 'Powering a contactor', transformer: 'Isolated AC conversion', radiator: 'Cooling water with a fan' })[mode], components: [], connections: [], probes: [], assemblies: [] };
-  const add = (kind: Kind, x: number, y: number, props: Record<string, Property> = {}) => { const c = makeComponent(kind, x, y, p.components); c.props = { ...c.props, ...props }; p.components.push(c); return c; };
+  let p: Project = { version: 3, id: uid(), name: ({ battery: 'Finite battery discharge', capacitor: 'Charging a capacitor', inductor: 'Switching an inductor', contactor: 'Powering a contactor', transformer: 'Isolated AC conversion', radiator: 'Cooling water with a fan', circulator: 'Circulating heat with an electric pump' })[mode], components: [], connections: [], probes: [], assemblies: [] };
+  const add = (kind: Kind, x: number, y: number, props: Record<string, Property> = {}) => { const c = makeComponent(kind, x, y, p.components); c.props = applyDerived(kind, { ...c.props, ...props }); p.components.push(c); return c; };
   const wire = (a: Component, ap: string, b: Component, bp: string) => { p = connect(p, { component: a.id, port: ap }, { component: b.id, port: bp }); };
   const trace = (c: Component, measurement: Measurement, name: string, color = '#22c55e') => p.probes!.push({ id: uid(), component: c.id, measurement, name, color, visible: true });
   if (mode === 'battery') {
@@ -32,6 +33,17 @@ export function deviceStarter(mode: DeviceMode): Project {
     const source = add('sourceAC', 50, 130, { voltage: 230 }), transformer = add('transformer', 350, 130), load = add('resistor', 650, 130, { resistance: 24 });
     wire(source, 'a', transformer, 'a'); wire(transformer, 'b', source, 'b'); wire(transformer, 'sa', load, 'a'); wire(load, 'b', transformer, 'sb');
     trace(transformer, 'secondaryVoltage', 'Secondary RMS voltage'); trace(load, 'power', 'Load power', '#f59e0b'); trace(transformer, 'bodyTemperature', 'Transformer temperature', '#ef4444');
+  } else if (mode === 'circulator') {
+    // A boiler loop on one 230 V supply: a 1.5 kW element heats a 50 L vessel (the open expansion tank); the circulator
+    // pushes water through a 15 m emitter pipe that gives off 40 W/K (a radiator stand-in) and a throttling valve
+    // (thermostatic radiator valves closing). Equilibrium is about 37 K above ambient.
+    const supply = add('sourceAC', 380, 80, { voltage: 230 }), heater = add('heater', 40, 80, { ratedVoltage: 230, ratedPower: 1500, heatCapacity: 225, conductance: 135, loss: 0.15 });
+    const boiler = add('tank', 30, 330, { capacity: 60, volume: 50, surfaceArea: 0.12, loss: 0.5 }), pump = add('circulator', 380, 380);
+    const emitter = add('pipe', 680, 380, { diameter: 0.02, length: 15, thermalUA: 40, segments: 6 }), valve = add('valve', 680, 630, { diameter: 0.02 }), back = add('pipe', 380, 630, { diameter: 0.02, length: 15, segments: 4 });
+    wire(supply, 'a', pump, 'a'); wire(pump, 'b', supply, 'b'); wire(supply, 'a', heater, 'a'); wire(heater, 'b', supply, 'b'); wire(heater, 'heat', boiler, 'heat');
+    wire(boiler, 'fluid', pump, 'inlet'); wire(pump, 'outlet', emitter, 'inlet'); wire(emitter, 'outlet', valve, 'inlet'); wire(valve, 'outlet', back, 'inlet'); wire(back, 'outlet', boiler, 'fluid');
+    trace(pump, 'flow', 'Circulated flow', '#38bdf8'); trace(pump, 'differentialPressure', 'Pump Δp (rise negative)', '#a78bfa'); trace(pump, 'power', 'Pump input P1', '#f59e0b');
+    trace(pump, 'efficiency', 'Wire-to-water efficiency', '#22c55e'); trace(boiler, 'temperature', 'Boiler temperature', '#ef4444');
   } else {
     const hot = add('tank', 50, 80, { capacity: 2000, volume: 1000, surfaceArea: 1, elevation: 2, initialTemperature: 60, loss: 0 }), cold = add('tank', 680, 80, { capacity: 2000, volume: 500, surfaceArea: 1, loss: 0 });
     const radiator = add('radiator', 370, 130), supply = add('source', 50, 400, { voltage: 24 });

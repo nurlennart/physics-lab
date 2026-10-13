@@ -33,6 +33,8 @@ export interface HydraulicReading {
   npshAvailable?: number;
   /** Pump head factor from cavitation (1 = none), used for this solution's head and power. */
   cavitation?: number;
+  /** Electric circulator: motor and electronics loss (W), heating the pumped water while it flows. */
+  motorLoss?: number;
 }
 export interface HydraulicResult {
   readings: Record<string, HydraulicReading>; potentials: Record<string, number>;
@@ -51,7 +53,9 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'pressureReducingValve', 'heatExchanger', 'radiator']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator']);
+/** Centrifugal pump branches: shaft-driven pumps and electric circulators share the curve model. */
+export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
 export const positionedValves = new Set(['actuatedValve', 'pressureReducingValve']);
 const valveKinds = new Set(['valve', 'actuatedValve', 'checkValve', 'pressureReducingValve']);
@@ -171,7 +175,7 @@ export function cavitationFactor(npshAvailable: number, npsh3: number) {
   if (npshAvailable <= 0) return 0;
   return Math.max(0, Math.min(1, 1 - 0.03 * (npsh3 / npshAvailable) ** 5));
 }
-const topologyPumps = (cs: Component[]) => cs.filter(c => c.kind === 'pump');
+const topologyPumps = (cs: Component[]) => cs.filter(isPump);
 /** NPSH3 at the operating point: the rated value scaled with (Q/Q_rated)² (affinity-similar points scale with ω²). */
 export const npsh3At = (c: Component, q: number) => prop(c, 'npshRequired') * (Math.max(0, q) / prop(c, 'ratedFlow')) ** 2;
 /** Internal (hydraulic) shaft power at the rated point, without mechanical loss. */
@@ -342,7 +346,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   const loss = (br: Branch, q: number) => {
     const c = br.c;
     if (c.kind === 'pipe') return pipeLoss(c, q, pipeTemperatures(br, q)).dp;
-    if (c.kind === 'pump') {
+    if (isPump(c)) {
       // Descending head curve continued as passive quadratic resistance past zero head.
       return PUMP_INTERNAL_RESISTANCE * q - RHO * G * cavitatingHead(c, Math.max(0, speeds[c.id] ?? 0), q, npshAvailable.get(c.id)).head;
     }
@@ -357,14 +361,14 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const fault = faults[c.id], opening = c.kind === 'heatExchanger' ? 100 : positions[c.id] ?? prop(c, 'opening');
     if (valveKinds.has(c.kind) && (fault === 'stuckClosed' || (opening === 0 && fault !== 'stuckOpen'))) return { q: 0, derivative: 0 };
     const actualLoss = (q: number) => loss(b, q);
-    const oneWay = c.kind === 'checkValve' || c.kind === 'pump' || c.kind === 'pressureReducingValve';
+    const oneWay = c.kind === 'checkValve' || isPump(c) || c.kind === 'pressureReducingValve';
     const allowPositive = !blocked(a, true) && !blocked(to, false), allowNegative = !oneWay && !blocked(to, true) && !blocked(a, false);
     const atZero = actualLoss(0);
     // Cavitating pumps (head depends on Q through NPSH3) use the bracketed numeric inverse.
-    const closedForm = c.kind !== 'pipe' && !(c.kind === 'pump' && (pumpPoints(c) || npshAvailable.has(c.id)));
+    const closedForm = c.kind !== 'pipe' && !(isPump(c) && (pumpPoints(c) || npshAvailable.has(c.id)));
     const difference = dp - atZero, magnitude = Math.abs(difference);
     // Closed form of linear·q + quadratic·q|q| = difference (pump curve or two-K valve).
-    const terms = !closedForm ? { linear: 1e5, quadratic: 0 } : c.kind === 'pump'
+    const terms = !closedForm ? { linear: 1e5, quadratic: 0 } : isPump(c)
       ? { linear: PUMP_INTERNAL_RESISTANCE, quadratic: RHO * G * prop(c, 'shutoffHead') * 0.5 / prop(c, 'ratedFlow') ** 2 }
       : valveTerms(b, difference >= 0);
     const linear = terms.linear, quadratic = terms.quadratic;
@@ -475,11 +479,11 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const opening = c.kind === 'heatExchanger' ? 100 : positions[c.id] ?? prop(c, 'opening');
     const pipe = c.kind === 'pipe' ? pipeLoss(c, q, pipeTemperatures(b, q)) : (() => {
       const velocity = q / (Math.PI * prop(c, 'diameter', 0.025) ** 2 / 4);
-      if (c.kind === 'pump') return { velocity, reynolds: 0, frictionFactor: 0 };
+      if (isPump(c)) return { velocity, reynolds: 0, frictionFactor: 0 };
       const mu = valveTerms(b, q >= 0).mu;
       return { velocity, reynolds: RHO * Math.abs(velocity) * prop(c, 'diameter') / mu, frictionFactor: 0, viscosity: mu };
     })();
-    const curve = c.kind === 'pump' ? pumpCurve(c, speeds[c.id] ?? 0, q, npshAvailable.get(c.id)) : null;
+    const curve = isPump(c) ? pumpCurve(c, speeds[c.id] ?? 0, q, npshAvailable.get(c.id)) : null;
     const gain = curve ? RHO * G * curve.head : 0;
     if (Math.abs(q) > 1e-14) {
       const modeled = loss(b, q);
@@ -494,7 +498,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       ...(curve ? { cavitation: curve.cavitation } : {}),
     };
     if (curve && curve.reducedFlow > Math.SQRT2 + 1e-6) result.diagnostics.push(`${c.name}: beyond positive-head pump curve; acting as passive restriction. Turbine operation unsupported.`);
-    if (c.kind === 'pump' && (!primed.has(groups.find(a)) || blocked(a, true))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
+    if (isPump(c) && (!primed.has(groups.find(a)) || blocked(a, true))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
     if (b.stream === 'hot') result.readings[c.id] = result.readings[b.id];
   });
   // Routed overflow appears as a pseudo-branch from the tank to its overflow node. Its "loss" is the
@@ -548,7 +552,8 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const c = byId.get(b.component)!, r = result.readings[b.id];
     // Branch dissipation plus pump shaft losses (shaft − impeller); with b.loss = P_imp − P_net
     // for a pump this totals P_shaft − P_net, each loss counted once.
-    const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower), ambientK = U.celsiusToK(prop(c, 'ambient', 20));
+    // An electric circulator's motor and electronics losses are cooled by the pumped water (wet rotor).
+    const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower) + (r.motorLoss ?? 0), ambientK = U.celsiusToK(prop(c, 'ambient', 20));
     const ua = c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0, n = pipeCells(c);
     if (n) {
       // Implicit cell chain: T_k' = (m c T_k + h ṁ c T_{k−1}' + h UA/N T_amb + h Q/N)/(m c + h ṁ c + h UA/N).

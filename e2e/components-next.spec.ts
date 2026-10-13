@@ -15,6 +15,7 @@ for (const [kind, title, label] of [
   ['contactor', 'Powering a contactor', 'DC coil current'],
   ['transformer', 'Isolated AC conversion', 'secondary RMS voltage'],
   ['radiator', 'Cooling water with a fan', 'fan electrical power'],
+  ['circulator', 'Circulating heat with an electric pump', 'Model basis'],
 ]) test(`${kind}: example runs, exposes real measurements and resets`, async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   await openExample(page, title);
@@ -33,6 +34,8 @@ for (const [kind, title, label] of [
   if (kind === 'contactor') expect(readings.some(r => r.coilCurrent > 0)).toBe(true);
   if (kind === 'transformer') expect(readings.some(r => r.secondaryVoltage > 23 && r.secondaryVoltage < 24)).toBe(true);
   if (kind === 'radiator') expect(readings.some(r => Math.abs(r.fanPower - 30) < 1e-8)).toBe(true);
+  // On the soft-start ramp after 1 s: the electronics draw more than their standby power and stay within P1,max.
+  if (kind === 'circulator') { expect(readings.some(r => r.power > 2.5 && r.power <= 34 + 1e-9)).toBe(true); await expect(page.getByTestId('eei-note')).toContainText('not an efficiency'); }
   await page.getByRole('button', { name: 'Reset simulation', exact: true }).click();
   const reset = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
   expect(reset.time).toBe(0); expect(reset.error).toBeNull(); expect(errors).toEqual([]);

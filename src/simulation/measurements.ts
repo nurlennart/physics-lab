@@ -82,7 +82,9 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "impellerPower": return h?.impellerPower ?? 0;
     case "mechanicalLoss": return h?.mechanicalLoss ?? 0;
     case "hydraulicEfficiency": return h?.hydraulicEfficiency === null || h?.hydraulicEfficiency === undefined ? null : h.hydraulicEfficiency * 100;
-    case "efficiency": return motor ? r && r.power > 1e-9 ? motor.shaftPower / r.power * 100 : null : h?.efficiency === null || h?.efficiency === undefined ? null : h.efficiency * 100;
+    // A circulator: instantaneous wire-to-water efficiency, net hydraulic power over electrical input P1 (not the EEI).
+    case "efficiency": if (c.kind === "circulator") return r && r.power > 1e-9 && h ? Math.max(0, h.hydraulicPower) / r.power * 100 : null;
+      return motor ? r && r.power > 1e-9 ? motor.shaftPower / r.power * 100 : null : h?.efficiency === null || h?.efficiency === undefined ? null : h.efficiency * 100;
     case "reactivePower": return r?.ac ? (isSource(c) ? -(r.reactivePower ?? 0) : r.reactivePower ?? 0) : r ? 0 : null;
     case "powerFactor": return r?.ac ? r.powerFactor ?? null : r && Math.abs(r.power) > 1e-12 ? 1 : null;
     case "overflow": return (s.multiphysics.overflowRate[c.id] ?? 0) * 60000;

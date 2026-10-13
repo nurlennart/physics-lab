@@ -19,7 +19,7 @@ export function portLocal(c: Component, port: string): Point {
   if (p?.domain === "hydraulic") return { x: port === "inlet" ? -12 : port === "outlet" ? w + 12 : w / 2, y: port === "fluid" ? h + 12 : h / 2 };
   if (p?.domain === "mechanical") return { x: w / 2, y: -12 };
   if (p?.domain === "control") {
-    if (["relay", "safety", "cooler", "motor", "actuatedValve", "breaker", "motorProtector", "starDeltaStarter", "softStarter", "vfd"].includes(c.kind))
+    if (["relay", "safety", "cooler", "motor", "circulator", "actuatedValve", "breaker", "motorProtector", "starDeltaStarter", "softStarter", "vfd"].includes(c.kind))
       return { x: ["in", "enable", "position", "run", "start"].includes(port) ? w * 0.3 : w * 0.7, y: h + 12 };
     if (p.direction === "out") return { x: w + 12, y: h / 2 };
     const inputs = definitions[c.kind].ports.filter(
@@ -29,6 +29,8 @@ export function portLocal(c: Component, port: string): Point {
   }
   if (c.kind === "contactor" && (port === "ca" || port === "cb")) return { x: port === "ca" ? w * 0.3 : w * 0.7, y: h + 12 };
   if (c.kind === "radiator" && p?.domain === "electrical") return { x: port === "a" ? w * 0.3 : w * 0.7, y: h + 12 };
+  // Circulator: supply terminals on top (control inputs below, water through the sides).
+  if (c.kind === "circulator" && p?.domain === "electrical") return { x: port === "a" ? w * 0.3 : w * 0.7, y: -12 };
   if (c.kind === "transformer" && p?.domain === "electrical") return { x: port === "a" || port === "b" ? -12 : w + 12, y: port === "a" || port === "sa" ? h * 0.3 : h * 0.7 };
   // Drive: line input on the left (phase, neutral), motor output on the right.
   if (c.kind === "vfd") return { x: port === "a" || port === "b" ? -12 : w + 12, y: port === "a" || port === "oa" ? h * 0.3 : h * 0.7 };

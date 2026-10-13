@@ -4,7 +4,7 @@ import { starter } from "../simulation/projects";
 import { makeComponent, connect, type Connection, type Point, type Project } from "../simulation/model";
 import { bounds, portDirection, portPoint, routeAll, routePoints } from "./geometry";
 
-const STARTERS = ["induction", "starting", "acRlc", "heat", "light", "runaway", "automated", "industrial", "exchanger", "transfer", "pressure", "supply", "circulation", "mechanism", "rotor", "descent", "lift", "rotation", "battery", "contactor", "transformer", "radiator"] as const;
+const STARTERS = ["induction", "starting", "acRlc", "heat", "light", "runaway", "automated", "industrial", "exchanger", "transfer", "pressure", "supply", "circulation", "mechanism", "rotor", "descent", "lift", "rotation", "battery", "contactor", "transformer", "radiator", "circulator"] as const;
 type Segment = { a: Point; b: Point; net: string };
 
 /** Nets: terminals joined by wires. */
@@ -77,8 +77,10 @@ describe("wire routing", () => {
       expect({ mode, ...m, crossings: 0 }).toEqual({ mode, throughModule: 0, sharedWithOtherNet: 0, crossings: 0 });
       total.crossings += m.crossings;
     }
-    // Crossings between nets are often unavoidable; the router trades them against detours (23 in total today).
-    expect(total.crossings).toBeLessThanOrEqual(23);
+    // Crossings between nets are often unavoidable; the router trades them against detours (24 in total today).
+    // The circulator starter adds one that no placement avoids: a heater and a pump in parallel on one supply, each with
+    // line on the left and neutral on the right.
+    expect(total.crossings).toBeLessThanOrEqual(24);
   });
   it("faces terminals of rotated modules and avoids the rotated body", () => {
     const p = starter("heat");

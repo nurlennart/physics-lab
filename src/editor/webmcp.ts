@@ -25,7 +25,7 @@ export function registerLabTools() {
       name: "read_lab_measurements",
       title: "Read laboratory measurements",
       description:
-        "Read calculated voltages, currents, temperatures, energy, and simulation status. Hydraulic readings are SI; pump hydraulicPower is net Δp·Q, impellerPower is ρgH·Q, efficiency is overall net/shaft as a fraction (null when undefined).",
+        "Read calculated voltages, currents, temperatures, energy, and simulation status. Hydraulic readings are SI; pump hydraulicPower is net Δp·Q, impellerPower is ρgH·Q, efficiency is overall net/shaft as a fraction (null when undefined). Circulators report P1 as their electrical power; their EEI is a configuration index, not a reading.",
       inputSchema: {
         type: "object",
         properties: {},
@@ -44,6 +44,8 @@ export function registerLabTools() {
         /** Spill over tank rims: rate over the last step (m³/s) and cumulative volume (m³). */
         overflow: { rateM3s: simulation.multiphysics.overflowRate, volumeM3: simulation.multiphysics.overflowed },
         motors: simulation.multiphysics.motors,
+        /** Electric circulators: rotor speed (rad/s) and undervoltage lockout; speed target, input power P1 and motor loss (W). */
+        circulators: { state: simulation.multiphysics.circulators, operation: simulation.multiphysics.circulatorView },
         spatial: { bodies: simulation.spatial.readings, joints: simulation.spatial.jointReadings, contacts: simulation.spatial.contacts, residual: simulation.spatial.residual, externalWork: simulation.spatial.externalWork, dampingLoss: simulation.spatial.dampingLoss, contactLoss: simulation.spatial.contactLoss, limitLoss: simulation.spatial.limitLoss },
         massResidualKg: simulation.multiphysics.massResidual,
         energyResidualJ: simulation.energyResidual,

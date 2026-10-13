@@ -57,6 +57,8 @@ export interface ElectricalReading {
   /** Networks with drives: RMS of the rectifier harmonic currents in this element (A) and their I²R (W, in `power`). */
   harmonicCurrent?: number;
   harmonicLoss?: number;
+  /** Electric circulators: the electronics could not draw their demand above the undervoltage lockout and switched off. */
+  undervoltage?: boolean;
 }
 /** Characteristic six-pulse rectifier harmonics 6k ± 1 (to the 25th) and the THD of the 1/h spectrum shape. */
 export const HARMONIC_ORDERS = [5, 7, 11, 13, 17, 19, 23, 25];
@@ -131,6 +133,10 @@ export interface ElectricalRuntime {
    */
   devices?: { batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
   sourceModels?: Record<string, { voltage: number; resistance: number; lower: number; upper: number }>;
+  /** Resistance of expanded constant-power loads (electric circulators) for this solve (Ω); overrides the stored value. */
+  loadResistances?: Record<string, number>;
+  /** Electric circulators: electrical input demand (W) of each powered unit; absent or 0 = electronics off (open). */
+  circulators?: Record<string, number>;
   contacts?: Record<string, boolean>;
   faults?: Record<string, string>;
   disconnected?: Set<string>;
@@ -246,6 +252,8 @@ export function solveElectricalCore(
   // A capacitor's resistance is its ESR; its DC insulation leakage is a separate parallel path.
   const resistanceOf = (c: Component) => {
     if (resistances[c.id] !== undefined) return resistances[c.id];
+    const load = runtime.loadResistances?.[c.id];
+    if (load !== undefined) return (resistances[c.id] = load);
     const r = c.kind === "motor" ? prop(c, "resistance", 1) : actualResistance(c, runtime.temperatures?.[c.id] ?? 20) * (c.kind === "lamp" ? runtime.filaments?.[c.id] ?? 1 : 1);
     if (!Number.isFinite(r) || r <= 0)
       throw Error(`${c.name}: resistance must be positive (temperature-dependent model gives ${r.toPrecision(3)} Ω at ${(runtime.temperatures?.[c.id] ?? 20).toFixed(1)} °C).`);

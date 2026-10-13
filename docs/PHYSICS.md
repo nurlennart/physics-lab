@@ -524,6 +524,44 @@ One function, `pumpCurve()`, feeds the solver, readings, inspector, probes, CSV 
 - **Energy:** losses heat the pumped water; at zero flow the shaft power leaves as heat to ambient (`dryLoss`).
 - **Stopped pump:** with no Euler momentum term, a stopped pump is a passive restriction; elevation can drive forward flow through it and the energy is dissipated. No hydraulic torque reaches the shaft (windmilling is not modelled): a restrained shaft keeps its speed, a free shaft's speed is unavailable. Beyond positive head the curve continues as a passive resistance (turbine region unsupported).
 
+### Electric circulator
+
+A standalone circulator (`circulator.ts`) is a glandless (wet-rotor) centrifugal pump with an integrated electronically commutated permanent-magnet motor and controller, as used for heating, solar and cooling circulation. It has supply terminals a–b, a hydraulic inlet and outlet, and optional `enable` (Boolean) and `speed` (percent) inputs; there is no external shaft. The hydraulic branch is the shared pump model above (`pumpCurve`, built-in check, NPSH), evaluated at the rotor speed.
+
+**Electronics and energy.** The electronics regulate their input power, so the unit is a constant-power load on the network:
+
+```
+P1 = P₀ + max(0, P_mech)/η_m,   P_mech = P_shaft(ω_mid, Q) + (½·J·ω₁² − ½·J·ω₀²)/h
+motor and electronics loss  P1 − P_mech ≥ 0  → pumped water (wet rotor); without flow → ambient
+```
+
+In the electrical solve the unit is a resistance R = V²/P1 iterated to a fixed point (in phase with the voltage on AC); the iteration contracts with factor 2·R_s/(R + R_s) for a source resistance R_s, i.e. while the terminal voltage stays above half the open-circuit voltage. Within one coupled substep the hydraulic network is solved first (it depends only on speeds), then the electrical network with each circulator's demand for that operating point, so the ledger holds exactly: P1·h = (P_shaft + loss)·h + Δ(½·J·ω²). A supply that cannot hold the demand above the undervoltage lockout (fixed point below it, collapse or no convergence) switches the electronics off within the same substep; they restart 1 s later once the terminal voltage is back above 105 % of the lockout, so a supply that is too weak gives a brownout cycle. Without supply or run command the light rotor (J ≈ 2·10⁻⁵ kg·m², coast-down well below one step) stops within the substep and its kinetic energy heats the water. Outside the nominal voltage +10 % a rating violation is reported.
+
+**Control.** Once per substep, from the last accepted flow Q (sampled control, one substep of delay), the controller sets a speed target:
+
+| Mode | Target |
+| --- | --- |
+| Proportional pressure | speed at which the head equals H_set·(1 + Q/Q_r)/2 (H_set/2 at zero flow) |
+| Constant pressure | speed at which the head equals H_set |
+| Constant curve | the set percentage of the maximum speed |
+| Wired speed command | the commanded percentage (below 1 %: stop); a lost control signal runs at maximum speed |
+
+The target is limited to [minimum speed, maximum speed] and to the highest speed at which the steady input stays within P1,max (the datasheet maximum curve bends down at high flow); heads are found by bisection on the curve. The rotor follows the target on the soft-start ramp (maximum speed in `rampTime`). For a fixed flow the head–speed map is monotone, so the sampled iteration converges to the setpoint geometrically; the adaptive integrator limits the step to `rampTime`/50 while the speed still moves.
+
+**Data basis.** The Inspector lists the source of each part for the selected pump:
+
+| Part | Basis |
+| --- | --- |
+| Catalog 230 V model | Fitted to the Grundfos ALPHA2/ALPHA3 data booklet, ALPHAx 25-60 (50 Hz): H_max 6 m, P1 3–34 W, I1 0.04–0.32 A, 1 × 230 V ± 10 %, specific EEI 0.17, canned-rotor 4-pole PM motor |
+| Catalog 12 V DC model | Typical retail data for 12 V brushless solar circulators (about 5 m, 800 L/h, 19 W); listings disagree, values are indicative |
+| Pump curve | Quadratic approximation through shutoff head and reference flow (not measured), or measured flow:head points interpolated piecewise linearly; affinity-scaled with speed |
+| Control logic | Approximated as above; real pumps estimate head from speed and power and use proprietary curve families (PP1–3, CP1–3, AUTOADAPT), which are not reproduced |
+| Assumed | Maximum speed (4,500 RPM), hydraulic efficiency 0.55, constant motor-and-drive efficiency 80 %, standby 2.2 W, inertia, ramp, lockout. Efficiencies and P₀ were chosen so that P1 at the best point is the 34 W limit, P1 at the lowest curve about 3 W, and the EEI 0.174 |
+
+**Energy efficiency index.** The Inspector computes the EEI by the method of Commission Regulation (EC) No 641/2009, Annex II (as amended by (EU) No 622/2012) on the model's own steady operating points: Q100 %/H100 % where Q·H is largest on the maximum curve; the reference control curve from (Q100 %, H100 %) to (0, H100 %/2); P_L at 100/75/50/25 % flow, weighted by the time shares 6/15/35/44 % (scaled by H_ref/H where the pump cannot reach the curve); P_ref = 1.7·P_hyd + 17·(1 − e^(−0.3·P_hyd)); EEI = P_L,avg/P_ref · 0.49. The EEI is a profile-weighted index relative to a reference pump of the same hydraulic size, **not an efficiency**: a low EEI does not mean a high efficiency at every operating point (for the catalog model the wire-to-water efficiency is 40 % at the best point and 27 % at 25 % flow on the reference curve). The live efficiency measurement of a circulator is the instantaneous wire-to-water efficiency, net hydraulic power over P1.
+
+Not modelled: the rectifier input current's harmonics (the datasheet's 0.32 A at 34 W is a true power factor of about 0.46; the model reports the in-phase current, 0.15 A), load- and speed-dependent motor efficiency, the motor's thermal state, air in the water, dry running, blocked-rotor restart pulses, night setback and the temperature-dependent density of the curves (published at 60 °C).
+
 ## Rigid bodies and mechanisms
 
 The Physical view renders the same component identities as the schematic. Rigid bodies and constraints are solved by pinned **Planck 1.4.2** (Box2D for JavaScript), whose synchronous API fits the engine, tests and replay.
@@ -609,7 +647,7 @@ external electrical supply + signed external mechanical work
 
 - **Electrical:** single-frequency steady phasors outside induction machines; DC capacitors and inductors are dynamic, but there are no AC switching transients, no network transients from supply or cable inductance, no semiconductors beyond the starter and drive models above, no arcs, contact wear or ageing.
 - **Water:** liquid 1–95 °C only, incompressible flow with ρ_ref, constant c_p. No boiling, evaporation, freezing, sealed vessels, stratification, water hammer, spatial fluid, spills or leaks.
-- **Machines:** no saturation or single-phase machines; induction-motor stray load loss is folded into the fitted resistances; quasi-steady DC armature; no hydraulic turbine torque; pump curves are teaching approximations.
+- **Machines:** no saturation or single-phase machines; induction-motor stray load loss is folded into the fitted resistances; quasi-steady DC armature; no hydraulic turbine torque; pump curves are teaching approximations; circulator electronics draw an in-phase constant power (no rectifier harmonics) with a constant motor efficiency.
 - **Mechanics:** static housings only; no deformation, fracture or contact heat conduction; last-substep reaction readings.
 - **Control:** ideal actuator power, one-step response quantization, acyclic graphs only.
 - **Replay** reconstructs final state through the current engine; old archives that depended on a corrected defect can evolve differently. There is no timeline scrubbing.
@@ -622,6 +660,8 @@ external electrical supply + signed external mechanical work
 - [US DOE: Improving pumping system performance](https://www.energy.gov/sites/prod/files/2014/05/f16/pump.pdf): operating points and affinity laws
 - [KSB pump lexicon: mechanical efficiency](https://ksb.com/en-global/centrifugal-pump-lexicon/article/mechanical-efficiency-1117904) and [internal efficiency](https://www.ksb.com/en-global/centrifugal-pump-lexicon/article/internal-efficiency-1117912)
 - [SKF: friction model as an engineering tool](https://evolution.skf.com/us/using-a-friction-model-as-an-engineering-tool-2/)
+- [Grundfos ALPHA2/ALPHA3 data booklet](https://api.grundfos.com/literature/Grundfosliterature-815904.pdf): ALPHAx 25-60 curves, P1, supply tolerance and EEI
+- [Commission Regulation (EU) No 622/2012](https://www.legislation.gov.uk/eur/2012/622/adopted/data.html) amending (EC) No 641/2009: circulator EEI method, load profile and reference power
 - [Hydraulic Institute: the basics of NPSH](https://www.pumps.org/2022/12/07/the-basics-of-npsh-pump-operating-regions/)
 - [University of Michigan CTMS: DC motor](https://ctms.engin.umich.edu/CTMS/index.php?aux=Activities_DCmotorA)
 - [MathWorks: battery equivalent circuit](https://www.mathworks.com/help/simscape-battery/ref/batteryequivalentcircuit.html), [transformer equivalents](https://www.mathworks.com/help/simscape/ug/comparison-of-mutual-inductor-and-ideal-transformer.html), [radiator modelling](https://www.mathworks.com/help/hydro/ug/modeling-heat-exchangers.html)

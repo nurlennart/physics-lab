@@ -4,7 +4,7 @@ A browser engineering sandbox. Build circuits, heating systems, pumped water net
 
 - **Electrical:** DC and AC (phasor) networks, single- and three-phase supplies, batteries, dynamic capacitors and inductors, transformers, filament lamps, cables, fuses, breakers, relays and contactors.
 - **Thermal:** heaters, water tanks, heat sinks, cooling jackets, pipe losses and heat exchangers.
-- **Hydraulic:** finite vented tanks with weir overflow, pipes with water inventory, valves, regulators and centrifugal pumps with cavitation.
+- **Hydraulic:** finite vented tanks with weir overflow, pipes with water inventory, valves, regulators, centrifugal pumps with cavitation and standalone electric circulators (proportional or constant pressure, power-limited, on DC or single-phase AC).
 - **Machines:** DC motors with a speed-controlled drive, a dynamic double-cage induction motor calibrated to IE3 data, star-delta and soft starters, a variable-frequency drive, flywheels with gear stages and dynamometers.
 - **Mechanics:** a Physical view with rigid bodies, joints, gears, springs, forces and brakes (Planck.js), sharing shafts and sensors with the schematic.
 - **Control:** sensors, logic, timers, hysteresis, PID and signal blocks on the simulation clock, plus an independent safety cutoff.

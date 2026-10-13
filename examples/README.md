@@ -8,6 +8,7 @@ Open **File → Starters & examples** in the app for descriptions and suggested 
 - `contactor`: an actual DC coil switches a separate AC load.
 - `transformer`: isolated AC conversion, winding/core losses and secondary measurements.
 - `radiator`: water cooling driven by actual fan electrical supply.
+- `circulator`: a standalone 230 V circulator pump in a heated boiler loop (proportional pressure, input power limit, wet-rotor losses into the water).
 - `acRlc`: compatible series RLC circuit with RMS supply measurements and power-factor traces.
 - `induction`: standard 7.5 kW motor on the 250 A supply variant, 35 N·m direct-on-line load.
 - `starting`: the same motor started by star-delta, soft starter and variable-frequency drive from one supply.

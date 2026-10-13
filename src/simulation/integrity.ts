@@ -173,7 +173,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -196,7 +196,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if (c.kind === "tank") {
@@ -259,7 +259,11 @@ export function componentError(c: Component): string | null {
     return "Water volume exceeds tank capacity.";
   if (c.kind === "source" && prop(c, "voltage") > prop(c, "ratedVoltage"))
     return `${c.name}: voltage setpoint exceeds the supply's maximum output voltage (${prop(c, "ratedVoltage")} V). Raise the maximum output voltage or choose a larger supply.`;
-  if (c.kind === "pump" && typeof c.props.curvePoints === "string" && c.props.curvePoints.trim()) {
+  if (c.kind === "circulator" && prop(c, "minVoltage") >= prop(c, "ratedVoltage"))
+    return `${c.name}: the undervoltage lockout must lie below the nominal supply voltage.`;
+  if (c.kind === "circulator" && prop(c, "standbyPower") >= prop(c, "ratedPower"))
+    return `${c.name}: the electronics standby power must be below the maximum input power P1,max.`;
+  if ((c.kind === "pump" || c.kind === "circulator") && typeof c.props.curvePoints === "string" && c.props.curvePoints.trim()) {
     const parsed = parsePumpPoints(c.props.curvePoints);
     if (typeof parsed === "string") return `${c.name}: ${parsed}`;
   }

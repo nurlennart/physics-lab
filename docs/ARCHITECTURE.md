@@ -25,6 +25,7 @@ Physics Lab is a static single-page application (React 19, TypeScript, Vite). Th
 | `device-circuits.ts`, `devices.ts` | Batteries, powered contactors, transformers and radiator fans as MNA branches; battery charge and polarization, capacitor charge, inductor current and contactor state, advanced after each accepted interval, and their energy functions |
 | `induction.ts`, `converters.ts` | Dynamic induction machine; star-delta and soft starters, variable-frequency drive |
 | `filament.ts` | Tungsten filament lamp |
+| `circulator.ts` | Electric circulator: control targets, input power and power limit, ramp, EEI and the model-basis listing |
 | `multiphysics.ts` | Coupled substeps: motor shafts, tanks, valves, midpoint Newton coupling of electrical, hydraulic and spatial loads |
 | `hydraulic.ts`, `water.ts` | Hydraulic topology and network solve, pump curve, enthalpy transport, tank boundaries; water properties |
 | `spatial-model.ts`, `spatial.ts` | Spatial configuration and validation; the Planck world, mechanical readings and energy |

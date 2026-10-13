@@ -5,7 +5,7 @@ import { batteryChargeStep, batteryEnergy, batteryOCV, batteryResistanceFactor, 
 
 type Expansion = { project: Project; coils: Map<string, string> };
 const cache = new WeakMap<Project, Expansion>();
-const special = (c: Component) => ['battery', 'contactor', 'radiator'].includes(c.kind);
+const special = (c: Component) => ['battery', 'contactor', 'radiator', 'circulator'].includes(c.kind);
 function expand(project: Project): Expansion {
   const cached = cache.get(project);
   if (cached) return cached;
@@ -22,6 +22,8 @@ function expand(project: Project): Expansion {
       { ...c, id: coils.get(c.id)!, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'coilResistance') } },
     ];
     if (c.kind === 'radiator') return [{ ...c, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'ratedVoltage') ** 2 / prop(c, 'fanRatedPower') } }];
+    // A circulator's electronics are a constant-power load: its resistance is set per solve (loadResistances).
+    if (c.kind === 'circulator') return [{ ...c, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'ratedVoltage') ** 2 / prop(c, 'ratedPower'), tempCoefficient: 0, tolerance: 0 } }];
     return [c];
   });
   const map = (t: { component: string; port: string }) => t.port === 'ca' || t.port === 'cb' ? { component: coils.get(t.component)!, port: t.port === 'ca' ? 'a' : 'b' } : t;
@@ -29,6 +31,43 @@ function expand(project: Project): Expansion {
   const expansion = { project: expanded, coils };
   cache.set(project, expansion);
   return expansion;
+}
+/**
+ * Electric circulators draw a regulated input power P from their terminals: the electronics behave as a constant-power
+ * load, solved as a resistance R = V²/P iterated to a fixed point (in phase with the voltage on AC). The iteration
+ * contracts with factor 2·R_s/(R + R_s) for a source resistance R_s, i.e. whenever the terminal voltage stays above half
+ * the open-circuit voltage; the undervoltage lockout lies well above that. A unit whose terminal voltage settles below its
+ * lockout, collapses, or does not converge cannot be supplied: its electronics switch off (open) and the reading is
+ * flagged `undervoltage`, so the engine plans the substep with the pump unpowered.
+ */
+function solveConstantPower(project: Project, expanded: Project, failures: Record<string, boolean>, runtime: ElectricalRuntime): ElectricalResult {
+  const units = project.components.filter(c => c.kind === 'circulator');
+  const demand = (c: Component) => runtime.circulators?.[c.id] ?? 0;
+  for (const c of units) if (!(demand(c) > 0)) failures[c.id] = true;
+  const loads: Record<string, number> = {}, undervoltage = new Set<string>();
+  for (const c of units) if (!failures[c.id]) loads[c.id] = prop(c, 'ratedVoltage') ** 2 / demand(c);
+  const off = (c: Component) => { undervoltage.add(c.id); failures[c.id] = true; delete loads[c.id]; };
+  let result = solveElectricalCore(expanded, failures, { ...runtime, loadResistances: loads });
+  for (let k = 0; Object.keys(loads).length; k++) {
+    let change = 0, dropped = false;
+    for (const c of units.filter(c => loads[c.id] !== undefined)) {
+      const r = result.readings[c.id], v = Math.abs(r?.voltage ?? 0);
+      if (r?.phases === 3) throw Error(`${c.name}: a single-phase circulator cannot sit in a balanced three-phase network; supply it from a single-phase AC or DC source.`);
+      // Collapse below half the lockout cannot recover; the lockout itself is checked on the converged voltage.
+      if (r?.voltageValid === false || v < 0.5 * prop(c, 'minVoltage') || !(v > 0)) { off(c); dropped = true; continue; }
+      const next = v * v / demand(c);
+      change = Math.max(change, Math.abs(next - loads[c.id]) / loads[c.id]);
+      loads[c.id] = next;
+    }
+    if (!dropped && change < 1e-12) {
+      const low = units.filter(c => loads[c.id] !== undefined && Math.abs(result.readings[c.id].voltage) < prop(c, 'minVoltage'));
+      if (!low.length) break;
+      low.forEach(off);
+    } else if (k >= 200) units.filter(c => loads[c.id] !== undefined).forEach(off);
+    result = solveElectricalCore(expanded, failures, { ...runtime, loadResistances: loads });
+  }
+  for (const id of undervoltage) if (result.readings[id]) result.readings[id].undervoltage = true;
+  return result;
 }
 export function solveElectrical(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
   if (!project.components.some(special)) return solveElectricalCore(project, failed, runtime);
@@ -52,7 +91,7 @@ export function solveElectrical(project: Project, failed: Record<string, boolean
     }
     if (c.kind === 'radiator' && runtime.faults?.[c.id] === 'coolingFailed') failures[c.id] = true;
   }
-  const result = solveElectricalCore(expanded.project, failures, { ...runtime, sourceModels: models });
+  const result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
   let chemical = 0;
   for (const c of project.components) {
     const r = result.readings[c.id];

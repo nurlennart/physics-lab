@@ -221,6 +221,23 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       assert(r.efficiency > 0 && r.efficiency <= v.efficiency);
       break;
     }
+    case 'circulator': {
+      // Closed loop with an open expansion tank. Steady operation: input P1 = P0 + P_shaft/η_m (constant-power load),
+      // within the electronic limit; motor loss = P1 − P_shaft heats the water; constant pressure holds its head.
+      const supply = v.ratedVoltage >= 100 ? b.add('sourceAC', { voltage: v.ratedVoltage }) : source(b, v.ratedVoltage);
+      const tank = b.add('tank', { capacity: 300, volume: 150, surfaceArea: 0.25, loss: 0 });
+      const pipe = b.add('pipe', { diameter: 0.02, length: 30, inventory: false });
+      b.series(supply, c); b.wire(tank, 'fluid', c, 'inlet'); b.wire(c, 'outlet', pipe, 'inlet'); b.wire(pipe, 'outlet', tank, 'fluid');
+      s = simulation(b); run(s, 3 * v.rampTime + 5);
+      const r = s.multiphysics.hydraulic.readings[c.id], e = s.electrical.readings[c.id], omega = s.multiphysics.circulators[c.id].omega;
+      assert(r.flow > 0 && omega > 0);
+      assert(e.power <= v.ratedPower * (1 + 1e-9));
+      near(report, 'input power P1 = P0 + P_shaft/η_m (W)', v.standbyPower + r.shaftPower / (v.motorEfficiency / 100), e.power, 1e-6);
+      near(report, 'motor loss into the water (W)', e.power - r.shaftPower, r.motorLoss, 1e-6);
+      near(report, 'terminal voltage (V)', v.ratedVoltage, e.voltage, 1e-9);
+      if (v.mode === 'constantPressure' && e.power < v.ratedPower * 0.999) near(report, 'held head (m)', v.headSetpoint, -r.differentialPressure / (1000 * g), 1e-3);
+      break;
+    }
     case 'flywheel': {
       // Run-up through the gear stage: J·dω/dt = k(V − kω)/R − (b + drag/(i²η))·ω with J = J_m + J/(i²η) while the
       // motor accelerates the flywheel (independent first-order reference). Motor: k = 1, R = 1, b = 0.

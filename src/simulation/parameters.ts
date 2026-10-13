@@ -194,6 +194,13 @@ const base: Record<string, Base> = {
   shutoffHead: { label: "Shutoff head", description: "Zero-flow head at rated speed.", unit: "m", group: "configuration", policy: "live", domain: [0, 1e4], positive: true, limitReason: POSITIVE },
   efficiency: { label: "Peak hydraulic efficiency", description: "Best-efficiency-point efficiency; the curve falls off away from rated flow (floor 15%).", unit: "1", group: "configuration", policy: "live", domain: [0.01, 1], limitReason: "Efficiency is a fraction ≤ 1." },
   mechanicalLoss: { label: "Mechanical loss at rating", description: "Bearing and shaft-seal friction as a share of shaft input at rated speed and flow (typically 0.5–2 %, smaller for larger pumps; KSB/DIN EN 12723). Scales with speed as ω^1.6 (rolling-bearing friction torque ∝ (νn)^0.6, SKF model). Disc friction and leakage are part of the hydraulic efficiency.", unit: "%", group: "advanced", policy: "live", domain: [0, 20], limitReason: "Mechanical losses beyond 20 % of shaft input indicate a damaged pump, not a design value." },
+  // — Circulator (integrated EC motor and controller) —
+  headSetpoint: { label: "Head setpoint H_set", description: "Constant pressure: the head the controller holds. Proportional pressure: the head at rated flow; the setpoint line falls to H_set/2 at zero flow. Limited by the maximum curve.", unit: "m", group: "operating", policy: "live", domain: [0, 1e4], limitReason: NUMERIC, typical: [0.5, 12] },
+  speedSetting: { label: "Constant-curve speed", description: "Speed in constant-curve mode, percent of the maximum speed (datasheet speeds I/II/III).", unit: "%", group: "operating", policy: "live", domain: [0, 100], limitReason: "Percentage of the maximum speed." },
+  minSpeed: { label: "Minimum speed", description: "Lowest controlled speed, percent of the maximum speed (the datasheet's minimum curve). A speed command below 1 % stops the pump.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "Percentage of the maximum speed." },
+  minVoltage: { label: "Undervoltage lockout", description: "Below this supply voltage the electronics switch off and the rotor coasts to rest; they restart once the supply recovers to 105 % of it.", unit: "V", group: "ratings", policy: "live", domain: [0, 1e6], limitReason: NUMERIC },
+  standbyPower: { label: "Electronics standby power P₀", description: "Input of the control electronics whenever the supply is on, also while the pump is stopped by command. Assumed value; datasheets give only the lowest running input.", unit: "W", group: "advanced", policy: "live", domain: [0, 1e6], limitReason: NUMERIC },
+  motorEfficiency: { label: "Motor and drive efficiency η_m", description: "Constant efficiency of the EC motor and its inverter from electrical input (minus P₀) to shaft power: P1 = P₀ + P_shaft/η_m. Assumed value fitted to the datasheet's maximum input power and EEI; real efficiency varies with load and speed.", unit: "%", group: "advanced", policy: "live", domain: [1, 100], limitReason: "Efficiency in percent." },
   // — Motor —
   torqueConstant: { label: "Torque constant kₜ", description: "Torque per armature ampere. In SI the back-EMF constant is identical.", unit: "N·m/A", group: "configuration", policy: "live", domain: [0, 1000], positive: true, limitReason: POSITIVE },
   emfConstant: { label: "Back-EMF constant kₑ", description: "Equal to kₜ in SI units (energy consistency).", unit: "V·s/rad", group: "configuration", policy: "derived", derivedFrom: ["torqueConstant"] },
@@ -292,6 +299,19 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     maxTemperature: { label: "Insulation temperature limit", description: "Class F 155 °C; above it the motor fails open." },
     conductance: { label: "Frame conductance (UA)" },
     enabled: { label: "Contactor closed", description: "Used when the enable input is not wired." },
+  },
+  circulator: {
+    mode: { label: "Control mode", description: "Proportional pressure: head follows H_set·(1 + Q/Q_r)/2. Constant pressure: head held at H_set. Constant curve: fixed speed. The controller acts on the last solved flow (approximated control logic, not the manufacturer's algorithm). A wired speed command (percent) overrides the mode.", options: [{ value: "proportionalPressure", label: "Proportional pressure" }, { value: "constantPressure", label: "Constant pressure" }, { value: "constantSpeed", label: "Constant curve (speed)" }] },
+    enabled: { label: "Run", description: "Runs when on; off stops the motor (the electronics stay powered with their standby input). A wired enable input overrides it." },
+    ratedSpeed: { label: "Maximum speed", description: "Speed of the maximum curve (affinity laws scale the curve from here). Assumed value: datasheets of circulators rarely state it." },
+    ratedFlow: { label: "Curve reference flow Q_r", description: "Flow at which the quadratic maximum curve has fallen to half the shutoff head (zero head at √2·Q_r); also the reference flow of the proportional-pressure line." },
+    shutoffHead: { label: "Shutoff head (maximum curve)", description: "Zero-flow head at maximum speed (datasheet Hmax)." },
+    efficiency: { description: "Best-efficiency-point efficiency of the impeller and volute; falls off away from the reference flow (floor 15 %). Assumed value fitted together with η_m." },
+    inertia: { label: "Rotor inertia", description: "Moment of inertia of the canned rotor and impeller; stores ½·J·ω², supplied by the electronics during run-up." },
+    ratedVoltage: { label: "Nominal supply voltage", description: "Nominal voltage (DC or single-phase AC RMS); operation beyond +10 % is reported. The electronics regulate their input power, so the pump runs alike across the tolerance band." },
+    ratedPower: { label: "Maximum input power P1,max", description: "Electronic input power limit (datasheet P1 max): above it the controller lowers the speed, so the maximum curve bends down at high flow." },
+    rampTime: { label: "Soft-start ramp", group: "configuration", description: "Time the electronics take to ramp the rotor from rest to maximum speed (also the rate of controlled speed changes)." },
+    npshRequired: { description: "Required net positive suction head at the reference flow (scales with flow²); the datasheet states minimum inlet pressures instead (0.05 bar at 75 °C for the reference pump). 0 = no check." },
   },
   pressureSensor: { quantity: { options: [{ value: "pressure", label: "Outlet / node gauge pressure" }, { value: "inletPressure", label: "Inlet gauge pressure" }, { value: "differentialPressure", label: "Inlet − outlet (pump rise is negative)" }] } },
   source3: {

@@ -8,6 +8,7 @@ import { derivedReadouts, paramSpec, type ParamGroup, type ParamSpec } from "../
 import { builtinPresets } from "../simulation/presets";
 import { sourceLimit, sourceMode } from "../simulation/electrical";
 import { pumpRatingReadouts } from "../simulation/hydraulic";
+import { circulatorRatingReadouts, circulatorReferences } from "../simulation/circulator";
 import { formatEngineering, parseEngineering } from "../editor/engineering";
 
 const groupTitles: Record<ParamGroup, string> = {
@@ -161,7 +162,7 @@ export function ParameterSections({ c }: { c: Component }) {
   );
 }
 export function DerivedValues({ c }: { c: Component }) {
-  const rows = [...derivedReadouts(c), ...(c.kind === "pump" ? pumpRatingReadouts(c) : [])];
+  const rows = [...derivedReadouts(c), ...(c.kind === "pump" ? pumpRatingReadouts(c) : []), ...(c.kind === "circulator" ? circulatorRatingReadouts(c) : [])];
   if (!rows.length) return null;
   return (
     <div className="inspector-section">
@@ -176,6 +177,9 @@ export function DerivedValues({ c }: { c: Component }) {
       </div>
       {c.kind === "heater" && prop(c, "ratedPower") / prop(c, "conductance") + 20 > prop(c, "maxTemperature") && (
         <p className="field-hint warn">At nominal power the element runs {formatEngineering(prop(c, "ratedPower") / prop(c, "conductance"), 3)} K above the water and would exceed its {prop(c, "maxTemperature")} °C limit (burn-out). Increase the immersion conductance and element mass with the rating, or apply a matching preset.</p>
+      )}
+      {c.kind === "circulator" && (
+        <p className="field-hint" data-testid="eei-note">The EEI (Reg. (EC) 641/2009) is a regulatory index: the input power averaged over a fixed load profile (100/75/50/25 % flow for 6/15/35/44 % of the time, on a reference control curve) relative to a reference power for the pump's size. It is not an efficiency, and a low EEI does not mean a high efficiency at every operating point; the wire-to-water efficiency above applies to the best point only. Here it is calculated from this model's curves{circulatorReferences[c.variant ?? "standard"]?.data.includes("EEI") ? "; compare the reference pump's declared value in the model basis above" : ""}.</p>
       )}
       <p className="field-hint">Nominal design values. Live measurements above show actual operation in the solved circuit.</p>
     </div>

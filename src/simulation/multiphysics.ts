@@ -3,7 +3,8 @@ import { prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
 import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
-import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, type TankState } from './hydraulic';
+import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, isPump, type TankState } from './hydraulic';
+import { circulatorInput, circulatorKinetic, circulatorTarget, rampedSpeed, RESTART_MARGIN, type CirculatorPlan, type CirculatorState } from './circulator';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
 import type { Simulation } from './engine';
@@ -21,6 +22,10 @@ export interface MotorState {
 }
 /** Below this speed (rad/s) a rotor counts as at rest for the opposing load. */
 const OMEGA_REST = 1e-9;
+/** A circulator's electronics stay off for this long after an undervoltage lockout before they may restart (s). */
+export const CIRCULATOR_RESTART_DELAY = 1;
+/** Circulator operating figures of the last solve (W, rad/s), for readings and the Inspector. */
+export interface CirculatorView { omega: number; target: number; powered: boolean; running: boolean; lockedOut: boolean; inputPower: number; motorLoss: number }
 export class Multiphysics {
   tanks: Record<string, TankState> = {};
   motors: Record<string, MotorState> = {};
@@ -50,6 +55,11 @@ export class Multiphysics {
   /** Motor starters and drives: contactor modes, soft-starter ratio, drive frequency and output angle. */
   starters: Record<string, StarterState> = {};
   drives: Record<string, DriveState> = {};
+  /** Electric circulators: rotor speed and undervoltage lockout; `circulatorView` holds the last solve's figures. */
+  circulators: Record<string, CirculatorState> = {};
+  circulatorView: Record<string, CirculatorView> = {};
+  /** Run and speed commands of the circulators, read once per outer step from the control graph. */
+  private circulatorCommands: Record<string, { run: boolean; command: number | null }> = {};
   /** Discrete electrical configuration of the last accepted substep (switching detection). */
   private acceptedKey = '';
   private lastElectrical?: ElectricalResult;
@@ -66,6 +76,7 @@ export class Multiphysics {
       }
       if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
+      if (c.kind === 'circulator') this.circulators[c.id] = { omega: 0, lockedOut: false, restartIn: 0, angle: 0 };
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
     }
@@ -78,7 +89,7 @@ export class Multiphysics {
     return p ? p.components.filter(c => isMotor(c) && !shaftBody(p, c.id)).reduce((s, c) => {
       const omega = this.motors[c.id]?.omega ?? 0;
       return s + 0.5 * prop(c, 'inertia') * omega ** 2 + trainKineticEnergy(shaftTrain(p, c.id), omega);
-    }, 0) : 0;
+    }, 0) + p.components.filter(c => c.kind === 'circulator').reduce((s, c) => s + circulatorKinetic(c, this.circulators[c.id]?.omega ?? 0), 0) : 0;
   }
   /** Flywheels and dynamometers: speed, torque and power over the last step, absorbed energy (J). */
   shaftElements: Record<string, { omega: number; torque: number; power: number; energy: number; kinetic?: number }> = {};
@@ -102,6 +113,41 @@ export class Multiphysics {
       // (duty from the speed controller at the solved speed, see dcDuty).
       return [c.id, { enabled: enabled && (command === null || command > 0), duty: 1, command: c.kind === 'motor' ? command : null }];
     }));
+  }
+  /**
+   * Circulator commands: the run flag (wired enable input, else the Run property) and a wired speed command in percent
+   * of the maximum speed (null = the internal control mode). A command below 1 % stops the pump, as the PWM input of
+   * heating circulators does. A motor failure (blocked rotor) stops it; a control-signal loss runs it at maximum speed.
+   */
+  private circulatorControls(s: Simulation) {
+    return Object.fromEntries(s.project.components.filter(c => c.kind === 'circulator').map(c => {
+      const has = (port: string) => s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);
+      const enable = s.automation.input(c, 'enable', s), speed = s.automation.input(c, 'speed', s);
+      // Lost control signals: heating circulators fall back to their maximum curve (PWM profile for heating).
+      if (s.faults[c.id] === 'controlLost') return [c.id, { run: true, command: 100 }];
+      const command = has('speed') ? (speed.valid && typeof speed.value === 'number' ? speed.value : 0) : null;
+      const run = s.faults[c.id] !== 'motorFailure' && (has('enable') ? enable.valid && enable.value === true : Boolean(c.props.enabled)) && (command === null || command >= 1);
+      return [c.id, { run, command }];
+    }));
+  }
+  /**
+   * Circulator speeds over a substep of length h. The controller target comes from the last accepted flow (sampled
+   * control); the rotor follows it on the soft-start ramp. Without supply (lockout, failure, or `unpowered` after an
+   * undervoltage in this substep) or without a run command the motor is not driven: the light rotor stops within the
+   * substep (its coast-down time is far below one step) and its kinetic energy heats the water.
+   */
+  private planCirculators(s: Simulation, h: number, unpowered: Set<string>) {
+    return Object.fromEntries(s.project.components.filter(c => c.kind === 'circulator').map((c): [string, CirculatorPlan] => {
+      const state = this.circulators[c.id] ?? { omega: 0, lockedOut: false, restartIn: 0, angle: 0 }, command = this.circulatorCommands[c.id] ?? { run: false, command: null };
+      const powered = !state.lockedOut && !unpowered.has(c.id) && !s.failed[c.id], running = powered && command.run;
+      if (!running) return [c.id, { powered, running, omega0: state.omega, omega1: h > 0 ? 0 : state.omega, mid: h > 0 ? 0 : state.omega, target: 0 }];
+      const target = circulatorTarget(c, this.hydraulic.readings[c.id]?.flow ?? 0, command.command), omega1 = h > 0 ? rampedSpeed(c, state.omega, target, h) : state.omega;
+      return [c.id, { powered, running, omega0: state.omega, omega1, mid: (state.omega + omega1) / 2, target }];
+    }));
+  }
+  /** Rotor mechanical power over the substep: pump shaft power plus the rate of change of the rotor's kinetic energy (W). */
+  private circulatorMechanical(c: Component, plan: CirculatorPlan, shaftPower: number, h: number) {
+    return shaftPower + (h > 0 ? (circulatorKinetic(c, plan.omega1) - circulatorKinetic(c, plan.omega0)) / h : 0);
   }
   /**
    * Speed-controlled DC drive (cascade, as in thyristor/PWM armature drives): a PI speed controller sets the
@@ -222,21 +268,45 @@ export class Multiphysics {
    * sign from the direction of rotation, or holds the rotor at rest); default: +magnitude.
    */
   solve(s: Simulation, omega: number[], controls: ReturnType<Multiphysics['controls']>, tanks: Record<string, TankState> = this.tanks, loads?: number[], h = 0) {
-    const motors = s.project.components.filter(isMotor);
-    const electrical = solveElectrical(s.project, s.failed, {
-      ...s.devices.runtime(h),
-      contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, filaments: s.filamentRatios(), open: s.openDevices(),
-      motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { enabled: controls[c.id].enabled, duty: this.dcDuty(c, controls[c.id].command, omega[i]), emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
-      inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), h }]] : [])),
-      ...this.converterRuntime(s),
-    });
+    const motors = s.project.components.filter(isMotor), circulators = s.project.components.filter(c => c.kind === 'circulator');
     const speeds: Record<string, number> = {};
     const pairs: Record<string, string> = {};
     for (const w of s.project.connections.filter(w => w.domain === 'mechanical' && !s.disconnected.has(w.id))) {
       const motor = motors.find(c => c.id === w.from.component || c.id === w.to.component);
       if (motor) { const pump = motor.id === w.from.component ? w.to.component : w.from.component; if (s.project.components.find(c => c.id === pump)?.kind === 'pump') { pairs[motor.id] = pump; speeds[pump] = omega[motors.indexOf(motor)]; } }
     }
-    const hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells);
+    // The hydraulic network depends on the shaft and circulator speeds only, so it is solved first; circulators then
+    // draw their input power for the solved operating point. A circulator whose supply cannot carry that demand above
+    // its undervoltage lockout is re-planned unpowered and the substep solved again.
+    const unpowered = new Set<string>();
+    let plan: Record<string, CirculatorPlan>, hydraulic: ReturnType<typeof solveHydraulic>, electrical: ElectricalResult;
+    for (;;) {
+      plan = this.planCirculators(s, h, unpowered);
+      for (const c of circulators) speeds[c.id] = plan[c.id].mid;
+      hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells);
+      const demand = Object.fromEntries(circulators.filter(c => plan[c.id].powered).map(c => [c.id, plan[c.id].running ? circulatorInput(c, this.circulatorMechanical(c, plan[c.id], hydraulic.readings[c.id]?.shaftPower ?? 0, h)) : prop(c, 'standbyPower')]));
+      electrical = solveElectrical(s.project, s.failed, {
+        ...s.devices.runtime(h),
+        contacts: s.automation.contacts, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, filaments: s.filamentRatios(), open: s.openDevices(),
+        motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { enabled: controls[c.id].enabled, duty: this.dcDuty(c, controls[c.id].command, omega[i]), emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
+        inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), h }]] : [])),
+        ...this.converterRuntime(s),
+        circulators: demand,
+      });
+      const dropped = circulators.filter(c => plan[c.id].powered && electrical.readings[c.id]?.undervoltage);
+      if (!dropped.length) break;
+      for (const c of dropped) unpowered.add(c.id);
+    }
+    // The final solve has these units switched off; keep the cause on their readings for the lockout.
+    for (const id of unpowered) if (electrical.readings[id]) electrical.readings[id].undervoltage = true;
+    // Wet rotor: motor and electronics losses are what the electrical input leaves after the rotor's mechanical
+    // power, P1 − P_shaft − dE_kin/dt ≥ 0; they heat the pumped water (enthalpy transport) or, without flow, ambient.
+    for (const c of circulators) {
+      const reading = hydraulic.readings[c.id];
+      if (!reading) continue;
+      const input = Math.max(0, electrical.readings[c.id]?.power ?? 0);
+      reading.motorLoss = input - this.circulatorMechanical(c, plan[c.id], reading.shaftPower, h);
+    }
     const state = motors.map((c, i) => {
       const ctrl = { ...controls[c.id], duty: this.dcDuty(c, controls[c.id].command, omega[i]) }, r = electrical.readings[c.id];
       const running = ctrl.enabled && !s.failed[c.id];
@@ -257,7 +327,7 @@ export class Multiphysics {
         dynamometerTorque: dynamometer, transmitted: coupled?.transmitted ?? 0, gear: coupled?.gear ?? 1,
         ...(c.kind === 'inductionMotor' ? { psiS: this.motors[c.id]?.psiS, psiR: this.motors[c.id]?.psiR, frequency: this.motors[c.id]?.frequency, inrushPeak: this.motors[c.id]?.inrushPeak, energized: this.motors[c.id]?.energized, fluxRate: this.motors[c.id]?.fluxRate } : {}) };
     });
-    return { electrical, hydraulic, state, speeds };
+    return { electrical, hydraulic, state, speeds, circulators: plan };
   }
   /**
    * Tank inventories predicted at mid-step from the last flows (second-order head/storage coupling). A tank
@@ -274,7 +344,7 @@ export class Multiphysics {
     }));
   }
   private updateNpsh(s: Simulation, hydraulic: ReturnType<typeof emptyHydraulics>) {
-    for (const c of s.project.components.filter(c => c.kind === 'pump' && prop(c, 'npshRequired') > 0)) {
+    for (const c of s.project.components.filter(c => isPump(c) && prop(c, 'npshRequired') > 0)) {
       const reading = hydraulic.readings[c.id];
       if (!reading?.temperatureValid) continue;
       const available = (101325 + reading.inletPressure - vaporPressure(U.kToCelsius(reading.temperature))) / (RHO * G);
@@ -408,8 +478,37 @@ export class Multiphysics {
       return state?.psiS && state.psiR ? sum + magneticEnergy(machineParams(c, state.frequency ?? 50), state.psiS, state.psiR) : sum;
     }, 0) ?? 0;
   }
+  /** Readings of a circulator's operating state from a solve (the state itself advances only on accepted substeps). */
+  private viewCirculators(s: Simulation, r: ReturnType<Multiphysics['solve']>) {
+    for (const c of s.project.components.filter(c => c.kind === 'circulator')) {
+      const plan = r.circulators[c.id];
+      this.circulatorView[c.id] = { omega: plan.omega1, target: plan.target, powered: plan.powered, running: plan.running, lockedOut: this.circulators[c.id]?.lockedOut ?? false,
+        inputPower: Math.max(0, r.electrical.readings[c.id]?.power ?? 0), motorLoss: r.hydraulic.readings[c.id]?.motorLoss ?? 0 };
+    }
+  }
+  /**
+   * Accepted substep: the rotor speed advances to the plan's end speed. An undervoltage switches the electronics off
+   * (lockout); they restart after the restart delay once the supply is back above 105 % of the lockout voltage.
+   */
+  private advanceCirculator(s: Simulation, c: Component, r: ReturnType<Multiphysics['solve']>, h: number) {
+    const plan = r.circulators[c.id], reading = r.electrical.readings[c.id], state = this.circulators[c.id] ?? { omega: 0, lockedOut: false, restartIn: 0, angle: 0 };
+    const lockout = prop(c, 'minVoltage');
+    let { lockedOut, restartIn } = state;
+    if (!lockedOut && reading?.undervoltage) {
+      lockedOut = true; restartIn = CIRCULATOR_RESTART_DELAY;
+      s.log(`${c.name}: supply voltage below its ${lockout} V undervoltage lockout — the electronics switched off and the pump stopped.`, 'warning');
+    } else if (lockedOut) {
+      restartIn = Math.max(0, restartIn - h);
+      if (restartIn <= 1e-12 && reading?.voltageValid !== false && Math.abs(reading?.voltage ?? 0) >= RESTART_MARGIN * lockout) {
+        lockedOut = false;
+        s.log(`${c.name}: supply recovered — the electronics restart.`, 'info');
+      }
+    }
+    this.circulators[c.id] = { omega: plan.omega1, lockedOut, restartIn, angle: state.angle + plan.mid * h };
+  }
   refresh(s: Simulation) {
     this.lastProject = s.project;
+    this.circulatorCommands = this.circulatorControls(s);
     const ms = s.project.components.filter(isMotor);
     const speeds = () => ms.map(c => { const body = shaftBody(s.project, c.id); return body ? s.spatial.readings[body]?.omega ?? 0 : this.motors[c.id]?.omega ?? 0; });
     const controls = this.controls(s), { loads, held } = this.opposingLoads(s, speeds(), controls, ms.map(c => shaftBody(s.project, c.id)));
@@ -426,6 +525,7 @@ export class Multiphysics {
     // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
     transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
     this.updateNpsh(s, this.hydraulic);
+    this.viewCirculators(s, r);
     this.lastElectrical = r.electrical;
     ms.forEach((c, i) => {
       const m = r.state[i];
@@ -441,6 +541,7 @@ export class Multiphysics {
     s.spatial.stepMs = 0;
     this.lastProject = s.project;
     const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {}, commands = this.converterCommands(s);
+    this.circulatorCommands = this.circulatorControls(s);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
@@ -577,11 +678,15 @@ export class Multiphysics {
         if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);
         if (Math.abs(m.torque) > prop(c, 'ratedTorque') * 1.001) s.automation.status[c.id] = 'overloaded';
       });
+      for (const c of s.project.components.filter(c => c.kind === 'circulator')) this.advanceCirculator(s, c, r, h);
+      this.viewCirculators(s, r);
       for (const [id, reading] of Object.entries(r.hydraulic.readings)) {
         this.pumpWork += reading.shaftPower * h;
         this.hydraulicWork += reading.hydraulicPower * h;
         this.transferred[id] = (this.transferred[id] ?? 0) + Math.abs(reading.flow) * h;
-        if (Math.abs(reading.flow) < 1e-14 && reading.shaftPower > 0) { this.dryLoss += reading.shaftPower * h; ambient += reading.shaftPower * h; }
+        // Without flow, shaft power (and a circulator's motor loss) leaves as heat to ambient.
+        const dry = reading.shaftPower + (reading.motorLoss ?? 0);
+        if (Math.abs(reading.flow) < 1e-14 && dry > 0) { this.dryLoss += dry * h; ambient += dry * h; }
       }
       this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
       const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));

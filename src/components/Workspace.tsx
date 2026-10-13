@@ -145,6 +145,23 @@ function CircuitSymbol({ c }: { c: Component }) {
       ? <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><circle cx="87" cy="66" r="36" fill={T.n5} stroke={T.mechanicalText} strokeWidth="3"/><circle cx="87" cy="66" r="9" fill={T.mechanicalText}/><path d="M87 36V96M57 66H117" stroke={T.mechanicalText} strokeWidth="2" transform={`rotate(${angle},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{speed}{ratio !== 1 ? ` · ${ratio}:1` : ""}</text></g>
       : <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><rect x="47" y="34" width="80" height="64" rx="8" fill={T.n5} stroke={T.mechanicalText} strokeWidth="2"/><path d="M87 66L87 44" stroke={T.mechanicalText} strokeWidth="3" transform={`rotate(${Math.min(270, (element?.torque ?? 0) / prop(c, "ratedTorque") * 270) - 135},87,66)`}/><circle cx="87" cy="66" r="4" fill={T.mechanicalText}/><text x="87" y="112" textAnchor="middle" className="scale-label">{speed}</text><text x="87" y="126" textAnchor="middle" className="scale-label">{(element?.torque ?? 0).toFixed(1)} N·m · {((element?.power ?? 0) / 1000).toFixed(2)} kW</text></g>;
   }
+  if (c.kind === "circulator") {
+    // Pump circle with the discharge triangle, the integrated motor and electronics box on top (supply leads up,
+    // control leads down). The impeller turns by the accumulated rotor rotation.
+    const state = simulation.multiphysics.circulators[c.id], view = simulation.multiphysics.circulatorView[c.id];
+    const mode = { proportionalPressure: `PP ${prop(c, "headSetpoint")} m`, constantPressure: `CP ${prop(c, "headSetpoint")} m`, constantSpeed: `${prop(c, "speedSetting")} % speed` }[String(c.props.mode)] ?? "";
+    const status = !hasStarted() ? mode : state?.lockedOut ? "undervoltage · off" : `${((state?.omega ?? 0) * 30 / Math.PI).toFixed(0)} RPM · ${(view?.inputPower ?? 0).toFixed(1)} W`;
+    return <g>
+      <path d="M0 74H55M119 74H174" stroke={T.hydraulic} strokeWidth="2" />
+      <path d="M52 0V27H62M122 0V27H112" stroke={T.electricalText} strokeWidth="2" fill="none" />
+      <rect x="62" y="16" width="50" height="22" rx="3" fill={T.n4} stroke={T.electricalText} />
+      <text x="87" y="31" textAnchor="middle" className="scale-label">EC</text>
+      <circle cx="87" cy="74" r="32" fill={T.n5} stroke={T.hydraulic} strokeWidth="2" />
+      <path d="M68 50L118 74L68 98" stroke={T.hydraulic} fill="none" />
+      <path d="M73 74H101M87 60V88" stroke={T.hydraulic} transform={`rotate(${((state?.angle ?? 0) * 180 / Math.PI) % 360},87,74)`} />
+      <text x="87" y="121" textAnchor="middle" className="scale-label">{status}</text>
+    </g>;
+  }
   if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
     // The drawn rotor turns by the accumulated rotation of the driving motor (not speed × elapsed time).
     // A pump without a driving motor has no modelled shaft speed (hydraulic back-driving is not modelled).
@@ -1067,8 +1084,8 @@ export default function Workspace() {
                             p.domain === "control" &&
                             ["relay", "safety", "cooler"].includes(c.kind)
                               ? `M${x} ${y}V${h}`
-                              : (p.id === "heat" || c.kind === "contactor" && ["ca", "cb"].includes(p.id) || c.kind === "radiator" && ["a", "b"].includes(p.id))
-                                ? `M${x} ${y}V${c.kind === "tank" ? 0 : h}`
+                              : (p.id === "heat" || c.kind === "contactor" && ["ca", "cb"].includes(p.id) || c.kind === "radiator" && ["a", "b"].includes(p.id) || c.kind === "circulator" && ["a", "b"].includes(p.id))
+                                ? `M${x} ${y}V${c.kind === "tank" || c.kind === "circulator" ? 0 : h}`
                                 : `M${x} ${y}H${x < 0 ? 0 : w}`
                           }
                           stroke="currentColor"
@@ -1105,6 +1122,8 @@ export default function Workspace() {
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / 1000).toFixed(1)} kW heat · ${c.props.arrangement}`
                       : c.kind === "pump"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(simulation.multiphysics.hydraulic.readings[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
+                      : c.kind === "circulator"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(-(simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 9806.65).toFixed(2)} m head`
                         : ["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction"].includes(c.kind)
                           ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
                         : c.kind === "motor"

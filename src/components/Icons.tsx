@@ -9,7 +9,7 @@ import {
   Earth,
   Shield,
   Activity,
-  Box, Move, RotateCw, Cable, Disc3, CircleGauge,
+  Box, Move, RotateCw, RefreshCw, Cable, Disc3, CircleGauge,
   type LucideIcon,
 } from "lucide-react";
 import type { Kind } from "../simulation/model";
@@ -18,7 +18,7 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   motor: Fan, pump: Waves, pipe: Pipette, valve: ToggleRight, checkValve: Shield,
   actuatedValve: ToggleRight, fluidJunction: GitBranch, pressureSensor: Gauge,
   flowSensor: Activity, levelSensor: Container, pid: Activity,
-  battery: BatteryCharging, contactor: ToggleRight, transformer: Waves, radiator: Fan,
+  battery: BatteryCharging, contactor: ToggleRight, transformer: Waves, radiator: Fan, circulator: RefreshCw,
   source: BatteryCharging,
   resistor: Zap,
   lamp: Lightbulb,

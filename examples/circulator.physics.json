@@ -1,0 +1,337 @@
+{
+  "version": 3,
+  "id": "example-circulator",
+  "name": "Circulating heat with an electric pump",
+  "components": [
+    {
+      "id": "circulator-component-1",
+      "kind": "sourceAC",
+      "name": "AC-01",
+      "x": 380,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "circulator-component-2",
+      "kind": "heater",
+      "name": "H-01",
+      "x": 40,
+      "y": 80,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 35.266666666666666,
+        "ratedVoltage": 230,
+        "ratedPower": 1500,
+        "heatCapacity": 225,
+        "loss": 0.15,
+        "conductance": 135,
+        "maxTemperature": 150
+      }
+    },
+    {
+      "id": "circulator-component-3",
+      "kind": "tank",
+      "name": "TK-01",
+      "x": 30,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 0.12,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 50,
+        "capacity": 60,
+        "initialTemperature": 20,
+        "loss": 0.5,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04
+      }
+    },
+    {
+      "id": "circulator-component-4",
+      "kind": "circulator",
+      "name": "CP-01",
+      "x": 380,
+      "y": 380,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "mode": "proportionalPressure",
+        "headSetpoint": 4,
+        "speedSetting": 100,
+        "minSpeed": 25,
+        "enabled": true,
+        "ratedSpeed": 471.24,
+        "ratedFlow": 0.00055556,
+        "shutoffHead": 6,
+        "efficiency": 0.55,
+        "mechanicalLoss": 2,
+        "curvePoints": "",
+        "npshRequired": 0.5,
+        "ratedVoltage": 230,
+        "minVoltage": 180,
+        "ratedPower": 34,
+        "standbyPower": 2.2,
+        "motorEfficiency": 80,
+        "inertia": 0.00002,
+        "rampTime": 2,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "circulator-component-5",
+      "kind": "pipe",
+      "name": "PL-01",
+      "x": 680,
+      "y": 380,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 15,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 40,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 6,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "circulator-component-6",
+      "kind": "valve",
+      "name": "V-01",
+      "x": 680,
+      "y": 630,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.02,
+        "lossCoefficient": 5,
+        "laminarK": 500,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
+      }
+    },
+    {
+      "id": "circulator-component-7",
+      "kind": "pipe",
+      "name": "PL-02",
+      "x": 380,
+      "y": 630,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 15,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "circulator-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "circulator-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "circulator-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "circulator-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "circulator-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "circulator-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "circulator-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "circulator-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "circulator-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "circulator-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "circulator-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "circulator-component-1",
+        "port": "b"
+      }
+    },
+    {
+      "id": "circulator-connection-5",
+      "domain": "thermal",
+      "from": {
+        "component": "circulator-component-2",
+        "port": "heat"
+      },
+      "to": {
+        "component": "circulator-component-3",
+        "port": "heat"
+      }
+    },
+    {
+      "id": "circulator-connection-6",
+      "domain": "hydraulic",
+      "from": {
+        "component": "circulator-component-3",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "circulator-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "circulator-connection-7",
+      "domain": "hydraulic",
+      "from": {
+        "component": "circulator-component-4",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "circulator-component-5",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "circulator-connection-8",
+      "domain": "hydraulic",
+      "from": {
+        "component": "circulator-component-5",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "circulator-component-6",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "circulator-connection-9",
+      "domain": "hydraulic",
+      "from": {
+        "component": "circulator-component-6",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "circulator-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "circulator-connection-10",
+      "domain": "hydraulic",
+      "from": {
+        "component": "circulator-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "circulator-component-3",
+        "port": "fluid"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "circulator-probe-1",
+      "component": "circulator-component-4",
+      "measurement": "flow",
+      "name": "Circulated flow",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "circulator-probe-2",
+      "component": "circulator-component-4",
+      "measurement": "differentialPressure",
+      "name": "Pump Δp (rise negative)",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "circulator-probe-3",
+      "component": "circulator-component-4",
+      "measurement": "power",
+      "name": "Pump input P1",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "circulator-probe-4",
+      "component": "circulator-component-4",
+      "measurement": "efficiency",
+      "name": "Wire-to-water efficiency",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "circulator-probe-5",
+      "component": "circulator-component-3",
+      "measurement": "temperature",
+      "name": "Boiler temperature",
+      "color": "#ef4444",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}
