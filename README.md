@@ -17,6 +17,10 @@ Every run carries a mass and energy ledger without correction factors. Experimen
 
 **Bosch boiler, ALPHA2 and Kermi radiator** (File → Starters & examples): a sealed heating circuit built from three manufacturer-calibrated models. The Bosch Tronic Heat 3000 9 is limited to one 3 kW stage. The ALPHA2-style circulator runs in proportional pressure. The Kermi therm-x2 Profil-K 22 radiator follows its registered EN 442 rating with its published water content and steel mass. It warms up front to back, stores and releases heat as the boiler cycles, and matches Kermi's published outputs within 0.07 % ([model and calibration](docs/PANEL-RADIATOR.md)).
 
+## AI disclosure
+
+Most of this project's code, physical models and documentation were written with AI assistance (Anthropic's Claude, through Claude Code), directed and reviewed by the maintainer. The models are checked by the automated tests and validation campaigns described in [docs/VALIDATION.md](docs/VALIDATION.md), but no qualified engineer has independently reviewed them. Physics Lab is a learning and experimentation tool: do not rely on its results for safety-critical design, equipment sizing or compliance decisions.
+
 ## Using it
 
 - **File → Starters & examples** opens a shelf of complete experiments, from *First light* to *Starting a motor three ways*, each with an explanation and a suggested experiment. The same experiments are in [`examples/`](examples/) as importable JSON.
