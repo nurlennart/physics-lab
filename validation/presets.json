@@ -107,8 +107,8 @@
         {
           "label": "DC/DC conversion efficiency",
           "expected": 0.98,
-          "measured": 0.9799999999135572,
-          "absoluteError": 8.644274185343193e-11,
+          "measured": 0.9799999999456216,
+          "absoluteError": 5.437839067923278e-11,
           "tolerance": 1.98e-8
         },
         {
@@ -121,14 +121,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -4.1245584725402296e-10,
-          "absoluteError": 4.1245584725402296e-10,
+          "measured": -4.190496838418767e-10,
+          "absoluteError": 4.190496838418767e-10,
           "tolerance": 9.990539999999992
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": -4.1245584725402296e-10,
+      "energyResidual": -4.190496838418767e-10,
       "massResidual": 0,
       "violations": [],
       "failed": {}

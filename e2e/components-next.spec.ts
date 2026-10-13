@@ -8,6 +8,23 @@ test.beforeEach(async ({ page }) => {
   });
   await page.goto('/');
 });
+test('off-grid MPPT resumes after night through live Inspector edits', async ({ page }) => {
+  await openExample(page, 'Off-grid solar system');
+  await page.locator('[data-component="solarPanel"]').click();
+  const irradiance = page.getByLabel('Irradiance', { exact: true });
+  await irradiance.fill('0'); await irradiance.press('Enter');
+  await page.getByLabel('Advance by', { exact: true }).selectOption('1');
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+  const night = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
+  expect(night.error).toBeNull();
+  expect((Object.values(night.readings) as any[]).some(r => r.solar?.mode === 'insufficient PV voltage')).toBe(true);
+  await irradiance.fill('1000'); await irradiance.press('Enter');
+  await page.getByLabel('Advance by', { exact: true }).selectOption('1');
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+  const day = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
+  expect(day.error).toBeNull(); expect(day.time).toBeCloseTo(2, 8);
+  expect((Object.values(day.readings) as any[]).some(r => r.solar?.mode === 'bulk' && r.solar.outputPower > 200)).toBe(true);
+});
 for (const [kind, title, label] of [
   ['solarPanel', 'Basic solar charging', 'Model provenance & limitations'],
   ['lfpBattery', 'Basic solar charging', 'state of charge'],

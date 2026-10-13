@@ -101,15 +101,37 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
         const vb = sense(result, c, 'oa', 'ob'), pv = result.readings[a];
         if (va > prop(c, 'maxInputVoltage')) { turnOff('PV overvoltage'); continue; }
         if (vb < prop(c, 'minVoltage')) { turnOff('missing or low battery'); continue; }
-        if (va < vb + prop(c, st.running ? 'runningHeadroom' : 'startupHeadroom')) { turnOff('insufficient PV voltage'); continue; }
+        // Startup was checked at open circuit in preflight. Once enabled, charging raises
+        // the bus voltage; the loaded converter uses its running headroom immediately.
+        if (va < vb + prop(c, 'runningHeadroom')) { turnOff('insufficient PV voltage'); continue; }
         const eta = prop(c, 'conversionEfficiency') / 100;
-        const next = Math.min(prop(c, 'maxCurrent'), Math.max(0, pv.power * eta / vb));
+        // Determine output demand with input curtailment released in the same tangent network.
+        // Using curtailed input power here would lower both demand and input limit together,
+        // turning a temporary Newton undershoot into a spurious lower-power solution.
+        const released = pv.regulation === 'cc' ? solve(e.project, failures, { ...runtime, sourceModels: { ...models, [a]: { ...models[a], upper: prop(c, 'maxInputCurrent') } }, loadResistances: loads }) : result;
+        const next = Math.min(prop(c, 'maxCurrent'), Math.max(0, released.readings[a].power * eta / vb));
         change(demand, c.id, next, 1);
         // Curtail input to actual regulated output when voltage or output current limits bind.
         const out = Math.max(0, -result.readings[b].power), cap = out / (eta * Math.max(1, va));
         const limitVoltage = st.absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage');
         const limited = vb >= limitVoltage - 1e-8 || result.readings[b].regulation === 'cv' || demand[c.id] > prop(c, 'maxCurrent') - 1e-8;
-        change(inputLimits, c.id, limited ? Math.min(prop(c, 'maxInputCurrent'), cap) : prop(c, 'maxInputCurrent'), 1);
+        const nextLimit = limited ? Math.min(prop(c, 'maxInputCurrent'), cap) : prop(c, 'maxInputCurrent');
+        const current = inputLimits[c.id], residual = nextLimit - current;
+        let updatedLimit = current + 0.5 * residual;
+        // Near MPP, I = Pout/(η V(I)) has a derivative near one. The released-input
+        // solve supplies the tangent network's dV/dI and dPout/dI, so a bounded Newton
+        // step accelerates the same physical equation without relaxing its residual.
+        const di = released.readings[a].current - pv.current;
+        if (limited && pv.regulation === 'cc' && Math.abs(di) > 1e-12) {
+          const dv = (released.readings[a].voltage - va) / di;
+          const dp = (Math.max(0, -released.readings[b].power) - out) / di;
+          const slope = (dp / va - out * dv / (va * va)) / eta - 1;
+          const root = current - residual / slope;
+          if (slope < -1e-6 && Number.isFinite(root) && root >= 0 && root <= prop(c, 'maxInputCurrent') && Math.abs(root - current) <= 0.1 * Math.max(1, current)) updatedLimit = current + 0.5 * (root - current);
+        }
+        // Convergence is still judged against the unaccelerated physical equation.
+        error = Math.max(error, Math.abs(residual) / Math.max(1, Math.abs(nextLimit)));
+        inputLimits[c.id] = updatedLimit;
       }
       if (c.kind === 'inverter' && !boot && !off.has(c.id)) {
         const v = sense(result, c, 'a', 'b');
@@ -133,7 +155,9 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
           if (vb < prop(c, 'minVoltage')) off.set(c.id, 'missing or low battery');
           else if (vin > prop(c, 'maxInputVoltage')) off.set(c.id, 'PV overvoltage');
           else if (vin < vb + prop(c, st.running ? 'runningHeadroom' : 'startupHeadroom')) off.set(c.id, 'insufficient PV voltage');
-          targets[c.id] = Math.max(vb + prop(c, 'runningHeadroom'), Math.min(st.target, vin * 0.98));
+          // An inhibited solve must not overwrite tracker memory with the dark/open-input voltage.
+          // A restarting converter also needs startup headroom at its loaded target, not just at Voc.
+          if (!off.has(c.id)) targets[c.id] = Math.min(vin, Math.max(vb + prop(c, st.running ? 'runningHeadroom' : 'startupHeadroom'), Math.min(st.target, vin * 0.98)));
         } else if (vin < prop(c, st.running ? 'minVoltage' : 'restartVoltage') || vin > prop(c, 'maxInputVoltage')) off.set(c.id, 'DC voltage lockout');
         parts.forEach(id => failures[id] = off.has(c.id));
       }

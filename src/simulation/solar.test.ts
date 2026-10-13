@@ -52,6 +52,46 @@ describe('renewable electrical network', () => {
 });
 
 const edit = (s: Simulation, id: string, props: Record<string, Property>) => expect(s.refresh({ ...s.project, components: s.project.components.map(c => c.id === id ? { ...c, props: { ...c.props, ...props } } : c) } as Project), s.error ?? '').toBe(true);
+it.each([449, 449.9, 450, 450.013])('balances current-limited MPPT at %s W near the PV power maximum', watts => {
+  const b = new Builder(), pv = b.add('solarPanel'), mppt = b.add('mpptController', { initialTrackingVoltage: 44.6, absorptionVoltage: 28.4, minVoltage: 16 }), bus = b.add('source', { voltage: watts * 0.98 / 20 - 0.02, internalResistance: 0.001, mode: 'internal' });
+  b.wire(pv, 'a', mppt, 'a'); b.wire(pv, 'b', mppt, 'b'); b.wire(mppt, 'oa', bus, 'a'); b.wire(mppt, 'ob', bus, 'b');
+  const r = solveElectrical(b.p), x = r.readings[mppt.id];
+  expect(x.solar!.inputPower).toBeCloseTo(watts, 6);
+  expect(x.solar!.outputPower).toBeCloseTo(watts * 0.98, 6);
+  expect(r.readings[pv.id].voltage).toBeGreaterThan(pvModel(pv).vmp);
+  expect(-r.readings[pv.id].current).toBeCloseTo(pvModel(pv).at(r.readings[pv.id].voltage).current, 8);
+  expect(Math.abs(r.powerResidual!)).toBeLessThan(1e-7);
+});
+it('charges the off-grid example from 1% SOC for four minutes without losing coupling', () => {
+  const p = solarStarter('solarOffGrid'), battery = p.components.find(c => c.kind === 'lfpBattery')!;
+  battery.props.initialSOC = 1;
+  const s = new Simulation(p); expect(s.error).toBeNull();
+  run(s, 240);
+  expect(s.devices.batteries[battery.id]).toBeGreaterThan(0.01);
+  expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+}, 120000);
+
+it.each(['enabled', 'irradiance'] as const)('restarts MPPT after sunlight is restored via %s', parameter => {
+  const p = solarStarter('solarOffGrid'), pv = p.components.find(c => c.kind === 'solarPanel')!, mppt = p.components.find(c => c.kind === 'mpptController')!;
+  const s = new Simulation(p); run(s, 2);
+  for (let cycle = 0; cycle < 2; cycle++) {
+    edit(s, pv.id, { [parameter]: parameter === 'enabled' ? false : 0 }); run(s, 1);
+    expect(s.electrical.readings[mppt.id].solar!.running).toBe(false);
+    edit(s, pv.id, { [parameter]: parameter === 'enabled' ? true : 1000 }); run(s, 10);
+    expect(s.electrical.readings[mppt.id].solar!.trackingEfficiency).toBeGreaterThan(0.99);
+  }
+  expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
+it('starts with a low configured tracking target despite the charging-induced battery voltage rise', () => {
+  const { b, pv, mppt } = rig(true); mppt.props.initialTrackingVoltage = 1;
+  const s = new Simulation(b.p); run(s, 0.4);
+  expect(s.electrical.readings[mppt.id].solar!.running).toBe(true);
+  expect(s.electrical.readings[mppt.id].solar!.outputPower).toBeGreaterThan(200);
+  edit(s, pv.id, { enabled: false }); run(s, 0.1);
+  edit(s, pv.id, { enabled: true }); run(s, 0.4);
+  expect(s.electrical.readings[mppt.id].solar!.running).toBe(true);
+  expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
 describe('solar references, events and numerical integrity', () => {
   it('checks the unused manufacturer NOCT point and temperature coefficients', () => {
     const b = new Builder(), c = b.add('solarPanel'), ref = pvModel(c);
