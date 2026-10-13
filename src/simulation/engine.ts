@@ -1,9 +1,10 @@
+import { effectiveAmbient } from "./environment";
 import { resetBoiler } from './boiler';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
 import { updateScenario, recordFeedbackTransitions } from "./challenges";
-import { prop, isThermalMass, isSource, isMotor, perPoleKinds, projectAmbient, portConductance, type Component, type Project, type ChallengeId } from "./model";
+import { prop, isThermalMass, isSource, isMotor, perPoleKinds, portConductance, type Component, type Project, type ChallengeId } from "./model";
 import {
   solveElectrical,
   solveLinear,
@@ -11,7 +12,7 @@ import {
   type ElectricalResult,
   type ElectricalReading,
 } from "./electrical";
-import { FILAMENT_COLD, filamentEnergy, filamentRatio, filamentStep } from "./filament";
+import { filamentInitial, filamentEnergy, filamentRatio, filamentStep } from "./filament";
 import { warnOnlyTemperature, thermalTau, thermalThreshold, fuseStep, fuseMeltTime } from "./parameters";
 import { inventoryVolume } from "./water";
 import { transitionError } from "./integrity";
@@ -294,7 +295,7 @@ export class Simulation {
     for (const c of this.project.components)
       if (isThermalMass(c))
         this.temperatures[c.id] =
-          c.kind === "tank" || c.kind === "thermalMass" ? prop(c, "initialTemperature", 20) : projectAmbient(this.project);
+          c.kind === "tank" || c.kind === "thermalMass" ? prop(c, "initialTemperature", 20) : effectiveAmbient(this.project, c);
     this.solve(true, 0);
     this.log("Experiment initialized. Fixed timestep: 1/60 s.");
     this.sample();
@@ -335,7 +336,7 @@ export class Simulation {
     for (const c of project.components)
       if (isThermalMass(c) && (this.time === 0 || this.temperatures[c.id] === undefined))
         this.temperatures[c.id] =
-          c.kind === "tank" || c.kind === "thermalMass" ? prop(c, "initialTemperature", 20) : projectAmbient(project);
+          c.kind === "tank" || c.kind === "thermalMass" ? prop(c, "initialTemperature", 20) : effectiveAmbient(project, c);
     const solved = this.solve(true, 0);
     // The recorded start reflects only the final build-mode configuration, not a superseded one
     // (e.g. 2 kW from a switch that was opened before the run).
@@ -395,7 +396,7 @@ export class Simulation {
   /** Resistance depends on the simulated temperature (explicit coupling per step). */
   /** Lamp resistance relative to the configured hot resistance (filament temperature). */
   filamentRatios() {
-    return Object.fromEntries(this.project.components.filter(c => c.kind === "lamp").map(c => [c.id, filamentRatio(this.filaments[c.id] ?? FILAMENT_COLD)]));
+    return Object.fromEntries(this.project.components.filter(c => c.kind === "lamp").map(c => [c.id, filamentRatio(this.filaments[c.id] ?? filamentInitial(effectiveAmbient(this.project, c)))]));
   }
   temperatureDependent() {
     return this.project.components.some((c) => c.kind === "lamp" || prop(c, "tempCoefficient") !== 0);
@@ -722,11 +723,10 @@ export class Simulation {
         ? (this.multiphysics.tanks[c.id]?.mass ?? prop(c, "volume")) * WATER_CP + prop(c, "vesselHeatCapacity")
         : prop(c, "heatCapacity", 20) * poles(c),
     );
-    const environment = projectAmbient(p);
     const losses = thermal.map((c) => [
       {
         ua: prop(c, "loss", 0) * poles(c),
-        ambient: c.kind === "tank" ? prop(c, "ambient", 20) : environment,
+        ambient: effectiveAmbient(p, c),
       },
     ]);
     for (const cooler of p.components.filter((c) => c.kind === "cooler")) {
@@ -754,13 +754,13 @@ export class Simulation {
           ua:
             prop(cooler, "conductance") *
             (fault === "coolingReduced" ? 0.5 : 1),
-          ambient: prop(cooler, "ambient", 20),
+          ambient: effectiveAmbient(p, cooler),
         });
     }
     // Lamp filaments store part of the step's electrical energy; the rest heats the lamp body.
     const filaments: Record<string, { u: number; heat: number }> = {};
     for (const c of p.components.filter(c => c.kind === "lamp"))
-      filaments[c.id] = filamentStep(c, this.filaments[c.id] ?? FILAMENT_COLD, this.failed[c.id] ? 0 : this.electrical.readings[c.id]?.power ?? 0, dt);
+      filaments[c.id] = filamentStep(c, this.filaments[c.id] ?? filamentInitial(effectiveAmbient(this.project, c)), this.failed[c.id] ? 0 : this.electrical.readings[c.id]?.power ?? 0, dt, effectiveAmbient(p, c));
     thermal.forEach((c, i) => {
       a[i][i] = caps[i] / dt;
       b[i] =
@@ -794,7 +794,7 @@ export class Simulation {
     this.storedEnergy += this.devices.storedChange - deviceStorageBefore;
     for (const [id, f] of Object.entries(filaments)) {
       const c = p.components.find(c => c.id === id)!;
-      this.storedEnergy += filamentEnergy(c, f.u) - filamentEnergy(c, this.filaments[id] ?? FILAMENT_COLD);
+      this.storedEnergy += filamentEnergy(c, f.u) - filamentEnergy(c, this.filaments[id] ?? filamentInitial(effectiveAmbient(this.project, c)));
       this.filaments[id] = f.u;
     }
     this.ambientEnergy += p.components.filter(c => c.kind === "radiator").reduce((sum, c) => sum + (this.electrical.readings[c.id]?.fanPower ?? 0) * dt, 0);
@@ -912,7 +912,7 @@ export class Simulation {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
         // A lamp's rating is its filament temperature at rated power: the cold-filament switch-on surge is not an overload.
-        const overPower = c.kind === "electricBoiler" ? (r.heatingPower ?? 0) > prop(c, "ratedPower") * 1.06 ** 2 * 1.001 : c.kind === "circulator" ? false : c.kind === "lamp" ? (this.filaments[c.id] ?? FILAMENT_COLD) > 1.001 : (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
+        const overPower = c.kind === "electricBoiler" ? (r.heatingPower ?? 0) > prop(c, "ratedPower") * 1.06 ** 2 * 1.001 : c.kind === "circulator" ? false : c.kind === "lamp" ? (this.filaments[c.id] ?? filamentInitial(effectiveAmbient(this.project, c))) > 1.001 : (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
           rawOverCurrent = (c.kind === "electricBoiler" ? Math.max(0, ...(r.stageCurrents ?? [])) : Math.abs(r.contactCurrent ?? r.current)) > prop(c, "ratedCurrent", Infinity) * (c.kind === "electricBoiler" ? 1.06 : 1),
           overVoltage = c.kind === "electricBoiler" ? Math.max(0, ...(r.stageVoltages ?? [])) > prop(c, "ratedVoltage") * 1.06 : c.kind !== "heater" && c.kind !== "circulator" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) * (c.kind === "motor" ? this.multiphysics.motors[c.id]?.duty ?? 1 : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %; a PWM-driven DC armature sees duty × bus voltage
         // Motors draw several times rated current while starting direct-on-line; that is normal operation.
@@ -1031,7 +1031,7 @@ export class Simulation {
       boilerTemperatures: Object.fromEntries(Object.entries(this.multiphysics.boilers).map(([id, b]) => [id, { supply: (this.multiphysics.pipeCells[id]?.[0] ?? 293.15) - 273.15, element: b.elementTemperature - 273.15, target: b.setpoint }])),
       panelTemperatures: Object.fromEntries(this.project.components.filter(c => c.kind === "panelRadiator" && this.multiphysics.pipeCells[c.id]).map(c => {
         const cells = this.multiphysics.pipeCells[c.id], r = this.multiphysics.hydraulic.readings[c.id], flowing = Math.abs(r?.flow ?? 0) >= 1e-12;
-        return [c.id, { supply: flowing && r?.supplyTemperature !== undefined ? r.supplyTemperature - 273.15 : null, ret: (r && (r.flow ?? 0) < 0 ? cells[0] : cells[cells.length - 1]) - 273.15, mean: cells.reduce((a, t) => a + t, 0) / cells.length - 273.15, air: prop(c, "ambient", 20) }];
+        return [c.id, { supply: flowing && r?.supplyTemperature !== undefined ? r.supplyTemperature - 273.15 : null, ret: (r && (r.flow ?? 0) < 0 ? cells[0] : cells[cells.length - 1]) - 273.15, mean: cells.reduce((a, t) => a + t, 0) / cells.length - 273.15, air: effectiveAmbient(this.project, c) }];
       })),
       kinetic: this.multiphysics.kineticEnergy(this.project),
       potential: this.multiphysics.potential(this.project) - this.multiphysics.initialPotential,

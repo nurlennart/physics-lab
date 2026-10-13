@@ -379,7 +379,9 @@ test("plays Thermal Runaway through wiring, physical fault, safety latch and man
   ])
     await wire(page, a, b);
   await page.locator('[data-component="tank"]').click();
-  await expect(page.getByLabel("Ambient temperature")).toBeDisabled();
+  await expect(page.getByLabel("Ambient environment", { exact: true })).toBeDisabled();
+  await expect(page.getByLabel("Ambient environment", { exact: true })).toHaveValue("inherit");
+  await expect(page.getByLabel("Ambient temperature", { exact: true })).toHaveCount(0);
   let reset = false;
   for (let i = 0; i < 65; i++) {
     await page.getByRole("button", { name: "Advance 60 s" }).click();

@@ -967,6 +967,15 @@ export const definitions: Record<Kind, Definition> = {
     }),
   },
 };
+// Environmental boundaries are opt-in overrides; numeric ambient is retained for
+// file compatibility and as the value to use when a local override is enabled.
+for (const d of Object.values(definitions)) {
+  if ('ambient' in d.defaults || 'heatCapacity' in d.defaults) {
+    d.defaults = { ...d.defaults, ambient: d.defaults.ambient ?? DEFAULT_AMBIENT, ambientMode: 'inherit' };
+    for (const v of d.variants ?? [])
+      if (typeof v.overrides.ambient === 'number') v.overrides = { ...v.overrides, ambientMode: 'override' };
+  }
+}
 export const uid = () =>
   globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
 export function catalog(c: Component) {

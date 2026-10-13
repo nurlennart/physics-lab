@@ -321,7 +321,7 @@ export const actions = {
       toast(`Preset import failed: ${(e as Error).message}`);
     }
   },
-  /** Sandbox environment (ambient for element thermal masses). */
+  /** Experiment environment inherited by all thermal boundaries. */
   environment(ambient: number) {
     if (!Number.isFinite(ambient)) return toast("Ambient temperature must be a finite number.");
     edit({ ...state.project, environment: { ambient } });
@@ -486,6 +486,7 @@ export const actions = {
                       ...(x.kind === "source" && Number(x.props.voltage) > Number(model.props.ratedVoltage) ? [] : ["voltage"]),
                       ...(x.kind === "tank" && !state.project.challenge ? [] : ["volume"]),
                       "ambient",
+                      "ambientMode",
                       "initialTemperature",
                       "closed",
                     ]

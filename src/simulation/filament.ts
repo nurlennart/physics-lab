@@ -17,27 +17,30 @@
 import { prop, type Component } from "./model";
 
 export const FILAMENT_OPERATING_K = 2700;
-const AMBIENT = 293.15 / FILAMENT_OPERATING_K, COLD_RATIO = 0.1, CONDUCTION_SHARE = 0.1, TIME_CONSTANT = 0.08;
-const EXPONENT = Math.log(COLD_RATIO) / Math.log(AMBIENT);
-const lossShape = (u: number) => (1 - CONDUCTION_SHARE) * (u ** 4 - AMBIENT ** 4) / (1 - AMBIENT ** 4) + CONDUCTION_SHARE * (u - AMBIENT) / (1 - AMBIENT);
-const lossSlope = (u: number) => (1 - CONDUCTION_SHARE) * 4 * u ** 3 / (1 - AMBIENT ** 4) + CONDUCTION_SHARE / (1 - AMBIENT);
+// Fixed 20 °C calibration reference, not the runtime environment.
+const REFERENCE = 293.15 / FILAMENT_OPERATING_K, COLD_RATIO = 0.1, CONDUCTION_SHARE = 0.1, TIME_CONSTANT = 0.08;
+const EXPONENT = Math.log(COLD_RATIO) / Math.log(REFERENCE);
+const lossShape = (u: number, bath: number) => (1 - CONDUCTION_SHARE) * (u ** 4 - bath ** 4) / (1 - REFERENCE ** 4) + CONDUCTION_SHARE * (u - bath) / (1 - REFERENCE);
+const lossSlope = (u: number) => (1 - CONDUCTION_SHARE) * 4 * u ** 3 / (1 - REFERENCE ** 4) + CONDUCTION_SHARE / (1 - REFERENCE);
 const capacity = (c: Component) => TIME_CONSTANT * lossSlope(1) * prop(c, "ratedPower");
 
-/** Cold filament state (room temperature). */
-export const FILAMENT_COLD = AMBIENT;
+/** Cold filament state at the 20 °C calibration reference. */
+export const FILAMENT_COLD = REFERENCE;
+export const filamentInitial = (ambient: number) => (ambient + 273.15) / FILAMENT_OPERATING_K;
 /** Resistance relative to the configured (hot) resistance. */
-export const filamentRatio = (u: number) => Math.max(AMBIENT, u) ** EXPONENT;
-/** Stored filament energy above room temperature (J). */
-export const filamentEnergy = (c: Component, u: number) => capacity(c) * (u - AMBIENT);
+export const filamentRatio = (u: number) => Math.max(1 / FILAMENT_OPERATING_K, u) ** EXPONENT;
+/** Stored filament energy relative to the fixed 20 °C reference (J); ledger uses changes. */
+export const filamentEnergy = (c: Component, u: number) => capacity(c) * (u - REFERENCE);
 /** Filament temperature (°C). */
 export const filamentCelsius = (u: number) => u * FILAMENT_OPERATING_K - 273.15;
 /** Advance over dt with the electrical power held; returns the new state and the heat passed to the lamp body (W, step average). */
-export function filamentStep(c: Component, u0: number, power: number, dt: number) {
+export function filamentStep(c: Component, u0: number, power: number, dt: number, ambient = 20) {
+  const bath = filamentInitial(ambient);
   const C = capacity(c), rated = prop(c, "ratedPower"), p = Math.max(0, power);
   let u = u0;
   for (let i = 0; i < 50; i++) {
-    const f = C * (u - u0) - dt * (p - rated * lossShape(u)), df = C + dt * rated * lossSlope(u);
-    const next = Math.max(AMBIENT, u - f / df);
+    const f = C * (u - u0) - dt * (p - rated * lossShape(u, bath)), df = C + dt * rated * lossSlope(u);
+    const next = Math.max(1 / FILAMENT_OPERATING_K, u - f / df);
     if (Math.abs(next - u) < 1e-13) { u = next; break; }
     u = next;
   }

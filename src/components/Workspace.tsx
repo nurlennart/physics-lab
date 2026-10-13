@@ -1,3 +1,4 @@
+import { effectiveAmbient } from "../simulation/environment";
 import { T } from "../theme/tokens";
 import {
   useState,
@@ -70,7 +71,7 @@ function CircuitSymbol({ c }: { c: Component }) {
   }
   if (c.kind === 'panelRadiator') {
     // Cells in flow order (front panel, then rear), shaded by their excess over the room air.
-    const cells = (simulation.multiphysics.pipeCells[c.id] ?? []).map(t => t - 273.15), air = prop(c, 'ambient', 20), h = simulation.multiphysics.hydraulic.readings[c.id];
+    const cells = (simulation.multiphysics.pipeCells[c.id] ?? []).map(t => t - 273.15), air = effectiveAmbient(simulation.project, c), h = simulation.multiphysics.hydraulic.readings[c.id];
     const mean = cells.length ? cells.reduce((a, t) => a + t, 0) / cells.length : prop(c, 'initialTemperature'), flowing = hasStarted() && Math.abs(h?.flow ?? 0) >= 1e-12;
     const width = 114 / Math.max(1, cells.length);
     return <g>

@@ -50,7 +50,6 @@ export const panelCapacity = (c: Component) => panelCellCapacity(c) * PANEL_CELL
  * Air temperature (K) the radiator exchanges heat with. The one boundary a future thermal space replaces;
  * today the component's room-air property, an ideal boundary of unlimited capacity.
  */
-export const panelAirTemperature = (c: Component) => prop(c, 'ambient', 20) + 273.15;
 
 /**
  * Inlet weight w(x) = 1/x − 1/(eˣ − 1) of a cell's exchange temperature w·T_in + (1 − w)·T, with

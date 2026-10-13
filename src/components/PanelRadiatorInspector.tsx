@@ -1,3 +1,4 @@
+import { effectiveAmbient } from "../simulation/environment";
 import { simulation } from '../editor/store';
 import { prop, type Component } from '../simulation/model';
 import { en442Output, kermiChartSlope, kermiHydraulics, kermiModels, kermiReference, logMeanExcess, nominalMassFlow, panelBasisLabels, panelCellCapacity, panelModelBasis, tablePairs } from '../simulation/panel-radiator';
@@ -7,7 +8,7 @@ const fmt = (v: number, digits = 1) => v.toLocaleString('en-US', { minimumFracti
 
 export function PanelRadiatorInspector({ c }: { c: Component }) {
   const started = simulation.time > 0, h = simulation.multiphysics.hydraulic.readings[c.id], cells = simulation.multiphysics.pipeCells[c.id] ?? [];
-  const air = prop(c, 'ambient', 20), model = kermiModels[c.variant ?? 'standard'];
+  const air = effectiveAmbient(simulation.project, c), model = kermiModels[c.variant ?? 'standard'];
   const mean = cells.length ? cells.reduce((a, t) => a + t, 0) / cells.length - 273.15 : prop(c, 'initialTemperature');
   const flow = h?.flow ?? 0, flowing = started && Math.abs(flow) >= 1e-12, massFlow = Math.abs(flow) * 1000 * 3600;
   const output = started ? h?.duty ?? 0 : 0, input = started ? h?.heatInput ?? 0 : 0;

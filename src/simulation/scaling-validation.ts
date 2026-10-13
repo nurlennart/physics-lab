@@ -36,7 +36,7 @@ export class Builder {
   add(kind: Kind, props: Record<string, Property> = {}, variant = "standard", name?: string): Component {
     const c = makeComponent(kind, 40 + this.p.components.length * 30, 40, this.p.components);
     c.variant = variant;
-    c.props = applyDerived(kind, { ...catalog(c).props, ...props });
+    c.props = applyDerived(kind, { ...catalog(c).props, ...(typeof props.ambient === "number" && props.ambientMode === undefined ? { ambientMode: "override" } : {}), ...props });
     if (name) c.name = name;
     this.p.components.push(c);
     return c;

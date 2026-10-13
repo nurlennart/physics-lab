@@ -1,3 +1,4 @@
+import { effectiveAmbient } from "./environment";
 import { batteryEnergy } from "./devices";
 import {
   definitions,
@@ -43,7 +44,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "elementTemperature": return (s.multiphysics.boilers[c.id]?.elementTemperature ?? 293.15) - 273.15;
     case "heatingStages": return s.multiphysics.boilers[c.id]?.stages ?? 0;
     case "heatingPower": return r?.heatingPower ?? 0;
-    case "heatLoss": return prop(c, 'loss') * ((s.fluidTemperatureMeasurement(c.id) ?? prop(c, 'ambient')) - prop(c, 'ambient'));
+    case "heatLoss": return prop(c, 'loss') * ((s.fluidTemperatureMeasurement(c.id) ?? effectiveAmbient(s.project, c)) - effectiveAmbient(s.project, c));
     case "stateOfCharge": return (s.devices.batteries[c.id] ?? 0) * 100;
     case "chemicalEnergy": return batteryEnergy(c, s.devices.batteries[c.id] ?? 0);
     case "polarizationVoltage": return s.devices.polarization[c.id] ?? 0;

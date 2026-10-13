@@ -62,3 +62,10 @@ Definition, configuration and runtime state stay separate: the catalog defines k
 ## Persistence
 
 New keys are additive: `migrateComponent` fills them from the variant-aware catalog (a legacy heater gets the nominal voltage that reproduces its stored resistance, √(R·P)). Derived values are re-derived on import. Unknown properties are rejected by name. The project `environment` (ambient temperature) and the preset label are validated and saved. Undo and redo cover parameter edits, presets and reset-to-default.
+
+
+## Experiment environment
+
+The Inspector defaults to **Inherit experiment ambient**. Select **Local ambient override** to expose a local boundary temperature; the effective value and its source are displayed beside thermal properties. Global edits apply to inherited boundaries immediately. A live environment edit changes heat exchange without resetting stored temperatures or energy. Initial water/solid temperatures and controller setpoints remain independent. Coolant presets deliberately select a local override for their ideal coolant reservoir.
+
+Legacy projects with a stored `ambient` and no `ambientMode` retain that value as an explicit override, including 20 °C: the file cannot distinguish a chosen boundary from a catalog default. Components that previously had no local ambient inherit. Project and preset round trips preserve the mode; reset-to-default restores inheritance. See [the environment model and audit](ENVIRONMENT.md).

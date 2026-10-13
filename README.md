@@ -54,6 +54,7 @@ The image builds the app and serves the static bundle with nginx on port 8080. N
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Source layout, state ownership, clock, editing, wire routing, persistence |
 | [ELECTRIC-BOILER.md](docs/ELECTRIC-BOILER.md) | Bosch boiler reference data, equations, calibration, example and limitations |
 | [PANEL-RADIATOR.md](docs/PANEL-RADIATOR.md) | Kermi therm-x2 radiator data and provenance, EN 442 equations, calibration accuracy, example and limitations |
+| [ENVIRONMENT.md](docs/ENVIRONMENT.md) | Ambient inheritance, local overrides, temperature meanings, migration and component audit |
 | [PHYSICS.md](docs/PHYSICS.md) | Every model: equations, numerics, energy accounting, limitations, references |
 | [COMPONENT-MATRIX.md](docs/COMPONENT-MATRIX.md) | Every component: solver integration, model, tests, missing functionality |
 | [PARAMETER-MATRIX.md](docs/PARAMETER-MATRIX.md) | Generated: every parameter's policy, domain and challenge lock |

@@ -112,13 +112,13 @@ export const builtinPresets: ComponentPreset[] = [
 const excluded = new Set(["target", "closed", "enabled", "speedControl", "opening"]);
 export function presetProps(c: Component): Record<string, Property> {
   const model = catalog({ ...c, variant: c.variant ?? "standard" }).props;
-  return Object.fromEntries(Object.entries(c.props).filter(([k, v]) => !excluded.has(k) && v !== model[k]));
+  return Object.fromEntries(Object.entries(c.props).filter(([k, v]) => !excluded.has(k) && (v !== model[k] || k === "ambientMode" || (k === "ambient" && c.props.ambientMode === "override"))));
 }
 /** Resolve a preset into a full, derived-consistent property set. */
 export function presetComponentProps(p: ComponentPreset, current?: Component): { variant: string; props: Record<string, Property> } {
   const model = catalog({ kind: p.kind, variant: p.base } as Component).props;
   const keep = current ? Object.fromEntries(Object.entries(current.props).filter(([k]) => excluded.has(k))) : {};
-  return { variant: p.base, props: applyDerived(p.kind, { ...model, ...p.props, ...keep }) };
+  return { variant: p.base, props: applyDerived(p.kind, { ...model, ...(typeof p.props.ambient === "number" && p.props.ambientMode === undefined ? { ambientMode: "override" } : {}), ...p.props, ...keep }) };
 }
 export function validatePreset(value: unknown): ComponentPreset {
   const p = value as ComponentPreset;

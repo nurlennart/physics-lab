@@ -39,7 +39,7 @@ export const configurableProperties = new Set([
   "resistance",
   "volume",
   "initialTemperature",
-  "ambient",
+  "ambient", "ambientMode",
   "target",
   "minRange",
   "maxRange",
@@ -199,6 +199,8 @@ export function challengeError(
     if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
+    if ('ambient' in c.props && prop(c, 'ambient') !== rules.ambient)
+      return "Challenge ambient conditions are locked.";
     if (c.kind === "tank") {
       tanks++;
       if (
@@ -375,6 +377,6 @@ export function propertyError(
 }
 /** Apply one property edit with its defined side effects and derived values. */
 export function withProperty(p: Project, c: Component, key: string, value: Property): Project {
-  const props = applyDerived(c.kind, { ...c.props, ...editEffects(c.kind, key, value), [key]: value });
+  const props = applyDerived(c.kind, { ...c.props, ...editEffects(c.kind, key, value), ...(key === "ambient" ? { ambientMode: "override" } : {}), [key]: value });
   return { ...p, components: p.components.map((x) => (x.id === c.id ? { ...x, props } : x)) };
 }

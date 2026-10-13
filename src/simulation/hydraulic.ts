@@ -1,5 +1,6 @@
+import { effectiveAmbient } from "./environment";
 import { boilerExchange, boilerWaterCapacity, type BoilerState } from './boiler';
-import { PANEL_CELLS, panelAirTemperature, panelCellCapacity, panelExchange } from './panel-radiator';
+import { PANEL_CELLS, panelCellCapacity, panelExchange } from './panel-radiator';
 import { definitions, prop, textProp, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
@@ -569,7 +570,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     // Branch dissipation plus pump shaft losses (shaft − impeller); with b.loss = P_imp − P_net
     // for a pump this totals P_shaft − P_net, each loss counted once.
     // An electric circulator's motor and electronics losses are cooled by the pumped water (wet rotor).
-    const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower) + (r.motorLoss ?? 0), ambientK = c.kind === 'panelRadiator' ? panelAirTemperature(c) : U.celsiusToK(prop(c, 'ambient', 20));
+    const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower) + (r.motorLoss ?? 0), ambientK = U.celsiusToK(effectiveAmbient(project, c));
     const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     const n = pipeCells(c), state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? state : [...state].reverse();
     // Panel radiator: EN 442 conductance per cell from the interval's start state (inlet: last transported node temperature).
@@ -648,7 +649,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   }
   // Stagnant pipes keep their water and exchange heat with ambient only.
   for (const c of project.components.filter(c => pipeCells(c) && !transfers.some(t => t.component === c.id))) {
-    const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = c.kind === 'panelRadiator' ? panelAirTemperature(c) : U.celsiusToK(prop(c, 'ambient', 20));
+    const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = U.celsiusToK(effectiveAmbient(project, c));
     const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? panelExchange(c, before, undefined, ambientK, 0).g : prop(c, c.kind === 'electricBoiler' ? 'loss' : 'thermalUA') / n;
     const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     let output = 0;

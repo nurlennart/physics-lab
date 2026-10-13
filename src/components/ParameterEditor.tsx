@@ -1,3 +1,4 @@
+import { effectiveAmbient } from "../simulation/environment";
 import { compatibleTarget, temperatureLabel } from "../simulation/capabilities";
 import { useEffect, useState } from "react";
 import { Lock, RotateCcw, Save, Info, Gauge } from "lucide-react";
@@ -31,7 +32,7 @@ export function lockReason(c: Component, field: string, project: Project, busy: 
   if (policy === "derived") return `Calculated from ${(spec?.derivedFrom ?? []).map((k) => paramSpec(c.kind, k)?.label ?? k).join(", ")}.`;
   if (policy === "fixed") return spec?.limitReason ?? spec?.description ?? "Constant of the implemented model.";
   if (policy === "catalog") return "Scored challenge: defined by the purchased catalog model. Choose a catalog variant instead.";
-  if (project.challenge && challengeEnvironment(c, field)) return "Locked by the assignment.";
+  if (project.challenge && (["ambient", "ambientMode"].includes(field) || challengeEnvironment(c, field))) return "Locked by the assignment.";
   if (simulation.time > 0 && policy === "reset") return "Defines stored energy, mass or the initial state — reset the experiment to edit.";
   // Full project validation runs when a value is committed; rendering only needs the policy.
   return null;
@@ -148,7 +149,7 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
 }
 export function ParameterSections({ c }: { c: Component }) {
   const s = useLab();
-  const fields = Object.entries(c.props);
+  const fields = Object.entries(c.props).filter(([k]) => k !== "ambient" || c.props.ambientMode === "override");
   const grouped = groupOrder.map((g) => [g, fields.filter(([k]) => (paramSpec(c.kind, k)?.group ?? "advanced") === g)] as const).filter(([, list]) => list.length);
   return (
     <>
@@ -156,6 +157,7 @@ export function ParameterSections({ c }: { c: Component }) {
         <details className="inspector-section param-group" key={group} open={group !== "advanced"}>
           <summary className="section-label">{groupTitles[group]}</summary>
           {list.map(([field, value]) => <Field key={field} c={c} field={field} value={value} s={s} />)}
+          {group === "thermal" && "ambientMode" in c.props && <p className="field-hint">Effective ambient: {formatEngineering(effectiveAmbient(s.project, c))} °C · {c.props.ambientMode === "override" ? "local override" : "experiment environment"}. Initial temperatures and temperature setpoints are separate parameters.</p>}
         </details>
       ))}
     </>
@@ -218,7 +220,7 @@ export function RatingIndicators({ c }: { c: Component }) {
     if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : c.kind === "starDeltaStarter" || c.kind === "softStarter" ? "Voltage across a pole" : "Voltage"} actual={c.kind === "inductionMotor" && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
   }
   if (t !== undefined && "maxTemperature" in c.props)
-    bars.push(<Bar key="t" label="Temperature rise" actual={t - projectAmbient(simulation.project)} rated={prop(c, "maxTemperature") - projectAmbient(simulation.project)} unit="K" />);
+    bars.push(<Bar key="t" label="Temperature rise" actual={t - effectiveAmbient(simulation.project, c)} rated={prop(c, "maxTemperature") - effectiveAmbient(simulation.project, c)} unit="K" />);
   if (h && "maxPressure" in c.props) bars.push(<Bar key="pr" label="Pressure" actual={Math.max(h.pressure, h.inletPressure) / 1e5} rated={prop(c, "maxPressure") / 1e5} unit="bar" />);
   if (!bars.some(Boolean)) return null;
   return (
@@ -285,7 +287,7 @@ export function EnvironmentPanel() {
     <div className="inspector-section environment-panel">
       <div className="section-label"><span>Experiment environment</span><span className="live-badge">{s.project.challenge ? "CHALLENGE" : "SANDBOX"}</span></div>
       <div className="property-row">
-        <span className="property-label" title="Ambient temperature of element thermal masses (resistors, heaters, cables, motors, contacts) and their initial temperature at reset. Tanks, pipes and coolers have their own ambient parameter.">Laboratory ambient</span>
+        <span className="property-label" title="Ambient boundary inherited by every component unless a local override is selected. Bodies without an initial-temperature parameter start at their resolved ambient; explicit initial temperatures and setpoints are independent.">Laboratory ambient</span>
         <span className="number-field">
           <input aria-label="Laboratory ambient temperature" inputMode="decimal" disabled={!!s.project.challenge || s.busy} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => { const v = parseEngineering(draft); if (v === null || v === ambient) setDraft(String(ambient)); else actions.environment(v); }} onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()} />
           <span>°C</span>

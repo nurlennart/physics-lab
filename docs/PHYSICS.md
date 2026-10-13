@@ -307,7 +307,7 @@ This is unconditionally stable with first-order time error. Electrical power is 
 - **Thermal mass / heat sink** components and thermal ports on resistors, cables and motors link arbitrary masses.
 - **Cooling jacket**: UA·(T − T_coolant) to an ideal reservoir of fixed temperature and unlimited capacity; no pump work or coolant flow is implied.
 - **Tank heat loss**: explicit UA, or derived from insulation as UA = A_wall/(1/h + t/k) for a vertical cylinder with h = 10 W/(m²·K).
-- **Ambient** is a project-level boundary (sandbox: −100 to 500 °C; challenges: 20 °C) and applies to every element and its initial temperature at reset.
+- **Ambient** is resolved centrally: explicit local override → containing Thermal Space (future) → experiment environment (default 20 °C). New components inherit. The experiment boundary is editable in the sandbox (−100 to 500 °C); challenges lock it to 20 °C. Initial temperatures, operating temperatures and control setpoints are separate. Bodies without an explicit initial-temperature parameter start at their resolved ambient. See [environment resolution and component audit](ENVIRONMENT.md).
 - **Water** is well mixed and must stay within 1–95 °C; leaving the range pauses with a diagnostic. Evaporation, boiling, radiation from tanks and spatial gradients are not modelled.
 
 ## Water and hydraulics
