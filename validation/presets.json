@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 77,
-    "coveredPresets": 77,
-    "scenarios": 121,
-    "passed": 121,
+    "presets": 78,
+    "coveredPresets": 78,
+    "scenarios": 122,
+    "passed": 122,
     "failed": 0
   },
   "reports": [
@@ -185,6 +185,48 @@
       "pass": true,
       "time": 1.0000000000000013,
       "energyResidual": -0.0005817042735129026,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bosch TH3000 9 · external pump",
+      "presets": [
+        "builtin:electricBoiler:Bosch TH3000 9 · external pump"
+      ],
+      "checks": [
+        {
+          "label": "three 3 kW heating stages (W)",
+          "expected": 9000,
+          "measured": 9000,
+          "absoluteError": 0,
+          "tolerance": 0.00000901
+        },
+        {
+          "label": "Bosch full-load phase current (A)",
+          "expected": 13.1,
+          "measured": 13.043478260869566,
+          "absoluteError": 0.056521739130433346,
+          "tolerance": 0.06550001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -6.585310075024609e-11,
+          "absoluteError": 6.585310075024609e-11,
+          "tolerance": 180.08999999999966
+        }
+      ],
+      "pass": true,
+      "time": 5.999999999999984,
+      "energyResidual": -6.585310075024609e-11,
       "massResidual": 0,
       "violations": [],
       "failed": {}

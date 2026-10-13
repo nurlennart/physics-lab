@@ -50,6 +50,17 @@ function CircuitSymbol({ c }: { c: Component }) {
     r = simulation.electrical.readings[c.id],
     power = hasStarted() ? r?.power ?? 0 : 0;
   const failed = simulation.failed[c.id];
+  if (c.kind === 'electricBoiler') {
+    const state = simulation.multiphysics.boilers[c.id], water = simulation.fluidTemperatureMeasurement(c.id) ?? prop(c, 'initialTemperature');
+    return <g>
+      <rect x="36" y="18" width="102" height="96" rx="9" fill={T.n5} stroke={state?.fault ? T.faultText : T.thermalText} strokeWidth="2" />
+      <path d="M0 66H36M138 66H174M52 66V45H122V86H52V66" fill="none" stroke={T.hydraulic} strokeWidth="3" />
+      {[0, 1, 2].map(i => <path key={i} d={`M${65 + 22 * i} 36V56l-6 6 12 8-12 8 6 8v12`} fill="none" stroke={hasStarted() && i < (state?.stages ?? 0) ? T.electricalText : T.n11} strokeWidth="2" />)}
+      <rect x="57" y="91" width="60" height="17" rx="3" fill={T.n4} />
+      <text x="87" y="104" textAnchor="middle" className="scale-label">{water.toFixed(1)} °C</text>
+      <text x="87" y="127" textAnchor="middle" className="scale-label">{state?.fault ? 'TRIPPED' : hasStarted() ? `${state?.stages ?? 0}/3 · ${(power / 1000).toFixed(2)} kW` : 'TH3000 · external pump'}</text>
+    </g>;
+  }
   if (c.kind === "battery") return <g>
     <path d="M0 66H65M109 66H174M65 45V87M77 53V79M97 45V87M109 53V79" stroke={T.electricalText} strokeWidth="3" />
     <text x="87" y="110" textAnchor="middle" className="scale-label">{((simulation.devices.batteries[c.id] ?? prop(c, 'initialSOC') / 100) * 100).toFixed(1)} % charge</text>
@@ -1081,8 +1092,8 @@ export default function Workspace() {
                         )}
                         <path
                           d={
-                            p.domain === "control" &&
-                            ["relay", "safety", "cooler"].includes(c.kind)
+                            (c.kind === "electricBoiler" && p.domain === "electrical") ? `M${x} ${y}V18` : p.domain === "control" &&
+                            ["electricBoiler", "relay", "safety", "cooler"].includes(c.kind)
                               ? `M${x} ${y}V${h}`
                               : (p.id === "heat" || c.kind === "contactor" && ["ca", "cb"].includes(p.id) || c.kind === "radiator" && ["a", "b"].includes(p.id) || c.kind === "circulator" && ["a", "b"].includes(p.id))
                                 ? `M${x} ${y}V${c.kind === "tank" || c.kind === "circulator" ? 0 : h}`

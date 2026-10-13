@@ -1,3 +1,4 @@
+import { boilerExchange, boilerWaterCapacity, type BoilerState } from './boiler';
 import { definitions, prop, textProp, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
@@ -26,6 +27,7 @@ export interface HydraulicReading {
   overflow?: number;
   /** Tanks: surcharge h of the free surface above the rim (m). */
   surcharge?: number;
+  returnTemperature?: number;
   torque: number; temperature: number; temperatureValid?: boolean;
   /** Heat-exchanger duty (W), positive from the hot (A) stream into the cold (B) stream. */
   duty?: number;
@@ -53,7 +55,7 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler']);
 /** Centrifugal pump branches: shaft-driven pumps and electric circulators share the curve model. */
 export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
@@ -297,11 +299,20 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   // system (transport exports its mass, enthalpy and potential energy).
   const weirInjection = new Map<string, number>();
   if (branches.length > 120) throw Error('Hydraulic network exceeds 120 branches.');
-  const primed = new Set(Object.keys(boundaries).map(n => groups.find(n)));
+  const tankGroups = new Set(Object.keys(boundaries).map(n => groups.find(n)));
+  const primed = new Set(tankGroups);
+  // A filled sealed loop needs one pressure datum, not a pressure boundary at every node.
+  // Fixing all its nodes to zero violates continuity (a pump discharges into nothing).
+  // Finite branch inventory establishes a filled loop; its pressure datum represents an
+  // externally maintained fill pressure with compliant expansion, not a mass source.
+  for (const c of cs.filter(c => pipeCells(c)).sort((a, b) => Number(b.kind === 'electricBoiler') - Number(a.kind === 'electricBoiler'))) {
+    const n = node(c, 'inlet'), group = groups.find(n);
+    if (!primed.has(group)) { boundaries[n] = prop(c, 'fillPressure') / 1000; primed.add(group); }
+  }
   for (const n of nodes) if (!primed.has(groups.find(n))) boundaries[n] = 0;
   for (const c of topology.tanks) {
     const flow = weirFlow(prop(c, 'weirLength'), tankSurcharge(c, tanks[c.id].volume)), port = node(c, 'overflow');
-    const routed = flow > 0 && primed.has(groups.find(port)) && Object.keys(boundaryTanks).every(n => n !== port);
+    const routed = flow > 0 && tankGroups.has(groups.find(port)) && Object.keys(boundaryTanks).every(n => n !== port);
     result.weir[c.id] = { flow, routed, node: port };
     if (routed) weirInjection.set(port, (weirInjection.get(port) ?? 0) + flow);
   }
@@ -326,7 +337,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    */
   const valveTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
-    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
+    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || c.kind === 'electricBoiler' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
     const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
@@ -530,9 +541,9 @@ export function effectiveness(ntu: number, cr: number, arrangement: string) {
   const e = Math.exp(-ntu * (1 - cr));
   return (1 - e) / (1 - cr * e);
 }
-/** Number of water cells in a pipe (0 = zero-volume pipe). */
-export const pipeCells = (c: Component) => (c.kind === 'pipe' && c.props.inventory !== false ? Math.max(1, Math.round(prop(c, 'segments', 4))) : 0);
-export const pipeWaterMass = (c: Component) => RHO * Math.PI * prop(c, 'diameter') ** 2 / 4 * prop(c, 'length');
+/** Finite branch inventory cells: pipe chain, one boiler mixing cell, or zero-volume branch. */
+export const pipeCells = (c: Component) => c.kind === 'electricBoiler' ? 1 : (c.kind === 'pipe' && c.props.inventory !== false ? Math.max(1, Math.round(prop(c, 'segments', 4))) : 0);
+export const pipeWaterMass = (c: Component) => c.kind === 'electricBoiler' ? prop(c, 'waterVolume') : RHO * Math.PI * prop(c, 'diameter') ** 2 / 4 * prop(c, 'length');
 /**
  * Conservative upwind enthalpy transport. Junctions are ideal mixers. Zero-volume
  * branches carry their dissipation and exponential UA loss into the outgoing
@@ -541,7 +552,7 @@ export const pipeWaterMass = (c: Component) => RHO * Math.PI * prop(c, 'diameter
  * ε-NTU. Every outlet temperature is linear in upstream node temperatures, so the
  * whole network is one linear solve and energy is conserved exactly.
  */
-export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}) {
+export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, BoilerState> = {}, boilerPower: Record<string, number> = {}) {
   const nodes = Object.keys(result.potentials), index = new Map(nodes.map((n, i) => [n, i]));
   const matrix = nodes.map(() => Array(nodes.length).fill(0)), rhs = nodes.map(() => 0), boundary = new Map<string, string>();
   for (const [id, n] of Object.entries(result.tankNodes)) boundary.set(n, id);
@@ -554,15 +565,16 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     // for a pump this totals P_shaft − P_net, each loss counted once.
     // An electric circulator's motor and electronics losses are cooled by the pumped water (wet rotor).
     const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower) + (r.motorLoss ?? 0), ambientK = U.celsiusToK(prop(c, 'ambient', 20));
-    const ua = c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0, n = pipeCells(c);
+    const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
+    const ua = c.kind === 'electricBoiler' ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0, n = pipeCells(c);
     if (n) {
       // Implicit cell chain: T_k' = (m c T_k + h ṁ c T_{k−1}' + h UA/N T_amb + h Q/N)/(m c + h ṁ c + h UA/N).
-      const mc = pipeWaterMass(c) / n * CP, uaCell = ua / n, flowTerm = dt * b.rate * CP;
+      const mc = c.kind === 'electricBoiler' ? boilerWaterCapacity(c) : pipeWaterMass(c) / n * CP, uaCell = ua / n, flowTerm = dt * b.rate * CP;
       const state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? state : [...state].reverse();
       let alpha = 1, beta = 0;
       for (const old of order) {
-        const den = mc + flowTerm + dt * uaCell, a = flowTerm / den;
-        beta = a * beta + (mc * old + dt * uaCell * ambientK + dt * heat / n) / den;
+        const den = mc + flowTerm + dt * (uaCell + (exchange?.sink ?? 0)), a = flowTerm / den;
+        beta = dt === 0 ? old : a * beta + (mc * old + dt * uaCell * ambientK + dt * (heat / n + (exchange?.source ?? 0))) / den;
         alpha *= a;
       }
       return { ...b, terms: [{ node: b.from, coeff: alpha }], offset: beta, heat, ua, ambientK, attenuation: alpha };
@@ -602,30 +614,41 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     if (destination) { massRate[destination] = (massRate[destination] ?? 0) + b.rate; energyRate[destination] = (energyRate[destination] ?? 0) + b.rate * CP * outlet; }
     const c = byId.get(b.component)!, n = pipeCells(c);
     if (n) {
-      const mc = pipeWaterMass(c) / n * CP, uaCell = b.ua / n, flowTerm = dt * b.rate * CP;
+      const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
+      const mc = c.kind === 'electricBoiler' ? boilerWaterCapacity(c) : pipeWaterMass(c) / n * CP, uaCell = b.ua / n, flowTerm = dt * b.rate * CP;
       const state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? [...state] : [...state].reverse();
       let upstream = inlet;
       const updated = order.map(old => {
-        upstream = (mc * old + flowTerm * upstream + dt * uaCell * b.ambientK + dt * b.heat / n) / (mc + flowTerm + dt * uaCell);
+        upstream = dt === 0 ? old : (mc * old + flowTerm * upstream + dt * uaCell * b.ambientK + dt * (b.heat / n + (exchange?.source ?? 0))) / (mc + flowTerm + dt * (uaCell + (exchange?.sink ?? 0)));
         ambient += uaCell * (upstream - b.ambientK) * dt;
         return upstream;
       });
       cells[c.id] = b.flow > 0 ? updated : updated.reverse();
     } else ambient += b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK) * dt;
     heat += b.heat * dt;
+    if (c.kind === 'electricBoiler') {
+      result.readings[b.id].duty = b.rate * CP * (outlet - inlet);
+      result.readings[b.id].returnTemperature = inlet;
+    }
     if (c.kind === "radiator") result.readings[b.id].duty = b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK);
     result.readings[b.id].temperature = outlet;
     result.readings[b.id].temperatureValid = true;
   }
   // Stagnant pipes keep their water and exchange heat with ambient only.
   for (const c of project.components.filter(c => pipeCells(c) && !transfers.some(t => t.component === c.id))) {
-    const n = pipeCells(c), mc = pipeWaterMass(c) / n * CP, uaCell = prop(c, 'thermalUA') / n, ambientK = U.celsiusToK(prop(c, 'ambient', 20));
+    const n = pipeCells(c), mc = c.kind === 'electricBoiler' ? boilerWaterCapacity(c) : pipeWaterMass(c) / n * CP, uaCell = prop(c, c.kind === 'electricBoiler' ? 'loss' : 'thermalUA') / n, ambientK = U.celsiusToK(prop(c, 'ambient', 20));
+    const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     cells[c.id] = (cells[c.id] ?? Array(n).fill(293.15)).map(old => {
-      const next = (mc * old + dt * uaCell * ambientK) / (mc + dt * uaCell);
+      const next = dt === 0 ? old : (mc * old + dt * uaCell * ambientK + dt * (exchange?.source ?? 0)) / (mc + dt * (uaCell + (exchange?.sink ?? 0)));
       ambient += uaCell * (next - ambientK) * dt;
       return next;
     });
     if (result.readings[c.id]) { result.readings[c.id].temperature = cells[c.id].reduce((s, t) => s + t, 0) / n; result.readings[c.id].temperatureValid = true; }
+  }
+  for (const c of project.components.filter(c => c.kind === 'electricBoiler')) {
+    const state = boilers[c.id], power = boilerPower[c.id] ?? 0;
+    state.elementTemperature = boilerExchange(c, state, power, dt).element(cells[c.id][0]);
+    heat += power * dt;
   }
   for (const [id, d] of Object.entries(duty)) {
     const q = d.coefficient * (at(d.hot) - at(d.cold));
@@ -665,7 +688,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
 }
 /** Enthalpy (J, relative to 0 K) of all pipe water cells. */
 export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) =>
-  project.components.reduce((sum, c) => sum + (cells[c.id] ? cells[c.id].reduce((s, t) => s + pipeWaterMass(c) / cells[c.id].length * CP * t, 0) : 0), 0);
+  project.components.reduce((sum, c) => sum + (cells[c.id] ? cells[c.id].reduce((s, t) => s + (c.kind === 'electricBoiler' ? boilerWaterCapacity(c) : pipeWaterMass(c) / cells[c.id].length * CP) * t, 0) : 0), 0);
 export function boundaryTime(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, limit: number) {
   let step = limit;
   for (const c of project.components.filter(c => c.kind === 'tank')) {

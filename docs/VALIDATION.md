@@ -28,3 +28,5 @@ The release gate runs the first four layers, the preset operating campaign, the 
 - **Convergence is measured.** Timestep refinement checks report raw errors and their ratios (for example first-order backward Euler: error ratio ≈ 2 on halving the step).
 - **Deterministic replay.** Save/reload and replay are tested for identical final state in the same runtime.
 - **Reference scores move only deliberately.** A physics change that alters a challenge result must re-record it (`node scripts/check-scores.mjs --update`) and explain why in the commit message.
+
+The Bosch TH3000 9 reference boiler has a dedicated [calibration snapshot](../validation/boiler.md), regenerated with `npm run validate:boiler`. Its electrical, thermal, safety, controller, energy-breakdown and rollback regressions run in `boiler.test.ts` as part of the full release gate; the catalog preset and example are covered by the operating and browser campaigns. See [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for specification provenance and approximations.

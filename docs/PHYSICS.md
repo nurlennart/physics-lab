@@ -2,7 +2,7 @@
 
 This is the reference for every model the engine solves: the equations, how they are discretized, what they conserve and what they leave out. Component coverage is listed in [COMPONENT-MATRIX.md](COMPONENT-MATRIX.md); parameter domains and editing policies in [SANDBOX.md](SANDBOX.md) and the generated [PARAMETER-MATRIX.md](PARAMETER-MATRIX.md).
 
-Catalog coefficients are illustrative engineering values, not manufacturer data. Passing the test suites does not certify every combination of allowed parameters.
+Most catalog coefficients are illustrative engineering values. The electric boiler and circulator distinguish manufacturer specifications from fitted and assumed coefficients; see [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for the Bosch TH3000 9 reference and its calibration. Passing the test suites does not certify every combination of allowed parameters.
 
 **Contents**
 
@@ -668,3 +668,7 @@ external electrical supply + signed external mechanical work
 - [Schneider Electric: contactor coil operating bands](https://www.se.com/ca/en/faqs/FAQ000223298/)
 - [Planck.js documentation](https://piqnt.com/planck.js/docs/)
 - Seborg, Edgar, Mellichamp & Doyle, *Process Dynamics and Control*, ch. 9 (valve characteristics); IEC 60534-1; IEC 60269 (gG fuses); IEC 60898 and IEC 60947-2 (breakers); IEC 60034-1 (motor voltage zones); Hooper (1981) two-K method.
+
+### Electric central heating boiler
+
+The Bosch Tronic Heat 3000 9 reference uses the existing MNA solver for three independent resistive stages and the enthalpy solver for coupled element/water storage. See [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for source specifications, equations, controller timing, protection, conservation, sealed-loop pressure references and limitations.

@@ -3,6 +3,7 @@ export type Kind =
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
+  | "electricBoiler"
   | "source"
   | "source3"
   | "sourceAC"
@@ -79,6 +80,7 @@ export interface Connection {
 export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
+  | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume" | "torque"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
@@ -206,6 +208,16 @@ const shaft: Port = { id: "shaft", domain: "mechanical", label: "Rotating shaft"
 const sensing = { target: "", minRange: -1000000, maxRange: 1000000, resolution: 0.001, lag: 0, noise: 0, sampleInterval: 0 };
 const valveDefaults = { opening: 100, diameter: 0.025, lossCoefficient: 5, laminarK: 500, maxPressure: 1000000, elevation: 0 };
 export const definitions: Record<Kind, Definition> = {
+  electricBoiler: {
+    label: "Electric heating boiler", category: "Thermal", prefix: "EB", cost: 650,
+    description: "Bosch Tronic Heat 3000 9 reference: three 3 kW resistive stages, internal water and metal inertia, supply thermostat and independent manual-reset limiter. External pump required.",
+    spec: "9 kW · 3 × 3 kW · 3.7 L · 230/400 V · external pump",
+    ports: [
+      ...["L1", "L2", "L3", "N", "PE"].map(id => ({ id, domain: "electrical" as const, label: id === "PE" ? "Protective earth (chassis; no normal current)" : `${id} mains terminal` })),
+      ...fluid, input("enable", "boolean", true), input("setpoint", "number", true), input("reset", "boolean", true),
+    ],
+    defaults: { ratedPower: 9000, ratedVoltage: 230, ratedCurrent: 13.1, waterVolume: 3.7, vesselHeatCapacity: 3500, heatCapacity: 1500, conductance: 1200, loss: 1.8, standbyPower: 3, initialTemperature: 20, ambient: 20, setpoint: 60, hysteresis: 7, stageDelay: 2, antiCycleTime: 10, maxStages: 3, enabled: true, tripTemperature: 95, resetTemperature: 70, fillPressure: 150000, flowInterlock: false, minFlow: 130 / 3600000, flowDelay: 5, minVoltage: 180, restartDelay: 2, diameter: 0.02, lossCoefficient: 8, laminarK: 1500, elevation: 0, maxPressure: 300000, maxTemperature: 85 },
+  },
   rigidBody: { label: 'Rigid body', category: 'Mechanical', description: 'Spatial rectangle, circle, convex polygon, beam, wheel or structural boundary; real mass, inertia and collision geometry', spec: 'SI geometry · static / dynamic / kinematic', cost: 25, prefix: 'RB', ports: [shaft], defaults: { forceX: 0, forceY: 0, appliedTorque: 0, brakeDamping: 0 } },
   positionSensor: { label: 'Position sensor', category: 'Sensors', description: 'Actual world position of the target body; selected x or y axis in metres', spec: 'm output', cost: 12, prefix: 'XS', ports: [output('number', 'm')], defaults: { ...sensing, axis: 'y', resolution: 0.00001 } },
   speedSensor: { label: 'Shaft speed sensor', category: 'Sensors', description: 'Calculated target body or motor rotational speed; same shaft state in both views', spec: 'RPM output', cost: 12, prefix: 'WS', ports: [output('number', 'RPM')], defaults: { ...sensing, resolution: 0.001 } },
@@ -1031,7 +1043,7 @@ export const isSource = (c: Component) => c.kind === "source" || c.kind === "sou
 /** Machines with a rotating shaft driven by the electrical network. */
 export const isMotor = (c: Component) => c.kind === "motor" || c.kind === "inductionMotor";
 export const isThermalMass = (c: Component) =>
-  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || (isElectrical(c) && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator");
+  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || (isElectrical(c) && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator" && c.kind !== "electricBoiler");
 /** Components whose catalog data describe one pole/conductor; a three-phase island has three. */
 export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter", "inductor", "capacitor"]);
 /** Contact conductance of a thermal port (W/K); a well-mixed tank's own side is ideal. */

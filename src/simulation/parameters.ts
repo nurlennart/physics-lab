@@ -48,6 +48,17 @@ const temperature = (label: string, description: string, group: ParamGroup = "th
   label, description, unit: "°C", group, policy, domain: [ABSOLUTE_ZERO, 10000], limitReason: "Temperature must be above absolute zero.",
 });
 const base: Record<string, Base> = {
+  fillPressure: { label: "Closed-loop fill pressure", description: "Pressure datum at the boiler inlet for a sealed loop without a finite tank. Represents external precharge and compliant expansion; expansion pressure dynamics are not modeled.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [0, 300000], limitReason: NUMERIC },
+  restartDelay: { label: "Supply recovery delay", description: "Time with healthy phase voltages before stage restart; assumed electronics behavior.", unit: "s", group: "operating", policy: "live", domain: [0, 300], limitReason: NUMERIC },
+  waterVolume: { label: "Internal water volume", description: "Bosch TH3000 9: 3.7 L. Fixed inventory at reference density, fully mixed.", unit: "L", group: "configuration", policy: "reset", domain: [0.01, 10000], limitReason: POSITIVE },
+  stageDelay: { label: "Stage switching interval", description: "Minimum time between ordinary stage changes. Model approximation.", unit: "s", group: "operating", policy: "live", domain: [0.05, 300], limitReason: POSITIVE },
+  antiCycleTime: { label: "Restart inhibit time", description: "Minimum off time after the last stage opens; faults bypass switching delays.", unit: "s", group: "operating", policy: "live", domain: [0, 3600], limitReason: NUMERIC },
+  maxStages: { label: "Maximum heating stages", description: "Power restriction: 0, 1, 2 or 3 stages. Each stage is one phase-to-neutral 3 kW element.", unit: "1", group: "operating", policy: "live", domain: [0, 3], limitReason: "Three installed elements." },
+  tripTemperature: { ...temperature("Independent limiter", "Bosch STB opens at 95 °C; latches until manual reset below reset temperature.", "ratings"), domain: [40, 99] },
+  resetTemperature: { ...temperature("Limiter reset temperature", "Bosch: cool to about 70 °C before manually resetting.", "ratings"), domain: [1, 90] },
+  flowInterlock: { label: "Enable flow interlock", description: "Optional modeled flow switch, separate from the Bosch pressure switch; not a manufacturer feature.", group: "operating", policy: "live" },
+  minFlow: { label: "Minimum flow", description: "Bosch minimum flow 130 L/h; optional interlock threshold.", unit: "m³/s", display: { unit: "L/min", scale: 60000 }, group: "ratings", policy: "live", domain: [0, 1], limitReason: NUMERIC },
+  flowDelay: { label: "Flow proving time", description: "Continuous low-flow demand before the optional interlock latches; model assumption.", unit: "s", group: "operating", policy: "live", domain: [0, 300], limitReason: NUMERIC },
   capacityAh: { label: "Charge capacity", description: "Charge capacity. See the component model and limitations.", unit: "Ah", group: "configuration", policy: "reset", domain: [0, 100000000.0], positive: true, limitReason: NUMERIC },
   initialSOC: { label: "Initial state of charge", description: "Initial state of charge. See the component model and limitations.", unit: "%", group: "configuration", policy: "reset", domain: [0, 100], positive: false, limitReason: NUMERIC },
   emptyVoltage: { label: "Open-circuit voltage at empty", description: "Open-circuit voltage at empty. See the component model and limitations.", unit: "V", group: "configuration", policy: "reset", domain: [0, 1000000.0], positive: false, limitReason: NUMERIC },
@@ -260,6 +271,14 @@ const options = {
   pipeMaterial: [{ value: "steel", label: "Commercial steel (ε 45 µm)" }, { value: "stainless", label: "Stainless steel (ε 15 µm)" }, { value: "copper", label: "Copper (ε 1.5 µm)" }, { value: "pvc", label: "PVC / PE (ε 1.5 µm)" }, { value: "castIron", label: "Cast iron (ε 260 µm)" }, { value: "concrete", label: "Concrete (ε 1 mm)" }],
 };
 const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
+  electricBoiler: {
+    heatCapacity: { label: "Element heat capacity", description: "Assumed immersed element thermal inertia; defines stored energy.", policy: "reset" },
+    vesselHeatCapacity: { description: "Assumed wetted steel thermal inertia, lumped with the fully mixed water." },
+    conductance: { label: "Element-to-water conductance", description: "Assumed heat transfer coefficient between the immersed elements and water." },
+    ratedCurrent: { description: "Bosch three-phase full-load line rating. In single-phase wiring all stages sum in the bridged live conductor; use the 39.2 A supply rating.", simulated: false },
+    setpoint: { domain: [10, 85], description: "Supply temperature target; wired numeric input overrides this within 10–85 °C." },
+    hysteresis: { domain: [0.1, 30], description: "Restart at target minus this difference. Bosch SE04 default 7 K (range 3–15 K)." },
+  },
   source: {
     ratedVoltage: { label: "Maximum output voltage", description: "Highest voltage the supply can produce; the setpoint cannot exceed it." },
     mode: { label: "Source behaviour", description: "Ideal: perfect regulation, protective trip above the current rating. Internal resistance: Thevenin source. CV/CC: regulates voltage until the current limit, then current. Constant current: regulates current until the voltage compliance limit.", options: options.sourceMode },

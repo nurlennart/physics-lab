@@ -1,3 +1,4 @@
+import { controlBoiler, newBoiler, type BoilerState } from './boiler';
 import { radiatorUA } from './devices';
 import { prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
@@ -27,10 +28,11 @@ export const CIRCULATOR_RESTART_DELAY = 1;
 /** Circulator operating figures of the last solve (W, rad/s), for readings and the Inspector. */
 export interface CirculatorView { omega: number; target: number; powered: boolean; running: boolean; lockedOut: boolean; inputPower: number; motorLoss: number }
 export class Multiphysics {
+  boilers: Record<string, BoilerState> = {};
   tanks: Record<string, TankState> = {};
   motors: Record<string, MotorState> = {};
   positions: Record<string, number> = {};
-  /** Water-cell temperatures (K) of pipes with inventory, inlet → outlet. */
+  /** Water-cell temperatures (K): pipes inlet → outlet; a boiler has one fully mixed cell. */
   pipeCells: Record<string, number[]> = {};
   hydraulic = emptyHydraulics();
   initialMass = 0;
@@ -65,8 +67,25 @@ export class Multiphysics {
   private lastElectrical?: ElectricalResult;
   /** Last electromechanical Jacobian (chord Newton), valid for one substep length and motor count. */
   private chord?: { h: number; n: number; key: string; jac: number[][] };
+  /** Dynamic state only. Immutable project/circuit references and Newton caches are retained by reference. */
+  checkpoint() {
+    return {
+      boilers: structuredClone(this.boilers),
+      tanks: Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => [id, { ...t }])),
+      motors: { ...this.motors }, circulators: { ...this.circulators }, circulatorView: { ...this.circulatorView }, positions: { ...this.positions },
+      pipeCells: Object.fromEntries(Object.entries(this.pipeCells).map(([id, t]) => [id, [...t]])),
+      overflowed: { ...this.overflowed }, overflowRate: { ...this.overflowRate }, removedMass: this.removedMass, removedEnergy: this.removedEnergy,
+      hydraulic: this.hydraulic, transferred: { ...this.transferred }, copperEnergy: this.copperEnergy, frictionEnergy: this.frictionEnergy,
+      pumpWork: this.pumpWork, hydraulicWork: this.hydraulicWork, dissipation: this.dissipation, externalShaftWork: this.externalShaftWork, dryLoss: this.dryLoss,
+      starters: structuredClone(this.starters), drives: structuredClone(this.drives), shaftElements: structuredClone(this.shaftElements),
+      drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
+      acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
+      circulatorCommands: this.circulatorCommands,
+    };
+  }
   initialize(p: Project) {
     for (const c of p.components) {
+      if (c.kind === 'electricBoiler') this.boilers[c.id] = newBoiler(c);
       if (c.kind === 'tank') {
         // The configured initial volume is measured at the initial temperature (Kell density).
         const volume = U.litersToM3(prop(c, 'volume')), temperature = U.celsiusToK(prop(c, 'initialTemperature', 20));
@@ -278,7 +297,7 @@ export class Multiphysics {
     // The hydraulic network depends on the shaft and circulator speeds only, so it is solved first; circulators then
     // draw their input power for the solved operating point. A circulator whose supply cannot carry that demand above
     // its undervoltage lockout is re-planned unpowered and the substep solved again.
-    const unpowered = new Set<string>();
+    const unpowered = new Set<string>(), boilerOff = new Set<string>();
     let plan: Record<string, CirculatorPlan>, hydraulic: ReturnType<typeof solveHydraulic>, electrical: ElectricalResult;
     for (;;) {
       plan = this.planCirculators(s, h, unpowered);
@@ -292,13 +311,17 @@ export class Multiphysics {
         inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), h }]] : [])),
         ...this.converterRuntime(s),
         circulators: demand,
+        boilers: Object.fromEntries(Object.entries(this.boilers).map(([id, b]) => [id, boilerOff.has(id) ? 0 : b.stages])),
+        boilerTrips: new Set(Object.entries(this.boilers).filter(([, b]) => b.fault).map(([id]) => id)),
       });
       const dropped = circulators.filter(c => plan[c.id].powered && electrical.readings[c.id]?.undervoltage);
-      if (!dropped.length) break;
+      const droppedBoilers = s.project.components.filter(c => c.kind === 'electricBoiler' && this.boilers[c.id].stages > 0 && !boilerOff.has(c.id) && electrical.readings[c.id]?.stageVoltages?.some(v => v < prop(c, 'minVoltage')));
+      droppedBoilers.forEach(c => boilerOff.add(c.id));
+      if (!dropped.length && !droppedBoilers.length) break;
       for (const c of dropped) unpowered.add(c.id);
     }
     // The final solve has these units switched off; keep the cause on their readings for the lockout.
-    for (const id of unpowered) if (electrical.readings[id]) electrical.readings[id].undervoltage = true;
+    for (const id of [...unpowered, ...boilerOff]) if (electrical.readings[id]) electrical.readings[id].undervoltage = true;
     // Wet rotor: motor and electronics losses are what the electrical input leaves after the rotor's mechanical
     // power, P1 − P_shaft − dE_kin/dt ≥ 0; they heat the pumped water (enthalpy transport) or, without flow, ambient.
     for (const c of circulators) {
@@ -517,15 +540,16 @@ export class Multiphysics {
     if (!Object.keys(r.hydraulic.nodeTemperatures).length && Object.keys(r.hydraulic.potentials).length) {
       // First solve: no transported temperatures yet. A zero-length transport mixes the current
       // inventories into node temperatures, then the network is re-solved with their viscosities.
-      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
+      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === 'electricBoiler').map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
       r = this.solve(s, speeds(), controls, this.tanks, loads);
       this.hydraulic = r.hydraulic;
     }
     // Re-solving hydraulics rebuilds readings. Resolve current fluid temperatures without
     // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
-    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
+    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === 'electricBoiler').map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
     this.updateNpsh(s, this.hydraulic);
     this.viewCirculators(s, r);
+    for (const [id, b] of Object.entries(this.boilers)) if (b.fault) s.automation.status[id] = 'tripped';
     this.lastElectrical = r.electrical;
     ms.forEach((c, i) => {
       const m = r.state[i];
@@ -537,23 +561,32 @@ export class Multiphysics {
     });
     return r.electrical;
   }
-  advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number } {
+  advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number; boilerElementGain: number } {
     s.spatial.stepMs = 0;
     this.lastProject = s.project;
     const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {}, commands = this.converterCommands(s);
     this.circulatorCommands = this.circulatorControls(s);
+    const elementBefore = Object.fromEntries(Object.entries(this.boilers).map(([id, b]) => [id, b.elementTemperature]));
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
     // Step readings: currents as RMS over the substeps, powers as averages (not the first substep's sample).
-    const sums: Record<string, { current: number; contact: number; nc: number; reactive: number; apparent: number; sign: number; secondary?: { current: number; voltage: number }; coil?: { current: number; voltage: number; power: number; currentSign: number; voltageSign: number }; drive: { input: number; output: number; losses: number; braking: number; current: number } }> = {};
+    const sums: Record<string, { current: number; contact: number; nc: number; reactive: number; apparent: number; sign: number; stages?: { current: number[]; voltage: number[] }; secondary?: { current: number; voltage: number }; coil?: { current: number; voltage: number; power: number; currentSign: number; voltageSign: number }; drive: { input: number; output: number; losses: number; braking: number; current: number } }> = {};
     // Midpoint shaft/electrical/hydraulic solve; 1/240 s bounds head/storage splitting error.
     while (remaining > 1e-12) {
       if (++intervals > 1024) throw Error('Too many coupled boundary events or mechanical substeps within one timestep.');
       // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit; rigid bodies keep
       // their contact/gravity substep; other fixed steps are bounded by the storage time scales.
+      for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) controlBoiler(s, c, this.boilers[c.id], s.time + dt - remaining);
       this.applyCommands(s, commands);
       let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s), s.devices.eventLimit(s.project));
+      if (Object.keys(this.boilers).length) {
+        h = Math.min(h, 0.1);
+        for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) {
+          const b = this.boilers[c.id], now = s.time + dt - remaining;
+          for (const event of [b.switchedAt + prop(c, 'stageDelay'), b.offAt + prop(c, 'antiCycleTime'), b.restartAt]) if (event > now + 1e-9) h = Math.min(h, event - now);
+        }
+      }
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
       const { loads, held, electric, magnitude } = this.opposingLoads(s, old, controls, linked, h);
@@ -689,7 +722,20 @@ export class Multiphysics {
         if (Math.abs(reading.flow) < 1e-14 && dry > 0) { this.dryLoss += dry * h; ambient += dry * h; }
       }
       this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
-      const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])));
+      const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === 'electricBoiler').map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
+      for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) {
+        const b = this.boilers[c.id], reading = r.electrical.readings[c.id];
+        ambient += (reading?.auxiliaryPower ?? 0) * h;
+        if (reading?.undervoltage) { b.stages = 0; b.demand = false; b.status = 'Undervoltage / phase missing'; b.restartAt = s.time + dt - remaining + h + prop(c, 'restartDelay'); b.offAt = s.time + dt - remaining + h; }
+        const low = Math.abs(r.hydraulic.readings[c.id]?.flow ?? 0) < prop(c, 'minFlow');
+        b.lowFlowTime = b.demand && low ? b.lowFlowTime + h : 0;
+        const temperature = this.pipeCells[c.id][0] - 273.15;
+        if (temperature >= prop(c, 'tripTemperature') && !b.fault) {
+          b.fault = 'overtemperature'; s.automation.status[c.id] = 'tripped'; b.stages = 0; b.status = 'Tripped: overtemperature'; b.offAt = s.time + dt - remaining + h;
+          s.log(`${c.name}: overtemperature safety trip — manual reset required.`, 'error');
+        }
+      }
+      s.electrical = r.electrical;
       this.updateNpsh(s, r.hydraulic);
       ambient += transported.ambient;
       thermalGain += transported.heat - transported.ambient;
@@ -723,7 +769,7 @@ export class Multiphysics {
         const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
         if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
       }
-      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.heatingPower !== undefined ? { heatingPower: 0, auxiliaryPower: 0 } : {}), ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
       totalElectrical.storedPower! += (r.electrical.storedPower ?? 0) * h / dt;
@@ -732,6 +778,7 @@ export class Multiphysics {
         // A drive's braking resistor is external: its heat goes to ambient, not into the drive's heat sink.
         const braking = v.drive?.braking ?? 0;
         total.power += (v.power - braking) * h / dt;
+        if (v.heatingPower !== undefined) { total.heatingPower = (total.heatingPower ?? 0) + v.heatingPower * h / dt; total.auxiliaryPower = (total.auxiliaryPower ?? 0) + (v.auxiliaryPower ?? 0) * h / dt; }
         if (v.inputPower !== undefined) total.inputPower = (total.inputPower ?? 0) + v.inputPower * h / dt;
         if (v.chemicalPower !== undefined) total.chemicalPower = (total.chemicalPower ?? 0) + v.chemicalPower * h / dt;
         if (v.heatPower !== undefined) total.heatPower = (total.heatPower ?? 0) + v.heatPower * h / dt;
@@ -744,6 +791,10 @@ export class Multiphysics {
         // A DC storage transient within the substep adds the current's variance to its mean square.
         const variance = v.currentVariance ?? 0, nc = (v.currentNC ?? 0) !== 0;
         sum.current += (v.current ** 2 + (nc ? 0 : variance)) * h; sum.contact += ((v.contactCurrent ?? v.current) ** 2 + variance) * h; sum.nc += ((v.currentNC ?? 0) ** 2 + (nc ? variance : 0)) * h;
+        if (v.stageCurrents && v.stageVoltages) {
+          const stages = sum.stages ??= { current: [0, 0, 0], voltage: [0, 0, 0] };
+          for (let i = 0; i < 3; i++) { stages.current[i] += v.stageCurrents[i] ** 2 * h; stages.voltage[i] += v.stageVoltages[i] ** 2 * h; }
+        }
         if (v.secondaryCurrent !== undefined) {
           const secondary = sum.secondary ??= { current: 0, voltage: 0 };
           secondary.current += v.secondaryCurrent ** 2 * h; secondary.voltage += (v.secondaryVoltage ?? 0) ** 2 * h;
@@ -754,7 +805,7 @@ export class Multiphysics {
           if (v.coilCurrent) coil.currentSign = Math.sign(v.coilCurrent);
           if (v.coilVoltage) coil.voltageSign = Math.sign(v.coilVoltage);
         }
-        sum.reactive += (v.reactivePower ?? 0) * h; sum.apparent += (v.phases ?? 1) * Math.abs(v.voltage * v.current) * h;
+        sum.reactive += (v.reactivePower ?? 0) * h; sum.apparent += (v.apparentPower ?? (v.phases ?? 1) * Math.abs(v.voltage * v.current)) * h;
         if (v.current !== 0) sum.sign = Math.sign(v.current);
         if (v.drive) { sum.drive.input += v.drive.inputPower * h; sum.drive.output += v.drive.outputPower * h; sum.drive.losses += v.drive.losses * h; sum.drive.braking += braking * h; sum.drive.current += v.drive.outputCurrent ** 2 * h; }
         // Magnetic releases act on the instantaneous current: track its largest value across the substeps.
@@ -782,11 +833,12 @@ export class Multiphysics {
         total.powerFactor = sum.apparent > 1e-12 ? Math.min(1, Math.abs(real) / (sum.apparent / dt)) : null;
       }
       if (total.drive) total.drive = { ...total.drive, inputPower: sum.drive.input / dt, outputPower: sum.drive.output / dt, losses: sum.drive.losses / dt, braking: sum.drive.braking / dt, outputCurrent: Math.sqrt(sum.drive.current / dt) };
+      if (sum.stages) { total.stageCurrents = sum.stages.current.map(i2 => Math.sqrt(i2 / dt)); total.stageVoltages = sum.stages.voltage.map(v2 => Math.sqrt(v2 / dt)); total.apparentPower = sum.apparent / dt; }
       if (sum.secondary) { total.secondaryCurrent = Math.sqrt(sum.secondary.current / dt); total.secondaryVoltage = Math.sqrt(sum.secondary.voltage / dt); }
       if (sum.coil) { total.coilCurrent = sum.coil.currentSign * Math.sqrt(sum.coil.current / dt); total.coilVoltage = sum.coil.voltageSign * Math.sqrt(sum.coil.voltage / dt); total.coilPower = sum.coil.power / dt; }
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
-    return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain };
+    return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain, boilerElementGain: s.project.components.filter(c => c.kind === 'electricBoiler').reduce((sum, c) => sum + prop(c, 'heatCapacity') * (this.boilers[c.id].elementTemperature - elementBefore[c.id]), 0) };
   }
 }

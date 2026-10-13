@@ -9,6 +9,7 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 for (const [kind, title, label] of [
+  ['electricBoiler', 'Bosch boiler and ALPHA2 heating loop', 'Manufacturer specifications'],
   ['battery', 'Finite battery discharge', 'state of charge'],
   ['capacitor', 'Charging a capacitor', 'stored field energy'],
   ['inductor', 'Switching an inductor', 'stored field energy'],
@@ -27,6 +28,7 @@ for (const [kind, title, label] of [
   const state = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
   expect(state.error).toBeNull(); expect(state.time).toBeCloseTo(1, 8);
   const readings = Object.values(state.readings) as any[];
+  if (kind === 'electricBoiler') { await expect(page.getByTestId('boiler-status')).toContainText('Heating'); await expect(page.getByRole('img', { name: 'Boiler water, element and target temperature history' })).toBeVisible(); expect(readings.some(r => r.heatingPower > 2999)).toBe(true); }
   if (kind === 'battery') expect(state.devices.batteries[Object.keys(state.devices.batteries)[0]]).toBeLessThan(0.8);
   if (kind === 'capacitor') expect(Object.values(state.devices.capacitors)[0]).toBeCloseTo(12 * 10 / 11 * -Math.expm1(-1 / 0.9091), 3);
   // Steady winding current: 12 V through 10.01 Ω into 0.5 Ω ∥ 100 Ω, reached after 1 s ≈ 10 τ.

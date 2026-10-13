@@ -1,3 +1,4 @@
+import { BoilerInspector } from './BoilerInspector';
 import { T } from "../theme/tokens";
 import { inspectorMeasurements, measurementLabel, operatingMeasurements } from "../simulation/capabilities";
 import { useState } from "react";
@@ -149,6 +150,7 @@ export default function Inspector() {
           </div>
         ) : (
           <>
+            {c.kind === "electricBoiler" && <BoilerInspector c={c} />}
             <div className="inspector-section">
               <div className="section-label">
                 <span>Live measurements</span>

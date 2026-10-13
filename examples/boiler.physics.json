@@ -1,0 +1,526 @@
+{
+  "version": 3,
+  "id": "example-boiler",
+  "name": "Bosch boiler and ALPHA2 heating loop",
+  "components": [
+    {
+      "id": "boiler-component-1",
+      "kind": "sourceAC",
+      "name": "Mains L1 · 0°",
+      "x": 40,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "boiler-component-2",
+      "kind": "sourceAC",
+      "name": "Mains L2 · -120°",
+      "x": 320,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": -120,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "boiler-component-3",
+      "kind": "sourceAC",
+      "name": "Mains L3 · 120°",
+      "x": 600,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 120,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "boiler-component-4",
+      "kind": "electricBoiler",
+      "name": "Bosch TH3000 9 · 3.7 L",
+      "x": 330,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedPower": 9000,
+        "ratedVoltage": 230,
+        "ratedCurrent": 13.1,
+        "waterVolume": 3.7,
+        "vesselHeatCapacity": 3500,
+        "heatCapacity": 1500,
+        "conductance": 1200,
+        "loss": 1.8,
+        "standbyPower": 3,
+        "initialTemperature": 20,
+        "ambient": 20,
+        "setpoint": 60,
+        "hysteresis": 7,
+        "stageDelay": 2,
+        "antiCycleTime": 10,
+        "maxStages": 3,
+        "enabled": true,
+        "tripTemperature": 95,
+        "resetTemperature": 70,
+        "fillPressure": 150000,
+        "flowInterlock": true,
+        "minFlow": 0.00003611111111111111,
+        "flowDelay": 5,
+        "minVoltage": 180,
+        "restartDelay": 2,
+        "diameter": 0.02,
+        "lossCoefficient": 8,
+        "laminarK": 1500,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 85
+      }
+    },
+    {
+      "id": "boiler-component-5",
+      "kind": "ground",
+      "name": "G-01",
+      "x": 900,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "boiler-component-6",
+      "kind": "constant",
+      "name": "Supply target · °C",
+      "x": 40,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "value": 60
+      }
+    },
+    {
+      "id": "boiler-component-7",
+      "kind": "circulator",
+      "name": "ALPHA2-style 25-60 · PP",
+      "x": 330,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "mode": "proportionalPressure",
+        "headSetpoint": 3,
+        "speedSetting": 100,
+        "minSpeed": 25,
+        "enabled": true,
+        "ratedSpeed": 471.24,
+        "ratedFlow": 0.00055556,
+        "shutoffHead": 6,
+        "efficiency": 0.55,
+        "mechanicalLoss": 2,
+        "curvePoints": "",
+        "npshRequired": 0.5,
+        "ratedVoltage": 230,
+        "minVoltage": 180,
+        "ratedPower": 34,
+        "standbyPower": 2.2,
+        "motorEfficiency": 80,
+        "inertia": 0.00002,
+        "rampTime": 2,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "boiler-component-8",
+      "kind": "pipe",
+      "name": "Insulated supply · 8 m",
+      "x": 640,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 8,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 2,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "boiler-component-9",
+      "kind": "radiator",
+      "name": "Panel radiator · 100 W/K",
+      "x": 930,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedVoltage": 24,
+        "fanRatedPower": 30,
+        "naturalUA": 100,
+        "forcedUA": 0,
+        "ambient": 20,
+        "diameter": 0.02,
+        "lossCoefficient": 8,
+        "laminarK": 1500,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "boiler-component-10",
+      "kind": "valve",
+      "name": "Radiator balancing valve",
+      "x": 930,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 100,
+        "diameter": 0.02,
+        "lossCoefficient": 5,
+        "laminarK": 500,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
+      }
+    },
+    {
+      "id": "boiler-component-11",
+      "kind": "pipe",
+      "name": "Insulated return · 8 m",
+      "x": 640,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 8,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 2,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "boiler-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "L1"
+      }
+    },
+    {
+      "id": "boiler-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "boiler-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-2",
+        "port": "a"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "L2"
+      }
+    },
+    {
+      "id": "boiler-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "boiler-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-3",
+        "port": "a"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "L3"
+      }
+    },
+    {
+      "id": "boiler-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "boiler-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-5",
+        "port": "a"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "PE"
+      }
+    },
+    {
+      "id": "boiler-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "boiler-component-7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "boiler-connection-9",
+      "domain": "electrical",
+      "from": {
+        "component": "boiler-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "boiler-component-7",
+        "port": "b"
+      }
+    },
+    {
+      "id": "boiler-connection-10",
+      "domain": "control",
+      "from": {
+        "component": "boiler-component-6",
+        "port": "out"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "setpoint"
+      }
+    },
+    {
+      "id": "boiler-connection-11",
+      "domain": "hydraulic",
+      "from": {
+        "component": "boiler-component-4",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "boiler-component-8",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "boiler-connection-12",
+      "domain": "hydraulic",
+      "from": {
+        "component": "boiler-component-8",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "boiler-component-9",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "boiler-connection-13",
+      "domain": "hydraulic",
+      "from": {
+        "component": "boiler-component-9",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "boiler-component-10",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "boiler-connection-14",
+      "domain": "hydraulic",
+      "from": {
+        "component": "boiler-component-10",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "boiler-component-11",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "boiler-connection-15",
+      "domain": "hydraulic",
+      "from": {
+        "component": "boiler-component-11",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "boiler-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "boiler-connection-16",
+      "domain": "hydraulic",
+      "from": {
+        "component": "boiler-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "boiler-component-4",
+        "port": "inlet"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "boiler-probe-1",
+      "component": "boiler-component-4",
+      "measurement": "fluidTemperature",
+      "name": "Boiler supply",
+      "color": "#ef4444",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-2",
+      "component": "boiler-component-4",
+      "measurement": "returnTemperature",
+      "name": "Boiler return",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-3",
+      "component": "boiler-component-4",
+      "measurement": "elementTemperature",
+      "name": "Immersed elements",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-4",
+      "component": "boiler-component-4",
+      "measurement": "heatingPower",
+      "name": "Element input",
+      "color": "#eab308",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-5",
+      "component": "boiler-component-4",
+      "measurement": "heatingStages",
+      "name": "Active stages",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-6",
+      "component": "boiler-component-7",
+      "measurement": "flow",
+      "name": "Loop flow",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-7",
+      "component": "boiler-component-7",
+      "measurement": "power",
+      "name": "Circulator input",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-8",
+      "component": "boiler-component-9",
+      "measurement": "heatDuty",
+      "name": "Radiator heat output",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "boiler-probe-9",
+      "component": "boiler-component-4",
+      "measurement": "energyResidual",
+      "name": "Energy balance residual",
+      "color": "#94a3b8",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

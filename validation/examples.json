@@ -1,5 +1,103 @@
 [
   {
+    "mode": "boiler",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 523345.8187383624,
+    "energyResidual": -1.9907453019385457e-8,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Boiler supply",
+        "value": 32.670699470016984
+      },
+      {
+        "name": "Boiler return",
+        "value": 28.88635731277276
+      },
+      {
+        "name": "Immersed elements",
+        "value": 39.9307265943076
+      },
+      {
+        "name": "Element input",
+        "value": 9000
+      },
+      {
+        "name": "Active stages",
+        "value": 3
+      },
+      {
+        "name": "Loop flow",
+        "value": 19.1953960599593
+      },
+      {
+        "name": "Circulator input",
+        "value": 19.875531252447754
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 1072.6690259320414
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -1.9907453019385457e-8
+      }
+    ]
+  },
+  {
+    "mode": "boiler",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 523345.8187383624,
+    "energyResidual": -1.9907453019385457e-8,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Boiler supply",
+        "value": 32.670699470016984
+      },
+      {
+        "name": "Boiler return",
+        "value": 28.88635731277276
+      },
+      {
+        "name": "Immersed elements",
+        "value": 39.9307265943076
+      },
+      {
+        "name": "Element input",
+        "value": 9000
+      },
+      {
+        "name": "Active stages",
+        "value": 3
+      },
+      {
+        "name": "Loop flow",
+        "value": 19.1953960599593
+      },
+      {
+        "name": "Circulator input",
+        "value": 19.875531252447754
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 1072.6690259320414
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -1.9907453019385457e-8
+      }
+    ]
+  },
+  {
     "mode": "battery",
     "source": "generated",
     "simulatedSeconds": 60,

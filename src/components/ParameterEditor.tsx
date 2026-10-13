@@ -199,7 +199,7 @@ function Bar({ label, actual, rated, unit }: { label: string; actual: number; ra
 export function RatingIndicators({ c }: { c: Component }) {
   useLab();
   // Before the first Run there is no operation to compare with ratings; temperatures and pressures still are.
-  const r = simulation.time > 0 ? simulation.electrical.readings[c.id] : undefined, h = simulation.multiphysics.hydraulic.readings[c.id], t = simulation.temperatures[c.id];
+  const original = simulation.time > 0 ? simulation.electrical.readings[c.id] : undefined, r = c.kind === "electricBoiler" && original ? { ...original, current: Math.max(0, ...(original.stageCurrents ?? [])) } : original, h = simulation.multiphysics.hydraulic.readings[c.id], t = c.kind === "electricBoiler" ? simulation.fluidTemperatureMeasurement(c.id) : simulation.temperatures[c.id];
   const bars = [];
   if ((c.kind === "source3" || c.kind === "sourceAC") && r) {
     bars.push(<Bar key="i" label="Line current" actual={r.current} rated={prop(c, "maxCurrent")} unit="A" />);

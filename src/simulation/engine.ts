@@ -1,3 +1,4 @@
+import { resetBoiler } from './boiler';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
@@ -97,6 +98,7 @@ export interface Sample {
   power: number;
   energy: number;
   values: Record<string, number | null>;
+  boilerTemperatures?: Record<string, { supply: number; element: number; target: number }>;
   kinetic: number;
   potential: number;
   shaftExport: number;
@@ -462,6 +464,7 @@ export class Simulation {
       }
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
+      if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
       if (c.kind === "circulator") {
         const state = this.multiphysics.circulators[c.id], view = this.multiphysics.circulatorView[c.id];
         if (state?.lockedOut) limit = Math.min(limit, Math.max(DT, state.restartIn / 2));
@@ -483,6 +486,7 @@ export class Simulation {
       Object.entries(this.automation.signals).map(([id, v]) => [id, v.valid, typeof v.value === "boolean" ? v.value : null]),
       Object.values(this.electrical.readings).map((r) => r.regulation ?? ""),
       Object.values(this.multiphysics.circulators).map((c) => c.lockedOut),
+      Object.values(this.multiphysics.boilers).map(b => [b.stages, b.fault, b.demand]),
     ]);
   }
   /** Advance a fixed simulated duration with the adaptive integrator (blocking). */
@@ -492,7 +496,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -622,7 +626,12 @@ export class Simulation {
     return null;
   }
   resetSafety(id: string) {
-    const kind = this.project.components.find((c) => c.id === id)?.kind;
+    const component = this.project.components.find((c) => c.id === id), kind = component?.kind;
+    if (kind === 'electricBoiler') {
+      const error = resetBoiler(this, component!, this.multiphysics.boilers[id]);
+      if (!error) this.solve(true, 0);
+      return error;
+    }
     if (kind === "breaker" || kind === "motorProtector") {
       const error = this.resetBreaker(id);
       if (!error) this.solve(true, 0);
@@ -656,32 +665,43 @@ export class Simulation {
       const demand = this.project.components.find(c => c.name === "Consumer demand");
       if (demand) this.multiphysics.positions[demand.id] = Math.floor(this.time / 60) % 2 ? 80 : 40;
     }
-    if (!this.solve(true, dt)) return false;
+    const automationBefore = this.hasFluidsOrMotors() ? {
+      memory: Object.fromEntries(Object.entries(this.automation.memory).map(([id, memory]) => [id, { ...memory }])), signals: { ...this.automation.signals }, sensors: { ...this.automation.sensors },
+      contacts: { ...this.automation.contacts }, status: { ...this.automation.status }, pulses: new Set(this.automation.pulses), rngState: this.automation.rngState,
+    } : undefined;
+    if (!this.solve(true, dt)) { Object.assign(this.automation, automationBefore); return false; }
     const deviceStorageBefore = this.devices.storedChange;
     const devicesBefore = this.devices.active ? this.devices.checkpoint() : undefined;
     recordFeedbackTransitions(this, oldContacts, oldHeaterPower);
 
     let coupled: ReturnType<Multiphysics["advance"]> | undefined;
+    let rollbackCoupled: (() => void) | undefined;
     if (this.hasFluidsOrMotors()) {
       const state = this.multiphysics;
-      const checkpoint = {
-        tanks: Object.fromEntries(Object.entries(state.tanks).map(([id, t]) => [id, { ...t }])), motors: { ...state.motors }, circulators: { ...state.circulators }, positions: { ...state.positions },
-        pipeCells: Object.fromEntries(Object.entries(state.pipeCells).map(([id, t]) => [id, [...t]])),
-        overflowed: { ...state.overflowed }, overflowRate: { ...state.overflowRate }, removedMass: state.removedMass, removedEnergy: state.removedEnergy,
-        hydraulic: state.hydraulic, transferred: { ...state.transferred }, copperEnergy: state.copperEnergy, frictionEnergy: state.frictionEnergy,
-        pumpWork: state.pumpWork, hydraulicWork: state.hydraulicWork, dissipation: state.dissipation, externalShaftWork: state.externalShaftWork, dryLoss: state.dryLoss,
-        starters: structuredClone(state.starters), drives: structuredClone(state.drives),
-      };
-      const temperaturesBefore = { ...this.temperatures };
+      const checkpoint = state.checkpoint();
+      const eventsBefore = [...this.events], failedBefore = { ...this.failed }, trippedBefore = { ...this.tripped };
+      const temperaturesBefore = { ...this.temperatures }, electricalBefore = this.electrical;
       const spatialBefore = this.spatial.hasMovingBodies ? this.spatial.checkpoint() : undefined;
       const spatialLedger = { externalWork: this.spatial.externalWork, shaftWork: this.spatial.shaftWork, contactLoss: this.spatial.contactLoss, limitLoss: this.spatial.limitLoss, dampingLoss: this.spatial.dampingLoss, brakeEnergy: { ...this.spatial.brakeEnergy } };
+      const ledgerBefore = { ambientEnergy: this.ambientEnergy, storedEnergy: this.storedEnergy, waterStored: this.waterStored, heaterStored: this.heaterStored };
+      rollbackCoupled = () => {
+        this.events = eventsBefore; this.failed = failedBefore; this.tripped = trippedBefore;
+        Object.assign(this, ledgerBefore);
+        Object.assign(this.automation, automationBefore); Object.assign(this.devices, devicesBefore); Object.assign(this.multiphysics, checkpoint);
+        if (spatialBefore) this.spatial.restore(spatialBefore);
+        Object.assign(this.spatial, spatialLedger);
+        this.temperatures = temperaturesBefore; this.electrical = electricalBefore;
+      };
       try {
         coupled = this.multiphysics.advance(this, dt);
         this.electrical = coupled.electrical;
         this.ambientEnergy += coupled.ambient;
         this.storedEnergy += coupled.thermalGain;
-        this.waterStored += coupled.thermalGain;
-      } catch (e) { Object.assign(this.devices, devicesBefore); Object.assign(this.multiphysics, checkpoint); if (spatialBefore) this.spatial.restore(spatialBefore); Object.assign(this.spatial, spatialLedger); this.temperatures = temperaturesBefore; this.error = (e as Error).message; this.log(this.error, "error"); return false; }
+        this.waterStored += coupled.thermalGain - coupled.boilerElementGain;
+        this.heaterStored += coupled.boilerElementGain;
+      } catch (e) {
+        rollbackCoupled(); this.error = (e as Error).message; this.log(this.error, "error"); return false;
+      }
     }
     const p = this.project,
       thermal = p.components.filter(c => isThermalMass(c) && (c.kind !== "tank" || (this.multiphysics.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, "vesselHeatCapacity") > 0)),
@@ -763,6 +783,7 @@ export class Simulation {
     try {
       temperatures = n ? solveLinear(a, b) : [];
     } catch (e) {
+      rollbackCoupled?.();
       this.error = `Thermal solver: ${(e as Error).message}`;
       return false;
     }
@@ -790,7 +811,7 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "radiator", "pressureReducingValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "pressureReducingValve"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
       }
@@ -863,6 +884,11 @@ export class Simulation {
       // Circulator electronics accept their nominal voltage ±10 % (datasheet supply tolerance); the input power limit is regulated, not a rating.
       if (c.kind === "circulator" && r && r.voltageValid !== false && Math.abs(r.voltage) > 1.1 * prop(c, "ratedVoltage") + 1e-9)
         this.violation(`${c.name}: supply voltage above its nominal ${prop(c, "ratedVoltage")} V + 10 % tolerance.`);
+      if (c.kind === 'electricBoiler') {
+        const water = this.fluidTemperatureMeasurement(c.id) ?? 20;
+        if (water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
+        if (water >= 100 || water < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
+      }
       if (c.kind === "tank" && (temp > 95 || temp < 1)) {
         this.error = `${c.name}: water left the supported liquid range (1–95°C). Simulation paused.`;
         this.violation(this.error, "error");
@@ -877,9 +903,9 @@ export class Simulation {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
         // A lamp's rating is its filament temperature at rated power: the cold-filament switch-on surge is not an overload.
-        const overPower = c.kind === "circulator" ? false : c.kind === "lamp" ? (this.filaments[c.id] ?? FILAMENT_COLD) > 1.001 : (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
-          rawOverCurrent = Math.abs(r.contactCurrent ?? r.current) > prop(c, "ratedCurrent", Infinity),
-          overVoltage = c.kind !== "heater" && c.kind !== "circulator" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) * (c.kind === "motor" ? this.multiphysics.motors[c.id]?.duty ?? 1 : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %; a PWM-driven DC armature sees duty × bus voltage
+        const overPower = c.kind === "electricBoiler" ? (r.heatingPower ?? 0) > prop(c, "ratedPower") * 1.06 ** 2 * 1.001 : c.kind === "circulator" ? false : c.kind === "lamp" ? (this.filaments[c.id] ?? FILAMENT_COLD) > 1.001 : (isMotor(c) ? this.multiphysics.motors[c.id]?.shaftPower ?? 0 : c.kind === "transformer" ? (r.phases ?? 1) * r.voltage * Math.abs(r.current) : r.power) > prop(c, "ratedPower", Infinity) * 1.001,
+          rawOverCurrent = (c.kind === "electricBoiler" ? Math.max(0, ...(r.stageCurrents ?? [])) : Math.abs(r.contactCurrent ?? r.current)) > prop(c, "ratedCurrent", Infinity) * (c.kind === "electricBoiler" ? 1.06 : 1),
+          overVoltage = c.kind === "electricBoiler" ? Math.max(0, ...(r.stageVoltages ?? [])) > prop(c, "ratedVoltage") * 1.06 : c.kind !== "heater" && c.kind !== "circulator" && r.voltageValid !== false && Math.abs(r.voltage) * ((c.kind === "inductionMotor" || c.kind === "vfd") && r.phases === 3 ? Math.sqrt(3) : 1) * (c.kind === "motor" ? this.multiphysics.motors[c.id]?.duty ?? 1 : 1) > prop(c, "ratedVoltage", Infinity) * (c.kind === "inductionMotor" ? 1.05 : 1 + 1e-9); // motors: IEC 60034-1 zone A, ±5 %; a PWM-driven DC armature sees duty × bus voltage
         // Motors draw several times rated current while starting direct-on-line; that is normal operation.
         // Current above rating is reported only once it persists beyond the starting allowance; winding
         // temperature still decides failure.
@@ -993,6 +1019,7 @@ export class Simulation {
       values: Object.fromEntries(
         (this.project.probes ?? []).map((p) => [p.id, readProbe(p, this)]),
       ),
+      boilerTemperatures: Object.fromEntries(Object.entries(this.multiphysics.boilers).map(([id, b]) => [id, { supply: (this.multiphysics.pipeCells[id]?.[0] ?? 293.15) - 273.15, element: b.elementTemperature - 273.15, target: b.setpoint }])),
       kinetic: this.multiphysics.kineticEnergy(this.project),
       potential: this.multiphysics.potential(this.project) - this.multiphysics.initialPotential,
       shaftExport: this.multiphysics.externalShaftWork + this.multiphysics.removedEnergy,

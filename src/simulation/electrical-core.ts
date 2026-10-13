@@ -14,6 +14,8 @@ const conj = (a: Cx): Cx => [a[0], -a[1]];
 /** Induction machine per-phase steady equivalent circuit (double cage, iron loss) at mechanical speed ω (rad/s). */
 export const inductionCircuit = (c: Component, frequency: number, omega: number) => steadyCircuit(machineParams(c, frequency), omega);
 export interface ElectricalReading {
+  /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
+  stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
   inputPower?: number;
   /**
    * DC storage: a capacitor's current into its dielectric (excluding leakage), an inductor's voltage across its inductance,
@@ -137,6 +139,8 @@ export interface ElectricalRuntime {
   loadResistances?: Record<string, number>;
   /** Electric circulators: electrical input demand (W) of each powered unit; absent or 0 = electronics off (open). */
   circulators?: Record<string, number>;
+  boilers?: Record<string, number>;
+  boilerTrips?: Set<string>;
   contacts?: Record<string, boolean>;
   faults?: Record<string, string>;
   disconnected?: Set<string>;

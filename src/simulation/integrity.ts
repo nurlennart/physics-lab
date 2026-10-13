@@ -173,7 +173,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator", "circulator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -196,7 +196,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator", "circulator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if (c.kind === "tank") {
@@ -246,6 +246,10 @@ export function componentError(c: Component): string | null {
     if (typeof v === "number" && !Number.isFinite(v)) return `${c.name}: ${k} is out of range.`;
     const error = domainError(c.kind, k, v);
     if (error) return `${c.name}: ${error}`;
+  }
+  if (c.kind === 'electricBoiler') {
+    if (!Number.isInteger(prop(c, 'maxStages'))) return 'Boiler stage limit must be an integer.';
+    if (prop(c, 'resetTemperature') >= prop(c, 'tripTemperature')) return 'Boiler reset temperature must be below its trip temperature.';
   }
   if (c.kind === "battery" && prop(c, "fullVoltage") < prop(c, "emptyVoltage")) return "Battery full voltage must be at least its empty voltage.";
   if (c.kind === "contactor" && prop(c, "dropoutRatio") >= prop(c, "pickupRatio")) return "Contactor dropout must be below pickup.";

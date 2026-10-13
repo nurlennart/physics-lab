@@ -13,6 +13,8 @@ export function dimensions(c: Component) {
 export function portLocal(c: Component, port: string): Point {
   const { w, h } = dimensions(c);
   const p = definitions[c.kind].ports.find((p) => p.id === port);
+  if (c.kind === 'electricBoiler' && p?.domain === 'electrical') return { x: 22 + ['L1', 'L2', 'L3', 'N', 'PE'].indexOf(port) * 32, y: -12 };
+  if (c.kind === 'electricBoiler' && p?.domain === 'control') return { x: 30 + ['enable', 'setpoint', 'reset'].indexOf(port) * 56, y: h + 12 };
   if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
     return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
   if (p?.domain === "hydraulic" && port === "overflow") return { x: w + 12, y: 28 };

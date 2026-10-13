@@ -70,6 +70,17 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
   const b = fixture(), c = b.preset(p), v = c.props;
   let s;
   switch (p.kind) {
+    case 'electricBoiler': {
+      for (const [i, phase] of [0, -120, 120].entries()) {
+        const mains = b.add('sourceAC', { voltage: 230, phase, maxCurrent: 63 });
+        b.wire(mains, 'a', c, `L${i + 1}`); b.wire(mains, 'b', c, 'N');
+      }
+      s = simulation(b); run(s, 6);
+      near(report, 'three 3 kW heating stages (W)', 9000, s.electrical.readings[c.id].heatingPower, 1e-9);
+      near(report, 'Bosch full-load phase current (A)', 13.1, s.electrical.readings[c.id].stageCurrents[0], 0.005);
+      assert(s.fluidTemperatureMeasurement(c.id) > 20);
+      break;
+    }
     case 'source': {
       const current = v.mode === 'cc' ? v.current : Math.min(v.maxCurrent / 4, 10);
       const r = v.voltage / (v.mode === 'cc' ? 2 * current : current);

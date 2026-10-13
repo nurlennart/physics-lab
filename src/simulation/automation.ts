@@ -482,6 +482,7 @@ export class Automation {
   }
 }
 export function allowedFaults(c: Component): FaultType[] {
+  if (c.kind === "electricBoiler") return ["failedOpen", "stuckClosed", "controlLost"];
   if (c.kind === "contactor") return ["stuckClosed", "stuckOpen", "failedOpen"];
   if (c.kind === "radiator") return ["coolingFailed"];
   if (c.kind === "circulator") return ["motorFailure", "controlLost"];
