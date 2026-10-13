@@ -84,3 +84,55 @@ describe("editor store: sandbox parameter workflow", () => {
     expect(restored.temperatures).toEqual(simulation.temperatures);
   });
 });
+
+describe("editor store: component names", () => {
+  it("renames a placed component, keeps default probe labels in step, and undoes", () => {
+    store.actions.newProject("heat");
+    const tank = store.getState().project.components.find((c) => c.kind === "tank")!, old = tank.name;
+    const probe = store.getState().project.probes!.find((p) => p.component === tank.id)!;
+    expect(probe.name.startsWith(`${old} `)).toBe(true);
+    expect(store.actions.renameComponent(tank.id, "  Hot-water store  ")).toBe(true);
+    const state = store.getState().project;
+    expect(state.components.find((c) => c.id === tank.id)!.name).toBe("Hot-water store");
+    expect(state.probes!.find((p) => p.id === probe.id)!.name).toBe(`Hot-water store${probe.name.slice(old.length)}`);
+    store.actions.undo();
+    expect(store.getState().project.components.find((c) => c.id === tank.id)!.name).toBe(old);
+  });
+  it("rejects empty, over-long and duplicate names and leaves the project unchanged", () => {
+    store.actions.newProject("heat");
+    const [a, b] = store.getState().project.components, before = store.getState().project;
+    expect(store.actions.renameComponent(a.id, "   ")).toBe(false);
+    expect(store.actions.renameComponent(a.id, "x".repeat(81))).toBe(false);
+    expect(store.actions.renameComponent(a.id, b.name)).toBe(false);
+    expect(store.getState().project).toBe(before);
+  });
+  it("is allowed while running and fixed in challenges", () => {
+    store.actions.newProject("boiler");
+    store.actions.step();
+    expect(store.simulation.time).toBeGreaterThan(0);
+    const pump = store.getState().project.components.find((c) => c.kind === "circulator")!;
+    expect(store.actions.renameComponent(pump.id, "Loop pump")).toBe(true);
+    store.actions.newProject("transfer", true);
+    const reservoir = store.getState().project.components.find((c) => c.name === "Source reservoir")!;
+    expect(store.actions.renameComponent(reservoir.id, "My reservoir")).toBe(false);
+    expect(store.getState().project.components.find((c) => c.id === reservoir.id)!.name).toBe("Source reservoir");
+  });
+});
+
+describe("editor store: undo steps", () => {
+  it("a click that starts no drag adds no undo step; a drag adds exactly one", () => {
+    store.actions.newProject("heat");
+    const tank = store.getState().project.components.find((c) => c.kind === "tank")!;
+    store.actions.renameComponent(tank.id, "Store");
+    store.actions.beginMove(); // click without movement
+    store.actions.undo();
+    expect(store.getState().project.components.find((c) => c.id === tank.id)!.name).not.toBe("Store");
+    store.actions.redo();
+    store.actions.beginMove();
+    store.actions.move({ [tank.id]: { x: tank.x + 40, y: tank.y } });
+    store.actions.move({ [tank.id]: { x: tank.x + 80, y: tank.y } });
+    store.actions.undo();
+    const back = store.getState().project.components.find((c) => c.id === tank.id)!;
+    expect([back.x, back.name]).toEqual([tank.x, "Store"]);
+  });
+});

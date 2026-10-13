@@ -13,6 +13,10 @@ A browser engineering sandbox. Build circuits, heating systems, pumped water net
 
 Every run carries a mass and energy ledger without correction factors. Experiments can be probed, charted and exported as CSV, saved as replayable run archives, and advanced by up to 24 h with an adaptive integrator.
 
+![The "Bosch boiler, ALPHA2 and Kermi radiator" example after 20 simulated minutes: three explicit mains phases feed the Bosch boiler, an ALPHA2-style circulator moves 2.46 L/min through a Kermi therm-x2 type 22 radiator whose 16 water and steel cells are shaded by temperature (58.6 → 51.6 °C, 1,000 W to the room); the inspector shows the radiator's supply, return and mean temperature history and its EN 442 characteristic with Kermi's published points and the live operating point.](docs/images/kermi-example.png)
+
+**Bosch boiler, ALPHA2 and Kermi radiator** (File → Starters & examples): a sealed heating circuit built from three manufacturer-calibrated models. The Bosch Tronic Heat 3000 9 is limited to one 3 kW stage. The ALPHA2-style circulator runs in proportional pressure. The Kermi therm-x2 Profil-K 22 radiator follows its registered EN 442 rating with its published water content and steel mass. It warms up front to back, stores and releases heat as the boiler cycles, and matches Kermi's published outputs within 0.07 % ([model and calibration](docs/PANEL-RADIATOR.md)).
+
 ## Using it
 
 - **File → Starters & examples** opens a shelf of complete experiments, from *First light* to *Starting a motor three ways*, each with an explanation and a suggested experiment. The same experiments are in [`examples/`](examples/) as importable JSON.

@@ -28,7 +28,9 @@ export default function Models() {
             terminal, then another electrical terminal to wire them. Click the
             orange heater port and the orange tank port to immerse the element.
             Double-click a switch to operate it. Select a wire and press Delete
-            to remove it.
+            to remove it. Rename a component by double-clicking its name, with
+            F2, or with the pencil beside its name in the Inspector (sandbox
+            projects; challenge parts keep their names).
           </p>
           <p>
             Drag the grid to select a group. Hold Space to pan; scroll to zoom.

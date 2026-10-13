@@ -2,7 +2,7 @@ import { BoilerInspector } from './BoilerInspector';
 import { PanelRadiatorInspector } from './PanelRadiatorInspector';
 import { T } from "../theme/tokens";
 import { inspectorMeasurements, measurementLabel, operatingMeasurements } from "../simulation/capabilities";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   SlidersHorizontal,
   ChevronDown,
@@ -11,6 +11,7 @@ import {
   MousePointer2,
   TriangleAlert,
   Activity,
+  Pencil,
 } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
 import {
@@ -107,7 +108,7 @@ export default function Inspector() {
         </span>
         <div>
           <h3>{d.label}</h3>
-          <span className="mono muted">{c.name}</span>
+          <ComponentName c={c} />
         </div>
         <button aria-label="Delete component" onClick={actions.remove}>
           <Trash2 size={14} />
@@ -406,4 +407,18 @@ export default function Inspector() {
       </div>
     </aside>
   );
+}
+
+/** The component's name, editable in sandbox projects (Enter or leaving the field saves, Escape cancels). */
+function ComponentName({ c }: { c: Component }) {
+  const lab = useLab(), editing = lab.renaming === c.id, [draft, setDraft] = useState(c.name), cancelled = useRef(false);
+  useEffect(() => { if (editing) { setDraft(c.name); cancelled.current = false; } }, [editing, c.name]);
+  if (lab.project.challenge) return <span className="mono muted component-name" title="Names identify the assignment's parts. Rename components in Free Sandbox.">{c.name}</span>;
+  if (editing) return <input className="component-name-input mono" aria-label="Component name" autoFocus maxLength={80} value={draft}
+    onFocus={(e) => e.currentTarget.select()} onChange={(e) => setDraft(e.target.value)}
+    onBlur={() => { if (!cancelled.current) actions.renameComponent(c.id, draft); }}
+    onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") { cancelled.current = true; actions.set({ renaming: null }); } }} />;
+  return <button className="component-name mono" title="Rename component (F2)" aria-label={`Rename component ${c.name}`} onClick={() => actions.requestRename(c.id)}>
+    <span>{c.name}</span><Pencil size={11} aria-hidden="true" />
+  </button>;
 }

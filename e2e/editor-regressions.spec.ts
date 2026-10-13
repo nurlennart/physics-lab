@@ -37,3 +37,30 @@ test('a rendering error in one pane shows a recoverable message; project and sim
   expect(time).not.toBe('00:00:00.00');
   expect(errors).toEqual([]);
 });
+test('placed components can be renamed from the Inspector, the name band and F2; Escape cancels and undo restores', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/');
+  await openExample(page, 'Bosch boiler, ALPHA2 and Kermi radiator');
+  const radiator = page.locator('[data-component="panelRadiator"]');
+  await radiator.click();
+  await page.getByRole('button', { name: /^Rename component/ }).click();
+  await page.getByLabel('Component name', { exact: true }).fill('Living room radiator');
+  await page.keyboard.press('Enter');
+  await expect(radiator.locator('.component-id')).toHaveText(/^Living room radiator/);
+  await expect(page.locator('.trace-readouts')).toContainText('Radiator supply'); // probe labels not derived from the old name stay
+  // Double-click on the name band opens the field; Escape keeps the name.
+  await radiator.locator('.component-id').dblclick();
+  await page.getByLabel('Component name', { exact: true }).fill('Discarded');
+  await page.keyboard.press('Escape');
+  await expect(radiator.locator('.component-id')).toHaveText(/^Living room radiator/);
+  // F2 on the selection; a duplicate name is refused with a message.
+  await radiator.click();
+  await page.keyboard.press('F2');
+  await page.getByLabel('Component name', { exact: true }).fill('Lockshield · 12 %');
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.toast')).toContainText('already named');
+  await expect(radiator.locator('.component-id')).toHaveText(/^Living room radiator/);
+  await page.keyboard.press('Control+z');
+  await expect(radiator.locator('.component-id')).toHaveText(/^Kermi 22/);
+  expect(errors).toEqual([]);
+});

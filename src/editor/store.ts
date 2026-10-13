@@ -33,7 +33,7 @@ import {
 import { captureAssembly, insertAssembly } from "./assemblies";
 import type { FaultType } from "../simulation/automation";
 import { probeColors, probeUnit } from "../simulation/measurements";
-import { propertyError, transitionError, withProperty, editPolicy } from "../simulation/integrity";
+import { componentNameError, propertyError, transitionError, withProperty, editPolicy } from "../simulation/integrity";
 import { Simulation, FixedClock, DT, AdaptiveRun } from "../simulation/engine";
 import { paramSpec } from "../simulation/parameters";
 import { evaluateChallenge } from "../simulation/challenges";
@@ -65,6 +65,8 @@ interface EditorState {
   /** Fraction of a running "advance" operation, or null. */
   progress: number | null;
   presets: ComponentPreset[];
+  /** Component whose name is being edited in the Inspector. */
+  renaming: string | null;
 }
 const initial = starter();
 const sim = new Simulation(initial);
@@ -81,7 +83,7 @@ let hasWon = false;
 let replayOrigin = structuredClone(initial);
 let recordedInputs: RecordedInput[] = [];
 let state: EditorState = {
-  workspaceView: 'schematic', selectedJoint: null,
+  workspaceView: 'schematic', selectedJoint: null, renaming: null,
   project: initial,
   selected: [initial.components.find((c) => c.kind === "tank")!.id],
   selectedWire: null,
@@ -115,8 +117,11 @@ export const subscribe = (f: () => void) => {
 };
 export const useLab = () => useSyncExternalStore(subscribe, getState);
 export const simulation = sim;
-function checkpoint() {
-  history.push(structuredClone(state.project));
+/** Snapshot taken when a drag gesture starts; it becomes an undo step only once the gesture changes something. */
+let gestureStart: Project | null = null;
+function checkpoint(snapshot = structuredClone(state.project)) {
+  gestureStart = null;
+  history.push(snapshot);
   if (history.length > 60) history.shift();
   future = [];
 }
@@ -140,6 +145,7 @@ function edit(p: Project, record = true) {
     return false;
   }
   if (record) checkpoint();
+  else if (gestureStart) checkpoint(gestureStart);
   recordInput(p);
   sim.refresh(p);
   emit({ project: p, dirty: true });
@@ -154,7 +160,7 @@ export function toast(message: string) {
 export const actions = {
   set: emit,
   select(ids: string[], wire: string | null = null) {
-    emit({ selected: ids, selectedWire: wire, selectedJoint: null });
+    emit({ selected: ids, selectedWire: wire, selectedJoint: null, renaming: null });
   },
   workspace(workspaceView: 'schematic' | 'physical') {
     // Initial placement is a normal, persisted Build edit. Never rebuild a live
@@ -236,8 +242,9 @@ export const actions = {
     )
       emit({ selected: [c.id], view: "workspace" });
   },
+  /** Start of a drag (modules, wire bends, physical bodies): a plain click selects without adding an undo step. */
   beginMove() {
-    checkpoint();
+    gestureStart = structuredClone(state.project);
   },
   move(positions: Record<string, { x: number; y: number }>) {
     edit(
@@ -326,6 +333,25 @@ export const actions = {
   rename(name: string) {
     if (name.trim())
       edit({ ...state.project, name: name.trim().slice(0, 120) });
+  },
+  /** Open the Inspector's name field for a component (e.g. from a double-click on its name band). */
+  requestRename(id: string) {
+    if (state.project.challenge) { toast(componentNameError(state.project, id, "")!); return; }
+    emit({ selected: [id], selectedWire: null, selectedJoint: null, renaming: id, view: "workspace" });
+  },
+  /** Rename a placed component. A recorded, undoable edit; allowed while running (names carry no physics). */
+  renameComponent(id: string, name: string) {
+    const c = state.project.components.find((c) => c.id === id), next = name.trim();
+    if (state.renaming) emit({ renaming: null });
+    if (!c || next === c.name) return true;
+    const invalid = componentNameError(state.project, id, next);
+    if (invalid) {
+      toast(invalid);
+      return false;
+    }
+    // Default probe labels begin with the component name ("TK-01 water"): keep them in step.
+    const probes = state.project.probes?.map((p) => p.component === id && (p.name === c.name || p.name.startsWith(`${c.name} `)) && next.length + p.name.length - c.name.length <= 80 ? { ...p, name: next + p.name.slice(c.name.length) } : p);
+    return edit({ ...state.project, components: state.project.components.map((x) => (x.id === id ? { ...x, name: next } : x)), ...(probes ? { probes } : {}) });
   },
   wire(from: Terminal, to: Terminal) {
     try {
@@ -683,7 +709,7 @@ export const actions = {
     try {
       const parsed = parseProject(p);
       const valid = parsed.world && !parsed.challenge ? layoutEquipment(parsed) : parsed;
-      history = [];
+      history = []; gestureStart = null;
       future = [];
       hasWon = false;
       replayOrigin = structuredClone(valid);
@@ -718,7 +744,7 @@ export const actions = {
       emit({ running: false, busy: true });
       try {
         const restored = await restoreRunArchive(value);
-        history = []; future = []; recordedInputs = restored.archive.inputs; replayOrigin = restored.archive.origin;
+        history = []; future = []; gestureStart = null; recordedInputs = restored.archive.inputs; replayOrigin = restored.archive.origin;
         Object.assign(sim, restored.simulation); clock.accumulator = 0; hasWon = false;
         emit({ project: sim.project, selected: [], selectedWire: null, selectedJoint: null, workspaceView: sim.project.world ? 'physical' : 'schematic', dirty: false, view: "workspace" });
         toast("Saved live experiment restored.");

@@ -63,6 +63,7 @@ Long advances and replays run in yielding batches, so the browser stays responsi
 
 - **History:** up to 60 immutable project snapshots for undo and redo.
 - **Live vs Reset edits:** live parameters may change at any time without injecting energy; parameters that define stored energy, mass, geometry or initial state are rejected after t = 0 until Reset. See [SANDBOX.md](SANDBOX.md).
+- **Names:** placed components can be renamed (Inspector pencil, double-click on the name band, F2 or the context menu). Names are 1–80 characters and unique in a project; the rename is a recorded, undoable edit, allowed while running, and default probe labels that begin with the old name follow it. Challenge parts are identified by name, so names are fixed in challenges (`componentNameError`, and a transition check against imported or replayed renames).
 - **Assemblies:** duplicate, copy/paste and saved assemblies remap component IDs, internal connections, routes, sensor targets and joints; external links are omitted.
 - **Limits:** 100 components, 300 connections, 100 joints, 250 electrical unknowns per island, 120 hydraulic branches and 200 hydraulic nodes. Dense direct solves are appropriate at this size.
 

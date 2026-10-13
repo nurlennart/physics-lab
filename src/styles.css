@@ -3321,6 +3321,13 @@ select option {
 .inspector-icon { width: 42px; height: 42px; border-radius: var(--r-md); background: var(--n-6); border-color: var(--n-9); color: var(--electrical-text); }
 .inspector-component h3 { font-size: var(--fs-lg); font-weight: 600; color: var(--n-15); margin-bottom: 2px; }
 .inspector-component .mono { font-size: var(--fs-xs); }
+.inspector-component > div { min-width: 0; }
+.component-name { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 2px 4px; margin-left: -4px; border-radius: var(--r-sm); color: var(--n-13); font-size: var(--fs-xs); text-align: left; }
+.component-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.component-name > svg { flex: none; opacity: 0.55; }
+button.component-name:hover, button.component-name:focus-visible { background: var(--n-6); color: var(--n-15); }
+button.component-name:hover > svg, button.component-name:focus-visible > svg { opacity: 1; }
+.component-name-input { width: 100%; font-size: var(--fs-xs); padding: 3px 6px; margin-left: -6px; border: 1px solid rgb(var(--selection-rgb) / 0.7); border-radius: var(--r-sm); background: var(--n-3); color: var(--n-15); }
 .inspector-tabs { height: 40px; border-color: var(--n-7); }
 .inspector-tabs button { font-size: var(--fs-sm); color: var(--n-13); }
 .inspector-tabs button.active { color: var(--n-15); font-weight: 600; }

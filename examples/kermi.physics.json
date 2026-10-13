@@ -136,7 +136,7 @@
     {
       "id": "kermi-component-7",
       "kind": "circulator",
-      "name": "ALPHA2-style 25-60 · PP 2 m",
+      "name": "ALPHA2 25-60 · PP 2 m",
       "x": 330,
       "y": 650,
       "rotation": 0,
@@ -192,7 +192,7 @@
     {
       "id": "kermi-component-9",
       "kind": "panelRadiator",
-      "name": "Kermi FK0 22 · 600×1000",
+      "name": "Kermi 22 · 600×1000",
       "x": 930,
       "y": 330,
       "rotation": 0,
@@ -217,7 +217,7 @@
     {
       "id": "kermi-component-10",
       "kind": "valve",
-      "name": "Lockshield valve · 12 %",
+      "name": "Lockshield · 12 %",
       "x": 930,
       "y": 650,
       "rotation": 0,

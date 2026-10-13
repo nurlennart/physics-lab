@@ -136,7 +136,7 @@
     {
       "id": "boiler-component-7",
       "kind": "circulator",
-      "name": "ALPHA2-style 25-60 · PP",
+      "name": "ALPHA2 25-60 · PP 3 m",
       "x": 330,
       "y": 650,
       "rotation": 0,
@@ -192,7 +192,7 @@
     {
       "id": "boiler-component-9",
       "kind": "radiator",
-      "name": "Panel radiator · 100 W/K",
+      "name": "Radiator · 100 W/K",
       "x": 930,
       "y": 330,
       "rotation": 0,
@@ -213,7 +213,7 @@
     {
       "id": "boiler-component-10",
       "kind": "valve",
-      "name": "Radiator balancing valve",
+      "name": "Balancing valve",
       "x": 930,
       "y": 650,
       "rotation": 0,

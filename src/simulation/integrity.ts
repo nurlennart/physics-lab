@@ -282,6 +282,18 @@ export function componentError(c: Component): string | null {
     return "Invalid sensor range: minimum must be below maximum.";
   return null;
 }
+/**
+ * A component's display name: 1–80 characters and unique in the project. Challenge parts (source reservoir,
+ * consumer demand, loads, foundations) are identified by name, so names are fixed in challenges.
+ */
+export function componentNameError(p: Project, id: string, name: string): string | null {
+  const trimmed = name.trim();
+  if (p.challenge) return "Names identify the assignment's parts. Rename components in Free Sandbox.";
+  if (!trimmed) return "A component name cannot be empty.";
+  if (trimmed.length > 80) return "Component names are limited to 80 characters.";
+  if (p.components.some(c => c.id !== id && c.name === trimmed)) return `Another component is already named "${trimmed}".`;
+  return null;
+}
 export function transitionError(
   previous: Project,
   next: Project,
@@ -294,6 +306,10 @@ export function transitionError(
   const spatialViolation = spatialError(next);
   if (spatialViolation) return spatialViolation;
   if (time > 1e-10 && spatialSignature(previous) !== spatialSignature(next)) return 'Reset to Build mode before changing geometry, mass, materials, gravity, joints or spatial placement.';
+  if (lockedChallenge ?? next.challenge) {
+    const names = new Map(previous.components.map(c => [c.id, c.name]));
+    if (next.components.some(c => names.has(c.id) && names.get(c.id) !== c.name)) return "Names identify the assignment's parts. Rename components in Free Sandbox.";
+  }
   if (lockedChallenge ?? next.challenge)
     for (const c of next.components) {
       if (!definitions[c.kind]) return "Unknown component kind.";

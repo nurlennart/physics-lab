@@ -96,6 +96,7 @@ export default function App() {
       }
       if (k === "delete" || k === "backspace") actions.remove();
       if (k === "r") actions.rotate();
+      if (k === "f2" && getState().selected.length === 1) actions.requestRename(getState().selected[0]);
       if (k === "v") actions.set({ tool: "select" });
       if (k === "h") actions.set({ tool: "pan" });
       if (k === "w") actions.set({ tool: "wire" });

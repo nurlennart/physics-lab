@@ -21,6 +21,7 @@ import {
   Maximize,
   Check,
   ChevronDown,
+  Pencil,
 } from "lucide-react";
 import { actions, availableHistory, simulation, useLab } from "../editor/store";
 import {
@@ -45,6 +46,11 @@ export { dimensions, portPoint } from "../editor/geometry";
  * (currents, powers, flows, speeds) and nothing glows. The engine still holds the switch-on solution.
  */
 export const hasStarted = () => simulation.time > 0;
+/** Module names are 600 12 px IBM Plex Mono (about 7 px per character): shorten to the name band with an ellipsis. */
+export function fitName(name: string, width: number) {
+  const fits = Math.floor((width - 18) / 7);
+  return name.length <= fits ? name : `${name.slice(0, fits - 1).trimEnd()}…`;
+}
 function CircuitSymbol({ c }: { c: Component }) {
   const w = dimensions(c).w,
     r = simulation.electrical.readings[c.id],
@@ -173,20 +179,21 @@ function CircuitSymbol({ c }: { c: Component }) {
       : <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><rect x="47" y="34" width="80" height="64" rx="8" fill={T.n5} stroke={T.mechanicalText} strokeWidth="2"/><path d="M87 66L87 44" stroke={T.mechanicalText} strokeWidth="3" transform={`rotate(${Math.min(270, (element?.torque ?? 0) / prop(c, "ratedTorque") * 270) - 135},87,66)`}/><circle cx="87" cy="66" r="4" fill={T.mechanicalText}/><text x="87" y="112" textAnchor="middle" className="scale-label">{speed}</text><text x="87" y="126" textAnchor="middle" className="scale-label">{(element?.torque ?? 0).toFixed(1)} N·m · {((element?.power ?? 0) / 1000).toFixed(2)} kW</text></g>;
   }
   if (c.kind === "circulator") {
-    // Pump circle with the discharge triangle, the integrated motor and electronics box on top (supply leads up,
-    // control leads down). The impeller turns by the accumulated rotor rotation.
+    // Pump circle with the discharge triangle and the integrated motor and electronics box above it (supply leads
+    // up, control leads down). The impeller turns by the accumulated rotor rotation.
     const state = simulation.multiphysics.circulators[c.id], view = simulation.multiphysics.circulatorView[c.id];
     const mode = { proportionalPressure: `PP ${prop(c, "headSetpoint")} m`, constantPressure: `CP ${prop(c, "headSetpoint")} m`, constantSpeed: `${prop(c, "speedSetting")} % speed` }[String(c.props.mode)] ?? "";
     const status = !hasStarted() ? mode : state?.lockedOut ? "undervoltage · off" : `${((state?.omega ?? 0) * 30 / Math.PI).toFixed(0)} RPM · ${(view?.inputPower ?? 0).toFixed(1)} W`;
+    // Below the 31 px name band: supply leads into the EC box; the pipe on the terminal axis (y = 66) runs under the pump's fill.
     return <g>
-      <path d="M0 74H55M119 74H174" stroke={T.hydraulic} strokeWidth="2" />
-      <path d="M52 0V27H62M122 0V27H112" stroke={T.electricalText} strokeWidth="2" fill="none" />
-      <rect x="62" y="16" width="50" height="22" rx="3" fill={T.n4} stroke={T.electricalText} />
-      <text x="87" y="31" textAnchor="middle" className="scale-label">EC</text>
-      <circle cx="87" cy="74" r="32" fill={T.n5} stroke={T.hydraulic} strokeWidth="2" />
-      <path d="M68 50L118 74L68 98" stroke={T.hydraulic} fill="none" />
-      <path d="M73 74H101M87 60V88" stroke={T.hydraulic} transform={`rotate(${((state?.angle ?? 0) * 180 / Math.PI) % 360},87,74)`} />
-      <text x="87" y="121" textAnchor="middle" className="scale-label">{status}</text>
+      <path d="M0 66H72M102 66H174" stroke={T.hydraulic} strokeWidth="2" />
+      <path d="M52 31V41H67M122 31V41H107" stroke={T.electricalText} strokeWidth="2" fill="none" />
+      <rect x="67" y="34" width="40" height="14" rx="3" fill={T.n4} stroke={T.electricalText} />
+      <text x="87" y="44.5" textAnchor="middle" className="scale-label">EC</text>
+      <circle cx="87" cy="75" r="23" fill={T.n5} stroke={T.hydraulic} strokeWidth="2" />
+      <path d="M73.5 58L109.5 75L73.5 92" stroke={T.hydraulic} fill="none" />
+      <path d="M77 75H97M87 65V85" stroke={T.hydraulic} transform={`rotate(${((state?.angle ?? 0) * 180 / Math.PI) % 360},87,75)`} />
+      <text x="87" y="121" textAnchor="middle" className="symbol-readout dim">{status}</text>
     </g>;
   }
   if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
@@ -1036,7 +1043,14 @@ export default function Workspace() {
                   e.stopPropagation();
                   down(e, c.id);
                 }}
-                onDoubleClick={() => actions.toggle(c.id)}
+                onDoubleClick={(e) => {
+                  // The module holds pointer capture, so locate the double-click in module coordinates
+                  // (undoing its rotation): the 31 px name band renames, the body operates (switches).
+                  const p = local(e.clientX, e.clientY), r = (-c.rotation * Math.PI) / 180, dx = p.x - c.x - w / 2, dy = p.y - c.y - h / 2;
+                  const y = dx * Math.sin(r) + dy * Math.cos(r) + h / 2;
+                  if (y >= 0 && y <= 31) actions.requestRename(c.id);
+                  else actions.toggle(c.id);
+                }}
               >
                 <g transform={`rotate(${c.rotation},${w / 2},${h / 2})`}>
                   <rect
@@ -1047,7 +1061,8 @@ export default function Workspace() {
                   />
                   <path d={`M0 31H${w}`} stroke={T.n9} />
                   <text x="13" y="20" className="component-id">
-                    {c.name}
+                    {fitName(c.name, w)}
+                    <title>{c.name}</title>
                   </text>
                   <CircuitSymbol c={c} />
                   {definitions[c.kind].ports.map((p) => {
@@ -1330,6 +1345,16 @@ export default function Workspace() {
           >
             <RotateCw size={14} />
             Rotate <kbd>R</kbd>
+          </button>
+          <button
+            disabled={selected.length !== 1 || !!project.challenge}
+            onClick={() => {
+              actions.requestRename(selected[0]);
+              setContext(null);
+            }}
+          >
+            <Pencil size={14} />
+            Rename <kbd>F2</kbd>
           </button>
           <button
             disabled={!selected.length && !state.selectedWire}

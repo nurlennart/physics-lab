@@ -12,10 +12,10 @@ export function deviceStarter(mode: DeviceMode): Project {
     });
     const boiler = add('electricBoiler', 330, 330, { flowInterlock: true }); boiler.name = 'Bosch TH3000 9 · 3.7 L';
     const earth = add('ground', 900, 45), target = add('constant', 40, 330, { value: 60 }); target.name = 'Supply target · °C';
-    const pump = add('circulator', 330, 650, { headSetpoint: 3 }); pump.name = 'ALPHA2-style 25-60 · PP';
+    const pump = add('circulator', 330, 650, { headSetpoint: 3 }); pump.name = 'ALPHA2 25-60 · PP 3 m';
     const supply = add('pipe', 640, 330, { diameter: 0.02, length: 8, thermalUA: 2, segments: 4 }); supply.name = 'Insulated supply · 8 m';
-    const radiator = add('radiator', 930, 330, { naturalUA: 100, forcedUA: 0 }); radiator.name = 'Panel radiator · 100 W/K';
-    const valve = add('valve', 930, 650, { diameter: 0.02 }); valve.name = 'Radiator balancing valve';
+    const radiator = add('radiator', 930, 330, { naturalUA: 100, forcedUA: 0 }); radiator.name = 'Radiator · 100 W/K';
+    const valve = add('valve', 930, 650, { diameter: 0.02 }); valve.name = 'Balancing valve';
     const back = add('pipe', 640, 650, { diameter: 0.02, length: 8, thermalUA: 2, segments: 4 }); back.name = 'Insulated return · 8 m';
     // One sealed filled circuit. The boiler's pressure datum represents an externally precharged compliant
     // expansion connection; no water is supplied or drained there. See the model limitations.
@@ -37,10 +37,10 @@ export function deviceStarter(mode: DeviceMode): Project {
     });
     const boiler = add('electricBoiler', 330, 330, { flowInterlock: true, maxStages: 1 }); boiler.name = 'Bosch TH3000 9 · 3 kW';
     const earth = add('ground', 900, 45), target = add('constant', 40, 330, { value: 60 }); target.name = 'Supply target · °C';
-    const pump = add('circulator', 330, 650, { headSetpoint: 2 }); pump.name = 'ALPHA2-style 25-60 · PP 2 m';
+    const pump = add('circulator', 330, 650, { headSetpoint: 2 }); pump.name = 'ALPHA2 25-60 · PP 2 m';
     const supply = add('pipe', 640, 330, { diameter: 0.016, length: 6, thermalUA: 1.5, segments: 4 }); supply.name = 'Insulated supply · 6 m';
-    const radiator = add('panelRadiator', 930, 330); radiator.name = 'Kermi FK0 22 · 600×1000';
-    const valve = add('valve', 930, 650, { diameter: 0.015, opening: 12 }); valve.name = 'Lockshield valve · 12 %';
+    const radiator = add('panelRadiator', 930, 330); radiator.name = 'Kermi 22 · 600×1000';
+    const valve = add('valve', 930, 650, { diameter: 0.015, opening: 12 }); valve.name = 'Lockshield · 12 %';
     const back = add('pipe', 640, 650, { diameter: 0.016, length: 6, thermalUA: 1.5, segments: 4 }); back.name = 'Insulated return · 6 m';
     for (let i = 0; i < 3; i++) { wire(phases[i], 'a', boiler, `L${i + 1}`); wire(phases[i], 'b', boiler, 'N'); }
     wire(earth, 'a', boiler, 'PE'); wire(phases[0], 'a', pump, 'a'); wire(phases[0], 'b', pump, 'b');
