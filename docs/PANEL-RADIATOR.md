@@ -69,7 +69,7 @@ T_{k−1} is the upstream cell, or the inlet water for the first cell. P_diss = 
 
 ## Room boundary and future thermal spaces
 
-The radiator exchanges heat with one air temperature, its *room air temperature* property (default 20 °C, the EN 442 reference). It is an ideal boundary of unlimited capacity. All exchange goes through `panelAirTemperature(c)` and the reported output (`duty`, W), split into radiant and convective parts by Kermi's radiant share. A future thermal space can replace that boundary with its air node and receive both parts; nothing else in the model depends on the boundary. Rooms are not simulated yet.
+The radiator exchanges heat with one air temperature. By default it inherits the experiment ambient (default 20 °C, the EN 442 reference); the *Room air* setting can switch to a local room-air temperature instead. It is an ideal boundary of unlimited capacity. Hydraulic transport, the Inspector, the diagram and the history all take that temperature from the shared resolver `resolveAmbient` (`src/simulation/environment.ts`, see [ENVIRONMENT.md](ENVIRONMENT.md)); the reported output (`duty`, W) is split into radiant and convective parts by Kermi's radiant share. A future thermal space enters through the resolver's containing-space step and receives both parts; nothing else in the model depends on the boundary. Rooms are not simulated yet.
 
 ## Behaviour
 

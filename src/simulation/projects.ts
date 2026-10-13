@@ -229,10 +229,6 @@ export function migrateComponent(c: Component): Component {
   const model = catalog(c).props, props = { ...c.props };
   if (c.kind === "heater" && props.ratedVoltage === undefined && typeof props.resistance === "number" && typeof props.ratedPower === "number")
     props.ratedVoltage = Math.sqrt(props.resistance * props.ratedPower);
-  // Old files stored local boundaries without a mode. Preserve every stored
-  // value, including catalog defaults: explicit intent cannot be reconstructed.
-  if (model.ambientMode !== undefined && props.ambientMode === undefined && typeof props.ambient === 'number')
-    props.ambientMode = 'override';
   for (const [k, v] of Object.entries(model)) if (props[k] === undefined) props[k] = v;
   return { ...c, props: applyDerived(c.kind, props) };
 }

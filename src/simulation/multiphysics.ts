@@ -363,6 +363,8 @@ export class Multiphysics {
     void s;
     return Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => {
       // Tanks may surcharge above their rim (weir overflow), so only emptiness bounds the estimate.
+      // An empty tank stays empty at the midpoint, so the solve applies its empty-tank condition.
+      if (t.mass <= 1e-9) return [id, t];
       const mass = t.mass + 0.5 * h * (this.hydraulic.readings[id]?.flow ?? 0) * RHO;
       if (mass < 0.5 * t.mass) return [id, t];
       return [id, { ...t, mass, volume: inventoryVolume(mass, t.temperature) }];

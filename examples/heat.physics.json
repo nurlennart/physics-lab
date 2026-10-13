@@ -57,7 +57,9 @@
         "maxTemperature": 150,
         "tempCoefficient": 0,
         "tolerance": 0,
-        "closed": true
+        "closed": true,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -75,7 +77,9 @@
         "heatCapacity": 300,
         "loss": 0.5,
         "conductance": 180,
-        "maxTemperature": 150
+        "maxTemperature": 150,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -101,7 +105,8 @@
         "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
-        "insulationConductivity": 0.04
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
       }
     }
   ],

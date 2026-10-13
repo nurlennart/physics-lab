@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveAmbient, resolveAmbient } from './environment';
-import { definitions, isThermalMass, makeComponent, prop, type Kind } from './model';
+import { effectiveAmbient, resolveAmbient, variantAmbient } from './environment';
+import { catalog, definitions, isThermalMass, makeComponent, prop, type Kind } from './model';
 import { Simulation } from './engine';
 import { Builder } from './scaling-validation';
-import { parseProject, starter } from './projects';
+import { parseProject, serializeProject, starter } from './projects';
 import { withProperty } from './integrity';
 import { builtinPresets, presetComponentProps, presetProps, validatePreset } from './presets';
 import { WATER_CP } from './units';
@@ -23,23 +23,25 @@ describe('environment resolution', () => {
     }
   });
 
-  it.each(boundaryKinds)('%s preserves legacy local boundaries through import and export', kind => {
-    const p = starter('blank'), c = makeComponent(kind, 0, 0);
-    delete c.props.ambientMode; c.props.ambient = 12; p.components.push(c);
-    p.environment = { ambient: 35 };
-    const restored = parseProject(p);
-    expect(restored.components[0].props.ambientMode).toBe('override');
-    expect(effectiveAmbient(restored, restored.components[0])).toBe(12);
-    expect(parseProject(JSON.parse(JSON.stringify(restored)))).toEqual(restored);
+  it('uses a stored ambient only with an explicit override', () => {
+    const c = makeComponent('tank', 0, 0), p = { environment: { ambient: 35 } };
+    c.props.ambient = 12;
+    expect(resolveAmbient(p, c)).toEqual({ temperature: 35, source: 'experiment' });
+    delete c.props.ambientMode;
+    expect(resolveAmbient(p, c).source).toBe('experiment');
+    expect(parseProject({ ...starter('blank'), components: [c] }).components[0].props.ambientMode).toBe('inherit');
   });
 
-  it('preserves legacy 20 °C boundaries and inherits when a legacy component had no ambient field', () => {
-    const b = new Builder(), tank = b.add('tank'), motor = b.add('motor');
-    delete tank.props.ambientMode; delete motor.props.ambientMode; delete motor.props.ambient;
-    b.p.environment = { ambient: 35 };
-    const p = parseProject(b.p);
-    expect(effectiveAmbient(p, p.components[0])).toBe(20);
-    expect(effectiveAmbient(p, p.components[1])).toBe(35);
+  it.each(boundaryKinds)('%s round-trips both modes through the current file format', kind => {
+    for (const mode of ['inherit', 'override']) {
+      const p = starter('blank'), c = makeComponent(kind, 0, 0);
+      c.props.ambientMode = mode; c.props.ambient = kind === 'cooler' ? -150 : 12; p.components.push(c); p.environment = { ambient: 35 };
+      const restored = parseProject(JSON.parse(serializeProject(p)));
+      expect(restored.components[0].props.ambientMode).toBe(mode);
+      expect(restored.components[0].props.ambient).toBe(c.props.ambient);
+      expect(effectiveAmbient(restored, restored.components[0])).toBe(mode === 'override' ? c.props.ambient : 35);
+      expect(serializeProject(restored)).toBe(serializeProject(p));
+    }
   });
 
   it('retains coolant preset boundaries and inheritance when presets are saved', () => {
@@ -164,5 +166,61 @@ describe('resolved thermal boundaries and conservation', () => {
     expect(filamentCelsius(s.filaments[lamp.id])).toBeLessThan(40);
     expect(s.energyResidual).toBeCloseTo(0, 7);
   });
+});
 
+describe('variant changes', () => {
+  const props = (variant: string) => catalog({ ...makeComponent('cooler', 0, 0), variant }).props;
+  const standard = props('standard'), coil = props('processCoil');
+
+  it('replaces the previous variant boundary with the new one in both directions', () => {
+    expect(coil).toMatchObject({ ambientMode: 'override', ambient: 15 });
+    expect(variantAmbient(standard, standard, coil)).toEqual({ ambientMode: 'override', ambient: 15 });
+    expect(variantAmbient(coil, coil, standard)).toEqual({ ambientMode: 'inherit', ambient: 20 });
+    // A value remembered while inheriting is not a user override.
+    expect(variantAmbient({ ...standard, ambient: 4 }, standard, coil)).toEqual({ ambientMode: 'override', ambient: 15 });
+  });
+
+  it('keeps a boundary the user chose', () => {
+    expect(variantAmbient({ ...standard, ambientMode: 'override', ambient: 20 }, standard, coil)).toEqual({ ambientMode: 'override', ambient: 20 });
+    expect(variantAmbient({ ...standard, ambientMode: 'override', ambient: 4 }, standard, coil)).toEqual({ ambientMode: 'override', ambient: 4 });
+    expect(variantAmbient({ ...coil, ambient: 9 }, coil, standard)).toEqual({ ambientMode: 'override', ambient: 9 });
+    expect(variantAmbient({ ...coil, ambientMode: 'inherit' }, coil, standard)).toEqual({ ambientMode: 'inherit', ambient: 15 });
+  });
+
+  it('leaves variants of kinds without a boundary untouched', () => {
+    const pump = catalog(makeComponent('pump', 0, 0)).props;
+    expect(variantAmbient(pump, pump, pump)).toEqual({});
+  });
+});
+
+describe('global ambient propagation', () => {
+  const thermalMasses = boundaryKinds.filter(k => isThermalMass(makeComponent(k, 0, 0)));
+
+  it('every boundary component is covered by a behavioural test above', () => {
+    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler']);
+    expect(boundaryKinds.filter(k => !covered.has(k))).toEqual([]);
+  });
+
+  it('a global edit reaches every inheriting component and no override', () => {
+    const b = new Builder();
+    for (const kind of boundaryKinds)
+      for (const props of [{}, { ambient: kind === 'cooler' ? -150 : 5 }] as Record<string, number>[]) {
+        const c = b.add(kind, props);
+        // Starters need their motor (as in the per-kind test above).
+        if (kind === 'starDeltaStarter' || kind === 'softStarter') b.wire(c, 'b', b.add('inductionMotor', { enabled: false }), 'a');
+      }
+    b.p.environment = { ambient: 37 };
+    const s = new Simulation(b.p);
+    for (const c of s.project.components) {
+      const local = c.props.ambientMode === 'override';
+      expect(effectiveAmbient(s.project, c), `${c.kind} ${c.props.ambientMode}`).toBe(local ? c.props.ambient : 37);
+      if (isThermalMass(c) && !('initialTemperature' in c.props)) expect(s.temperatures[c.id], c.kind).toBe(local ? c.props.ambient : 37);
+    }
+    expect(s.step(0.1), s.error ?? '').toBe(true);
+    expect(s.refresh({ ...s.project, environment: { ambient: -5 } })).toBe(true);
+    for (const c of s.project.components)
+      expect(effectiveAmbient(s.project, c), c.kind).toBe(c.props.ambientMode === 'override' ? c.props.ambient : -5);
+    expect(s.step(0.1), s.error ?? '').toBe(true);
+    expect(s.energyResidual).toBeCloseTo(0, 4);
+  });
 });

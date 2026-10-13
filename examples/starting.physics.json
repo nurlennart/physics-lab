@@ -74,7 +74,9 @@
         "resistance": 0.003,
         "heatCapacity": 400,
         "loss": 2,
-        "maxTemperature": 120
+        "maxTemperature": 120,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -97,7 +99,9 @@
         "resistance": 0.004,
         "heatCapacity": 600,
         "loss": 3,
-        "maxTemperature": 120
+        "maxTemperature": 120,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -128,7 +132,9 @@
         "inputTHD": 40,
         "heatCapacity": 3000,
         "loss": 6,
-        "maxTemperature": 90
+        "maxTemperature": 90,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -162,7 +168,9 @@
         "loss": 18,
         "conductance": 30,
         "maxTemperature": 155,
-        "enabled": true
+        "enabled": true,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -196,7 +204,9 @@
         "loss": 18,
         "conductance": 30,
         "maxTemperature": 155,
-        "enabled": true
+        "enabled": true,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -230,7 +240,9 @@
         "loss": 18,
         "conductance": 30,
         "maxTemperature": 155,
-        "enabled": true
+        "enabled": true,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     }
   ],

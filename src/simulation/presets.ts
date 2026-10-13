@@ -76,8 +76,8 @@ export const builtinPresets: ComponentPreset[] = [
   tank("Industrial", "Process tank 2,000 L", 2200, 2000, 1.4, 150000, 0.1),
   tank("High-capacity", "Storage tank 10,000 L", 11000, 10000, 2.5, 600000, 0.15),
   tank("High-capacity", "Reservoir 50,000 L", 55000, 50000, 4.5, 2000000, 0.15),
-  preset("cooler", "Industrial", "Plate cooler 300 W/K · 15 °C", { conductance: 300, ambient: 15 }),
-  preset("cooler", "High-capacity", "Chiller coil 3 kW/K · 7 °C", { conductance: 3000, ambient: 7 }),
+  preset("cooler", "Industrial", "Plate cooler 300 W/K · 15 °C", { conductance: 300, ambientMode: "override", ambient: 15 }),
+  preset("cooler", "High-capacity", "Chiller coil 3 kW/K · 7 °C", { conductance: 3000, ambientMode: "override", ambient: 7 }),
   preset("motor", "Industrial", "DC motor 400 V · 22 kW", { resistance: 0.35, torqueConstant: 2.4, inertia: 0.35, friction: 0.01, ratedVoltage: 400, ratedCurrent: 60, ratedTorque: 144, ratedPower: 24000, maxSpeed: 200, heatCapacity: 25000, loss: 30, maxTemperature: 155 }),
   preset("pump", "Laboratory", "Circulator 20 L/min · 4 m", { ratedFlow: 0.000333, shutoffHead: 4, efficiency: 0.45, mechanicalLoss: 2 }),
   preset("pump", "High-capacity", "Process pump 6,000 L/min · 45 m", { ratedSpeed: 154.5, ratedFlow: 0.1, shutoffHead: 45, efficiency: 0.84, mechanicalLoss: 1.3, maxPressure: 1600000 }, undefined, "highCapacity"),
@@ -118,7 +118,7 @@ export function presetProps(c: Component): Record<string, Property> {
 export function presetComponentProps(p: ComponentPreset, current?: Component): { variant: string; props: Record<string, Property> } {
   const model = catalog({ kind: p.kind, variant: p.base } as Component).props;
   const keep = current ? Object.fromEntries(Object.entries(current.props).filter(([k]) => excluded.has(k))) : {};
-  return { variant: p.base, props: applyDerived(p.kind, { ...model, ...(typeof p.props.ambient === "number" && p.props.ambientMode === undefined ? { ambientMode: "override" } : {}), ...p.props, ...keep }) };
+  return { variant: p.base, props: applyDerived(p.kind, { ...model, ...p.props, ...keep }) };
 }
 export function validatePreset(value: unknown): ComponentPreset {
   const p = value as ComponentPreset;

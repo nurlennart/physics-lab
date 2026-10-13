@@ -108,7 +108,7 @@ export default function Models() {
             The full coupled thermal matrix uses backward Euler at 1/60 s. Water
             inventory mass uses temperature-dependent Kell density and cₚ = 4,180 J/(kg·K). Electrical power
             is updated before the thermal solve. Electrical thermal masses
-            store dissipated heat and exchange heat with their configured ambient.
+            store dissipated heat and exchange heat with their resolved ambient (the experiment environment unless a local override is set).
             Battery internal losses and capacitor and inductor resistive losses heat the component; radiator fan power goes to ambient. Ordinary supply internal losses lie outside the terminal-energy boundary.
           </p>
           <p>

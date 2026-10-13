@@ -47,11 +47,6 @@ export const panelCellCapacity = (c: Component) => (prop(c, 'waterVolume') * WAT
 /** Total heat capacity (J/K) of water and steel. */
 export const panelCapacity = (c: Component) => panelCellCapacity(c) * PANEL_CELLS;
 /**
- * Air temperature (K) the radiator exchanges heat with. The one boundary a future thermal space replaces;
- * today the component's room-air property, an ideal boundary of unlimited capacity.
- */
-
-/**
  * Inlet weight w(x) = 1/x − 1/(eˣ − 1) of a cell's exchange temperature w·T_in + (1 − w)·T, with
  * x = g/(ṁ·c_p). The steady cell then attenuates the excess exactly by e^(−x) (the continuous profile of a
  * uniform conductance); w → ½ at high flow and → 0 without flow, and ṁ·c_p − g·w = g/(eˣ − 1) ≥ 0, so the

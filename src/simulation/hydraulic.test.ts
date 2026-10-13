@@ -8,6 +8,7 @@ import { hydraulicStarter } from './hydraulic-projects';
 import { parseProject, serializeProject } from './projects';
 import { replayExperiment } from './replay';
 import { transitionError, challengeError } from './integrity';
+import { Builder } from './scaling-validation';
 import { evaluateChallenge } from './challenges';
 const blank = (): Project => ({ version: 3, id: 'test', name: 'Reference', components: [], connections: [] });
 function add(p: Project, kind: Kind, props: Component['props'] = {}) { const c = makeComponent(kind, 0, 0, p.components); c.props = { ...c.props, ...props }; p.components.push(c); return c; }
@@ -276,5 +277,31 @@ describe('hydraulic instrumentation validity and elevation', () => {
     expect(low.multiphysics.hydraulic.readings[pump.id].flow).toBeGreaterThan(high.multiphysics.hydraulic.readings[pump.id].flow);
     expect(-high.multiphysics.hydraulic.readings[pump.id].differentialPressure).toBeGreaterThan(-low.multiphysics.hydraulic.readings[pump.id].differentialPressure);
     expect(high.multiphysics.massResidual).toBeCloseTo(0, 8);
+  });
+});
+
+describe('empty tank flow-through', () => {
+  // Upper reservoir → narrow valve → empty intermediate tank → wide valve → lower reservoir. The wide
+  // drain can carry more than the narrow feed, so the intermediate tank must stay empty and pass the
+  // feed on (a continuity node at or below its empty head), at the feed water's temperature.
+  const build = (ambient: number) => {
+    const b = new Builder(), upper = b.add('tank', { elevation: 3, volume: 100, capacity: 120, initialTemperature: 60, loss: 0 });
+    const middle = b.add('tank', { elevation: 1.5, volume: 0, capacity: 50, initialTemperature: 20, loss: 0 });
+    const lower = b.add('tank', { elevation: 0, volume: 10, capacity: 200, initialTemperature: 20, loss: 0 });
+    const feed = b.add('valve', { diameter: 0.006, opening: 50 }), drain = b.add('valve', { diameter: 0.03, opening: 100 });
+    b.wire(upper, 'fluid', feed, 'inlet'); b.wire(feed, 'outlet', middle, 'fluid'); b.wire(middle, 'fluid', drain, 'inlet'); b.wire(drain, 'outlet', lower, 'fluid');
+    b.p.environment = { ambient };
+    return { s: new Simulation(b.p), middle, feed, drain };
+  };
+  it.each([20, 35])('passes the feed through without storage or events at %s °C ambient', ambient => {
+    const { s, middle, feed, drain } = build(ambient);
+    for (let i = 0; i < 120; i++) expect(s.step(), s.error ?? '').toBe(true);
+    const q = s.multiphysics.hydraulic.readings;
+    expect(q[feed.id].flow).toBeGreaterThan(1e-5);
+    expect(q[drain.id].flow).toBeCloseTo(q[feed.id].flow, 12);
+    expect(s.multiphysics.tanks[middle.id].mass).toBeLessThan(1e-6);
+    expect(s.multiphysics.hydraulic.drained).toEqual([middle.id]);
+    expect(Math.abs(s.multiphysics.massResidual)).toBeLessThan(1e-9);
+    expect(s.energyResidual).toBeCloseTo(0, 4);
   });
 });

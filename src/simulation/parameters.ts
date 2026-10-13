@@ -287,7 +287,8 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
   },
   panelRadiator: {
     waterVolume: { label: "Water content", description: "Kermi catalog water content (type 22, 600 × 1000 mm: 6.08 L). Fixed inventory at the reference density in 16 cells.", typical: [0.5, 50] },
-    ambient: { label: "Room air temperature", description: "Air temperature of the ideal room boundary that receives the heat output (EN 442 reference: 20 °C). A future room model replaces this boundary." },
+    ambientMode: { label: "Room air", description: "Inherit the experiment ambient as room air, or set a local room-air temperature for this radiator. Water and steel initial temperature is separate." },
+    ambient: { label: "Room air temperature", description: "Local room-air temperature, used only with the local override; otherwise the radiator exchanges heat with the experiment ambient. Ideal boundary of unlimited capacity. EN 442 output is still calibrated at 20 °C air." },
     initialTemperature: { description: "Water and steel temperature at reset." },
     diameter: { label: "Connection bore", description: "Reference bore of the G½ connections for velocity and the two-K loss (assumed 16 mm)." },
     lossCoefficient: { label: "Turbulent loss K∞", description: "Two-K fit to the Kermi pressure-drop chart (Profil-K types 12–33: 18.6; 10/11: 12.76), referenced to the connection bore." },
@@ -401,11 +402,12 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
   pipe: {
     initialTemperature: { description: "Temperature of the water held in the pipe at reset (used when water inventory is on)." },
     material: { label: "Pipe material", description: "Selecting a material applies its typical roughness. Material does not otherwise enter the model.", options: options.pipeMaterial },
-    ambient: { description: "Ambient temperature for the pipe heat-loss UA." },
+    ambient: { description: "Local surroundings of the pipe heat-loss UA, used only with the local override; otherwise the pipe inherits the experiment ambient. Independent of the initial water temperature." },
   },
   cooler: {
     conductance: { label: "Cooling conductance (UA)", description: "Conductance to an ideal coolant reservoir (no coolant mass or pump power)." },
-    ambient: { label: "Coolant temperature", domain: [-200, 1000] },
+    ambientMode: { label: "Coolant", description: "Inherit the experiment ambient as coolant temperature, or set an explicit coolant temperature (e.g. chilled water)." },
+    ambient: { label: "Coolant temperature", description: "Temperature of the ideal coolant reservoir, used only with the explicit coolant setting; otherwise the coolant is at the experiment ambient.", domain: [-200, 1000] },
     enabled: { description: "Used when the control input is not wired." },
   },
   timer: { mode: { label: "Timer mode", options: options.timer } },

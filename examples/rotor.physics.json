@@ -109,7 +109,9 @@
         "maxTemperature": 120,
         "enabled": true,
         "speedControl": true,
-        "speedCommand": 1200
+        "speedCommand": 1200,
+        "ambient": 20,
+        "ambientMode": "inherit"
       },
       "spatial": {
         "type": "static",

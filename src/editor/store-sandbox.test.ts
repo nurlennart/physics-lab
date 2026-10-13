@@ -135,4 +135,21 @@ describe("editor store: undo steps", () => {
     const back = store.getState().project.components.find((c) => c.id === tank.id)!;
     expect([back.x, back.name]).toEqual([tank.x, "Store"]);
   });
+  it("applies a variant's ambient boundary unless the user chose one", () => {
+    const { actions, getState } = store;
+    actions.newProject("blank");
+    actions.add("cooler");
+    const cooler = () => getState().project.components.find((c) => c.kind === "cooler")!;
+    const boundary = () => [cooler().props.ambientMode, cooler().props.ambient];
+    expect(boundary()).toEqual(["inherit", 20]);
+    actions.variant(cooler().id, "processCoil");
+    expect(boundary()).toEqual(["override", 15]);
+    actions.variant(cooler().id, "standard");
+    expect(boundary()).toEqual(["inherit", 20]);
+    actions.property(cooler().id, "ambient", 4);
+    expect(boundary()).toEqual(["override", 4]);
+    actions.variant(cooler().id, "processCoil");
+    expect(boundary()).toEqual(["override", 4]);
+    expect(cooler().props.conductance).toBe(1000);
+  });
 });

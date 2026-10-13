@@ -47,6 +47,8 @@ export interface HydraulicResult {
   residual: number; pressureResidual: number; iterations: number; converged: boolean; diagnostics: string[];
   branches: { id: string; component: string; stream?: "hot" | "cold"; from: string; to: string; flow: number; loss: number; gain: number }[];
   tankNodes: Record<string, string>; terminalNodes: Record<string, string>;
+  /** Empty tanks whose node carries flow-through at or below the empty-tank head (continuity, no storage). */
+  drained?: string[];
   /** Mixed node temperatures (K) from the last enthalpy transport; viscosity input of the next solve. */
   nodeTemperatures: Record<string, number>;
   /** Weir overflow per tank: flow (m³/s), whether it is routed into the network, and the receiving node. */
@@ -320,13 +322,15 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     result.weir[c.id] = { flow, routed, node: port };
     if (routed) weirInjection.set(port, (weirInjection.get(port) ?? 0) + flow);
   }
-  const unknown = nodes.filter(n => boundaries[n] === undefined), indices = new Map(unknown.map((n, i) => [n, i]));
-  if (unknown.length > 200) throw Error('Hydraulic network exceeds 200 pressure nodes.');
-  const p: Record<string, number> = { ...boundaries };
-  for (const n of unknown) p[n] = (previous?.potentials[n] ?? 0) / 1000;
-  // An empty tank cannot supply outflow. A full vented tank does NOT block inflow: it spills over
-  // its rim (transport removes the excess), so no implicit shut-off valve exists.
-  const blocked = (n: string, out: boolean) => out && (boundaryTanks[n] ?? []).some(c => tanks[c.id].mass <= 1e-9);
+  if (nodes.filter(n => boundaries[n] === undefined).length > 200) throw Error('Hydraulic network exceeds 200 pressure nodes.');
+  // An empty tank (≤ 10⁻⁹ kg) cannot supply net outflow. Its node is blocked (no inflow: outflow is
+  // exactly zero), held at the empty-tank head with net inflow ≥ 0 (the tank fills), or drained: a
+  // continuity node at or below that head through which inflow passes on while the tank stays empty.
+  // A full vented tank does NOT block inflow: it spills over its rim (transport removes the excess),
+  // so no implicit shut-off valve exists.
+  const emptyNodes = Object.keys(boundaryTanks).filter(n => boundaryTanks[n].some(c => tanks[c.id].mass <= 1e-9));
+  let blocked = new Set(emptyNodes), drained = new Set<string>(), unknown: string[] = [], indices = new Map<string, number>();
+  const p: Record<string, number> = {};
   // Local water temperature for viscosity: pipe inventory cells, else the upstream node of the
   // previous transport (one-substep lag; avoids a nested temperature–flow iteration).
   const tankAt = new Map(Object.entries(boundaryTanks).map(([n, [c]]) => [n, tanks[c.id].temperature]));
@@ -377,7 +381,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     if (valveKinds.has(c.kind) && (fault === 'stuckClosed' || (opening === 0 && fault !== 'stuckOpen'))) return { q: 0, derivative: 0 };
     const actualLoss = (q: number) => loss(b, q);
     const oneWay = c.kind === 'checkValve' || isPump(c) || c.kind === 'pressureReducingValve';
-    const allowPositive = !blocked(a, true) && !blocked(to, false), allowNegative = !oneWay && !blocked(to, true) && !blocked(a, false);
+    const allowPositive = !blocked.has(a), allowNegative = !oneWay && !blocked.has(to);
     const atZero = actualLoss(0);
     // Cavitating pumps (head depends on Q through NPSH3) use the bracketed numeric inverse.
     const closedForm = c.kind !== 'pipe' && !(isPump(c) && (pumpPoints(c) || npshAvailable.has(c.id)));
@@ -446,48 +450,73 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     for (const [n, flow] of weirInjection) { const i = indices.get(n); if (i !== undefined) residual[i] -= flow * 1000; }
     return { residual, matrix, flows, norm: Math.max(0, ...residual.map(Math.abs)) };
   };
-  // A weir injection into a node that carried no flow in the previous solution has an arbitrary
-  // (unconstrained) pressure. Seed it just above its highest neighbour so the spill can leave
-  // downstream; Newton cannot cross the flat zero-flow region of blocked branches by itself.
-  for (const [n] of weirInjection) {
-    if (!indices.has(n)) continue;
-    const stagnant = !previous || previous.branches.every(b => (b.from !== n && b.to !== n) || Math.abs(b.flow) < 1e-12);
-    if (!stagnant) continue;
-    const neighbours = branches.filter(b => b.a === n || b.b === n).map(b => p[b.a === n ? b.b : b.a]).filter(Number.isFinite);
-    if (neighbours.length) p[n] = Math.max(...neighbours) + 1e-3;
-  }
-  // Damped Newton with the exact Jacobian. When its line search stalls on a closed one-way
-  // branch (zero slope), the iteration is retried with that branch's generalized slope.
-  // The accepted line-search point is evaluated with its Jacobian and reused as the next iterate.
-  regularize = false;
-  let current = evaluate(true), currentVariant = false;
-  for (let iteration = 0; iteration < 100; iteration++) {
-    result.iterations = iteration + 1;
-    if (current.norm < 1e-10) break;
-    let improved = false;
-    for (const variant of [false, true]) {
-      regularize = variant;
-      const e = variant === currentVariant ? current : evaluate(true);
-      for (let i = 0; i < unknown.length; i++) e.matrix[i][i] += 1e-9;
-      const delta = solveLinear(e.matrix, e.residual.map(v => -v)), before = unknown.map(n => p[n]);
-      for (let k = 0; k < 24 && !improved; k++) {
-        const alpha = 2 ** -k;
-        unknown.forEach((n, i) => p[n] = before[i] + alpha * delta[i]);
-        // Sufficient decrease (Armijo on the max-norm): a full step that merely mirrors a
-        // √Δp turbulent branch around its solution is rejected in favour of the half step.
-        regularize = false;
-        const trial = evaluate(true);
-        regularize = variant;
-        if (trial.norm < (1 - 0.5 * alpha) * e.norm || (k > 8 && trial.norm < e.norm)) { improved = true; current = trial; currentVariant = false; }
-      }
-      if (improved) break;
-      unknown.forEach((n, i) => p[n] = before[i]);
+  const network = () => {
+    unknown = nodes.filter(n => boundaries[n] === undefined || drained.has(n)); indices = new Map(unknown.map((n, i) => [n, i]));
+    for (const n of nodes) p[n] = boundaries[n] !== undefined && !drained.has(n) ? boundaries[n] : (previous?.potentials[n] ?? (boundaries[n] ?? 0) * 1000) / 1000;
+    // A weir injection into a node that carried no flow in the previous solution has an arbitrary
+    // (unconstrained) pressure. Seed it just above its highest neighbour so the spill can leave
+    // downstream; Newton cannot cross the flat zero-flow region of blocked branches by itself.
+    for (const [n] of weirInjection) {
+      if (!indices.has(n)) continue;
+      const stagnant = !previous || previous.branches.every(b => (b.from !== n && b.to !== n) || Math.abs(b.flow) < 1e-12);
+      if (!stagnant) continue;
+      const neighbours = branches.filter(b => b.a === n || b.b === n).map(b => p[b.a === n ? b.b : b.a]).filter(Number.isFinite);
+      if (neighbours.length) p[n] = Math.max(...neighbours) + 1e-3;
     }
-    if (!improved) break;
+    // Damped Newton with the exact Jacobian. When its line search stalls on a closed one-way
+    // branch (zero slope), the iteration is retried with that branch's generalized slope.
+    // The accepted line-search point is evaluated with its Jacobian and reused as the next iterate.
+    regularize = false;
+    let current = evaluate(true), currentVariant = false;
+    for (let iteration = 0; iteration < 100; iteration++) {
+      result.iterations = iteration + 1;
+      if (current.norm < 1e-10) break;
+      let improved = false;
+      for (const variant of [false, true]) {
+        regularize = variant;
+        const e = variant === currentVariant ? current : evaluate(true);
+        for (let i = 0; i < unknown.length; i++) e.matrix[i][i] += 1e-9;
+        const delta = solveLinear(e.matrix, e.residual.map(v => -v)), before = unknown.map(n => p[n]);
+        for (let k = 0; k < 24 && !improved; k++) {
+          const alpha = 2 ** -k;
+          unknown.forEach((n, i) => p[n] = before[i] + alpha * delta[i]);
+          // Sufficient decrease (Armijo on the max-norm): a full step that merely mirrors a
+          // √Δp turbulent branch around its solution is rejected in favour of the half step.
+          regularize = false;
+          const trial = evaluate(true);
+          regularize = variant;
+          if (trial.norm < (1 - 0.5 * alpha) * e.norm || (k > 8 && trial.norm < e.norm)) { improved = true; current = trial; currentVariant = false; }
+        }
+        if (improved) break;
+        unknown.forEach((n, i) => p[n] = before[i]);
+      }
+      if (!improved) break;
+    }
+    regularize = false;
+    const final = evaluate(); result.residual = final.norm / 1000; result.converged = result.residual < 1e-12;
+    if (!result.converged) throw Error(`Hydraulic solve failed: continuity residual ${result.residual.toExponential(3)} m³/s after ${result.iterations} iterations.`);
+    return final;
+  };
+  // Active set over the empty tanks, starting blocked: a blocked tank receiving inflow is held; a held
+  // tank with net outflow drains, or blocks again without inflow; a drained tank whose node rises above
+  // the empty-tank head is held, and blocks without inflow. Each switch needs one further solve; a
+  // cycle keeps the last set.
+  let final = network();
+  for (let round = 0; emptyNodes.length && round < 3 * emptyNodes.length + 2; round++) {
+    const nextBlocked = new Set(blocked), nextDrained = new Set(drained);
+    for (const n of emptyNodes) {
+      const net = branches.reduce((q, b, i) => q + (b.b === n ? final.flows[i] : 0) - (b.a === n ? final.flows[i] : 0), 0);
+      const inflow = branches.reduce((q, b, i) => q + Math.max(0, b.b === n ? final.flows[i] : b.a === n ? -final.flows[i] : 0), 0);
+      if (blocked.has(n)) { if (inflow > 1e-12) nextBlocked.delete(n); }
+      else if (inflow <= 1e-12) { nextBlocked.add(n); nextDrained.delete(n); }
+      else if (!drained.has(n) && net < -1e-12) nextDrained.add(n);
+      else if (drained.has(n) && p[n] > boundaries[n] + 1e-9) nextDrained.delete(n);
+    }
+    const same = (x: Set<string>, y: Set<string>) => x.size === y.size && [...x].every(n => y.has(n));
+    if (same(nextBlocked, blocked) && same(nextDrained, drained)) break;
+    blocked = nextBlocked; drained = nextDrained; final = network();
   }
-  regularize = false;
-  const final = evaluate(); result.residual = final.norm / 1000; result.converged = result.residual < 1e-12;
-  if (!result.converged) throw Error(`Hydraulic solve failed: continuity residual ${result.residual.toExponential(3)} m³/s after ${result.iterations} iterations.`);
+  result.drained = Object.entries(result.tankNodes).filter(([, n]) => drained.has(n)).map(([id]) => id);
   for (const n of nodes) result.potentials[n] = p[n] * 1000;
   branches.forEach((b, i) => {
     const { c, a, b: to } = b, q = final.flows[i], dp = (p[a] - p[to]) * 1000;
@@ -513,7 +542,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       ...(curve ? { cavitation: curve.cavitation } : {}),
     };
     if (curve && curve.reducedFlow > Math.SQRT2 + 1e-6) result.diagnostics.push(`${c.name}: beyond positive-head pump curve; acting as passive restriction. Turbine operation unsupported.`);
-    if (isPump(c) && (!primed.has(groups.find(a)) || blocked(a, true))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
+    if (isPump(c) && (!primed.has(groups.find(a)) || blocked.has(a))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
     if (b.stream === 'hot') result.readings[c.id] = result.readings[b.id];
   });
   // Routed overflow appears as a pseudo-branch from the tank to its overflow node. Its "loss" is the
@@ -561,7 +590,8 @@ export const cellCapacity = (c: Component, n: number) => c.kind === 'electricBoi
 export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, BoilerState> = {}, boilerPower: Record<string, number> = {}) {
   const nodes = Object.keys(result.potentials), index = new Map(nodes.map((n, i) => [n, i]));
   const matrix = nodes.map(() => Array(nodes.length).fill(0)), rhs = nodes.map(() => 0), boundary = new Map<string, string>();
-  for (const [id, n] of Object.entries(result.tankNodes)) boundary.set(n, id);
+  // A drained (empty, flow-through) tank's node is an ordinary mixer: no storage, no enthalpy exchange.
+  for (const [id, n] of Object.entries(result.tankNodes)) if (!result.drained?.includes(id)) boundary.set(n, id);
   const byId = new Map(project.components.map((c) => [c.id, c]));
   const directed = result.branches.filter(b => Math.abs(b.flow) > 1e-14).map(b => ({ ...b, from: b.flow > 0 ? b.from : b.to, to: b.flow > 0 ? b.to : b.from, rate: Math.abs(b.flow) * RHO }));
   type Transfer = (typeof directed)[number] & { terms: { node: string; coeff: number }[]; offset: number; heat: number; ua: number; ambientK: number; attenuation: number; uaCell?: number; weight?: number };
@@ -603,9 +633,10 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     duty[c.id] = { coefficient: k, hot: hot.from, cold: cold.from };
   }
   nodes.forEach((n, i) => {
-    const tank = boundary.get(n);
-    if (tank) { matrix[i][i] = 1; rhs[i] = tanks[tank].temperature; return; }
-    const incoming = transfers.filter(b => b.to === n), total = incoming.reduce((s, b) => s + b.rate, 0);
+    const tank = boundary.get(n), incoming = transfers.filter(b => b.to === n), total = incoming.reduce((s, b) => s + b.rate, 0);
+    // A tank empty at the start of the interval has no stored water to supply: its outflow leaves at the
+    // mixed inflow temperature, and the water it keeps is booked at that temperature.
+    if (tank && (tanks[tank].mass > 1e-9 || !total)) { matrix[i][i] = 1; rhs[i] = tanks[tank].temperature; return; }
     if (!total) { matrix[i][i] = 1; rhs[i] = 293.15; return; }
     matrix[i][i] = 1;
     for (const b of incoming) {
@@ -706,6 +737,8 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
 /** Enthalpy (J, relative to 0 K) of all pipe water cells. */
 export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) =>
   project.components.reduce((sum, c) => sum + (cells[c.id] ? cells[c.id].reduce((s, t) => s + cellCapacity(c, cells[c.id].length) * t, 0) : 0), 0);
+/** Volume band (m³) around a tank rim within which rim events are not located. */
+const RIM_TOLERANCE = 1e-9;
 export function boundaryTime(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, limit: number) {
   let step = limit;
   for (const c of project.components.filter(c => c.kind === 'tank')) {
@@ -718,9 +751,11 @@ export function boundaryTime(project: Project, tanks: Record<string, TankState>,
     const massRate = q * RHO, volumeRate = t.mass > 1e-12 ? q * RHO * t.volume / t.mass : q;
     if (massRate < -1e-11 && t.mass > 1e-9) step = Math.min(step, t.mass / -massRate);
     // Events at the rim: overflow onset (weir flow starts from zero) and the surface falling back to
-    // the rim (weir flow must not drain the tank below its crest within one interval).
-    if (volumeRate > 1e-14 && t.volume < capacity - 1e-12) step = Math.min(step, (capacity - t.volume) / volumeRate);
-    if (volumeRate < -1e-14 && t.volume > capacity + 1e-12) step = Math.min(step, (t.volume - capacity) / -volumeRate);
+    // the rim (weir flow must not drain the tank below its crest within one interval). Within 1 µL of
+    // the rim no event is located: alternating flow around a brim-full tank (e.g. thermal expansion of
+    // a vessel filled to capacity) would otherwise split the step without bound. Mass stays exact.
+    if (volumeRate > 1e-14 && t.volume < capacity - RIM_TOLERANCE) step = Math.min(step, (capacity - t.volume) / volumeRate);
+    if (volumeRate < -1e-14 && t.volume > capacity + RIM_TOLERANCE) step = Math.min(step, (t.volume - capacity) / -volumeRate);
   }
   return step;
 }

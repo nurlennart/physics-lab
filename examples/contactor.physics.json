@@ -47,7 +47,9 @@
         "heatCapacity": 150,
         "loss": 1,
         "conductance": 10,
-        "maxTemperature": 120
+        "maxTemperature": 120,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -66,7 +68,9 @@
         "maxTemperature": 150,
         "tempCoefficient": 0,
         "tolerance": 0,
-        "conductance": 2
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -104,7 +108,9 @@
         "maxTemperature": 150,
         "tempCoefficient": 0,
         "tolerance": 0,
-        "closed": true
+        "closed": true,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     }
   ],

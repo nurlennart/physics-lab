@@ -1,15 +1,11 @@
 import { build } from 'esbuild';
 import { writeFile, mkdir, readFile } from 'node:fs/promises';
-const bundle = await build({ stdin: { contents: `export { Simulation } from './src/simulation/engine'; export { starter, parseProject, serializeProject } from './src/simulation/projects'; export { examples } from './src/simulation/learning'; export { readProbe } from './src/simulation/measurements';`, resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'esm', write: false });
-const { Simulation, starter, parseProject, serializeProject, examples, readProbe } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
+const bundle = await build({ stdin: { contents: `export { Simulation } from './src/simulation/engine'; export { starter, parseProject, serializeProject } from './src/simulation/projects'; export { examples, exampleFile } from './src/simulation/learning'; export { readProbe } from './src/simulation/measurements';`, resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'esm', write: false });
+const { Simulation, starter, parseProject, serializeProject, examples, exampleFile, readProbe } = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 // --write regenerates the importable files first, so the file runs below check exactly what is written.
 if (process.argv.includes('--write')) {
   for (const mode of ['blank', ...examples.map(e => e.mode)]) {
-    const p = starter(mode);
-    // Stable identifiers keep checked-in scenarios reproducible across regenerations.
-    const ids = new Map([[p.id, `example-${mode}`]]);
-    for (const [group, entries] of Object.entries({ component: p.components, connection: p.connections, probe: p.probes ?? [], joint: p.world?.joints ?? [] })) entries.forEach((entry, i) => ids.set(entry.id, `${mode}-${group}-${i + 1}`));
-    const stable = JSON.parse(serializeProject(p), (_, value) => typeof value === 'string' ? ids.get(value) ?? value : value);
+    const stable = exampleFile(mode);
     parseProject(stable);
     await writeFile(`examples/${mode}.physics.json`, JSON.stringify(stable, null, 2) + '\n');
   }

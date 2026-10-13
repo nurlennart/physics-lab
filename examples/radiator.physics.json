@@ -26,7 +26,8 @@
         "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
-        "insulationConductivity": 0.04
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -52,7 +53,8 @@
         "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
-        "insulationConductivity": 0.04
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -73,7 +75,8 @@
         "lossCoefficient": 8,
         "laminarK": 1500,
         "maxPressure": 1000000,
-        "elevation": 0
+        "elevation": 0,
+        "ambientMode": "inherit"
       }
     },
     {

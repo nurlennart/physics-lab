@@ -40,7 +40,9 @@
         "heatCapacity": 225,
         "loss": 0.15,
         "conductance": 135,
-        "maxTemperature": 150
+        "maxTemperature": 150,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -66,7 +68,8 @@
         "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
-        "insulationConductivity": 0.04
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -122,7 +125,8 @@
         "elevation": 0,
         "inventory": true,
         "segments": 6,
-        "initialTemperature": 20
+        "initialTemperature": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -165,7 +169,8 @@
         "elevation": 0,
         "inventory": true,
         "segments": 4,
-        "initialTemperature": 20
+        "initialTemperature": 20,
+        "ambientMode": "inherit"
       }
     }
   ],

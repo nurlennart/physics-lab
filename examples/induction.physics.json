@@ -88,7 +88,9 @@
         "loss": 18,
         "conductance": 30,
         "maxTemperature": 155,
-        "enabled": true
+        "enabled": true,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     }
   ],

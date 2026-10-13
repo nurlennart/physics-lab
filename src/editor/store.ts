@@ -30,6 +30,7 @@ import {
   serializePresets,
   type ComponentPreset,
 } from "../simulation/presets";
+import { variantAmbient } from "../simulation/environment";
 import { captureAssembly, insertAssembly } from "./assemblies";
 import type { FaultType } from "../simulation/automation";
 import { probeColors, probeUnit } from "../simulation/measurements";
@@ -485,14 +486,13 @@ export const actions = {
                       "hysteresis",
                       ...(x.kind === "source" && Number(x.props.voltage) > Number(model.props.ratedVoltage) ? [] : ["voltage"]),
                       ...(x.kind === "tank" && !state.project.challenge ? [] : ["volume"]),
-                      "ambient",
-                      "ambientMode",
                       "initialTemperature",
                       "closed",
                     ]
                       .filter((k) => k in x.props)
                       .map((k) => [k, x.props[k]]),
                   ),
+                  ...variantAmbient(x.props, catalog(x).props, model.props),
                 },
               }
             : x,

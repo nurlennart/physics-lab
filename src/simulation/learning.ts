@@ -1,5 +1,5 @@
 import type { ChallengeId, Project } from './model';
-import { starter } from './projects';
+import { serializeProject, starter } from './projects';
 
 export const examples = [
   { mode: 'boiler', group: 'Water & industry', title: 'Bosch boiler and ALPHA2 heating loop', category: '400/230 V · Staged heating · Closed loop', description: 'A Bosch Tronic Heat 3000 9 reference boiler supplies a panel radiator through an external ALPHA2-style circulator. Three explicit mains phases expose the unbalanced electrical stages.', experiment: 'Advance 10 min to see supply-temperature cycling. Change the Supply target, restrict maximum stages, or throttle the balancing valve. Inject circulator motor failure to trip the optional flow interlock; restore flow and manually reset. The Inspector labels datasheet values and approximations, including the compliant fill-pressure boundary.' },
@@ -51,4 +51,13 @@ export function challengeProject(id: ChallengeId): Project {
   const ids = new Set(p.components.map(c => c.id));
   p.probes = p.probes?.filter(probe => ids.has(probe.component));
   return p;
+}
+
+/** Checked-in example file content for a starter: serialized, with stable identifiers so regenerations are reproducible. */
+export function exampleFile(mode: string): Project {
+  const p = starter(mode as Parameters<typeof starter>[0]);
+  const ids = new Map([[p.id, `example-${mode}`]]);
+  for (const [group, entries] of Object.entries({ component: p.components, connection: p.connections, probe: p.probes ?? [], joint: p.world?.joints ?? [] }))
+    entries.forEach((entry, i) => ids.set(entry.id, `${mode}-${group}-${i + 1}`));
+  return JSON.parse(serializeProject(p), (_, value) => typeof value === 'string' ? ids.get(value) ?? value : value);
 }

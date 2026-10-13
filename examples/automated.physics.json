@@ -64,7 +64,9 @@
         "loss": 1,
         "maxTemperature": 150,
         "ratedCurrent": 12,
-        "ratedVoltage": 250
+        "ratedVoltage": 250,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -94,7 +96,9 @@
         "loss": 1,
         "maxTemperature": 150,
         "ratedCurrent": 16,
-        "ratedVoltage": 250
+        "ratedVoltage": 250,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -112,7 +116,9 @@
         "heatCapacity": 300,
         "loss": 0.5,
         "conductance": 180,
-        "maxTemperature": 150
+        "maxTemperature": 150,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -138,7 +144,8 @@
         "weirLength": 0.3,
         "lossModel": "manual",
         "insulationThickness": 0.05,
-        "insulationConductivity": 0.04
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -186,7 +193,8 @@
       "props": {
         "conductance": 8,
         "ambient": 20,
-        "enabled": true
+        "enabled": true,
+        "ambientMode": "inherit"
       }
     }
   ],

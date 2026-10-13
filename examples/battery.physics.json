@@ -29,7 +29,9 @@
         "heatCapacity": 5000,
         "loss": 2,
         "conductance": 20,
-        "maxTemperature": 60
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     },
     {
@@ -48,7 +50,9 @@
         "maxTemperature": 150,
         "tempCoefficient": 0,
         "tolerance": 0,
-        "conductance": 2
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
       }
     }
   ],
