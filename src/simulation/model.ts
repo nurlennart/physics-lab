@@ -3,7 +3,7 @@ export type Kind =
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
-  | "electricBoiler"
+  | "electricBoiler" | "panelRadiator"
   | "source"
   | "source3"
   | "sourceAC"
@@ -49,6 +49,7 @@ export type ChallengeId = "light" | "heat" | "runaway" | "transfer" | "pressure"
 import type { SpatialBody, SpatialWorld, MechanicalJoint } from './spatial-model';
 import { makeSpatial } from './spatial-model';
 import { applyDerived } from "./parameters";
+import { kermiHydraulics, kermiModels } from "./panel-radiator-data";
 export interface Component {
   id: string;
   kind: Kind;
@@ -81,6 +82,7 @@ export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
   | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
+  | "supplyTemperature" | "excessTemperature" | "heatInput"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume" | "torque"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
@@ -217,6 +219,18 @@ export const definitions: Record<Kind, Definition> = {
       ...fluid, input("enable", "boolean", true), input("setpoint", "number", true), input("reset", "boolean", true),
     ],
     defaults: { ratedPower: 9000, ratedVoltage: 230, ratedCurrent: 13.1, waterVolume: 3.7, vesselHeatCapacity: 3500, heatCapacity: 1500, conductance: 1200, loss: 1.8, standbyPower: 3, initialTemperature: 20, ambient: 20, setpoint: 60, hysteresis: 7, stageDelay: 2, antiCycleTime: 10, maxStages: 3, enabled: true, tripTemperature: 95, resetTemperature: 70, fillPressure: 150000, flowInterlock: false, minFlow: 130 / 3600000, flowDelay: 5, minVoltage: 180, restartDelay: 2, diameter: 0.02, lossCoefficient: 8, laminarK: 1500, elevation: 0, maxPressure: 300000, maxTemperature: 85 },
+  },
+  panelRadiator: {
+    label: "Panel radiator (hydronic)", category: "Thermal", prefix: "PR", cost: 160,
+    description: "Kermi therm-x2 Profil-K reference: EN 442 output Φ = K_m·ΔT_ln^n from the registered rating and exponent, finite water and steel inventory (16 cells, serial front-then-rear flow), pressure drop fitted to the Kermi chart; heat goes to its room-air boundary",
+    spec: "Type 22 · 600 × 1000 mm · 1,666 W at 75/65/20 °C · 6.08 L",
+    ports: fluid,
+    defaults: { ratedOutput: 1666, exponent: 1.293, waterVolume: 6.08, metalMass: 29.63, metalSpecificHeat: 450, radiantShare: 30, ambient: 20, initialTemperature: 20, diameter: 0.016, lossCoefficient: 18.6, laminarK: 1602, maxPressure: 1000000, maxTemperature: 110, elevation: 0 },
+    variants: (["type11", "type33", "type22tall", "type22long"] as const).map(id => {
+      const m = kermiModels[id], h = kermiHydraulics[m.hydraulic];
+      return { id, label: `Kermi Profil-K type ${m.type} · ${m.height} × ${m.length} mm`, cost: Math.round(160 * (m.output / 1666) ** 0.6), spec: `Type ${m.type} · ${m.height} × ${m.length} mm · ${m.output.toLocaleString("en-US")} W at 75/65/20 °C · ${m.water.toFixed(2)} L`,
+        overrides: { ratedOutput: m.output, exponent: m.exponent, waterVolume: m.water, metalMass: m.mass, radiantShare: m.radiant, lossCoefficient: h.lossCoefficient, laminarK: h.laminarK } };
+    }),
   },
   rigidBody: { label: 'Rigid body', category: 'Mechanical', description: 'Spatial rectangle, circle, convex polygon, beam, wheel or structural boundary; real mass, inertia and collision geometry', spec: 'SI geometry · static / dynamic / kinematic', cost: 25, prefix: 'RB', ports: [shaft], defaults: { forceX: 0, forceY: 0, appliedTorque: 0, brakeDamping: 0 } },
   positionSensor: { label: 'Position sensor', category: 'Sensors', description: 'Actual world position of the target body; selected x or y axis in metres', spec: 'm output', cost: 12, prefix: 'XS', ports: [output('number', 'm')], defaults: { ...sensing, axis: 'y', resolution: 0.00001 } },
@@ -975,7 +989,7 @@ const costDrivers: Partial<Record<Kind, (p: Record<string, Property>) => number>
   heater: p => +p.ratedPower, resistor: p => +p.ratedPower, lamp: p => +p.ratedPower, meter: () => 1,
   source: p => +p.ratedVoltage * +p.maxCurrent, fuse: p => +p.ratedCurrent, switch: p => +p.ratedPower,
   relay: p => +p.ratedCurrent * +p.ratedVoltage, safety: p => +p.ratedCurrent * +p.ratedVoltage,
-  motor: p => +p.ratedPower, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
+  motor: p => +p.ratedPower, panelRadiator: p => +p.ratedOutput, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
   cooler: p => +p.conductance, pipe: p => +p.length * (+p.diameter) ** 1.5, valve: p => (+p.diameter) ** 2,
   checkValve: p => (+p.diameter) ** 2, actuatedValve: p => (+p.diameter) ** 2, cable: p => +p.area * +p.length,
 };

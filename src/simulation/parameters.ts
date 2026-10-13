@@ -49,6 +49,11 @@ const temperature = (label: string, description: string, group: ParamGroup = "th
 });
 const base: Record<string, Base> = {
   fillPressure: { label: "Closed-loop fill pressure", description: "Pressure datum at the boiler inlet for a sealed loop without a finite tank. Represents external precharge and compliant expansion; expansion pressure dynamics are not modeled.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [0, 300000], limitReason: NUMERIC },
+  ratedOutput: { label: "Standard heat output Φ₅₀", description: "EN 442 heat output at 75/65 °C water and 20 °C air (log-mean excess 49.83 K). Kermi catalog sizes: registered φ_SL × length.", unit: "W", group: "configuration", policy: "live", domain: [0, 1e7], positive: true, limitReason: POSITIVE, typical: [100, 10000] },
+  exponent: { label: "Radiator exponent n", description: "EN 442 characteristic Φ = Φ₅₀·(ΔT_ln/49.83 K)^n, registered per type and height. Steel panel radiators 1.24–1.34.", unit: "1", group: "configuration", policy: "live", domain: [1, 2], limitReason: "Power-law characteristic: n ≥ 1 keeps the conductance finite as the excess temperature goes to zero.", typical: [1.2, 1.45] },
+  metalMass: { label: "Steel mass", description: "Radiator mass, lumped at the local water temperature. Kermi catalog weight (covers and side panels included).", unit: "kg", group: "thermal", policy: "reset", domain: [0, 1e5], limitReason: NUMERIC },
+  metalSpecificHeat: { label: "Steel specific heat", description: "Assumed 450 J/(kg·K): plain carbon steel near 50 °C (Incropera, Table A.1: 434 at 300 K, 487 at 400 K).", unit: "J/(kg·K)", group: "thermal", policy: "reset", domain: [0, 5000], limitReason: NUMERIC },
+  radiantShare: { label: "Radiant share", description: "Kermi published share of the output emitted as radiation. Only splits the reported output; the room-air boundary receives both.", unit: "%", group: "advanced", policy: "live", domain: [0, 100], limitReason: "A share of the output.", simulated: false },
   restartDelay: { label: "Supply recovery delay", description: "Time with healthy phase voltages before stage restart; assumed electronics behavior.", unit: "s", group: "operating", policy: "live", domain: [0, 300], limitReason: NUMERIC },
   waterVolume: { label: "Internal water volume", description: "Bosch TH3000 9: 3.7 L. Fixed inventory at reference density, fully mixed.", unit: "L", group: "configuration", policy: "reset", domain: [0.01, 10000], limitReason: POSITIVE },
   stageDelay: { label: "Stage switching interval", description: "Minimum time between ordinary stage changes. Model approximation.", unit: "s", group: "operating", policy: "live", domain: [0.05, 300], limitReason: POSITIVE },
@@ -278,6 +283,16 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     ratedCurrent: { description: "Bosch three-phase full-load line rating. In single-phase wiring all stages sum in the bridged live conductor; use the 39.2 A supply rating.", simulated: false },
     setpoint: { domain: [10, 85], description: "Supply temperature target; wired numeric input overrides this within 10–85 °C." },
     hysteresis: { domain: [0.1, 30], description: "Restart at target minus this difference. Bosch SE04 default 7 K (range 3–15 K)." },
+  },
+  panelRadiator: {
+    waterVolume: { label: "Water content", description: "Kermi catalog water content (type 22, 600 × 1000 mm: 6.08 L). Fixed inventory at the reference density in 16 cells.", typical: [0.5, 50] },
+    ambient: { label: "Room air temperature", description: "Air temperature of the ideal room boundary that receives the heat output (EN 442 reference: 20 °C). A future room model replaces this boundary." },
+    initialTemperature: { description: "Water and steel temperature at reset." },
+    diameter: { label: "Connection bore", description: "Reference bore of the G½ connections for velocity and the two-K loss (assumed 16 mm)." },
+    lossCoefficient: { label: "Turbulent loss K∞", description: "Two-K fit to the Kermi pressure-drop chart (Profil-K types 12–33: 18.6; 10/11: 12.76), referenced to the connection bore." },
+    laminarK: { label: "Low-Re coefficient K₁", description: "Two-K fit to the Kermi chart slope (1.987 in log–log; fit at 70 °C viscosity). Types 12–33: 1602; 10/11: 1099." },
+    maxPressure: { description: "Kermi maximum operating pressure 10 bar (test pressure 13 bar). Exceeding it is reported." },
+    maxTemperature: { label: "Maximum operating temperature", description: "Kermi: 110 °C. Exceeding it is reported (the liquid-water model stops at 100 °C)." },
   },
   source: {
     ratedVoltage: { label: "Maximum output voltage", description: "Highest voltage the supply can produce; the setpoint cannot exceed it." },
@@ -547,6 +562,20 @@ export function derivedReadouts(c: Component): Readout[] {
       { label: "Loss at ampacity", value: n("ratedCurrent") ** 2 * n("resistance") * (1 + n("tempCoefficient") * (n("maxTemperature") - 20)), unit: "W" },
       { label: "Thermal time constant", value: n("loss") > 0 ? n("heatCapacity") / n("loss") : Infinity, unit: "s" },
     ];
+    case "panelRadiator": {
+      // EN 442: Φ = Φ₅₀·(ΔT_ln/ΔT₅₀)^n, ΔT₅₀ = 10/ln(55/45) K; nominal flow gives the 10 K spread at Φ₅₀.
+      const excess = 10 / Math.log(55 / 45), km = n("ratedOutput") / excess ** n("exponent"), capacity = n("waterVolume") * 4180 + n("metalMass") * n("metalSpecificHeat");
+      const at = (s: number, r: number, a: number) => km * ((s - r) / Math.log((s - a) / (r - a))) ** n("exponent");
+      return [
+        { label: "Characteristic coefficient K_m", value: km, unit: "W/Kⁿ", note: "Φ₅₀/ΔT₅₀ⁿ" },
+        { label: "Output at 70/55/20 °C", value: at(70, 55, 20), unit: "W", note: "EN 442 conversion" },
+        { label: "Output at 55/45/20 °C", value: at(55, 45, 20), unit: "W", note: "EN 442 conversion" },
+        { label: "Output at 45/40/20 °C", value: at(45, 40, 20), unit: "W", note: "EN 442 conversion" },
+        { label: "Nominal water flow", value: n("ratedOutput") / 41800 * 3600, unit: "kg/h", note: "10 K spread at Φ₅₀" },
+        { label: "Heat capacity", value: capacity, unit: "J/K", note: "water + steel" },
+        { label: "Cooling time constant at ΔT₅₀", value: capacity * excess / (n("exponent") * n("ratedOutput")) / 60, unit: "min", note: "C/(dΦ/dT), zero flow" },
+      ];
+    }
     case "tank": {
       const mass = n("volume") / 1000 * kellDensity(n("initialTemperature", 20)), g = vesselGeometry(n("capacity"), n("surfaceArea"));
       return [

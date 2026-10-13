@@ -1,0 +1,538 @@
+{
+  "version": 3,
+  "id": "example-kermi",
+  "name": "Bosch boiler, ALPHA2 and Kermi radiator",
+  "components": [
+    {
+      "id": "kermi-component-1",
+      "kind": "sourceAC",
+      "name": "Mains L1 · 0°",
+      "x": 40,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "kermi-component-2",
+      "kind": "sourceAC",
+      "name": "Mains L2 · -120°",
+      "x": 320,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": -120,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "kermi-component-3",
+      "kind": "sourceAC",
+      "name": "Mains L3 · 120°",
+      "x": 600,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 120,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "kermi-component-4",
+      "kind": "electricBoiler",
+      "name": "Bosch TH3000 9 · 3 kW",
+      "x": 330,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedPower": 9000,
+        "ratedVoltage": 230,
+        "ratedCurrent": 13.1,
+        "waterVolume": 3.7,
+        "vesselHeatCapacity": 3500,
+        "heatCapacity": 1500,
+        "conductance": 1200,
+        "loss": 1.8,
+        "standbyPower": 3,
+        "initialTemperature": 20,
+        "ambient": 20,
+        "setpoint": 60,
+        "hysteresis": 7,
+        "stageDelay": 2,
+        "antiCycleTime": 10,
+        "maxStages": 1,
+        "enabled": true,
+        "tripTemperature": 95,
+        "resetTemperature": 70,
+        "fillPressure": 150000,
+        "flowInterlock": true,
+        "minFlow": 0.00003611111111111111,
+        "flowDelay": 5,
+        "minVoltage": 180,
+        "restartDelay": 2,
+        "diameter": 0.02,
+        "lossCoefficient": 8,
+        "laminarK": 1500,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 85
+      }
+    },
+    {
+      "id": "kermi-component-5",
+      "kind": "ground",
+      "name": "G-01",
+      "x": 900,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "kermi-component-6",
+      "kind": "constant",
+      "name": "Supply target · °C",
+      "x": 40,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "value": 60
+      }
+    },
+    {
+      "id": "kermi-component-7",
+      "kind": "circulator",
+      "name": "ALPHA2-style 25-60 · PP 2 m",
+      "x": 330,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "mode": "proportionalPressure",
+        "headSetpoint": 2,
+        "speedSetting": 100,
+        "minSpeed": 25,
+        "enabled": true,
+        "ratedSpeed": 471.24,
+        "ratedFlow": 0.00055556,
+        "shutoffHead": 6,
+        "efficiency": 0.55,
+        "mechanicalLoss": 2,
+        "curvePoints": "",
+        "npshRequired": 0.5,
+        "ratedVoltage": 230,
+        "minVoltage": 180,
+        "ratedPower": 34,
+        "standbyPower": 2.2,
+        "motorEfficiency": 80,
+        "inertia": 0.00002,
+        "rampTime": 2,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "kermi-component-8",
+      "kind": "pipe",
+      "name": "Insulated supply · 6 m",
+      "x": 640,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 6,
+        "diameter": 0.016,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 1.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "kermi-component-9",
+      "kind": "panelRadiator",
+      "name": "Kermi FK0 22 · 600×1000",
+      "x": 930,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedOutput": 1666,
+        "exponent": 1.293,
+        "waterVolume": 6.08,
+        "metalMass": 29.63,
+        "metalSpecificHeat": 450,
+        "radiantShare": 30,
+        "ambient": 20,
+        "initialTemperature": 20,
+        "diameter": 0.016,
+        "lossCoefficient": 18.6,
+        "laminarK": 1602,
+        "maxPressure": 1000000,
+        "maxTemperature": 110,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "kermi-component-10",
+      "kind": "valve",
+      "name": "Lockshield valve · 12 %",
+      "x": 930,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 12,
+        "diameter": 0.015,
+        "lossCoefficient": 5,
+        "laminarK": 500,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
+      }
+    },
+    {
+      "id": "kermi-component-11",
+      "kind": "pipe",
+      "name": "Insulated return · 6 m",
+      "x": 640,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 6,
+        "diameter": 0.016,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 1.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 4,
+        "initialTemperature": 20
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "kermi-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "L1"
+      }
+    },
+    {
+      "id": "kermi-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "kermi-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-2",
+        "port": "a"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "L2"
+      }
+    },
+    {
+      "id": "kermi-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "kermi-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-3",
+        "port": "a"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "L3"
+      }
+    },
+    {
+      "id": "kermi-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "kermi-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-5",
+        "port": "a"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "PE"
+      }
+    },
+    {
+      "id": "kermi-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "kermi-component-7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "kermi-connection-9",
+      "domain": "electrical",
+      "from": {
+        "component": "kermi-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "kermi-component-7",
+        "port": "b"
+      }
+    },
+    {
+      "id": "kermi-connection-10",
+      "domain": "control",
+      "from": {
+        "component": "kermi-component-6",
+        "port": "out"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "setpoint"
+      }
+    },
+    {
+      "id": "kermi-connection-11",
+      "domain": "hydraulic",
+      "from": {
+        "component": "kermi-component-4",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "kermi-component-8",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "kermi-connection-12",
+      "domain": "hydraulic",
+      "from": {
+        "component": "kermi-component-8",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "kermi-component-9",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "kermi-connection-13",
+      "domain": "hydraulic",
+      "from": {
+        "component": "kermi-component-9",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "kermi-component-10",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "kermi-connection-14",
+      "domain": "hydraulic",
+      "from": {
+        "component": "kermi-component-10",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "kermi-component-11",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "kermi-connection-15",
+      "domain": "hydraulic",
+      "from": {
+        "component": "kermi-component-11",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "kermi-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "kermi-connection-16",
+      "domain": "hydraulic",
+      "from": {
+        "component": "kermi-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "kermi-component-4",
+        "port": "inlet"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "kermi-probe-1",
+      "component": "kermi-component-9",
+      "measurement": "supplyTemperature",
+      "name": "Radiator supply",
+      "color": "#ef4444",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-2",
+      "component": "kermi-component-9",
+      "measurement": "returnTemperature",
+      "name": "Radiator return",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-3",
+      "component": "kermi-component-9",
+      "measurement": "fluidTemperature",
+      "name": "Radiator mean water",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-4",
+      "component": "kermi-component-9",
+      "measurement": "heatDuty",
+      "name": "Radiator heat output",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-5",
+      "component": "kermi-component-9",
+      "measurement": "heatInput",
+      "name": "Water heat input ṁ·c·ΔT",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-6",
+      "component": "kermi-component-9",
+      "measurement": "excessTemperature",
+      "name": "Excess temperature ΔT",
+      "color": "#eab308",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-7",
+      "component": "kermi-component-9",
+      "measurement": "flow",
+      "name": "Radiator flow",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-8",
+      "component": "kermi-component-4",
+      "measurement": "heatingPower",
+      "name": "Boiler element input",
+      "color": "#facc15",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-9",
+      "component": "kermi-component-7",
+      "measurement": "power",
+      "name": "Circulator input",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "kermi-probe-10",
+      "component": "kermi-component-4",
+      "measurement": "energyResidual",
+      "name": "Energy balance residual",
+      "color": "#94a3b8",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

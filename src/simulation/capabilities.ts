@@ -14,9 +14,10 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.spatial ? ['rpm', 'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce'] as Measurement[] : []),
     ...(c.kind === 'forceActuator' ? ['appliedForce', 'appliedTorque', 'energy'] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic") ? ["pressure", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
-    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "circulator", "pressureReducingValve", "heatExchanger", "radiator", "electricBoiler"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
+    ...(["pipe", "valve", "actuatedValve", "checkValve", "pump", "circulator", "pressureReducingValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic" && p.id === "inlet") || c.kind === "heatExchanger" ? ["flow", "inletPressure"] as Measurement[] : []),
     ...(c.kind === "electricBoiler" ? ["returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "heatDuty"] as Measurement[] : []),
+    ...(c.kind === "panelRadiator" ? ["supplyTemperature", "returnTemperature", "excessTemperature", "heatDuty", "heatInput"] as Measurement[] : []),
     ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
     ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
     ...(c.kind === "pump" || c.kind === "circulator" ? ["hydraulicPower", "impellerPower", "mechanicalLoss", "hydraulicEfficiency"] as Measurement[] : []),
@@ -86,6 +87,11 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   const three = c.kind === "source3" || c.kind === "inductionMotor";
   if (m === "bodyTemperature") return temperatureLabel(c);
   if (m === "temperature") return ["sensor", "thermostat", "safety"].includes(c.kind) ? "sensed temperature" : temperatureLabel(c);
+  if (c.kind === "panelRadiator") {
+    if (m === "fluidTemperature") return "mean water temperature";
+    if (m === "returnTemperature") return "return (outlet) water temperature";
+    if (m === "heatDuty") return "heat output to the room air";
+  }
   if (m === "fluidTemperature") return c.kind === "pipe" ? "fluid temperature (pipe inventory mean / zero-volume outlet)" : "fluid temperature";
   if (m === "pressure") return c.kind === "tank" ? "bottom gauge pressure" : "outlet / node gauge pressure";
   if (m === "inletPressure") return "inlet gauge pressure";
@@ -105,6 +111,7 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   return plainLabels[m] ?? m;
 }
 const plainLabels: Partial<Record<Measurement, string>> = {
+  supplyTemperature: "supply (inlet) water temperature", excessTemperature: "excess temperature over the air (EN 442 ΔT)", heatInput: "heat delivered by the water flow, ṁ·c_p·(T_in − T_out)",
   returnTemperature: "return temperature", elementTemperature: "element temperature", heatingStages: "active heating stages", heatingPower: "element electrical power", heatLoss: "shell heat loss",
   stateOfCharge: "state of charge", chemicalEnergy: "stored chemical energy", polarizationVoltage: "polarization overpotential", chargeVoltage: "dielectric (charge) voltage", fieldEnergy: "stored field energy", coilVoltage: "DC coil voltage", coilCurrent: "DC coil current", secondaryVoltage: "secondary RMS voltage", secondaryCurrent: "secondary RMS current", fanPower: "fan electrical power",
   positionX: "position x", positionY: "position y", displacement: "displacement", linearSpeed: "speed", velocityX: "velocity x", velocityY: "velocity y",
@@ -137,7 +144,7 @@ export function inspectorMeasurements(c: Component, ac: boolean, hydraulicConnec
  */
 export const operatingMeasurements = new Set<Measurement>([
   "heatingPower", "heatingStages", "heatLoss", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower", "voltage", "current", "currentNC", "power", "reactivePower", "powerFactor", "energy", "nodeVoltage",
-  "flow", "velocity", "reynolds", "frictionFactor", "differentialPressure", "inletPressure", "heatDuty", "npsh",
+  "flow", "velocity", "reynolds", "frictionFactor", "differentialPressure", "inletPressure", "heatDuty", "heatInput", "npsh",
   "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "hydraulicPower", "shaftPower", "efficiency", "rpm",
   "overflow", "transferredVolume", "signal",
 ]);

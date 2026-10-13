@@ -3,7 +3,7 @@
 A browser engineering sandbox. Build circuits, heating systems, pumped water networks, motor drives and physical mechanisms from about 60 component kinds, wire them by their terminals, and run them on one coupled, energy-conserving simulation.
 
 - **Electrical:** DC and AC (phasor) networks, single- and three-phase supplies, batteries, dynamic capacitors and inductors, transformers, filament lamps, cables, fuses, breakers, relays and contactors.
-- **Thermal:** a Bosch Tronic Heat 3000 9 reference electric boiler with staged mains loading, internal water/element inertia and manual-reset protection; heaters, water tanks, heat sinks, cooling jackets, pipe losses and heat exchangers.
+- **Thermal:** a Bosch Tronic Heat 3000 9 reference electric boiler with staged mains loading, internal water/element inertia and manual-reset protection; Kermi therm-x2 panel radiators with their registered EN 442 output, water and steel inventory and charted pressure drop; heaters, water tanks, heat sinks, cooling jackets, pipe losses and heat exchangers.
 - **Hydraulic:** finite vented tanks with weir overflow, pipes with water inventory, valves, regulators, centrifugal pumps with cavitation and standalone electric circulators (proportional or constant pressure, power-limited, on DC or single-phase AC).
 - **Machines:** DC motors with a speed-controlled drive, a dynamic double-cage induction motor calibrated to IE3 data, star-delta and soft starters, a variable-frequency drive, flywheels with gear stages and dynamometers.
 - **Mechanics:** a Physical view with rigid bodies, joints, gears, springs, forces and brakes (Planck.js), sharing shafts and sensors with the schematic.
@@ -49,6 +49,7 @@ The image builds the app and serves the static bundle with nginx on port 8080. N
 | --- | --- |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Source layout, state ownership, clock, editing, wire routing, persistence |
 | [ELECTRIC-BOILER.md](docs/ELECTRIC-BOILER.md) | Bosch boiler reference data, equations, calibration, example and limitations |
+| [PANEL-RADIATOR.md](docs/PANEL-RADIATOR.md) | Kermi therm-x2 radiator data and provenance, EN 442 equations, calibration accuracy, example and limitations |
 | [PHYSICS.md](docs/PHYSICS.md) | Every model: equations, numerics, energy accounting, limitations, references |
 | [COMPONENT-MATRIX.md](docs/COMPONENT-MATRIX.md) | Every component: solver integration, model, tests, missing functionality |
 | [PARAMETER-MATRIX.md](docs/PARAMETER-MATRIX.md) | Generated: every parameter's policy, domain and challenge lock |

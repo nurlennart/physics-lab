@@ -99,6 +99,8 @@ export interface Sample {
   energy: number;
   values: Record<string, number | null>;
   boilerTemperatures?: Record<string, { supply: number; element: number; target: number }>;
+  /** Panel radiators: inlet (null without flow), outlet cell, mean water and air temperature (°C). */
+  panelTemperatures?: Record<string, { supply: number | null; ret: number; mean: number; air: number }>;
   kinetic: number;
   potential: number;
   shaftExport: number;
@@ -465,6 +467,8 @@ export class Simulation {
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
       if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
+      // Panel radiators: water and steel cells change by at most the thermal tolerance per step (as lumped masses).
+      if (c.kind === "panelRadiator" && this.multiphysics.panelRate > 0) limit = Math.min(limit, tolerance / this.multiphysics.panelRate);
       if (c.kind === "circulator") {
         const state = this.multiphysics.circulators[c.id], view = this.multiphysics.circulatorView[c.id];
         if (state?.lockedOut) limit = Math.min(limit, Math.max(DT, state.restartIn / 2));
@@ -496,7 +500,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "pressureReducingValve"].includes(c.kind)
+    return this.spatial.hasMovingBodies || this.project.components.some(c => ["battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -811,7 +815,7 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "pressureReducingValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
       }
@@ -888,6 +892,11 @@ export class Simulation {
         const water = this.fluidTemperatureMeasurement(c.id) ?? 20;
         if (water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
         if (water >= 100 || water < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
+      }
+      if (c.kind === 'panelRadiator') {
+        const cells = (this.multiphysics.pipeCells[c.id] ?? []).map(t => t - 273.15), hottest = Math.max(...cells), coldest = Math.min(...cells);
+        if (hottest > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
+        if (hottest >= 100 || coldest < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
       }
       if (c.kind === "tank" && (temp > 95 || temp < 1)) {
         this.error = `${c.name}: water left the supported liquid range (1–95°C). Simulation paused.`;
@@ -1020,6 +1029,10 @@ export class Simulation {
         (this.project.probes ?? []).map((p) => [p.id, readProbe(p, this)]),
       ),
       boilerTemperatures: Object.fromEntries(Object.entries(this.multiphysics.boilers).map(([id, b]) => [id, { supply: (this.multiphysics.pipeCells[id]?.[0] ?? 293.15) - 273.15, element: b.elementTemperature - 273.15, target: b.setpoint }])),
+      panelTemperatures: Object.fromEntries(this.project.components.filter(c => c.kind === "panelRadiator" && this.multiphysics.pipeCells[c.id]).map(c => {
+        const cells = this.multiphysics.pipeCells[c.id], r = this.multiphysics.hydraulic.readings[c.id], flowing = Math.abs(r?.flow ?? 0) >= 1e-12;
+        return [c.id, { supply: flowing && r?.supplyTemperature !== undefined ? r.supplyTemperature - 273.15 : null, ret: (r && (r.flow ?? 0) < 0 ? cells[0] : cells[cells.length - 1]) - 273.15, mean: cells.reduce((a, t) => a + t, 0) / cells.length - 273.15, air: prop(c, "ambient", 20) }];
+      })),
       kinetic: this.multiphysics.kineticEnergy(this.project),
       potential: this.multiphysics.potential(this.project) - this.multiphysics.initialPotential,
       shaftExport: this.multiphysics.externalShaftWork + this.multiphysics.removedEnergy,

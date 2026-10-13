@@ -173,7 +173,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -196,7 +196,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if (c.kind === "tank") {

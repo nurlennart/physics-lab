@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 78,
-    "coveredPresets": 78,
-    "scenarios": 122,
-    "passed": 122,
+    "presets": 81,
+    "coveredPresets": 81,
+    "scenarios": 125,
+    "passed": 125,
     "failed": 0
   },
   "reports": [
@@ -262,6 +262,153 @@
       "pass": true,
       "time": 1.0000000000000013,
       "energyResidual": -0.000011680748684739228,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Kermi therm-x2 Profil-K 22 · 600 × 1000 · 1,666 W",
+      "presets": [
+        "builtin:panelRadiator:Kermi therm-x2 Profil-K 22 · 600 × 1000 · 1,666 W"
+      ],
+      "checks": [
+        {
+          "label": "EN 442 output at the measured flow (W)",
+          "expected": 1665.269728051931,
+          "measured": 1665.2907568681337,
+          "absoluteError": 0.02102881620271546,
+          "tolerance": 1.665269738051931
+        },
+        {
+          "label": "return temperature (C)",
+          "expected": 64.96843643298854,
+          "measured": 64.96967616614972,
+          "absoluteError": 0.001239733161185086,
+          "tolerance": 0.02
+        },
+        {
+          "label": "Kermi chart pressure drop (Pa)",
+          "expected": 368.86207879882465,
+          "measured": 366.56155722357886,
+          "absoluteError": 2.3005215752457957,
+          "tolerance": 7.377241585976493
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.00003475329140201211,
+          "absoluteError": 0.00003475329140201211,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 3600,
+      "energyResidual": 0.00003475329140201211,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Kermi therm-x2 Profil-K 11 · 600 × 1000 · 979 W",
+      "presets": [
+        "builtin:panelRadiator:Kermi therm-x2 Profil-K 11 · 600 × 1000 · 979 W"
+      ],
+      "checks": [
+        {
+          "label": "EN 442 output at the measured flow (W)",
+          "expected": 1042.4946667843556,
+          "measured": 1042.499910017743,
+          "absoluteError": 0.0052432333875458426,
+          "tolerance": 1.0424946767843555
+        },
+        {
+          "label": "return temperature (C)",
+          "expected": 69.79887270459652,
+          "measured": 69.79938286024765,
+          "absoluteError": 0.0005101556511277749,
+          "tolerance": 0.02
+        },
+        {
+          "label": "Kermi chart pressure drop (Pa)",
+          "expected": 367.7849475109538,
+          "measured": 365.96972548200614,
+          "absoluteError": 1.8152220289476872,
+          "tolerance": 7.355698960219077
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.0000435450638178736,
+          "absoluteError": 0.0000435450638178736,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 3600,
+      "energyResidual": 0.0000435450638178736,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Kermi therm-x2 Profil-K 33 · 600 × 1000 · 2,236 W",
+      "presets": [
+        "builtin:panelRadiator:Kermi therm-x2 Profil-K 33 · 600 × 1000 · 2,236 W"
+      ],
+      "checks": [
+        {
+          "label": "EN 442 output at the measured flow (W)",
+          "expected": 2145.0952779520976,
+          "measured": 2145.143088964029,
+          "absoluteError": 0.047811011931571556,
+          "tolerance": 2.1450952879520977
+        },
+        {
+          "label": "return temperature (C)",
+          "expected": 62.07802694537783,
+          "measured": 62.080177074543144,
+          "absoluteError": 0.0021501291653152066,
+          "tolerance": 0.02
+        },
+        {
+          "label": "Kermi chart pressure drop (Pa)",
+          "expected": 368.8651130159406,
+          "measured": 366.5645767944494,
+          "absoluteError": 2.3005362214911997,
+          "tolerance": 7.377302270318812
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.00006144709186628461,
+          "absoluteError": 0.00006144709186628461,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 3600,
+      "energyResidual": 0.00006144709186628461,
       "massResidual": 0,
       "violations": [],
       "failed": {}

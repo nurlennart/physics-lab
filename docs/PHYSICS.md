@@ -2,7 +2,7 @@
 
 This is the reference for every model the engine solves: the equations, how they are discretized, what they conserve and what they leave out. Component coverage is listed in [COMPONENT-MATRIX.md](COMPONENT-MATRIX.md); parameter domains and editing policies in [SANDBOX.md](SANDBOX.md) and the generated [PARAMETER-MATRIX.md](PARAMETER-MATRIX.md).
 
-Most catalog coefficients are illustrative engineering values. The electric boiler and circulator distinguish manufacturer specifications from fitted and assumed coefficients; see [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for the Bosch TH3000 9 reference and its calibration. Passing the test suites does not certify every combination of allowed parameters.
+Most catalog coefficients are illustrative engineering values. The electric boiler, circulator and panel radiator distinguish manufacturer specifications from fitted and assumed coefficients; see [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for the Bosch TH3000 9 reference and [PANEL-RADIATOR.md](PANEL-RADIATOR.md) for the Kermi therm-x2 radiator and their calibration. Passing the test suites does not certify every combination of allowed parameters.
 
 **Contents**
 
@@ -372,6 +372,17 @@ Not modelled: sealed vessels and gas headspace, multiple port elevations, strati
 
 Enthalpy m·c_p·T is transported conservatively: tanks mix integrated enthalpy, and junctions are solved by a directed upwind mixing system. Hydraulic dissipation and pump inefficiency heat the outgoing water. The heat exchanger is a two-branch ε-NTU element (counter- or parallel-flow) inside the same linear enthalpy transport; its streams are hot/A and cold/B. Not modelled: wetted inventory, fouling, phase change.
 
+### Panel radiator
+
+The hydronic panel radiator (Kermi therm-x2 Profil-K reference) follows the EN 442 characteristic Φ = Φ₅₀·(ΔT_ln/49.83 K)^n with Kermi's registered output and exponent. It holds its published water content and steel mass in 16 cells along the flow path:
+
+```
+C_k·dT_k/dt = ṁ·c·(T_{k−1} − T_k) − g·(w·T_{k−1} + (1 − w)·T_k − T_air) + P_diss/N
+g = K_m/N·|ΔT_m|^(n−1),   w = 1/x − 1/(eˣ − 1),   x = g/(ṁ·c)
+```
+
+The exponentially fitted inlet weight w makes each steady cell attenuate the excess by exactly e^(−x), so the steady chain reproduces the characteristic at any flow. The implicit coefficients stay non-negative, so no cell over- or undershoots the air temperature. Without flow, w = 0 and the cells cool on their own temperatures. g is evaluated from the interval's start state (secant linearisation, first order in time, exact in steady state), and the ledger books the same implicit exchange. The pressure drop is a two-K law fitted to Kermi's chart. Heat goes to an ideal room-air boundary. Equations, provenance, calibration (published outputs within 0.07 %) and limitations: [PANEL-RADIATOR.md](PANEL-RADIATOR.md).
+
 ## Motors and drives
 
 All motors share one shaft model: J·dω/dt = τ_e − τ_pump − τ_load − b·ω, integrated by the implicit midpoint rule inside the coupled substep. A bounded Newton iteration (finite-difference Jacobian, 16 iterations, 10⁻⁸ rad/s midpoint residual) couples motor speeds to the electrical solve, pump torque and rigid-body loading; failure rolls the substep back and reports an error. The Jacobian cache is keyed by step length and discrete state (contactors, load direction, hold).
@@ -661,6 +672,7 @@ external electrical supply + signed external mechanical work
 - [KSB pump lexicon: mechanical efficiency](https://ksb.com/en-global/centrifugal-pump-lexicon/article/mechanical-efficiency-1117904) and [internal efficiency](https://www.ksb.com/en-global/centrifugal-pump-lexicon/article/internal-efficiency-1117912)
 - [SKF: friction model as an engineering tool](https://evolution.skf.com/us/using-a-friction-model-as-an-engineering-tool-2/)
 - [Grundfos ALPHA2/ALPHA3 data booklet](https://api.grundfos.com/literature/Grundfosliterature-815904.pdf): ALPHAx 25-60 curves, P1, supply tolerance and EEI
+- [Kermi: Technik therm-x2 Flachheizkörper (2018)](https://www.alternative-haustechnik.de/media/8d/23/30/1682398475/db-kermi-x2-fhk.pdf): registered EN 442 outputs and exponents, weights, water contents, pressure-drop chart and conversion method; EN 442-2 (radiators and convectors, test methods and rating)
 - [Commission Regulation (EU) No 622/2012](https://www.legislation.gov.uk/eur/2012/622/adopted/data.html) amending (EC) No 641/2009: circulator EEI method, load profile and reference power
 - [Hydraulic Institute: the basics of NPSH](https://www.pumps.org/2022/12/07/the-basics-of-npsh-pump-operating-regions/)
 - [University of Michigan CTMS: DC motor](https://ctms.engin.umich.edu/CTMS/index.php?aux=Activities_DCmotorA)

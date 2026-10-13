@@ -47,6 +47,8 @@ export class Multiphysics {
   /** Field energy dumped when an induction machine's winding current is interrupted (J). */
   switchingLoss = 0;
   dryLoss = 0;
+  /** Largest |dT/dt| (K/s) of any panel-radiator cell over the last advance; bounds adaptive steps. */
+  panelRate = 0;
   removedMass = 0;
   removedEnergy = 0;
   /** Cumulative volume spilled over each tank rim (m³) and the rate over the last step (m³/s). */
@@ -80,7 +82,7 @@ export class Multiphysics {
       starters: structuredClone(this.starters), drives: structuredClone(this.drives), shaftElements: structuredClone(this.shaftElements),
       drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
       acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
-      circulatorCommands: this.circulatorCommands,
+      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate,
     };
   }
   initialize(p: Project) {
@@ -567,6 +569,7 @@ export class Multiphysics {
     const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {}, commands = this.converterCommands(s);
     this.circulatorCommands = this.circulatorControls(s);
     const elementBefore = Object.fromEntries(Object.entries(this.boilers).map(([id, b]) => [id, b.elementTemperature]));
+    const panelBefore = s.project.components.filter(c => c.kind === 'panelRadiator' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
@@ -838,6 +841,7 @@ export class Multiphysics {
       if (sum.coil) { total.coilCurrent = sum.coil.currentSign * Math.sqrt(sum.coil.current / dt); total.coilVoltage = sum.coil.voltageSign * Math.sqrt(sum.coil.voltage / dt); total.coilPower = sum.coil.power / dt; }
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
+    this.panelRate = Math.max(0, ...panelBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
     return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain, boilerElementGain: s.project.components.filter(c => c.kind === 'electricBoiler').reduce((sum, c) => sum + prop(c, 'heatCapacity') * (this.boilers[c.id].elementTemperature - elementBefore[c.id]), 0) };
   }

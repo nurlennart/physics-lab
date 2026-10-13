@@ -10,6 +10,7 @@ import {
 import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
+  supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
@@ -36,6 +37,9 @@ export function readProbe(p: Probe, s: Simulation): number | null {
   const h = s.multiphysics.hydraulic.readings[c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id], motor = s.multiphysics.motors[c.id];
   switch (p.measurement) {
     case "returnTemperature": return h?.returnTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.returnTemperature - 273.15;
+    case "supplyTemperature": return h?.supplyTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.supplyTemperature - 273.15;
+    case "excessTemperature": return h?.excessTemperature ?? null;
+    case "heatInput": return h?.heatInput ?? 0;
     case "elementTemperature": return (s.multiphysics.boilers[c.id]?.elementTemperature ?? 293.15) - 273.15;
     case "heatingStages": return s.multiphysics.boilers[c.id]?.stages ?? 0;
     case "heatingPower": return r?.heatingPower ?? 0;

@@ -51,14 +51,30 @@ function CircuitSymbol({ c }: { c: Component }) {
     power = hasStarted() ? r?.power ?? 0 : 0;
   const failed = simulation.failed[c.id];
   if (c.kind === 'electricBoiler') {
+    // Everything stays below the 31 px name band; the mains stubs end at the module edge.
     const state = simulation.multiphysics.boilers[c.id], water = simulation.fluidTemperatureMeasurement(c.id) ?? prop(c, 'initialTemperature');
+    const stages = hasStarted() ? state?.stages ?? 0 : 0;
     return <g>
-      <rect x="36" y="18" width="102" height="96" rx="9" fill={T.n5} stroke={state?.fault ? T.faultText : T.thermalText} strokeWidth="2" />
-      <path d="M0 66H36M138 66H174M52 66V45H122V86H52V66" fill="none" stroke={T.hydraulic} strokeWidth="3" />
-      {[0, 1, 2].map(i => <path key={i} d={`M${65 + 22 * i} 36V56l-6 6 12 8-12 8 6 8v12`} fill="none" stroke={hasStarted() && i < (state?.stages ?? 0) ? T.electricalText : T.n11} strokeWidth="2" />)}
-      <rect x="57" y="91" width="60" height="17" rx="3" fill={T.n4} />
-      <text x="87" y="104" textAnchor="middle" className="scale-label">{water.toFixed(1)} °C</text>
-      <text x="87" y="127" textAnchor="middle" className="scale-label">{state?.fault ? 'TRIPPED' : hasStarted() ? `${state?.stages ?? 0}/3 · ${(power / 1000).toFixed(2)} kW` : 'TH3000 · external pump'}</text>
+      <path d="M0 66H40M134 66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
+      <rect x="40" y="39" width="94" height="52" rx="7" fill={T.n5} stroke={state?.fault ? T.faultText : T.thermalText} strokeWidth="2" />
+      {[0, 1, 2].map(i => <path key={i} d={`M${66 + 21 * i} 44v8l-5 5 10 7-10 7 5 5v8`} fill="none" stroke={i < stages ? T.electricalText : T.n11} strokeWidth="2" />)}
+      <text x="87" y="109" textAnchor="middle" className={`symbol-readout ${state?.fault ? 'fault' : 'thermal'}`}>{state?.fault ? `TRIPPED · ${water.toFixed(1)} °C` : `${water.toFixed(1)} °C water`}</text>
+      <text x="87" y="124" textAnchor="middle" className="symbol-readout dim">{hasStarted() ? `${stages}/3 stages · ${(power / 1000).toFixed(2)} kW` : 'TH3000 9 · external pump'}</text>
+    </g>;
+  }
+  if (c.kind === 'panelRadiator') {
+    // Cells in flow order (front panel, then rear), shaded by their excess over the room air.
+    const cells = (simulation.multiphysics.pipeCells[c.id] ?? []).map(t => t - 273.15), air = prop(c, 'ambient', 20), h = simulation.multiphysics.hydraulic.readings[c.id];
+    const mean = cells.length ? cells.reduce((a, t) => a + t, 0) / cells.length : prop(c, 'initialTemperature'), flowing = hasStarted() && Math.abs(h?.flow ?? 0) >= 1e-12;
+    const width = 114 / Math.max(1, cells.length);
+    return <g>
+      <path d="M0 66H20V46H30M144 90H154V66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
+      <rect x="30" y="39" width="114" height="58" rx="3" fill={T.n5} />
+      {cells.map((t, i) => <rect key={i} x={30 + i * width} y="39" width={width} height="58" fill={T.thermal} fillOpacity={Math.max(0.04, Math.min(0.85, (t - air) / 60))} />)}
+      {cells.map((_, i) => i && i % 2 === 0 ? <path key={i} d={`M${30 + i * width} 43V93`} stroke={T.n9} strokeWidth="0.75" /> : null)}
+      <rect x="30" y="39" width="114" height="58" rx="3" fill="none" stroke={T.thermalText} strokeWidth="1.5" />
+      <text x="87" y="112" textAnchor="middle" className="symbol-readout thermal">{flowing && h?.supplyTemperature !== undefined && h.returnTemperature !== undefined ? `${(h.supplyTemperature - 273.15).toFixed(1)} → ${(h.returnTemperature - 273.15).toFixed(1)} °C` : `${mean.toFixed(1)} °C water`}</text>
+      <text x="87" y="126" textAnchor="middle" className="symbol-readout dim">{hasStarted() ? `${(h?.duty ?? 0).toFixed(0)} W to room` : `Φ₅₀ ${prop(c, 'ratedOutput').toFixed(0)} W · n ${prop(c, 'exponent').toFixed(3)}`}</text>
     </g>;
   }
   if (c.kind === "battery") return <g>
@@ -1092,7 +1108,7 @@ export default function Workspace() {
                         )}
                         <path
                           d={
-                            (c.kind === "electricBoiler" && p.domain === "electrical") ? `M${x} ${y}V18` : p.domain === "control" &&
+                            (c.kind === "electricBoiler" && p.domain === "electrical") ? `M${x} ${y}V0` : p.domain === "control" &&
                             ["electricBoiler", "relay", "safety", "cooler"].includes(c.kind)
                               ? `M${x} ${y}V${h}`
                               : (p.id === "heat" || c.kind === "contactor" && ["ca", "cb"].includes(p.id) || c.kind === "radiator" && ["a", "b"].includes(p.id) || c.kind === "circulator" && ["a", "b"].includes(p.id))
@@ -1135,6 +1151,8 @@ export default function Workspace() {
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(simulation.multiphysics.hydraulic.readings[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
                       : c.kind === "circulator"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(-(simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 9806.65).toFixed(2)} m head`
+                      : c.kind === "panelRadiator"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ΔT ${(simulation.multiphysics.hydraulic.readings[c.id]?.excessTemperature ?? 0).toFixed(1)} K`
                         : ["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction"].includes(c.kind)
                           ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
                         : c.kind === "motor"

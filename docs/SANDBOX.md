@@ -52,7 +52,7 @@ Sandbox experiments can **Advance** by +1 s, +10 s, +1 min, +10 min, +1 h, +6 h 
 
 ## Presets, catalog variants and cost
 
-- **Catalog variants** are purchasable models, also valid in challenges: heaters from 100 W to 100 kW, supplies from a 30 V / 5 A CV/CC laboratory unit to 800 V / 250 A, tanks to 10,000 L, motors to 75 kW, pumps to 3,000 L/min, electric circulators (230 V heating, 12 V DC solar), fuses to 250 A, breakers to MCCB 250 A, a 250 A contactor and more.
+- **Catalog variants** are purchasable models, also valid in challenges: heaters from 100 W to 100 kW, supplies from a 30 V / 5 A CV/CC laboratory unit to 800 V / 250 A, tanks to 10,000 L, motors to 75 kW, pumps to 3,000 L/min, electric circulators (230 V heating, 12 V DC solar), Kermi therm-x2 panel radiators (types 11, 22 and 33; sandbox only), fuses to 250 A, breakers to MCCB 250 A, a 250 A contactor and more.
 - **Built-in presets** are sandbox starting points grouped Laboratory, General-purpose, Industrial and High-capacity.
 - **User presets:** "Save as preset" in the Inspector, then apply, rename and delete. They are stored on the device and exported or imported as `physics-lab-presets` v1 JSON from the File menu; every preset is validated on load. Components remember their preset name for display only.
 - **Cost:** a catalog configuration costs its catalog price. A custom configuration is estimated with the six-tenths rule on its sizing quantity relative to the closest catalog model of the same kind (cables: linear in conductor volume), with a floor of 25 % of that price, and labelled "Estimated cost (custom sizing)". Challenges reject custom configurations before costing. The cost model is an explainable estimate, not market pricing.

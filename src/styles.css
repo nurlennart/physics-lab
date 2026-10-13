@@ -586,6 +586,15 @@ kbd {
   fill: var(--n-12);
   letter-spacing: 0.5px;
 }
+/* In-symbol live readouts: same size and contrast as wire chips, readable at the default zoom. */
+.symbol-readout {
+  font: 500 11px var(--mono);
+  fill: var(--n-14);
+  letter-spacing: 0;
+}
+.symbol-readout.thermal { fill: var(--thermal-text); }
+.symbol-readout.fault { fill: var(--fault-text); }
+.symbol-readout.dim { fill: var(--n-13); font-weight: 400; }
 .polarity {
   font: 10px var(--mono);
   fill: var(--electrical-text);
@@ -2620,6 +2629,10 @@ select option {
   max-height: 155px;
   overflow: auto;
 }
+/* Device summaries (a few fixed tiles) show in full; the generic live list scrolls. */
+.inspector-scroll .measurement-list.summary {
+  max-height: none;
+}
 .probe-manager {
   padding: 8px 20px;
   border-bottom: 1px solid var(--n-9);
@@ -3261,6 +3274,8 @@ select option {
 .domain-mechanical .component-id { fill: var(--mechanical-text); }
 .component-caption { font: 500 13px var(--sans); fill: var(--n-14); }
 .live-caption { font: 500 12px var(--mono); fill: var(--n-13); letter-spacing: 0; }
+/* A halo in the stage colour keeps captions legible where a wire into a bottom terminal passes under them. */
+.component-caption, .live-caption { paint-order: stroke; stroke: var(--n-5); stroke-width: 4px; stroke-linejoin: round; }
 .scale-label { font-size: 9px; letter-spacing: 0.2px; }
 
 .wire-line { stroke: var(--electrical); stroke-width: 3; stroke-linecap: round; }

@@ -18,7 +18,7 @@ export function starter(
   mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode = "heat",
   challenge = false,
 ): Project {
-  if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler"].includes(mode)) return deviceStarter(mode as DeviceMode);
+  if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
   if (mode === "exchanger") return heatExchangerStarter();
   if (mode === "industrial") return industrialStarter();
@@ -427,7 +427,7 @@ export function validateProbes(p: Project) {
     ids.add(probe.id);
     if (
       ![
-        "returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss",
+        "returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "supplyTemperature", "excessTemperature", "heatInput",
         "pressure", "inletPressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "torque", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
         'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',
         "voltage",

@@ -81,6 +81,20 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       assert(s.fluidTemperatureMeasurement(c.id) > 20);
       break;
     }
+    case 'panelRadiator': {
+      // Gravity-fed from a 75 °C tank: after 1 h the output equals the EN 442 characteristic at the measured
+      // flow (independent bisection for the return temperature), and Δp follows the Kermi chart line.
+      const [high, low] = tanks(b, 0.04, 75); connectFluid(b, high, c, low);
+      s = simulation(b); s.advanceAdaptive(3600); assert.equal(s.error, null);
+      const r = s.multiphysics.hydraulic.readings[c.id], m = r.flow * 1000, excess = (t, a) => (75 - t) / Math.log((75 - a) / (t - a));
+      let lo = 20, hi = 75;
+      for (let i = 0; i < 200; i++) { const t = (lo + hi) / 2; if (m * cp * (75 - t) > v.ratedOutput * (excess(t, 20) / (10 / Math.log(55 / 45))) ** v.exponent) lo = t; else hi = t; }
+      near(report, 'EN 442 output at the measured flow (W)', m * cp * (75 - lo), r.duty, 0.001);
+      near(report, 'return temperature (C)', lo, r.returnTemperature - 273.15, 0, 0.02);
+      const group = v.lossCoefficient === 18.6 ? 181.3 : 124.3;
+      near(report, 'Kermi chart pressure drop (Pa)', group * (m * 36) ** 1.987, r.differentialPressure, 0.02);
+      break;
+    }
     case 'source': {
       const current = v.mode === 'cc' ? v.current : Math.min(v.maxCurrent / 4, 10);
       const r = v.voltage / (v.mode === 'cc' ? 2 * current : current);

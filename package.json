@@ -12,6 +12,7 @@
     "test:e2e": "playwright test",
     "test:physics": "vitest run && node scripts/validate-physics.mjs",
     "validate:boiler": "node scripts/check-boiler.mjs",
+    "validate:radiator": "node scripts/check-radiator.mjs",
     "validate:coupled": "node scripts/check-coupled.mjs",
     "validate:physics": "node scripts/validate-physics.mjs",
     "validate:spatial": "node scripts/check-spatial.mjs",

@@ -25,7 +25,7 @@ export function registerLabTools() {
       name: "read_lab_measurements",
       title: "Read laboratory measurements",
       description:
-        "Read calculated voltages, currents, temperatures, energy, and simulation status. Hydraulic readings are SI; pump hydraulicPower is net Δp·Q, impellerPower is ρgH·Q, efficiency is overall net/shaft as a fraction (null when undefined). Circulators report P1 as their electrical power; their EEI is a configuration index, not a reading.",
+        "Read calculated voltages, currents, temperatures, energy, and simulation status. Hydraulic readings are SI; pump hydraulicPower is net Δp·Q, impellerPower is ρgH·Q, efficiency is overall net/shaft as a fraction (null when undefined). Circulators report P1 as their electrical power; their EEI is a configuration index, not a reading. Panel radiators report duty (heat output to the room air, W), heatInput (ṁ·c_p·ΔT, W), supplyTemperature and returnTemperature (K) and excessTemperature (K over the air).",
       inputSchema: {
         type: "object",
         properties: {},

@@ -98,6 +98,112 @@
     ]
   },
   {
+    "mode": "kermi",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 180400.2520014282,
+    "energyResidual": -4.801324338110646e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator supply",
+        "value": 23.737692904548396
+      },
+      {
+        "name": "Radiator return",
+        "value": 20.00002450568155
+      },
+      {
+        "name": "Radiator mean water",
+        "value": 20.30819252143533
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 3.512522212617633
+      },
+      {
+        "name": "Water heat input ṁ·c·ΔT",
+        "value": 636.5977765198718
+      },
+      {
+        "name": "Excess temperature ΔT",
+        "value": 0.4249356100974652
+      },
+      {
+        "name": "Radiator flow",
+        "value": 2.4447773723987423
+      },
+      {
+        "name": "Boiler element input",
+        "value": 3000.0000000000005
+      },
+      {
+        "name": "Circulator input",
+        "value": 3.6765970988449777
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -4.801324338110646e-10
+      }
+    ]
+  },
+  {
+    "mode": "kermi",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 180400.2520014282,
+    "energyResidual": -4.801324338110646e-10,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator supply",
+        "value": 23.737692904548396
+      },
+      {
+        "name": "Radiator return",
+        "value": 20.00002450568155
+      },
+      {
+        "name": "Radiator mean water",
+        "value": 20.30819252143533
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 3.512522212617633
+      },
+      {
+        "name": "Water heat input ṁ·c·ΔT",
+        "value": 636.5977765198718
+      },
+      {
+        "name": "Excess temperature ΔT",
+        "value": 0.4249356100974652
+      },
+      {
+        "name": "Radiator flow",
+        "value": 2.4447773723987423
+      },
+      {
+        "name": "Boiler element input",
+        "value": 3000.0000000000005
+      },
+      {
+        "name": "Circulator input",
+        "value": 3.6765970988449777
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -4.801324338110646e-10
+      }
+    ]
+  },
+  {
     "mode": "battery",
     "source": "generated",
     "simulatedSeconds": 60,

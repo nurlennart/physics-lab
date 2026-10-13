@@ -1,4 +1,5 @@
 import { BoilerInspector } from './BoilerInspector';
+import { PanelRadiatorInspector } from './PanelRadiatorInspector';
 import { T } from "../theme/tokens";
 import { inspectorMeasurements, measurementLabel, operatingMeasurements } from "../simulation/capabilities";
 import { useState } from "react";
@@ -151,6 +152,7 @@ export default function Inspector() {
         ) : (
           <>
             {c.kind === "electricBoiler" && <BoilerInspector c={c} />}
+            {c.kind === "panelRadiator" && <PanelRadiatorInspector c={c} />}
             <div className="inspector-section">
               <div className="section-label">
                 <span>Live measurements</span>
