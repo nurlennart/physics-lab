@@ -1,4 +1,3 @@
-import { challengeProject } from "../simulation/learning";
 import { useSyncExternalStore } from "react";
 import {
   connect,
@@ -37,7 +36,7 @@ import { probeColors, probeUnit } from "../simulation/measurements";
 import { componentNameError, propertyError, transitionError, withProperty, editPolicy } from "../simulation/integrity";
 import { Simulation, FixedClock, DT, AdaptiveRun } from "../simulation/engine";
 import { paramSpec } from "../simulation/parameters";
-import { evaluateChallenge } from "../simulation/challenges";
+import { challengeDefinition, evaluateChallenge, isChallengeId } from "../simulation/challenges";
 import { createRunArchive, restoreRunArchive, yieldToBrowser, type RecordedInput } from "../simulation/replay";
 import { makeSpatial, defaultWorld, type ShapeKind, type SpatialBody, type MechanicalJoint } from '../simulation/spatial-model';
 import { makeJoint } from '../simulation/spatial-projects';
@@ -230,12 +229,7 @@ export const actions = {
       y ?? 220 + Math.random() * 60,
       state.project.components,
     );
-    if (state.project.challenge === 'light' && kind === 'source') c.props.voltage = 12;
-    if (state.project.challenge === 'descent' && kind === 'forceActuator') {
-      c.props.target = state.project.components.find(c => c.name === 'Suspended load')!.id;
-      c.props.axis = 'y';
-      c.props.value = 0;
-    }
+    if (state.project.challenge) challengeDefinition(state.project.challenge).onAdd?.(c, state.project);
     c.x = Math.round(c.x / 20) * 20;
     c.y = Math.round(c.y / 20) * 20;
     if (
@@ -734,8 +728,8 @@ export const actions = {
     mode: Parameters<typeof starter>[0] = "blank",
     challenge = false,
   ) {
-    if (challenge && mode !== "boiler" && mode !== "kermi" && mode !== "battery" && mode !== "capacitor" && mode !== "inductor" && mode !== "contactor" && mode !== "transformer" && mode !== "radiator" && mode !== "circulator" && mode !== "induction" && mode !== "starting" && mode !== "testbench" && mode !== "acRlc" && mode !== "blank" && mode !== "automated" && mode !== "industrial" && mode !== "exchanger" && mode !== "circulation" && mode !== "mechanism" && mode !== "rotor") {
-      actions.load(challengeProject(mode));
+    if (challenge && isChallengeId(mode)) {
+      actions.load(challengeDefinition(mode).scaffold());
       if (state.project.challenge === mode) emit({ view: "guidebook" });
     } else actions.load(starter(mode));
   },

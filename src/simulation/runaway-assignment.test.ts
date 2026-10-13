@@ -11,7 +11,7 @@ import {
   type Project,
   type Kind,
 } from "./model";
-import { evaluateChallenge } from "./challenges";
+import { evaluateChallenge, runawayState } from "./challenges";
 import { readProbe } from "./measurements";
 import { replayExperiment } from "./replay";
 import { captureAssembly, insertAssembly } from "../editor/assemblies";
@@ -52,11 +52,11 @@ describe("Thermal Runaway assignment", () => {
     const s = new Simulation(p);
     for (let i = 0; i < 3600 * 60; i++) {
       if (
-        s.runaway.phase === "recovery" &&
-        s.runaway.safetyId &&
-        !s.automation.memory[s.runaway.safetyId].manualResets
+        runawayState(s).phase === "recovery" &&
+        runawayState(s).safetyId &&
+        !s.automation.memory[runawayState(s).safetyId].manualResets
       ) {
-        const cutoff = p.components.find((c) => c.id === s.runaway.safetyId)!;
+        const cutoff = p.components.find((c) => c.id === runawayState(s).safetyId)!;
         if (s.temperatures[String(cutoff.props.target)] <= 85)
           s.resetSafety(cutoff.id);
       }
@@ -64,13 +64,13 @@ describe("Thermal Runaway assignment", () => {
       if (evaluateChallenge(p, s)?.complete) break;
     }
     expect(s.error).toBeNull();
-    expect(s.runaway.phase).toBe("complete");
+    expect(runawayState(s).phase).toBe("complete");
     expect(evaluateChallenge(p, s)?.complete).toBe(true);
-    expect(s.runaway.maxTemperature).toBeLessThan(95);
-    expect(s.runaway.normalTime).toBeGreaterThanOrEqual(240);
-    expect(s.runaway.switches).toBeGreaterThan(2);
-    expect(s.runaway.automaticSwitches).toBeGreaterThanOrEqual(2);
-    expect(s.runaway.recoverySwitches).toBeGreaterThanOrEqual(2);
+    expect(runawayState(s).maxTemperature).toBeLessThan(95);
+    expect(runawayState(s).normalTime).toBeGreaterThanOrEqual(240);
+    expect(runawayState(s).switches).toBeGreaterThan(2);
+    expect(runawayState(s).automaticSwitches).toBeGreaterThanOrEqual(2);
+    expect(runawayState(s).recoverySwitches).toBeGreaterThanOrEqual(2);
   }, 60000);
   it("environment, budget and rating exploits are rejected, including imported projects", () => {
     for (const field of ["ambient", "initialTemperature", "volume"]) {
@@ -90,10 +90,10 @@ describe("Thermal Runaway assignment", () => {
     p.challenge = "runaway";
     const s = new Simulation(p);
     for (let i = 0; i < 3600 * 60; i++) {
-      if (!s.step() || s.runaway.phase === "recovery") break;
+      if (!s.step() || runawayState(s).phase === "recovery") break;
     }
     expect(evaluateChallenge(p, s)?.complete).toBe(false);
-    expect(s.runaway.maxTemperature).toBeGreaterThanOrEqual(94.9);
+    expect(runawayState(s).maxTemperature).toBeGreaterThanOrEqual(94.9);
   }, 60000);
 });
 describe("challenge fault rejection and alternative controllers", () => {
@@ -142,7 +142,7 @@ describe("challenge fault rejection and alternative controllers", () => {
     for (let i = 0; i < 3600 * 60; i++) if (!s.step()) break;
     expect(s.error).toMatch(/supported liquid range/);
     expect(evaluateChallenge(p, s)?.failed).toBe(true);
-    expect(s.runaway.safetyId).toBe("");
+    expect(runawayState(s).safetyId).toBe("");
   }, 60000);
   it("a thermostat with its own sensor is an alternative valid challenge solution", () => {
     let p = starter("automated");
@@ -164,12 +164,12 @@ describe("challenge fault rejection and alternative controllers", () => {
     const s = new Simulation(p);
     for (let i = 0; i < 3600 * 60; i++) {
       if (
-        s.runaway.phase === "recovery" &&
-        s.runaway.safetyId &&
-        !s.automation.memory[s.runaway.safetyId].manualResets &&
+        runawayState(s).phase === "recovery" &&
+        runawayState(s).safetyId &&
+        !s.automation.memory[runawayState(s).safetyId].manualResets &&
         s.temperatures[tank.id] <= 85
       )
-        s.resetSafety(s.runaway.safetyId);
+        s.resetSafety(runawayState(s).safetyId);
       if (!s.step() || evaluateChallenge(p, s)?.complete) break;
     }
     expect(evaluateChallenge(p, s)?.complete).toBe(true);
@@ -228,8 +228,8 @@ it("an unwired safety latch cannot claim credit for a separate manual disconnect
   }
   expect(s.automation.memory[cutoff.id]?.tripped).toBe(true);
   expect(s.electrical.readings[heater.id].power).toBe(0);
-  expect(s.runaway.safetyId).toBe("");
-  expect(s.runaway.phase).toBe("fault");
+  expect(runawayState(s).safetyId).toBe("");
+  expect(runawayState(s).phase).toBe("fault");
   expect(evaluateChallenge(s.project, s)?.complete).toBe(false);
 }, 60000);
 it("redundant independent cutoffs in series remain a valid engineered solution", () => {
@@ -256,7 +256,7 @@ it("redundant independent cutoffs in series remain a valid engineered solution",
   p.challenge = "runaway";
   const s = new Simulation(p);
   for (let i = 0; i < 3600 * 60; i++) {
-    if (s.runaway.phase === "recovery" && s.temperatures[tank.id] <= 85)
+    if (runawayState(s).phase === "recovery" && s.temperatures[tank.id] <= 85)
       for (const cutoff of [first, second])
         if (s.automation.memory[cutoff.id]?.tripped) s.resetSafety(cutoff.id);
     if (!s.step() || evaluateChallenge(p, s)?.complete) break;

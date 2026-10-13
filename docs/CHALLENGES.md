@@ -2,7 +2,18 @@
 
 **Challenges** opens nine scored assignments. A mission starts from a scaffold that contains only the fixed environment (vessels, loads, supports, consumer demand); the player chooses, buys, places and wires the equipment. A guidebook opens at launch with the objectives, suggested equipment and three optional hints, and can be reopened from the challenge strip. The example shelf (**File → Starters & examples**) has complete, working versions of most of these systems as free experiments.
 
-Definitions live in `src/simulation/challenges.ts` and `spatial-challenges.ts`; mission scaffolds and guidebooks in `learning.ts`; reference costs in `scoring.ts`.
+Each mission is one definition in the registry `src/simulation/challenges/` (see [Adding a mission](#adding-a-mission)).
+
+## Adding a mission
+
+A mission is a `ChallengeDefinition` (`challenges/types.ts`): card text, budget and economy target, locked rules (ambient, initial temperature, supply voltage, allowed kinds), engine limits, guidebook, starting layout (`scaffold`), catalog reference design (`reference`, with `operateReference` for operator actions such as a manual reset), integrity (`validate`, `vessels`), tracking state with engine hooks (`beforeStep`, `afterSolve`, `update`, `actuatorValue`, `onAdd`), `evaluate`, and optional status text for the challenge strip and dialog.
+
+Families share their mechanics: `circuits.ts` (requirement-checked electrical and thermal missions, 001–002), `runaway.ts` (003), `hydraulic.ts` (vessels, 24 V/500 W/2 bar limits and scoring, 004–006) and `mechanical.ts` (locked loads in the Physical view, 007–009). A mission in an existing family is mostly configuration; a new kind of mission implements the hooks it needs.
+
+To add one:
+1. Add its id to `challengeIds` (`challenges/ids.ts`, mission-number order) and its definition to `challengeRegistry` (`challenges/registry.ts`); the compiler reports a missing definition.
+2. Run `node scripts/check-scores.mjs`: it runs every registered reference design and fails for a mission without a recorded result. Record it with `--update` and explain the result in the commit.
+3. The mission list, guidebook, parts library, integrity checks, engine hooks and `learning.test.ts` (valid starting layout, three hints) pick it up from the registry.
 
 ## Assignments
 

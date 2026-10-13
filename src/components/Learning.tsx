@@ -1,9 +1,8 @@
-import { economyTargets } from "../simulation/scoring";
 import { useState } from 'react';
 import { BookOpen, X, ArrowUpRight, Lightbulb, Star, Check } from 'lucide-react';
 import { actions, simulation, useLab } from '../editor/store';
-import { examples, fieldNotes } from '../simulation/learning';
-import { challenges, evaluateChallenge } from '../simulation/challenges';
+import { examples } from '../simulation/learning';
+import { challengeDefinition, evaluateChallenge } from '../simulation/challenges';
 import { projectCost } from '../simulation/model';
 
 export function Examples() {
@@ -24,12 +23,12 @@ export function ChallengeGuidebook() {
   const s = useLab();
   const id = s.project.challenge;
   if (!id) return null;
-  const d = challenges[id], notes = fieldNotes[id], result = evaluateChallenge(s.project, simulation)!;
+  const d = challengeDefinition(id), notes = d.guide, result = evaluateChallenge(s.project, simulation)!;
   return <div className="modal-backdrop"><section className="learning-dialog guidebook-dialog" role="dialog" aria-modal="true" aria-label="Challenge guidebook">
     <div className="dialog-header"><div><span className="eyebrow">MISSION {d.number} · {d.difficulty}</span><h2>{d.title}</h2></div><button aria-label="Close guidebook" onClick={() => actions.set({ view: 'workspace' })}><X size={20}/></button></div>
     <p className="mission-story">{notes.mission}</p>
     <div className="mission-stats"><span>€{projectCost(s.project).toFixed(0)} / €{d.budget} spent</span><span><Star size={15}/>{result.complete ? `${result.stars} stars · ${result.score}/100` : 'Chase three stars'}</span></div>
-    <p className="field-hint">Full economy points at €{economyTargets[id]} or less; they decrease to zero at the €{d.budget} budget. Earn two stars at 80 points and three at 90. A perfect score is 100.</p>
+    <p className="field-hint">Full economy points at €{d.economyTarget} or less; they decrease to zero at the €{d.budget} budget. Earn two stars at 80 points and three at 90. A perfect score is 100.</p>
     <div className="guidebook-columns"><div><h3>Your mission</h3><p>{d.description}</p><ul className="mission-objectives">{d.objectives.map(o => <li key={o}><Check size={15}/>{o}</li>)}</ul><h3>Plan your build</h3><p>{notes.kit}</p><p className="field-hint">Add equipment from the component library in Schematic view. Select a component to choose its catalog model and settings. Connect matching terminals, then run and inspect your measurements. Reset to rebuild and try again.</p></div>
     <div><h3><BookOpen size={17}/> Field notes</h3><p>Open one hint at a time when you need a nudge.</p>{notes.hints.map((hint, index) => <details className="mission-hint" key={hint}><summary>Hint {index + 1} · {['Find your approach', 'Build the connections', 'Tune & test'][index]}</summary><p>{hint}</p></details>)}<p className="field-hint">Completion earns your first star. Use less energy, spend less, and finish efficiently to improve your score. Safety and budget constraints must pass.</p></div></div>
     {simulation.time > 0 && <div className="mission-checks"><h3>Live mission checks</h3>{result.checks.map(c => <p key={c.label}>{c.ok ? '✓' : '○'} {c.label}</p>)}</div>}

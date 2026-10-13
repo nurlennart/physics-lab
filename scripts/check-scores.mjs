@@ -5,34 +5,21 @@
 import { build } from "esbuild";
 import { readFile, writeFile } from "node:fs/promises";
 const bundle = await build({
-  stdin: { contents: `export { Simulation } from './src/simulation/engine'; export { starter } from './src/simulation/projects'; export { hydraulicStarter } from './src/simulation/hydraulic-projects'; export { mechanicalStarter } from './src/simulation/spatial-projects'; export { evaluateChallenge } from './src/simulation/challenges';`, resolveDir: process.cwd() },
+  stdin: { contents: `export { Simulation } from './src/simulation/engine'; export { challengeList, evaluateChallenge } from './src/simulation/challenges';`, resolveDir: process.cwd() },
   bundle: true, platform: "node", format: "esm", write: false,
 });
-const { Simulation, starter, hydraulicStarter, mechanicalStarter, evaluateChallenge } = await import("data:text/javascript;base64," + Buffer.from(bundle.outputFiles[0].text).toString("base64"));
-const designs = {
-  light: () => starter("light"),
-  heat: () => starter("heat"),
-  runaway: () => starter("automated"),
-  transfer: () => hydraulicStarter("transfer"),
-  pressure: () => hydraulicStarter("pressure"),
-  supply: () => hydraulicStarter("supply"),
-  descent: () => mechanicalStarter("descent"),
-  lift: () => mechanicalStarter("lift"),
-  rotation: () => mechanicalStarter("rotation"),
-};
+const { Simulation, challengeList, evaluateChallenge } = await import("data:text/javascript;base64," + Buffer.from(bundle.outputFiles[0].text).toString("base64"));
 const only = process.env.PHYSICS_CHALLENGES?.split(",");
 const results = {};
-for (const [id, make] of Object.entries(designs)) {
+// Every registered mission runs its catalog reference design, with any operator actions it defines.
+for (const d of challengeList()) {
+  const id = d.id;
   if (only && !only.includes(id)) continue;
-  const p = make();
+  const p = d.reference();
   p.challenge = id;
   const s = new Simulation(p), started = performance.now();
   for (let i = 0; i < 7200 * 60; i++) {
-    // The Thermal Runaway assignment requires a manual reset once the vessel has cooled.
-    if (id === "runaway" && s.runaway.phase === "recovery" && s.runaway.safetyId && !s.automation.memory[s.runaway.safetyId].manualResets) {
-      const cutoff = p.components.find((c) => c.id === s.runaway.safetyId);
-      if (s.temperatures[String(cutoff.props.target)] <= 85) s.resetSafety(cutoff.id);
-    }
+    d.operateReference?.(s);
     if (!s.step() || evaluateChallenge(p, s)?.complete) break;
   }
   const r = evaluateChallenge(p, s);

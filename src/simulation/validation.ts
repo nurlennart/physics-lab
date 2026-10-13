@@ -1,6 +1,6 @@
 import { starter } from "./projects";
 import { makeComponent, connect, catalog } from "./model";
-import { evaluateChallenge } from "./challenges";
+import { evaluateChallenge, runawayState } from "./challenges";
 import { Simulation, DT } from "./engine";
 import { Builder } from "./scaling-validation";
 import { CAPACITOR_LEAKAGE, INDUCTOR_BREAKDOWN } from "./electrical";
@@ -312,7 +312,7 @@ export function runValidation() {
   const challenge = new Simulation(assignment),
     vesselId = assignment.components.find((c) => c.kind === "tank")!.id;
   for (let i = 0; i < 3600 * 60; i++) {
-    const r = challenge.runaway;
+    const r = runawayState(challenge);
     if (
       r.phase === "recovery" &&
       r.safetyId &&
@@ -335,7 +335,7 @@ export function runValidation() {
     "Challenge stays below critical water temperature",
     "safety",
     1,
-    Number(challenge.runaway.maxTemperature < 95),
+    Number(runawayState(challenge).maxTemperature < 95),
     0,
     "Independent cutoff threshold 90°C; thermal inertia retained",
   );

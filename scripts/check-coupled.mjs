@@ -9,7 +9,7 @@ for (const mode of (process.env.PHYSICS_MODES ?? 'transfer,pressure,supply,circu
   const s = new Simulation(p); const count = mode === 'supply' ? 720 : mode === 'pressure' ? 195 : mode === 'circulation' ? 60 : 180;
   const started = performance.now();
   for (let t = 0; t < count * 60; t++) { if (!s.step()) break; if (evaluateChallenge(p, s)?.complete) break; }
-  const report = { mode, time: s.time, wallMs: performance.now()-started, solverMs: s.solverMs, error: s.error, violations: s.violations, tanks: s.multiphysics.tanks, motors: s.multiphysics.motors, hydraulic: s.multiphysics.hydraulic.readings, energyResidual: s.energyResidual, supplied: s.suppliedEnergy, massResidual: s.multiphysics.massResidual, metrics: s.hydraulicChallenge, challenge: evaluateChallenge(p, s) };
+  const report = { mode, time: s.time, wallMs: performance.now()-started, solverMs: s.solverMs, error: s.error, violations: s.violations, tanks: s.multiphysics.tanks, motors: s.multiphysics.motors, hydraulic: s.multiphysics.hydraulic.readings, energyResidual: s.energyResidual, supplied: s.suppliedEnergy, massResidual: s.multiphysics.massResidual, metrics: s.challengeState, challenge: evaluateChallenge(p, s) };
   reports.push(report);
   console.log(JSON.stringify({ mode, time: report.time, wallMs: report.wallMs, error: report.error, violations: report.violations, massResidual: report.massResidual, energyResidual: report.energyResidual, metrics: report.metrics, challenge: report.challenge }));
 }

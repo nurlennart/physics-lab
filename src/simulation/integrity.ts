@@ -12,7 +12,7 @@ import {
 } from "./model";
 import { spatialError, spatialSignature } from './spatial-model';
 import { applyDerived, derivedError, domainError, editEffects, paramSpec, type EditPolicy } from "./parameters";
-import { mechanicalChallengeError } from './spatial-challenges';
+import { challengeDefinition, isChallengeId } from './challenges';
 import { parsePumpPoints } from "./hydraulic";
 /**
  * Challenge-mode editing sets (unchanged from the scored assignments). In a
@@ -73,71 +73,6 @@ function stateDefining(c: Component, key: string, challenge?: ChallengeId): bool
   if (spec.policy === "derived") return (spec.derivedFrom ?? []).some((k): boolean => stateDefining(c, k));
   return spec.policy !== "live";
 }
-export const challengePolicies: Record<
-  ChallengeId,
-  {
-    budget: number;
-    ambient: number;
-    initial: number;
-    volume: number;
-    maxVoltage: number;
-    maxPower: number;
-    allowed: string[];
-  }
-> = {
-  descent: { budget: 250, ambient: 20, initial: 20, volume: 0, maxVoltage: 48, maxPower: 2000, allowed: ['rigidBody', 'forceActuator', 'positionSensor', 'comparator', 'pid', 'constant'] },
-  lift: { budget: 900, ambient: 20, initial: 20, volume: 0, maxVoltage: 48, maxPower: 2000, allowed: ['rigidBody', 'source', 'motor', 'positionSensor', 'speedSensor', 'pid', 'comparator', 'hysteresis', 'and', 'or', 'not', 'constant', 'relay', 'switch', 'fuse', 'ground', 'junction'] },
-  rotation: { budget: 750, ambient: 20, initial: 20, volume: 0, maxVoltage: 48, maxPower: 2000, allowed: ['rigidBody', 'source', 'motor', 'speedSensor', 'pid', 'forceActuator', 'comparator', 'constant', 'ground', 'junction'] },
-  transfer: { budget: 650, ambient: 20, initial: 20, volume: 150, maxVoltage: 24, maxPower: 500, allowed: Object.keys(definitions).filter(k => !["heater", "cooler"].includes(k)) },
-  pressure: { budget: 750, ambient: 20, initial: 20, volume: 150, maxVoltage: 24, maxPower: 500, allowed: Object.keys(definitions).filter(k => !["heater", "cooler"].includes(k)) },
-  supply: { budget: 850, ambient: 20, initial: 20, volume: 150, maxVoltage: 24, maxPower: 500, allowed: Object.keys(definitions).filter(k => !["heater", "cooler"].includes(k)) },
-  light: {
-    budget: 100,
-    ambient: 20,
-    initial: 20,
-    volume: 10,
-    maxVoltage: 12,
-    maxPower: Infinity,
-    allowed: [
-      "source",
-      "resistor",
-      "switch",
-      "lamp",
-      "ground",
-      "junction",
-      "fuse",
-      "meter",
-    ],
-  },
-  heat: {
-    budget: 180,
-    ambient: 20,
-    initial: 20,
-    volume: 10,
-    maxVoltage: 240,
-    maxPower: 2000.01,
-    allowed: [
-      "source",
-      "resistor",
-      "switch",
-      "heater",
-      "tank",
-      "ground",
-      "junction",
-      "fuse",
-      "meter",
-    ],
-  },
-  runaway: {
-    budget: 500,
-    ambient: 20,
-    initial: 20,
-    volume: 10,
-    maxVoltage: 240,
-    maxPower: 2000.01,
-    allowed: Object.keys(definitions),
-  },
-};
 // Ratings and model coefficients come from a paid catalog variant, never editable free upgrades.
 export function catalogError(c: Component): string | null {
   const expected = catalog(c).props;
@@ -165,8 +100,8 @@ export function challengeError(
   challenge = p.challenge,
 ): string | null {
   if (!challenge) return null;
-  const rules = challengePolicies[challenge];
-  if (!rules) return "Unknown challenge.";
+  if (!isChallengeId(challenge)) return "Unknown challenge.";
+  const definition = challengeDefinition(challenge), rules = definition.rules;
   if (p.challenge !== challenge)
     return "The running challenge identity is locked until a new experiment is loaded.";
   if (p.environment && p.environment.ambient !== rules.ambient)
@@ -177,21 +112,12 @@ export function challengeError(
     const error = catalogError(c);
     if (error) return error;
   }
-  if (projectCost(p) > rules.budget)
-    return `Challenge budget exceeded: €${projectCost(p)} / €${rules.budget}.`;
-  if (['descent', 'lift', 'rotation'].includes(challenge)) return mechanicalChallengeError(p);
+  if (projectCost(p) > definition.budget)
+    return `Challenge budget exceeded: €${projectCost(p)} / €${definition.budget}.`;
+  if (definition.spatial) return definition.validate?.(p) ?? null;
   if (p.world || p.components.some(c => c.spatial)) return 'Spatial worlds are disabled in the earlier schematic assignments; use a mechanical assignment or sandbox.';
-  const hydraulicChallenge = ["transfer", "pressure", "supply"].includes(challenge);
-  if (hydraulicChallenge) {
-    for (const name of ["Source reservoir", "Destination tank"]) {
-      const matches = p.components.filter(c => c.name === name);
-      if (matches.length !== 1 || matches[0].kind !== "tank") return "Hydraulic assignments require unique locked source/destination vessels.";
-    }
-    if (challenge === "pressure" || challenge === "supply") {
-      const demand = p.components.filter(c => c.name === "Consumer demand");
-      if (demand.length !== 1 || demand[0].kind !== "valve" || prop(demand[0], "diameter") !== (challenge === "pressure" ? 0.018 : 0.012) || prop(demand[0], "opening") !== (challenge === "pressure" ? 40 : 35)) return "The challenge consumer-demand valve is locked.";
-    }
-  }
+  const fixtureError = definition.validate?.(p);
+  if (fixtureError) return fixtureError;
   let tanks = 0;
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
@@ -204,8 +130,7 @@ export function challengeError(
     if (c.kind === "tank") {
       tanks++;
       if (
-        (!hydraulicChallenge && prop(c, "volume") !== rules.volume) ||
-        (hydraulicChallenge && (prop(c, "volume") !== (c.name === "Source reservoir" ? 150 : 0) || prop(c, "capacity") !== (c.name === "Source reservoir" ? 150 : 120) || prop(c, "surfaceArea") !== 0.1 || prop(c, "elevation") !== (c.name === "Source reservoir" ? 0 : challenge === "pressure" ? 0 : 2))) ||
+        !definition.vessels?.matches(c) ||
         prop(c, "initialTemperature") !== rules.initial ||
         prop(c, "ambient") !== rules.ambient
       )
@@ -218,9 +143,7 @@ export function challengeError(
     if (c.kind === "safety" && !c.props.failOnSensor)
       return "Challenge safety sensing must trip on invalid measurement.";
   }
-  if (hydraulicChallenge && tanks !== 2) return "Hydraulic assignments require the two locked source/destination vessels.";
-  if (!hydraulicChallenge && challenge !== "light" && tanks !== 1)
-    return "This assignment requires exactly one 10 L process vessel.";
+  if (definition.vessels && tanks !== definition.vessels.count) return definition.vessels.countError;
   return null;
 }
 export function physicsSignature(p: Project, challenge = p.challenge) {

@@ -1,30 +1,29 @@
 import { describe, expect, it } from 'vitest';
-import { challengeProject, examples, fieldNotes } from './learning';
+import { examples } from './learning';
 import { starter, parseProject, serializeProject } from './projects';
-import { challenges, updateScenario } from './challenges';
+import { challengeDefinition, challengeList, hydraulicState } from './challenges';
 import { challengeError } from './integrity';
 import { Simulation } from './engine';
-import type { ChallengeId } from './model';
 
 describe('mission starting environments', () => {
-  for (const id of Object.keys(challenges) as ChallengeId[]) it(`${id} starts with only valid fixed fixtures and usable probes`, () => {
-    const p = challengeProject(id);
+  for (const d of challengeList()) it(`${d.id} starts with only valid fixed fixtures and usable probes`, () => {
+    const p = d.scaffold();
     expect(challengeError(p)).toBeNull();
     expect(() => parseProject(JSON.parse(serializeProject(p)))).not.toThrow();
     expect(p.connections).toHaveLength(0);
     expect(p.components.every(c => ['tank', 'rigidBody'].includes(c.kind) || ['Consumer demand', 'Variable shaft load'].includes(c.name))).toBe(true);
     expect(p.probes?.every(probe => p.components.some(c => c.id === probe.component))).toBe(true);
     expect(p.world?.joints.every(j => p.components.some(c => c.id === j.a) && p.components.some(c => c.id === j.b)) ?? true).toBe(true);
-    expect(fieldNotes[id].hints).toHaveLength(3);
+    expect(d.guide.hints).toHaveLength(3);
   });
   it('injects the primary supply fault by circuit role, regardless of sensor name', () => {
     const p = starter('supply'); p.challenge = 'supply';
-    const primary = p.components.find(c => c.name === 'Primary level sensor')!;
+    const primary = p.components.find(c => c.name === 'Primary level sensor')!, supply = challengeDefinition('supply');
     primary.name = 'My own destination sensor';
     const s = new Simulation(p);
     s.time = 300;
-    updateScenario(s, 1 / 60);
-    expect(s.hydraulicChallenge.faultInjected).toBe(true);
+    supply.update!(s, s.challengeState, 1 / 60);
+    expect(hydraulicState(s).faultInjected).toBe(true);
     expect(s.faults[primary.id]).toBe('sensorFault');
   });
 });

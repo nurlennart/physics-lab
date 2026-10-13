@@ -219,6 +219,7 @@ export function starter(
   return p;
 }
 import { challengeError, transitionError, componentError } from "./integrity";
+import { isChallengeId } from "./challenges/ids";
 import { applyDerived } from "./parameters";
 /**
  * Schema migration: properties introduced after a file was written take their
@@ -257,7 +258,7 @@ export function parseProject(input: unknown): Project {
     throw Error("Project limit: 100 components and 300 connections.");
   if (
     p.challenge !== undefined &&
-    !["light", "heat", "runaway", "transfer", "pressure", "supply", 'descent', 'lift', 'rotation'].includes(p.challenge)
+    !isChallengeId(p.challenge)
   )
     throw Error("Unknown challenge.");
   const migrated = p.version < 3;

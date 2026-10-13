@@ -34,7 +34,8 @@ Physics Lab is a static single-page application (React 19, TypeScript, Vite). Th
 | `automation.ts` | Typed control graph: sensors, logic, timers, PID, signal blocks, independent cutoff |
 | `capabilities.ts`, `measurements.ts` | Measurement contract shared by menus, imports and runtime; probe resolution |
 | `projects.ts`, `hydraulic-projects.ts`, `spatial-projects.ts`, `device-projects.ts` | Starters and challenge scaffolds; project parsing, migration and file delivery |
-| `challenges.ts`, `spatial-challenges.ts`, `scoring.ts`, `learning.ts` | Assignment definitions, evaluation and scoring; mission scaffolds and guidebooks |
+| `challenges/` | Mission registry: one definition per scored assignment (rules, guidebook, starting layout, reference design, tracking hooks, evaluation); family modules for circuits, Thermal Runaway, hydraulic and mechanical missions. See [CHALLENGES.md](CHALLENGES.md#adding-a-mission) |
+| `scoring.ts`, `learning.ts` | Economy factor; example shelf |
 | `replay.ts` | Run archives and deterministic replay |
 | `validation.ts`, `hydraulic-validation.ts`, `spatial-validation.ts`, `scaling-validation.ts` | Executable validation campaigns shared by tests and `scripts/` |
 

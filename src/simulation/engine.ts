@@ -3,7 +3,7 @@ import { resetBoiler } from './boiler';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
-import { updateScenario, recordFeedbackTransitions } from "./challenges";
+import { challengeDefinition } from "./challenges";
 import { prop, isThermalMass, isSource, isMotor, perPoleKinds, portConductance, type Component, type Project, type ChallengeId } from "./model";
 import {
   solveElectrical,
@@ -118,28 +118,6 @@ export interface Sample {
   ambient: number;
   spatialEnergy: number; spatialExternal: number; mechanicalLoss: number;
 }
-export interface RunawayState {
-  phase:
-    | "warmup"
-    | "regulating"
-    | "fault"
-    | "cooldown"
-    | "recovery"
-    | "complete";
-  normalTime: number;
-  inBand: number;
-  recoveryTime: number;
-  faultAt: number;
-  cutoffAt: number;
-  maxTemperature: number;
-  switches: number;
-  automaticSwitches: number;
-  recoverySwitches: number;
-  faultTargets: string[];
-  safetyId: string;
-  reduced: boolean;
-  overshoot: number;
-}
 /**
  * Magnetic (instantaneous) release. The setting k·In is the RMS value of a symmetric current, as on
  * breaker curves (IEC 60898/60947-2); the release responds to the instantaneous current, so on AC it
@@ -157,11 +135,17 @@ export class Simulation {
   private electricalKey = "";
   private acceptedProject!: Project;
   private lockedChallenge?: ChallengeId;
-  hydraulicChallenge = { inBand: 0, evaluated: 0, squaredError: 0, maxOvershoot: 0, faultInjected: false, switches: 0, previousOn: false, responseTime: 0, settledAt: 0, lowDemandFlow: 0, highDemandFlow: 0, lowDemandTime: 0, highDemandTime: 0 };
+  private challengeRun?: { id: ChallengeId; state: unknown };
+  /** Tracking state of the running assignment (see the mission's definition), created fresh at reset. */
+  get challengeState(): unknown {
+    const id = this.project.challenge;
+    if (!id) return undefined;
+    if (this.challengeRun?.id !== id) this.challengeRun = { id, state: challengeDefinition(id).createState() };
+    return this.challengeRun.state;
+  }
   devices = new Devices();
   multiphysics = new Multiphysics();
   spatial = new SpatialDynamics();
-  mechanicalChallenge = { hold: 0, evaluated: 0, inBand: 0, squaredError: 0, peakError: 0, loadChanges: 0, lastLoadPhase: -1 };
   time = 0;
   energy = 0;
   suppliedEnergy = 0;
@@ -208,22 +192,6 @@ export class Simulation {
   };
   error: string | null = null;
   lastSample = -Infinity;
-  runaway: RunawayState = {
-    phase: "warmup",
-    normalTime: 0,
-    inBand: 0,
-    recoveryTime: 0,
-    faultAt: 0,
-    cutoffAt: 0,
-    maxTemperature: 20,
-    switches: 0,
-    automaticSwitches: 0,
-    recoverySwitches: 0,
-    faultTargets: [],
-    safetyId: "",
-    reduced: false,
-    overshoot: 0,
-  };
   constructor(public project: Project) {
     this.reset(project);
   }
@@ -274,24 +242,7 @@ export class Simulation {
     this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project);
     this.multiphysics.initialize(this.project);
     this.devices = new Devices(); this.devices.initialize(this.project);
-    this.mechanicalChallenge = { hold: 0, evaluated: 0, inBand: 0, squaredError: 0, peakError: 0, loadChanges: 0, lastLoadPhase: -1 };
-    this.hydraulicChallenge = { inBand: 0, evaluated: 0, squaredError: 0, maxOvershoot: 0, faultInjected: false, switches: 0, previousOn: false, responseTime: 0, settledAt: 0, lowDemandFlow: 0, highDemandFlow: 0, lowDemandTime: 0, highDemandTime: 0 };
-    this.runaway = {
-      phase: "warmup",
-      normalTime: 0,
-      inBand: 0,
-      recoveryTime: 0,
-      faultAt: 0,
-      cutoffAt: 0,
-      maxTemperature: 20,
-      switches: 0,
-      automaticSwitches: 0,
-      recoverySwitches: 0,
-      faultTargets: [],
-      safetyId: "",
-      reduced: false,
-      overshoot: 0,
-    };
+    this.challengeRun = undefined;
     for (const c of this.project.components)
       if (isThermalMass(c))
         this.temperatures[c.id] =
@@ -538,7 +489,8 @@ export class Simulation {
     return metric === 'x' ? b?.x : metric === 'y' ? b?.y : undefined;
   };
   mechanicalDemand(id: string, configured: number) {
-    return this.project.challenge === 'rotation' && this.project.components.find(c => c.id === id)?.name === 'Variable shaft load' ? (Math.floor(this.time / 15) % 2 ? -1.2 : -0.4) : configured;
+    const definition = this.project.challenge && challengeDefinition(this.project.challenge);
+    return definition && definition.actuatorValue ? definition.actuatorValue(this, id, configured) : configured;
   }
   applyImpulse(id: string, impulse: { x: number; y: number }, angular = 0) {
     if (this.project.challenge) return 'External impulses are disabled in scored assignments.';
@@ -666,10 +618,8 @@ export class Simulation {
       oldHeaterPower = this.project.components
         .filter((c) => c.kind === "heater")
         .reduce((n, c) => n + (this.electrical.readings[c.id]?.power ?? 0), 0);
-    if (this.project.challenge === "pressure") {
-      const demand = this.project.components.find(c => c.name === "Consumer demand");
-      if (demand) this.multiphysics.positions[demand.id] = Math.floor(this.time / 60) % 2 ? 80 : 40;
-    }
+    const challenge = this.project.challenge ? challengeDefinition(this.project.challenge) : undefined;
+    challenge?.beforeStep?.(this, this.challengeState);
     const automationBefore = this.hasFluidsOrMotors() ? {
       memory: Object.fromEntries(Object.entries(this.automation.memory).map(([id, memory]) => [id, { ...memory }])), signals: { ...this.automation.signals }, sensors: { ...this.automation.sensors },
       contacts: { ...this.automation.contacts }, status: { ...this.automation.status }, pulses: new Set(this.automation.pulses), rngState: this.automation.rngState,
@@ -677,7 +627,7 @@ export class Simulation {
     if (!this.solve(true, dt)) { Object.assign(this.automation, automationBefore); return false; }
     const deviceStorageBefore = this.devices.storedChange;
     const devicesBefore = this.devices.active ? this.devices.checkpoint() : undefined;
-    recordFeedbackTransitions(this, oldContacts, oldHeaterPower);
+    challenge?.afterSolve?.(this, this.challengeState, oldContacts, oldHeaterPower);
 
     let coupled: ReturnType<Multiphysics["advance"]> | undefined;
     let rollbackCoupled: (() => void) | undefined;
@@ -984,16 +934,14 @@ export class Simulation {
         (this.electrical.readings[c.id]?.power ?? 0) <= prop(c, "ratedPower"),
     );
     this.lightHold = lamp ? this.lightHold + dt : 0;
-    if (
-      p.challenge &&
-      this.peakPower > (p.challenge === "light" ? Infinity : 2000.01)
-    )
+    const limits = p.challenge ? challengeDefinition(p.challenge).limits : undefined;
+    if (limits && this.peakPower > limits.power)
       this.violation(
-        "Challenge constraint exceeded: Electrical input at most 2,000 W.",
+        `Challenge constraint exceeded: Electrical input at most ${Math.floor(limits.power).toLocaleString("en-US")} W.`,
       );
-    if (p.challenge === "light" && this.peakVoltage > 12)
+    if (limits?.voltage !== undefined && this.peakVoltage > limits.voltage)
       this.violation(
-        "Challenge constraint exceeded: Supply voltage at most 12 V.",
+        `Challenge constraint exceeded: Supply voltage at most ${limits.voltage} V.`,
       );
     if (coupled) {
       this.multiphysics.residual = this.energyResidual;
@@ -1001,7 +949,7 @@ export class Simulation {
       const mechanicalScale = this.spatial.count ? Math.abs(this.spatial.initialEnergy) + Math.abs(this.spatial.externalWork) : 0;
       if (Math.abs(this.energyResidual) > Math.max(0.5, (Math.abs(this.suppliedEnergy) + mechanicalScale) * 0.005)) this.violation("Energy conservation residual exceeds 0.5 J / 0.5% of supplied and initial mechanical energy tolerance.", "error");
     }
-    if (p.challenge) updateScenario(this, dt);
+    if (p.challenge) challengeDefinition(p.challenge).update?.(this, this.challengeState, dt);
     if (this.time - this.lastSample >= this.sampleInterval - 1e-9) this.sample();
     this.solverMs = performance.now() - start;
     return !this.error;

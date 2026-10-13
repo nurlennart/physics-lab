@@ -8,7 +8,7 @@ In sandbox projects (every project that is not a challenge) each implemented eng
 | --- | --- | --- |
 | **Validity** (what the model can represent) | `ParamSpec.domain` in `parameters.ts`; `componentError()` in `integrity.ts` for dependencies between parameters | The edit or import is rejected with the reason, e.g. "Liquid-water model: … 1–95 °C" or "ε/D above 0.05 is outside the friction-factor correlation" |
 | **Rating** (possible, but out of specification) | Ordinary parameters: `ratedPower`, `ratedCurrent`, `ratedVoltage`, `maxPressure`, `maxTemperature`, `maxSpeed`, `ratedTorque`, … | Operation continues; the engine reports a rating violation and marks the component `OVERLOADED`. Failures follow only modelled mechanisms (over-temperature, fuse melting, breaker and supply trips) |
-| **Challenge restriction** (gameplay) | `challengePolicies`, `catalogError()` and the challenge-only sets in `integrity.ts` | Applies only when `project.challenge` is set: ratings, source behaviour, environment and budget are locked to purchased catalog models |
+| **Challenge restriction** (gameplay) | each mission's `rules` and `validate` (`challenges/`), `catalogError()` and the challenge-only sets in `integrity.ts` | Applies only when `project.challenge` is set: ratings, source behaviour, environment and budget are locked to purchased catalog models |
 
 Limits kept on purpose, each a model limit:
 

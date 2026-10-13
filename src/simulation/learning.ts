@@ -1,4 +1,4 @@
-import type { ChallengeId, Project } from './model';
+import type { Project } from './model';
 import { serializeProject, starter } from './projects';
 
 export const examples = [
@@ -30,28 +30,6 @@ export const examples = [
   { mode: 'lift', group: 'Mechanisms', title: 'Going up', category: 'Position feedback', description: 'A motor, rack transmission and position controller lift a 10 kg payload.', experiment: 'Watch the load rise to 3 m. Compare electrical input with gravitational energy gained.' },
   { mode: 'rotation', group: 'Mechanisms', title: 'Cruise control for a rotor', category: 'Speed feedback', description: 'Speed feedback holds 1,200 RPM against a physical shaft load.', experiment: 'Change the shaft-load torque in the sandbox and watch the controller compensate.' },
 ] as const;
-
-export const fieldNotes: Record<ChallengeId, { mission: string; kit: string; hints: string[] }> = {
-  light: { mission: 'The lights are out. Build a tiny power system and bring the lamp back to life.', kit: 'Try a DC source, switch and lamp.', hints: ['A circuit needs a complete return path to its source.', 'Set the source to 12 V. Wire source → switch → lamp → source.', 'Run for at least 3 s. Spend less to improve your star rating.'] },
-  heat: { mission: 'Your field kitchen needs hot water. Make every watt count.', kit: 'The 10 L vessel is supplied. Choose a source, switch and heater.', hints: ['The electrical loop powers the heater; a separate thermal link heats the water.', 'Use 240 V for the standard heater. Connect its heat port to the vessel heat port.', 'Use Advance 60 s to test quickly. The ideal heat requirement is about 2.51 MJ.'] },
-  runaway: { mission: 'Your reactor has a bad day coming. Build a controller that can survive it.', kit: 'The vessel is supplied. Consider a source, relay, safety cutoff, heater, temperature sensor, hysteresis controller and cooler.', hints: ['Select the vessel as the sensor and safety-cutoff target. Regulate around 78–82 °C.', 'Put relay and independent safety cutoff in series with the heater. Connect cooler and heater to the vessel.', 'Welded relay contacts defeat ordinary control. After isolation, reset the safety latch below its reset margin, then demonstrate recovery cycles.'] },
-  transfer: { mission: 'The hilltop outpost is thirsty. Deliver 100 L before the clock runs out.', kit: 'Two fixed vessels are supplied. Choose a 24 V source, motor, pump, pipe and valve.', hints: ['Build three paths: electrical power, motor-to-pump shaft, and water delivery.', 'Source reservoir → pump inlet; pump outlet → pipe → valve → destination. Close the motor electrical loop.', 'Keep the pump wet. Watch flow and destination inventory while testing against the 300 s deadline.'] },
-  pressure: { mission: 'Demand keeps changing. Give the outpost a steady water pressure anyway.', kit: 'Vessels and consumer valve are supplied. Add a powered pump, delivery pipe, return pipe, pressure sensor and PI controller.', hints: ['Target the delivery pipe with the pressure sensor. Numeric controller output goes to motor speed.', 'Start with reference 35000 Pa (0.35 bar), Kp 0.06, Ki 0.08 and output limit 3500 RPM.', 'Complete the return from destination to source. Demand changes every 60 s; inspect the recovery after each change.'] },
-  supply: { mission: 'Keep the water flowing while a sensor goes rogue. No operator rescue allowed.', kit: 'Vessels and consumer valve are supplied. Add a powered pump, delivery line, three level sensors, hysteresis, comparators and AND gates.', hints: ['Use destination hysteresis at 30/90%. Independently check source >5% and destination <95%.', 'AND the demand and both guards into motor enable. The destination sensor feeding hysteresis is the primary sensor tested by the fault.', 'Return consumer flow to the source. Test 120 s commissioning, then 600 s of autonomous operation; the main sensor fails at 300 s.'] },
-  descent: { mission: 'Ten kilograms. Four metres to fall. Engineer a landing worth applauding.', kit: 'The guided load and landing are supplied. Add a force actuator as a passive brake.', hints: ['The brake must target Suspended load on the y axis; force value stays zero.', 'Weight is about 98 N. Damping of 200 N·s/m gives a terminal speed near 0.49 m/s.', 'Set damping before running. Watch the landing speed and allow 3 s to settle.'] },
-  lift: { mission: 'Build an elevator for a 10 kg payload. Smooth arrival earns the applause.', kit: 'The rack, rotor and guided load are supplied. Add a 48 V supply, traction motor, position sensor and PI controller.', hints: ['Choose the 48 V traction motor and a source model that supports 48 V. Couple motor shaft to Driven rotor.', 'Target Lift load with a y-position sensor; controller output goes to motor speed.', 'Try reference 3 m, feedforward 135 RPM, Kp 70, Ki 0 and max output 400 RPM. Tune and hold the landing for 3 s.'] },
-  rotation: { mission: 'The shaft load keeps shifting. Build a cruise control that refuses to wobble.', kit: 'The rotor, bearing and changing load are supplied. Add a 48 V supply, traction motor, speed sensor and PI controller.', hints: ['Couple the motor shaft to Driven rotor. Target that rotor with the speed sensor.', 'Start with reference 1200 RPM, Kp 0.8, Ki 2 and output limit 3000 RPM.', 'The load changes every 15 s. After 10 s startup, stay within ±60 RPM for at least 95% of the next 60 s.'] },
-};
-
-/** Keep the assignment environment, but let the learner choose and place equipment. */
-export function challengeProject(id: ChallengeId): Project {
-  const p = starter(id, true);
-  p.components = p.components.filter(c => c.kind === 'tank' || c.kind === 'rigidBody' || c.name === 'Consumer demand' || c.name === 'Variable shaft load');
-  p.connections = [];
-  const ids = new Set(p.components.map(c => c.id));
-  p.probes = p.probes?.filter(probe => ids.has(probe.component));
-  return p;
-}
 
 /** Checked-in example file content for a starter: serialized, with stable identifiers so regenerations are reproducible. */
 export function exampleFile(mode: string): Project {

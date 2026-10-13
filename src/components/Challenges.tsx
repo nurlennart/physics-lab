@@ -16,12 +16,18 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
-import { challenges, evaluateChallenge } from "../simulation/challenges";
+import { challengeDefinition, challengeList, evaluateChallenge, type ChallengeDefinition } from "../simulation/challenges";
 import { projectCost } from "../simulation/model";
+const familyArt: Record<ChallengeDefinition["family"], { icon: typeof Cog; equation: string }> = {
+  electrical: { icon: Lightbulb, equation: "V = IR" },
+  thermal: { icon: Flame, equation: "Q = mcΔT" },
+  hydraulic: { icon: Waves, equation: "P = Δp Q" },
+  mechanical: { icon: Cog, equation: "τ = Iα" },
+};
 export function ChallengeStrip() {
   const s = useLab();
   if (!s.project.challenge) return null;
-  const d = challenges[s.project.challenge],
+  const d = challengeDefinition(s.project.challenge),
     r = evaluateChallenge(s.project, simulation)!;
   return (
     <div className={`challenge-strip ${r.complete ? "complete" : ""}`}>
@@ -35,7 +41,7 @@ export function ChallengeStrip() {
           ? `${r.stars} stars · ${r.score}/100`
           : r.failed
             ? "Safety constraint violated — reset"
-            : `${s.project.challenge === "runaway" ? simulation.runaway.phase + " · " : ""}${Math.round(r.progress * 100)}%`}
+            : `${d.progressLabel?.(simulation.challengeState) ?? ""}${Math.round(r.progress * 100)}%`}
       </span>
       <button
         title="Open challenge guidebook"
@@ -73,11 +79,9 @@ export default function Challenges() {
           Pick a mission, choose your equipment, and chase three stars. Each mission comes with a guidebook and optional hints. Only the fixed test environment is supplied.
         </p>
         <div className="challenge-cards">
-          {Object.values(challenges)
-            .sort((a, b) => a.number.localeCompare(b.number))
+          {challengeList()
             .map((d) => {
-              const mechanical = ['descent', 'lift', 'rotation'].includes(d.id);
-              const Icon = mechanical ? Cog : d.id === "light" ? Lightbulb : ["transfer", "pressure", "supply"].includes(d.id) ? Waves : Flame;
+              const { icon: Icon, equation } = familyArt[d.family];
               return (
                 <article className={`challenge-card ${d.id}`} key={d.id}>
                   <div className="challenge-card-top">
@@ -86,7 +90,7 @@ export default function Challenges() {
                   </div>
                   <div className="challenge-illustration">
                     <Icon size={45} strokeWidth={1} />
-                    <span>{mechanical ? 'τ = Iα' : d.id === "light" ? "V = IR" : ["transfer", "pressure", "supply"].includes(d.id) ? "P = Δp Q" : "Q = mcΔT"}</span>
+                    <span>{equation}</span>
                   </div>
                   <h3>{d.title}</h3>
                   <p>{d.description}</p>
@@ -129,16 +133,12 @@ export default function Challenges() {
             and budget constraints must pass. Economy earns full points at or below the reference build cost shown in each mission guidebook, then decreases to zero at the budget.
           </p>
         </div>
-        {s.project.challenge === 'runaway' && (
+        {s.project.challenge && challengeDefinition(s.project.challenge).liveStatus && (
           <div className="runaway-details">
             <p>
-              State: <strong>{simulation.runaway.phase}</strong> · Regulation{" "}
-              {simulation.runaway.normalTime.toFixed(1)}/≥240 s · Recovery{" "}
-              {simulation.runaway.recoveryTime.toFixed(1)}/≥120 s. Feedback
-              transitions: {simulation.runaway.automaticSwitches}, recovery
-              transitions: {simulation.runaway.recoverySwitches}. After the
-              fault, select ST-01 and manually reset its safety latch once the
-              vessel is below its reset margin.
+              {challengeDefinition(s.project.challenge).liveStatus!(simulation.challengeState).map((part, i) =>
+                typeof part === "string" ? part : <strong key={i}>{part.strong}</strong>,
+              )}
             </p>
           </div>
         )}

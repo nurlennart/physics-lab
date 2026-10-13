@@ -45,7 +45,8 @@ export type Kind =
   | "junction";
 export type Domain = "electrical" | "thermal" | "control" | "hydraulic" | "mechanical";
 export type Property = number | boolean | string;
-export type ChallengeId = "light" | "heat" | "runaway" | "transfer" | "pressure" | "supply" | "descent" | "lift" | "rotation";
+export type { ChallengeId } from './challenges/ids';
+import type { ChallengeId } from './challenges/ids';
 import type { SpatialBody, SpatialWorld, MechanicalJoint } from './spatial-model';
 import { makeSpatial } from './spatial-model';
 import { applyDerived } from "./parameters";
