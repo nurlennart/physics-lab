@@ -1,10 +1,10 @@
 import { economyFactor } from "../scoring";
-import { projectCost, prop, type Project } from "../model";
-import { solveElectrical } from "../electrical";
+import { projectCost, prop, type Component, type Project } from "../model";
+import { solveElectrical, type ElectricalResult } from "../electrical";
 import { challengeError } from "../integrity";
 import { starter } from "../projects";
 import type { Simulation } from "../engine";
-import { allKindsExcept, fixturesOnly, lockedRules, standardLimits } from "./common";
+import { allKindsExcept, controlledBy, fixturesOnly, lockedRules, standardLimits } from "./common";
 import { starsFor, type ChallengeDefinition } from "./types";
 
 export const runawayScenario = {
@@ -23,304 +23,177 @@ export const runawayScenario = {
   recoveryTimeout: 1800,
   deadline: 5400,
 } as const;
+const S = runawayScenario;
+
+/**
+ * warmup → regulating (band reached; cooling reduced at 120 s) → fault (welded relay, coolant lost)
+ * → cooldown (an independent cutoff isolated the heater) → recovery (faults cleared, manual reset)
+ * → complete.
+ */
 export interface RunawayState {
-  phase:
-    | "warmup"
-    | "regulating"
-    | "fault"
-    | "cooldown"
-    | "recovery"
-    | "complete";
+  phase: "warmup" | "regulating" | "fault" | "cooldown" | "recovery" | "complete";
+  /** Regulation time and the part of it inside 78–82 °C (s). */
   normalTime: number;
   inBand: number;
+  /** In-band time since the manual reset (s); restarts when the band is left. */
   recoveryTime: number;
   faultAt: number;
   cutoffAt: number;
   maxTemperature: number;
+  /** Highest excess over the band during normal operation (K). */
+  overshoot: number;
+  /** All relay switchings, and those caused by measured vessel feedback that changed heater power. */
   switches: number;
   automaticSwitches: number;
   recoverySwitches: number;
   faultTargets: string[];
+  /** The cutoff credited with isolating the heater. */
   safetyId: string;
   reduced: boolean;
-  overshoot: number;
 }
 const initialState = (): RunawayState => ({
-  phase: "warmup",
-  normalTime: 0,
-  inBand: 0,
-  recoveryTime: 0,
-  faultAt: 0,
-  cutoffAt: 0,
-  maxTemperature: 20,
-  switches: 0,
-  automaticSwitches: 0,
-  recoverySwitches: 0,
-  faultTargets: [],
-  safetyId: "",
-  reduced: false,
-  overshoot: 0,
+  phase: "warmup", normalTime: 0, inBand: 0, recoveryTime: 0, faultAt: 0, cutoffAt: 0, maxTemperature: 20,
+  switches: 0, automaticSwitches: 0, recoverySwitches: 0, faultTargets: [], safetyId: "", reduced: false, overshoot: 0,
 });
+/** Tracking state of a running Thermal Runaway assignment. */
+export const runawayState = (s: Simulation) => s.challengeState as RunawayState;
+
+const heaterPower = (p: Project, readings: ElectricalResult["readings"]) =>
+  p.components.filter((c) => c.kind === "heater").reduce((total, c) => total + (readings[c.id]?.power ?? 0), 0);
+/** Whether a temperature sensor or thermostat measuring a vessel drives the relay. */
+const vesselFeedback = (p: Project, relay: string) =>
+  controlledBy(p, relay, (c) => ["sensor", "thermostat"].includes(c.kind) && p.components.some((x) => x.kind === "tank" && x.id === c.props.target));
+
 /** Count relay transitions that measured vessel feedback caused and that changed heater power. */
-function recordFeedbackTransitions(
-  s: Simulation,
-  r: RunawayState,
-  oldContacts: Record<string, boolean>,
-  oldHeaterPower: number,
-) {
-  if (["warmup", "regulating", "recovery"].includes(r.phase)) {
-    const heaterPower = s.project.components
-      .filter((c) => c.kind === "heater")
-      .reduce((n, c) => n + (s.electrical.readings[c.id]?.power ?? 0), 0);
-    const feedback = (id: string, seen = new Set<string>()): boolean => {
-      if (seen.has(id)) return false;
-      seen.add(id);
-      const c = s.project.components.find((c) => c.id === id);
-      if (!c) return false;
-      if (
-        ["sensor", "thermostat"].includes(c.kind) &&
-        s.project.components.some(
-          (x) => x.kind === "tank" && x.id === c.props.target,
-        )
-      )
-        return true;
-      return s.project.connections
-        .filter((w) => w.domain === "control" && w.to.component === id)
-        .some((w) => feedback(w.from.component, seen));
-    };
-    if (
-      Math.abs(heaterPower - oldHeaterPower) > 1 &&
-      s.project.components.some(
-        (c) =>
-          c.kind === "relay" &&
-          oldContacts[c.id] !== s.automation.contacts[c.id] &&
-          !s.faults[c.id] &&
-          feedback(c.id),
-      )
-    ) {
-      r.automaticSwitches++;
-      if (r.phase === "recovery") r.recoverySwitches++;
-    }
+function recordFeedbackTransitions(s: Simulation, r: RunawayState, oldContacts: Record<string, boolean>, oldHeaterPower: number) {
+  if (!["warmup", "regulating", "recovery"].includes(r.phase)) return;
+  const changed = Math.abs(heaterPower(s.project, s.electrical.readings) - oldHeaterPower) > 1;
+  if (changed && s.project.components.some((c) => c.kind === "relay" && oldContacts[c.id] !== s.automation.contacts[c.id] && !s.faults[c.id] && vesselFeedback(s.project, c.id))) {
+    r.automaticSwitches++;
+    if (r.phase === "recovery") r.recoverySwitches++;
   }
 }
+
+/**
+ * A tripped safety cutoff that causally isolates the heater: with every tripped cutoff hypothetically
+ * closed the heater would draw power, and opening this one alone removes it (redundant series contacts
+ * included). Checked by hypothetical electrical solves without changing state.
+ */
+function isolatingCutoff(s: Simulation): Component | undefined {
+  const candidates = s.project.components.filter((c) => c.kind === "safety" && s.automation.memory[c.id]?.tripped && !s.automation.contacts[c.id]);
+  if (!candidates.length) return undefined;
+  const contacts = { ...s.automation.contacts, ...Object.fromEntries(candidates.map((c) => [c.id, true])) };
+  const trialPower = (commands: Record<string, boolean>) =>
+    heaterPower(s.project, solveElectrical(s.project, s.failed, { contacts: commands, faults: s.faults, disconnected: s.disconnected }).readings);
+  try {
+    const allClosed = trialPower(contacts);
+    if (allClosed > 1) return candidates.find((c) => allClosed - trialPower({ ...contacts, [c.id]: false }) > 1);
+  } catch {
+    /* An unsolvable hypothetical circuit earns no causal isolation credit. */
+  }
+  return undefined;
+}
+
 function updateRunaway(s: Simulation, r: RunawayState, dt: number) {
-  const
-    tank = s.project.components.find((c) => c.kind === "tank");
+  const p = s.project, tank = p.components.find((c) => c.kind === "tank");
   if (!tank) return;
-  const t = s.temperatures[tank.id],
-    inBand = t >= runawayScenario.bandLow && t <= runawayScenario.bandHigh;
+  const t = s.temperatures[tank.id], inBand = t >= S.bandLow && t <= S.bandHigh;
   r.maxTemperature = Math.max(r.maxTemperature, t);
-  if (
-    ["warmup", "regulating"].includes(r.phase) ||
-    (r.phase === "recovery" && r.recoveryTime > 0)
-  )
-    r.overshoot = Math.max(r.overshoot, t - runawayScenario.bandHigh, 0);
-  r.switches = s.project.components
-    .filter((c) => c.kind === "relay")
-    .reduce((n, c) => n + (s.automation.memory[c.id]?.switches ?? 0), 0);
-  if (s.time > runawayScenario.deadline && r.phase !== "complete")
-    s.violation("Assignment exceeded the 5,400 s operating deadline.");
+  if (["warmup", "regulating"].includes(r.phase) || (r.phase === "recovery" && r.recoveryTime > 0)) r.overshoot = Math.max(r.overshoot, t - S.bandHigh, 0);
+  r.switches = p.components.filter((c) => c.kind === "relay").reduce((n, c) => n + (s.automation.memory[c.id]?.switches ?? 0), 0);
+  if (s.time > S.deadline && r.phase !== "complete") s.violation("Assignment exceeded the 5,400 s operating deadline.");
+
   if (r.phase === "warmup" && inBand) {
     r.phase = "regulating";
-    s.log(
-      "Challenge: operating band reached. Begin 240 s regulation.",
-      "success",
-    );
+    s.log("Challenge: operating band reached. Begin 240 s regulation.", "success");
   }
   if (r.phase === "regulating") {
     r.normalTime += dt;
     if (inBand) r.inBand += dt;
-    if (!r.reduced && r.normalTime >= runawayScenario.coolingReductionAt) {
-      for (const c of s.project.components.filter((c) => c.kind === "cooler"))
-        s.injectFault(c.id, "coolingReduced", true);
+    if (!r.reduced && r.normalTime >= S.coolingReductionAt) {
+      for (const c of p.components.filter((c) => c.kind === "cooler")) s.injectFault(c.id, "coolingReduced", true);
       r.reduced = true;
     }
-    if (
-      r.normalTime >= runawayScenario.normalHold &&
-      r.automaticSwitches >= runawayScenario.normalCycles
-    ) {
+    if (r.normalTime >= S.normalHold && r.automaticSwitches >= S.normalCycles) {
       r.phase = "fault";
       r.faultAt = s.time;
-      for (const c of s.project.components.filter(
-        (c) => c.kind === "relay" || c.kind === "cooler",
-      )) {
-        s.injectFault(
-          c.id,
-          c.kind === "relay" ? "stuckClosed" : "coolingFailed",
-          true,
-        );
+      for (const c of p.components.filter((c) => c.kind === "relay" || c.kind === "cooler")) {
+        s.injectFault(c.id, c.kind === "relay" ? "stuckClosed" : "coolingFailed", true);
         r.faultTargets.push(c.id);
       }
-      s.log(
-        "Challenge fault: control relay contacts welded; coolant capacity lost. Independent protection required.",
-        "warning",
-      );
+      s.log("Challenge fault: control relay contacts welded; coolant capacity lost. Independent protection required.", "warning");
     }
   }
   if (r.phase === "fault") {
-    const heaterPower = s.project.components
-      .filter((c) => c.kind === "heater")
-      .reduce(
-        (total, c) => total + (s.electrical.readings[c.id]?.power ?? 0),
-        0,
-      );
-    // Check causal electrical isolation, including redundant tripped contacts in series.
-    const candidates = s.project.components.filter(
-      (c) =>
-        c.kind === "safety" &&
-        s.automation.memory[c.id]?.tripped &&
-        !s.automation.contacts[c.id],
-    );
-    let cutoff: (typeof candidates)[number] | undefined;
-    if (heaterPower < 0.01 && candidates.length) {
-      const contacts = {
-        ...s.automation.contacts,
-        ...Object.fromEntries(candidates.map((c) => [c.id, true])),
-      };
-      const trialPower = (commands: Record<string, boolean>) => {
-        const result = solveElectrical(s.project, s.failed, {
-          contacts: commands,
-          faults: s.faults,
-          disconnected: s.disconnected,
-        });
-        return s.project.components
-          .filter((c) => c.kind === "heater")
-          .reduce((total, c) => total + (result.readings[c.id]?.power ?? 0), 0);
-      };
-      try {
-        const allClosed = trialPower(contacts);
-        if (allClosed > 1)
-          cutoff = candidates.find(
-            (c) => allClosed - trialPower({ ...contacts, [c.id]: false }) > 1,
-          );
-      } catch {
-        /* An unsolvable hypothetical circuit earns no causal isolation credit. */
-      }
-    }
-    if (cutoff && heaterPower < 0.01) {
+    const isolated = heaterPower(p, s.electrical.readings) < 0.01, cutoff = isolated ? isolatingCutoff(s) : undefined;
+    if (cutoff) {
       r.phase = "cooldown";
       r.cutoffAt = s.time;
       r.safetyId = cutoff.id;
-      s.log(
-        "Challenge: independent cutoff interrupted heater power. Hold isolation 30 s.",
-        "success",
-      );
-    } else if (s.time - r.faultAt > runawayScenario.protectionTimeout)
-      s.violation(
-        "Independent protection did not interrupt heating within 1,200 s.",
-      );
+      s.log("Challenge: independent cutoff interrupted heater power. Hold isolation 30 s.", "success");
+    } else if (s.time - r.faultAt > S.protectionTimeout) s.violation("Independent protection did not interrupt heating within 1,200 s.");
   }
-  if (
-    r.phase === "cooldown" &&
-    s.time - r.cutoffAt >= runawayScenario.isolationHold
-  ) {
+  if (r.phase === "cooldown" && s.time - r.cutoffAt >= S.isolationHold) {
     for (const id of r.faultTargets) s.injectFault(id, null, true);
     r.phase = "recovery";
-    s.log(
-      "Challenge: relay repaired and coolant restored. Cool below reset margin, then manually reset the independent safety latch.",
-      "info",
-    );
+    s.log("Challenge: relay repaired and coolant restored. Cool below reset margin, then manually reset the independent safety latch.", "info");
   }
   if (r.phase === "recovery") {
-    if (s.automation.memory[r.safetyId]?.manualResets && inBand)
-      r.recoveryTime += dt;
-    else r.recoveryTime = 0;
-    if (
-      r.recoveryTime >= runawayScenario.recoveryHold &&
-      r.recoverySwitches >= runawayScenario.recoveryCycles
-    ) {
+    r.recoveryTime = s.automation.memory[r.safetyId]?.manualResets && inBand ? r.recoveryTime + dt : 0;
+    if (r.recoveryTime >= S.recoveryHold && r.recoverySwitches >= S.recoveryCycles) {
       r.phase = "complete";
       s.log("Challenge: 120 s stable recovery demonstrated.", "success");
     }
-    if (s.time - r.cutoffAt > runawayScenario.recoveryTimeout)
-      s.violation("Recovery exceeded 1,800 s.");
+    if (s.time - r.cutoffAt > S.recoveryTimeout) s.violation("Recovery exceeded 1,800 s.");
   }
 }
 
-function evaluateRunaway(p: Project, s: Simulation, state: RunawayState) {
-    const r = state,
-      cost = projectCost(p),
-      safe =
-        !challengeError(p) &&
-        s.violations.length === 0 &&
-        Object.keys(s.failed).length === 0,
-      stability = r.normalTime ? r.inBand / r.normalTime : 0;
-    const checks = [
-      {
-        label: "240 s regulation; at least 97% inside 78–82°C",
-        ok:
-          r.normalTime >= runawayScenario.normalHold &&
-          stability >= runawayScenario.minStability,
-      },
-      {
-        label:
-          "Measured feedback switches heater power (≥2); at most 80 transitions",
-        ok:
-          r.automaticSwitches >= runawayScenario.normalCycles &&
-          r.switches <= runawayScenario.maxSwitches,
-      },
-      {
-        label: "Independent cutoff interrupted fault power below 95°C",
-        ok: !!r.safetyId && r.maxTemperature < runawayScenario.critical,
-      },
-      {
-        label: "Manual reset followed by 120 s regulation",
-        ok:
-          r.phase === "complete" &&
-          r.recoverySwitches >= runawayScenario.recoveryCycles,
-      },
-      {
-        label: "Safe ratings, 2 kW limit, and €500 budget",
-        ok: safe && s.peakPower <= 2000.01 && cost <= runaway.budget,
-      },
-    ];
-    const complete = checks.every((c) => c.ok),
-      score = complete
-        ? Math.round(
-            50 +
-              15 * stability * Math.max(0, 1 - r.overshoot / 13) +
-              10 * Math.min(1, 2508000 / Math.max(1, s.energy)) +
-              10 * economyFactor(runaway.economyTarget, cost, runaway.budget) +
-              10 * Math.min(1, 1800 / Math.max(1800, s.time)) +
-              5 * Math.max(0, 1 - r.switches / runawayScenario.maxSwitches),
-          )
-        : 0;
-    return {
-      progress:
-        r.phase === "warmup"
-          ? Math.min(
-              0.35,
-              Math.max(
-                0,
-                (((s.temperatures[
-                  p.components.find((c) => c.kind === "tank")?.id ?? ""
-                ] ?? 20) -
-                  20) /
-                  60) *
-                  0.35,
-              ),
-            )
-          : r.phase === "regulating"
-            ? 0.35 +
-              0.3 * Math.min(1, r.normalTime / runawayScenario.normalHold)
-            : r.phase === "fault"
-              ? 0.65
-              : r.phase === "cooldown"
-                ? 0.75
-                : r.phase === "recovery"
-                  ? 0.8 +
-                    0.2 *
-                      Math.min(1, r.recoveryTime / runawayScenario.recoveryHold)
-                  : 1,
-      complete,
-      failed:
-        !safe ||
-        (r.normalTime >= runawayScenario.normalHold &&
-          stability < runawayScenario.minStability),
-      stars: starsFor(complete, score),
-      score,
-      checks,
-    };
+/** Progress bar: warm-up to 35 %, regulation to 65 %, fault 65 %, cooldown 75 %, recovery 80–100 %. */
+function progress(p: Project, s: Simulation, r: RunawayState) {
+  switch (r.phase) {
+    case "warmup": {
+      const temperature = s.temperatures[p.components.find((c) => c.kind === "tank")?.id ?? ""] ?? 20;
+      return Math.min(0.35, Math.max(0, ((temperature - 20) / 60) * 0.35));
+    }
+    case "regulating": return 0.35 + 0.3 * Math.min(1, r.normalTime / S.normalHold);
+    case "fault": return 0.65;
+    case "cooldown": return 0.75;
+    case "recovery": return 0.8 + 0.2 * Math.min(1, r.recoveryTime / S.recoveryHold);
+    default: return 1;
+  }
+}
+
+/**
+ * Score 50 + stability 15 (reduced by overshoot over 13 K) + energy 10 + economy 10 + time 10
+ * + relay wear 5.
+ */
+function evaluateRunaway(p: Project, s: Simulation, r: RunawayState) {
+  const cost = projectCost(p),
+    safe = !challengeError(p) && s.violations.length === 0 && Object.keys(s.failed).length === 0,
+    stability = r.normalTime ? r.inBand / r.normalTime : 0;
+  const checks = [
+    { label: "240 s regulation; at least 97% inside 78–82°C", ok: r.normalTime >= S.normalHold && stability >= S.minStability },
+    { label: "Measured feedback switches heater power (≥2); at most 80 transitions", ok: r.automaticSwitches >= S.normalCycles && r.switches <= S.maxSwitches },
+    { label: "Independent cutoff interrupted fault power below 95°C", ok: !!r.safetyId && r.maxTemperature < S.critical },
+    { label: "Manual reset followed by 120 s regulation", ok: r.phase === "complete" && r.recoverySwitches >= S.recoveryCycles },
+    { label: "Safe ratings, 2 kW limit, and €500 budget", ok: safe && s.peakPower <= 2000.01 && cost <= runaway.budget },
+  ];
+  const complete = checks.every((c) => c.ok);
+  // Stability is weighted as 15 × stability × overshoot factor, evaluated in that order.
+  const overshoot = Math.max(0, 1 - r.overshoot / 13),
+    energy = Math.min(1, 2508000 / Math.max(1, s.energy)),
+    economy = economyFactor(runaway.economyTarget, cost, runaway.budget),
+    time = Math.min(1, 1800 / Math.max(1800, s.time)),
+    wear = Math.max(0, 1 - r.switches / S.maxSwitches);
+  const score = complete ? Math.round(50 + 15 * stability * overshoot + 10 * energy + 10 * economy + 10 * time + 5 * wear) : 0;
+  return {
+    progress: progress(p, s, r),
+    complete,
+    failed: !safe || (r.normalTime >= S.normalHold && stability < S.minStability),
+    stars: starsFor(complete, score),
+    score,
+    checks,
+  };
 }
 
 export const runaway: ChallengeDefinition<RunawayState> = {
@@ -348,7 +221,7 @@ export const runaway: ChallengeDefinition<RunawayState> = {
   },
   createState: initialState,
   afterSolve: recordFeedbackTransitions,
-  update: (s, state, dt) => updateRunaway(s, state, dt),
+  update: updateRunaway,
   evaluate: evaluateRunaway,
   progressLabel: (state) => `${state.phase} · `,
   liveStatus: (state) => [
@@ -356,5 +229,3 @@ export const runaway: ChallengeDefinition<RunawayState> = {
     ` · Regulation ${state.normalTime.toFixed(1)}/≥240 s · Recovery ${state.recoveryTime.toFixed(1)}/≥120 s. Feedback transitions: ${state.automaticSwitches}, recovery transitions: ${state.recoverySwitches}. After the fault, select ST-01 and manually reset its safety latch once the vessel is below its reset margin.`,
   ],
 };
-/** Tracking state of a running Thermal Runaway assignment. */
-export const runawayState = (s: Simulation) => s.challengeState as RunawayState;

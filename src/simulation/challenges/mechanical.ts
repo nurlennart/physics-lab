@@ -4,7 +4,7 @@ import { configuredMass, shaftBody, type SpatialBody } from '../spatial-model';
 import { catalogError } from '../integrity';
 import { mechanicalStarter } from '../spatial-projects';
 import type { Simulation } from '../engine';
-import { fixturesOnly, lockedRules, standardLimits } from './common';
+import { controlledBy, fixturesOnly, lockedRules, standardLimits } from './common';
 import { starsFor, type ChallengeDefinition } from './types';
 import type { ChallengeId } from './ids';
 
@@ -14,6 +14,8 @@ const initialState = (): MechanicalState => ({ hold: 0, evaluated: 0, inBand: 0,
 export const mechanicalState = (s: Simulation) => s.challengeState as MechanicalState;
 
 type BodyReading = Simulation['spatial']['readings'][string];
+/** What a mission's checks see: the load's reading, whether a motor did shaft work, and feedback wiring. */
+interface Context { p: Project; s: Simulation; state: MechanicalState; body?: BodyReading; powered: boolean; sensor: boolean }
 interface MechanicalMission {
   id: ChallengeId;
   starter(challenge?: boolean): Project;
@@ -36,7 +38,7 @@ interface MechanicalMission {
   /** Energy scored against idealEnergy (J). */
   energy(s: Simulation): number;
   track(s: Simulation, state: MechanicalState, dt: number, body: BodyReading): void;
-  checks(p: Project, s: Simulation, state: MechanicalState, ctx: { body?: BodyReading; powered: boolean; sensor: boolean }): { label: string; ok: boolean }[];
+  checks(ctx: Context): { label: string; ok: boolean }[];
   progress(state: MechanicalState, body?: BodyReading): number;
   actuatorValue?(s: Simulation, id: string, configured: number): number;
   onAdd?(c: Component, p: Project): void;
@@ -44,10 +46,12 @@ interface MechanicalMission {
 
 function validateMechanical(m: MechanicalMission, p: Project): string | null {
   if (!p.world || p.world.gravity.x !== 0 || p.world.gravity.y !== -9.80665) return 'Mechanical assignment gravity is locked at 9.80665 m/s² downward.';
-  const expected = m.load;
-  const targets = p.components.filter(c => c.name === expected.name), load = targets[0];
-  if (targets.length !== 1 || load.kind !== 'rigidBody' || !load.spatial || load.spatial.type !== 'dynamic' || Math.abs(configuredMass(load.spatial) - expected.mass) > 1e-7 || load.spatial.x !== expected.x || load.spatial.y !== expected.y || load.spatial.angle !== 0 || load.spatial.vx || load.spatial.vy || load.spatial.omega || !load.spatial.collision) return 'The assignment load, initial pose, mass and collision configuration are locked.';
-  const loadError = m.loadError?.(load.spatial);
+  const targets = p.components.filter(c => c.name === m.load.name), load = targets[0], body = load?.spatial;
+  const lockedLoad = targets.length === 1 && load.kind === 'rigidBody' && body?.type === 'dynamic' && body.collision &&
+    !(Math.abs(configuredMass(body) - m.load.mass) > 1e-7) &&
+    body.x === m.load.x && body.y === m.load.y && body.angle === 0 && !body.vx && !body.vy && !body.omega;
+  if (!lockedLoad) return 'The assignment load, initial pose, mass and collision configuration are locked.';
+  const loadError = m.loadError?.(body);
   if (loadError) return loadError;
   const floor = p.components.filter(c => c.name === 'Foundation');
   if (floor.length !== 1 || floor[0].spatial?.type !== 'static' || floor[0].spatial.y !== m.floorY || floor[0].spatial.height !== 0.5) return 'The assignment support elevation and height are locked.';
@@ -67,7 +71,6 @@ function validateMechanical(m: MechanicalMission, p: Project): string | null {
   }
   return m.finalError?.(p) ?? null;
 }
-function ancestry(p: Project, id: string, target: string, seen = new Set<string>()): boolean { if (id === target) return true; if (seen.has(id)) return false; seen.add(id); return p.connections.filter(w => w.domain === 'control' && w.to.component === id).some(w => ancestry(p, w.from.component, target, seen)); }
 function updateMechanical(m: MechanicalMission, s: Simulation, r: MechanicalState, dt: number) {
   const target = s.project.components.find(c => c.name === m.load.name)!;
   const b = s.spatial.readings[target.id]; if (!b) return;
@@ -80,13 +83,16 @@ function evaluateMechanical(m: MechanicalMission, p: Project, s: Simulation, r: 
   const b = target && s.spatial.readings[target.id];
   const motors = p.components.filter(c => c.kind === 'motor'), powered = motors.some(c => shaftBody(p, c.id) && s.componentEnergy[c.id] > 10);
   const valid = !validateMechanical(m, p) && projectCost(p) <= m.budget && !s.error && !s.violations.length && !Object.keys(s.failed).length;
-  const sensor = p.components.some(c => c.kind === m.sensor.kind && (m.sensor.axis === undefined || c.props.axis === m.sensor.axis) && c.props.target === target?.id && motors.some(motor => ancestry(p, motor.id, c.id)));
+  const sensor = p.components.some(c => c.kind === m.sensor.kind && (m.sensor.axis === undefined || c.props.axis === m.sensor.axis) && c.props.target === target?.id && motors.some(motor => controlledBy(p, motor.id, x => x.id === c.id)));
   const checks = [
     { label: 'Locked load/environment, catalog ratings, budget and safety respected', ok: valid },
-    ...m.checks(p, s, r, { body: b, powered, sensor }),
+    ...m.checks({ p, s, state: r, body: b, powered, sensor }),
   ];
   const complete = checks.every(c => c.ok);
-  const score = complete ? Math.round(60 + 20 * Math.min(1, m.idealEnergy / Math.max(1, m.energy(s))) + 10 * economyFactor(m.economyTarget, projectCost(p), m.budget) + 10 * Math.min(1, m.idealTime / Math.max(1, s.time))) : 0;
+  const energy = Math.min(1, m.idealEnergy / Math.max(1, m.energy(s))),
+    economy = economyFactor(m.economyTarget, projectCost(p), m.budget),
+    time = Math.min(1, m.idealTime / Math.max(1, s.time));
+  const score = complete ? Math.round(60 + 20 * energy + 10 * economy + 10 * time) : 0;
   return { checks, complete, failed: !valid, score, stars: starsFor(complete, score), progress: Math.min(1, m.progress(r, b)) };
 }
 
@@ -132,7 +138,7 @@ export const descent = mechanicalMission({
     if (s.spatial.maxImpactSpeed > 0.6) s.violation('Descent impact velocity exceeds 0.6 m/s.');
     if (s.spatial.dampingLoss > 500) s.violation('Descent braking heat exceeds 500 J.');
   },
-  checks: (_p, s, r, { body }) => [
+  checks: ({ s, state: r, body }) => [
     { label: 'Load rests at 1.00 ±0.08 m with speed ≤0.05 m/s for 3 s', ok: !!body && r.hold >= 3 - 1e-8 },
     { label: 'Impact ≤0.6 m/s, passive braking ≤500 J, finish within 120 s', ok: s.spatial.maxImpactSpeed <= 0.6 && s.spatial.dampingLoss > 1 && s.spatial.dampingLoss <= 500 && s.time <= 120 },
   ],
@@ -162,7 +168,7 @@ export const lift = mechanicalMission({
     holdAt(r, b, 3, dt);
     if (b.y < 0.2) s.violation('Lift load fell below the safe travel region.');
   },
-  checks: (p, s, r, { body, powered, sensor }) => [
+  checks: ({ p, s, state: r, body, powered, sensor }) => [
     { label: 'Powered motor, real transmission and position feedback; ≥100 J shaft work', ok: powered && sensor && s.spatial.shaftWork >= 100 && !!p.world?.joints.some(j => j.kind === 'gear') },
     { label: '10 kg load raised to 3.00 ±0.08 m, stable for 3 s', ok: !!body && r.hold >= 3 - 1e-8 && s.time <= 120 },
   ],
@@ -192,10 +198,13 @@ export const rotation = mechanicalMission({
       if (Math.abs(error) <= 60) r.inBand += dt;
     }
   },
-  checks: (_p, _s, r, { powered, sensor }) => [
-    { label: 'Electrical motor, rotor and actual speed sensor feed control', ok: powered && sensor },
-    { label: '60 s scored, ≥95% within ±60 RPM, RMS ≤60 RPM, changing load exercised', ok: r.evaluated >= 60 - 1e-8 && r.inBand / Math.max(1, r.evaluated) >= 0.95 && Math.sqrt(r.squaredError / Math.max(1, r.evaluated)) <= 60 && r.loadChanges >= 4 },
-  ],
+  checks: ({ state: r, powered, sensor }) => {
+    const band = r.inBand / Math.max(1, r.evaluated), rms = Math.sqrt(r.squaredError / Math.max(1, r.evaluated));
+    return [
+      { label: 'Electrical motor, rotor and actual speed sensor feed control', ok: powered && sensor },
+      { label: '60 s scored, ≥95% within ±60 RPM, RMS ≤60 RPM, changing load exercised', ok: r.evaluated >= 60 - 1e-8 && band >= 0.95 && rms <= 60 && r.loadChanges >= 4 },
+    ];
+  },
   progress: (r) => r.evaluated / 60,
   // The shaft load alternates between 0.4 and 1.2 N·m every 15 s.
   actuatorValue: (s, id, configured) => s.project.components.find(c => c.id === id)?.name === 'Variable shaft load' ? (Math.floor(s.time / 15) % 2 ? -1.2 : -0.4) : configured,
