@@ -30,6 +30,7 @@ const modelCache = new WeakMap<Component, ReturnType<typeof pvModel>>();
 export function panelModel(c: Component) { let m = modelCache.get(c); if (!m) { m = pvModel(c); modelCache.set(c, m); } return m; }
 export function solveSolar(p: Project, failed: Record<string, boolean>, runtime: ElectricalRuntime, solve: Solve): ElectricalResult {
   const e = expand(p), units = p.components.filter(c => solarKinds.includes(c.kind));
+  const chargingVoltage = (c: Component) => runtime.chargingTargets?.[c.id] ?? (states(c).absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage'));
   const states = (c: Component) => runtime.devices?.solar?.[c.id] ?? initialSolarState(c);
   const models = { ...runtime.sourceModels }, failures = { ...failed }, loads = { ...runtime.loadResistances };
   const targets: Record<string, number> = {};
@@ -58,6 +59,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
   if (boot) for (const c of units.filter(c => c.kind === 'mpptController' || c.kind === 'inverter')) e.ids.get(c.id)!.forEach(id => failures[id] = true);
   let result: ElectricalResult | undefined, error = Infinity;
   for (let k = 0; k < 500; k++) {
+    runtime.coupling?.prepare(result, models, failures);
     for (const c of units) {
       const parts = e.ids.get(c.id); if (!parts) continue;
       const st = states(c), [a, b] = parts;
@@ -67,7 +69,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       }
       if (c.kind === 'mpptController') {
         models[a] = { voltage: Math.max(1, targets[c.id]), resistance: 0, lower: 0, upper: inputLimits[c.id] };
-        const target = st.absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage');
+        const target = chargingVoltage(c);
         models[b] = { voltage: target, resistance: 0, lower: -demand[c.id], upper: 0 };
       }
       if (c.kind === 'inverter') {
@@ -113,7 +115,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
         change(demand, c.id, next, 1);
         // Curtail input to actual regulated output when voltage or output current limits bind.
         const out = Math.max(0, -result.readings[b].power), cap = out / (eta * Math.max(1, va));
-        const limitVoltage = st.absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage');
+        const limitVoltage = chargingVoltage(c);
         const limited = vb >= limitVoltage - 1e-8 || result.readings[b].regulation === 'cv' || demand[c.id] > prop(c, 'maxCurrent') - 1e-8;
         const nextLimit = limited ? Math.min(prop(c, 'maxInputCurrent'), cap) : prop(c, 'maxInputCurrent');
         const current = inputLimits[c.id], residual = nextLimit - current;
@@ -163,6 +165,19 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       }
       continue;
     }
+    if (runtime.coupling) {
+      // Read-only measurement aliases for system-level controls in the shared iteration.
+      // Energy accounting and final port remapping still happen once, after convergence.
+      for (const c of units.filter(c => c.kind === 'mpptController')) {
+        const [input, output] = e.ids.get(c.id)!;
+        const island = result.nodeIslands?.[`${input}:a`];
+        const mppPower = units.filter(pv => pv.kind === 'solarPanel' && result!.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv).pmp, 0);
+        result.readings[c.id] = { ...result.readings[input], solar: { inputPower: result.readings[input].power, outputPower: -result.readings[output].power, mode: 'iteration', running: !off.has(c.id), efficiency: prop(c, 'conversionEfficiency') / 100, mppPower } };
+        for (const port of ['oa', 'ob']) if (result.nodeIds) result.nodeIds[`${c.id}:${port}`] = result.nodeIds[`${output}:${port === 'oa' ? 'a' : 'b'}`];
+      }
+      const tangent = (patch: Partial<ElectricalRuntime>) => solve(e.project, failures, { ...runtime, ...patch, coupling: undefined, sourceModels: { ...models, ...patch.sourceModels }, acInjections: { ...runtime.acInjections, ...patch.acInjections } });
+      error = Math.max(error, runtime.coupling.residual(result, tangent));
+    }
     if (error < 1e-10) break;
     if (k === 499) throw Error(`Solar electrical coupling did not converge (relative residual ${error}). Check converter settings and bus wiring.`);
   }
@@ -192,7 +207,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       r.dissipatedPower += heat;
       x.heatPower = heat; x.power = heat;
       x.solar = { inputPower: input, outputPower: output, efficiency: input > 1e-9 ? output / input : 0, mode: off.get(c.id) ?? (c.props.standby ? 'standby' : c.kind === 'inverter' ? 'inverting' : st.absorption >= prop(c, 'absorptionTime') ? 'float' : y!.voltage >= prop(c, 'absorptionVoltage') - 1e-8 ? 'absorption' : 'bulk'), running: !off.has(c.id) && !c.props.standby, apparentPower: y?.apparentPower ?? Math.hypot(output, y?.reactivePower ?? 0) };
-      if (c.kind === 'mpptController') { x.solar.targetVoltage = targets[c.id]; x.solar.trackingActive = !off.has(c.id) && input > 1e-6 && Math.abs(x.voltage - targets[c.id]) < 1e-6 && Math.abs(y!.current) < prop(c, 'maxCurrent') - 1e-6 && y!.voltage < (st.absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage')) - 1e-6; x.solar.mppPower = available.get(c.id) ?? 0; x.solar.trackingEfficiency = x.solar.mppPower > 0 ? input / x.solar.mppPower : 0; }
+      if (c.kind === 'mpptController') { x.solar.targetVoltage = targets[c.id]; x.solar.trackingActive = !off.has(c.id) && input > 1e-6 && Math.abs(x.voltage - targets[c.id]) < 1e-6 && Math.abs(y!.current) < prop(c, 'maxCurrent') - 1e-6 && y!.voltage < (chargingVoltage(c)) - 1e-6; x.solar.mppPower = available.get(c.id) ?? 0; x.solar.trackingEfficiency = x.solar.mppPower > 0 ? input / x.solar.mppPower : 0; }
       x.secondaryVoltage = y!.voltage; x.secondaryCurrent = Math.abs(y!.current);
     } else {
       x.heatPower = x.power;

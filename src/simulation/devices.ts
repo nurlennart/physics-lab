@@ -1,3 +1,4 @@
+import { advanceHybrid, hybridEventLimit, hybridKinds, initialHybridState, type HybridState } from './hybrid';
 import { advanceSolar, initialSolarState, solarKinds, type SolarState } from './solar';
 import { prop, type Component, type Project } from './model';
 import type { ElectricalResult, ElectricalRuntime } from './electrical';
@@ -12,9 +13,11 @@ const settle = (value: number) => (Math.abs(value) < 1e-30 ? 0 : value);
 /** Charge, polarization and contact mechanics advance only after an accepted physical interval. */
 export class Devices {
   active = false;
+  hybrid: Record<string, HybridState> = {};
   solar: Record<string, SolarState> = {};
   /** Battery state of charge (0–1) and polarization voltage (V); capacitor dielectric voltage (V); inductor current (A). */
   batteries: Record<string, number> = {};
+  batteryHeat: Record<string, number> = {};
   polarization: Record<string, number> = {};
   capacitors: Record<string, number> = {};
   inductors: Record<string, number> = {};
@@ -22,34 +25,39 @@ export class Devices {
   /** Energy change of electrochemical and electrostatic storage since reset (J). */
   storedChange = 0;
   initialize(project: Project) {
-    this.active = project.components.some(c => ["battery", "lfpBattery", "solarPanel", "mpptController", "inverter", "batteryProtection", "contactor", "capacitor", "inductor"].includes(c.kind));
+    this.active = project.components.some(c => [...hybridKinds,"battery", "lfpBattery", "solarPanel", "mpptController", "inverter", "batteryProtection", "contactor", "capacitor", "inductor"].includes(c.kind));
     for (const c of project.components) {
+      if (hybridKinds.includes(c.kind)) this.hybrid[c.id] = initialHybridState(c);
       if (solarKinds.includes(c.kind)) this.solar[c.id] = initialSolarState(c);
-      if ((c.kind === 'battery' || c.kind === 'lfpBattery')) { this.batteries[c.id] = prop(c, 'initialSOC') / 100; this.polarization[c.id] = 0; }
+      if ((c.kind === 'battery' || c.kind === 'lfpBattery')) { this.batteryHeat[c.id] = 0; this.batteries[c.id] = prop(c, 'initialSOC') / 100; this.polarization[c.id] = 0; }
       if (c.kind === 'capacitor') this.capacitors[c.id] = prop(c, 'chargeVoltage');
       if (c.kind === 'inductor') this.inductors[c.id] = 0;
       if (c.kind === 'contactor') this.contactors[c.id] = { closed: false, elapsed: 0, requested: false };
     }
   }
   runtime(h = 0): Pick<ElectricalRuntime, 'devices'> {
-    return { devices: { solar: this.solar, batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
+    return { devices: { hybrid: this.hybrid, solar: this.solar, batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
   }
   checkpoint() {
-    return structuredClone({ solar: this.solar, batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
+    return structuredClone({ hybrid: this.hybrid, solar: this.solar, batteries: this.batteries, batteryHeat: this.batteryHeat, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
   }
   boundaryTime(project: Project, electrical: ElectricalResult, h: number) {
     if (!this.active) return h;
     let limit = h;
+    for (const c of project.components.filter(c => c.kind === 'hybridInverter' || c.kind === 'gridInverter')) {
+      const s = this.hybrid[c.id], r = electrical.readings[c.id]?.hybrid;
+      if (!s || !r) continue;
+      const remaining = !r.connected && !r.backupAvailable ? prop(c, 'transferTime') - (s.connected ? 0 : s.outageElapsed) : r.gridValid && !r.connected ? prop(c, 'reconnectDelay') - (s.gridValid ? s.gridStable : 0) : Infinity;
+      if (remaining > 1e-9) limit = Math.min(limit, remaining);
+    }
     for (const c of project.components.filter(c => (c.kind === 'battery' || c.kind === 'lfpBattery'))) {
       const soc = this.batteries[c.id], rate = batteryChargeStep(c, soc, electrical.readings[c.id]?.current ?? 0, 1) - soc;
       const next = soc + rate * h;
       if (c.kind === 'lfpBattery' && Math.abs(rate) > 1e-15) {
-        // A small custom pack can traverse an OCV knee inside a fixed step. Resolve the chemical
-        // timescale in fixed as well as adaptive runs, and split at every slope discontinuity.
+        // Resolve a small pack's chemical timescale in fixed as well as adaptive runs.
+        // The exact mean-OCV model integrates slope changes without artificial knee events.
         limit = Math.min(limit, 0.002 / Math.abs(rate));
-        for (const boundary of ocvCurve(c)[0]) {
-          if (rate > 0 && soc < boundary - 1e-12 && next > boundary + 1e-14 || rate < 0 && soc > boundary + 1e-12 && next < boundary - 1e-14) limit = Math.min(limit, (boundary - soc) / rate);
-        }
+
       }
       if (next < -1e-14) limit = Math.min(limit, -soc / rate);
       if (next > 1 + 1e-14) limit = Math.min(limit, (1 - soc) / rate);
@@ -70,18 +78,20 @@ export class Devices {
       if (c.kind === 'mpptController') limit = Math.min(limit, Math.max(1e-8, prop(c, 'trackingInterval') - this.solar[c.id].elapsed));
       if (c.kind === 'inverter' && this.solar[c.id].overload > 0 && this.solar[c.id].overload < prop(c, 'surgeTime')) limit = Math.min(limit, prop(c, 'surgeTime') - this.solar[c.id].overload);
     }
-    return limit;
+    return Math.min(limit, hybridEventLimit(project, this.hybrid));
   }
   advance(project: Project, electrical: ElectricalResult, h: number, temperatures: Record<string, number> = {}) {
     if (!this.active) return;
     advanceSolar(project, this.solar, electrical, h);
+    advanceHybrid(project, this.hybrid, electrical, h);
     for (const c of project.components) {
       const r = electrical.readings[c.id];
       if ((c.kind === 'battery' || c.kind === 'lfpBattery') && r) {
+        this.batteryHeat[c.id] = (this.batteryHeat[c.id] ?? 0) + (r.heatPower ?? 0) * h;
         const before = this.batteries[c.id], next = batteryChargeStep(c, before, r.current, h);
         if (next < -1e-9 || next > 1 + 1e-9) throw Error(`${c.name}: battery charge left its physical bounds.`);
         this.batteries[c.id] = Math.max(0, Math.min(1, next));
-        this.storedChange += batteryEnergy(c, this.batteries[c.id]) - batteryEnergy(c, before);
+        this.storedChange += batteryEnergyChange(c, before, this.batteries[c.id]);
         const branch = polarizationBranch(c, temperatures[c.id] ?? 20, h);
         if (branch) {
           const step = branch.step(this.polarization[c.id] ?? 0, r.current);
@@ -165,6 +175,28 @@ export function batteryEnergy(c: Component, soc: number) {
     area += 0.5 * (f[i] + fEnd) * (end - s[i]);
   }
   return 3600 * prop(c, 'capacityAh') * (prop(c, 'emptyVoltage') * x + (prop(c, 'fullVoltage') - prop(c, 'emptyVoltage')) * area);
+}
+/** Stable exact integral over the actual SOC interval; avoids subtracting two large stored energies. */
+export function batteryEnergyChange(c: Component, from: number, to: number) {
+  const [s, f] = ocvCurve(c), lo = Math.max(0, Math.min(1, Math.min(from, to))), hi = Math.max(0, Math.min(1, Math.max(from, to)));
+  const span = prop(c, 'fullVoltage') - prop(c, 'emptyVoltage'); let area = 0;
+  for (let k = 0; k + 1 < s.length; k++) {
+    const a = Math.max(lo, s[k]), b = Math.min(hi, s[k + 1]); if (b <= a) continue;
+    const slope = (f[k + 1] - f[k]) / (s[k + 1] - s[k]);
+    const va = prop(c, 'emptyVoltage') + span * (f[k] + slope * (a - s[k]));
+    const vb = prop(c, 'emptyVoltage') + span * (f[k] + slope * (b - s[k]));
+    area += (va + vb) * .5 * (b - a);
+  }
+  return Math.sign(to - from) * 3600 * prop(c, 'capacityAh') * area;
+}
+/** Exact mean OCV and its tangent versus accepted mean current, including OCV knees. */
+export function batteryAverageOCV(c: Component, soc: number, current: number, h: number) {
+  const q = 3600 * prop(c, 'capacityAh'), unconstrained = batteryChargeStep(c, soc, current, h), next = Math.max(0, Math.min(1, unconstrained)), ds = next - soc;
+  const midpoint = batteryOCV(c, (soc + next) * .5);
+  const mean = ds !== 0 ? batteryEnergyChange(c, soc, next) / (q * ds) : midpoint.voltage;
+  const derivative = Math.abs(ds) > 1e-8 ? (batteryOCV(c, next).voltage - mean) / ds : midpoint.slope * .5;
+  const retention = current >= 0 ? prop(c, 'coulombicEfficiency') / 100 : 1;
+  return { voltage: mean, resistance: unconstrained > 1 || unconstrained < 0 ? 0 : derivative * retention * h / q };
 }
 /**
  * State of charge after h with the mean terminal current I (into +): on charge only the coulombic efficiency η of the

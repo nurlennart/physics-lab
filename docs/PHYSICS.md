@@ -688,3 +688,5 @@ The Bosch Tronic Heat 3000 9 reference uses the existing MNA solver for three in
 ## Solar energy extension
 
 See [SOLAR-ENERGY.md](SOLAR-ENERGY.md) for the calibrated single-diode PV, averaged MPPT and inverter, LFP/BMS and independent distribution protection. Incident sunlight is an external input; rejected sunlight leaves to the prescribed cell-temperature reservoir. All converters and loads use the electrical solver.
+
+See [grid-connected energy architecture and solar reliability audit](HYBRID-ENERGY.md) for generic grid-following and hybrid inverter models, PCC metering, manufacturer calibration, isolation policies, confirmed solar fixes and validation limitations.

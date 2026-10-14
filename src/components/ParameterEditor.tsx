@@ -105,7 +105,9 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
   const label = spec?.label ?? field;
   const typical = typeof value === "number" && spec?.typical && (value < spec.typical[0] || value > spec.typical[1]);
   let control;
-  if (field === "target") {
+  if (field === 'batteryTarget' || field === 'gridMeterTarget') {
+    control = <select aria-label={label} disabled={disabled} value={String(value)} onChange={e => actions.property(c.id, field, e.target.value)}><option value="">Unassigned</option>{s.project.components.filter(x => field === 'batteryTarget' ? x.kind === 'battery' || x.kind === 'lfpBattery' : x.kind === 'gridMeter').map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>;
+  } else if (field === "target") {
     const physical = ["pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor", "forceActuator"].includes(c.kind);
     control = (
       <select aria-label={physical ? "Physical target" : "Thermal target"} disabled={disabled} value={String(value)} onChange={(e) => actions.property(c.id, field, e.target.value)}>

@@ -62,7 +62,8 @@ The battery reuses the existing piecewise-linear LFP OCV plateau, exact OCV inte
 ```
 SOCnext = SOC + (ηc max(I,0) + min(I,0)) h / (3600 capacityAh)
 Echemical(SOC) = 3600 capacityAh · ∫₀ˢᴼᶜ OCV(s) ds
-Vterminal ≈ OCVmidpoint + Rinternal I
+Vterminal = OCVmean(SOC, SOCnext) + Rinternal I
+OCVmean(s₀,s₁) = [∫ₛ₀ˢ¹ OCV(s) ds] / (s₁ − s₀)
 Pheat = Vterminal I − ΔEchemical/h
 ```
 
@@ -75,12 +76,14 @@ The OCV curve, lumped heat capacities and ambient UA are engineering assumptions
 The inverter expands to a DC load and a separate AC source in the existing phasor solver. The AC source drives existing resistors, lamps, reactive loads, transformers and motors through real wiring. DC power iteration draws AC real output plus losses from the solved bus:
 
 ```
-Ploss = Pidle + k Soutput²
-k = max(0, (Pr/2)(1/ηpeak − 1) − Pidle) / (Pr/2)²
+Ploss = Pidle + a Pac + k Soutput²
+Ppeak = Pr/2 (assumed, when feasible)
+k = Pidle / Ppeak²
+a = 1/ηpeak − 1 − 2 Pidle/Ppeak
 Pdc = Pac + Ploss
 ```
 
-Peak efficiency is placed at half rated load (assumed); apparent load controls conduction losses. Zero load consumes 6.5 W. Explicit standby disables AC and draws 1.5 W; automatic ECO polling is not implemented. Active and apparent continuous ratings are enforced, with a 900 W/VA surge envelope for an **assumed two seconds**; the manufacturer publishes peak power but no duration in the selected datasheet. Overload latches until Reset. DC undervoltage shutdown/restart is hysteretic; high DC voltage and temperature disconnect output. The AC waveform is an ideal RMS sinusoid, with no switching ripple, harmonics or inverter startup inrush. Gradual temperature derating is not yet modeled; thermal protection acts at its configured limit.
+Peak efficiency is placed at half rated load (assumed); the added load-proportional term makes this the actual maximum, rather than only a fitting point. If this would require negative switching loss, use a purely quadratic curve with k = (1/ηpeak − 1)²/(4 Pidle); its peak occurs at 2 Pidle/(1/ηpeak − 1), possibly above the continuous rating. Apparent load controls conduction losses. Zero load consumes 6.5 W. Explicit standby disables AC and draws 1.5 W; automatic ECO polling is not implemented. Active and apparent continuous ratings are enforced, with a 900 W/VA surge envelope for an **assumed two seconds**; the manufacturer publishes peak power but no duration in the selected datasheet. Overload latches until Reset. DC undervoltage shutdown/restart is hysteretic; high DC voltage and temperature disconnect output. The AC waveform is an ideal RMS sinusoid, with no switching ripple, harmonics or inverter startup inrush. Gradual temperature derating is not yet modeled; thermal protection acts at its configured limit.
 
 The protection switch is an ordinary resistive contact between input and output, with a third electrical terminal sensing bus negative and an optional Boolean remote-enable input. Voltage hysteresis uses the prior accepted conducting state. Low voltage, remote off and temperature events isolate the load immediately; overcurrent and engine overtemperature failure latches require Reset. Undervoltage uses automatic hysteretic recovery. 11.8/12.8 V thresholds, 2 mΩ on resistance and 65°C cutoff are assumptions. The reference device's 90 s disconnect / 30 s reconnect delays and quiescent consumption are not implemented. Fuses, cables, breakers and ordinary switches remain independently connectable branches.
 
@@ -98,7 +101,7 @@ incident sunlight + other external supplies
 
 No residual correction is applied. Probes distinguish incident power, generated electrical power, charger/inverter input/output, conversion loss, chemical storage and cumulative device throughput. Cumulative output on the PV is generated electrical energy; its cumulative input is incident sunlight. The common energy panel explicitly labels sunlight in external supply and explains rejected sunlight in ambient heat.
 
-Tracker sampling and surge deadlines constrain internal substeps. Battery adaptive limits remain 0.2% SOC; LFP fixed substeps also limit SOC change to 0.2% and split at OCV-curve knees to avoid artificial charge heating/cooling across a slope discontinuity; the engine's existing charge boundaries, thermal solve and rollback remain authoritative. All tracker memory, overload timers, protection latches and cumulative energy live in `Devices.checkpoint()`, restored on rejected steps. Paused solves do not advance them. PV and converters are quasistatic averaged devices; charged capacitors/inductors use the existing interval-averaged storage solve, so unresolved intra-step PV transients are a local linearization approximation. Semiconductor switching times are not simulated.
+Tracker sampling and surge deadlines constrain internal substeps. Battery adaptive limits remain 0.2% SOC; LFP fixed substeps also limit SOC change to 0.2%. Exact piecewise OCV integrals and a local MNA tangent solve replace knee-event splitting, avoiding artificial heating/cooling and repeated sub-picosecond knee events. True empty/full boundaries use their computed device interval rather than a fixed 10⁻¹⁰ s floor; the engine's existing charge boundaries, thermal solve and rollback remain authoritative. All tracker memory, overload timers, protection latches and cumulative energy live in `Devices.checkpoint()`, restored on rejected steps. Paused solves do not advance them. PV and converters are quasistatic averaged devices; charged capacitors/inductors use the existing interval-averaged storage solve, so unresolved intra-step PV transients are a local linearization approximation. Semiconductor switching times are not simulated.
 
 ## Examples and validation
 
@@ -114,3 +117,5 @@ Irradiance and cell temperature are live parameters. Set irradiance to 200 and t
 `solar.test.ts` covers STC fitting, withheld NOCT values, actual series/parallel MNA, nonlinear load intersections, P&O convergence and changed weather, full/empty/cold batteries, signed-current SOC integration, current trips, DC/DC balance, AC power, idle and standby, surge/overload, protection hysteresis/remote control, rollback, probes and neutral serialization. New presets have connected operating fixtures; all four examples have checked-in import files. Browser regressions select every new kind, inspect real readings and curves, and reset. The complete existing release gate is required, without relaxed reference tolerances. See `validation/solar-energy.md` for executed calibration and duration checks.
 
 Recovery regressions run the off-grid example from 1% SOC past four simulated minutes, repeat sunlight restoration through both Enabled and irradiance edits, and solve analytically specified current-limited charging power within 0.001 W of the fitted PV maximum. They check the actual I–V intersection, converter balance and global energy ledger. A browser regression restores sunlight through live Inspector edits.
+
+Grid-following conversion, 48 V variants, ESS coordination and the focused reliability audit are documented in [HYBRID-ENERGY.md](HYBRID-ENERGY.md).

@@ -1,9 +1,11 @@
+import { solveHybrid } from './hybrid-circuits';
+import { hybridKinds } from './hybrid';
 /** New multi-circuit devices expand into ordinary MNA branches; state stays in the engine. */
 import { solveSolar } from './solar-circuits';
 import { solarKinds } from './solar';
 import { definitions, prop, type Component, type Project } from './model';
 import { solveElectricalCore, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
-import { batteryChargeStep, batteryEnergy, batteryOCV, batteryResistanceFactor, polarizationBranch, selfDischargeCurrent } from './devices';
+import { batteryAverageOCV, batteryChargeStep, batteryEnergy, batteryEnergyChange, batteryOCV, batteryResistanceFactor, polarizationBranch, selfDischargeCurrent } from './devices';
 
 type Expansion = { project: Project; coils: Map<string, string>; boilers: Map<string, string[]> };
 const cache = new WeakMap<Project, Expansion>();
@@ -94,9 +96,10 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
       // Midpoint OCV over the step: E(s₀) behind (dE/ds)·h/(2Q); the polarization branch as its exact step average.
       const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, h = runtime.devices?.h ?? 0, charge = 3600 * prop(c, 'capacityAh'), ocv = batteryOCV(c, soc);
       const temperature = runtime.temperatures?.[c.id] ?? 20, branch = polarizationBranch(c, temperature, h), vp = runtime.devices?.polarization?.[c.id] ?? 0;
+      const average = c.props.cells ? batteryAverageOCV(c, soc, 0, h) : null;
       models[c.id] = {
-        voltage: ocv.voltage + (branch ? branch.emfWeight * vp : 0),
-        resistance: prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + ocv.slope * h / (2 * charge) + (branch?.seriesResistance ?? 0),
+        voltage: (average?.voltage ?? ocv.voltage) + (branch ? branch.emfWeight * vp : 0),
+        resistance: prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + (average?.resistance ?? ocv.slope * h / (2 * charge)) + (branch?.seriesResistance ?? 0),
         // A full battery accepts only the trickle that offsets its self-discharge (an ideal charge termination).
         lower: soc <= 1e-14 || (c.props.cells && (temperature < prop(c, 'minDischargeTemperature') || temperature > prop(c, 'maxTemperature') || ocv.voltage <= prop(c, 'bmsLowVoltage'))) ? 0 : c.props.cells ? -prop(c, 'dischargeCurrentLimit') : -Infinity,
         upper: soc >= 1 - 1e-14 ? selfDischargeCurrent(c) * 100 / prop(c, 'coulombicEfficiency') : c.props.cells ? temperature < prop(c, 'minChargeTemperature') || temperature > prop(c, 'maxTemperature') || ocv.voltage >= prop(c, 'bmsHighVoltage') ? 0 : prop(c, 'chargeCurrentLimit') : Infinity,
@@ -112,7 +115,28 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
     const ids = expanded.boilers.get(c.id)!;
     for (let i = 0; i < 4; i++) failures[ids[i]] = !!failed[c.id] || runtime.boilerTrips?.has(c.id) || runtime.faults?.[c.id] === 'failedOpen' || (i < 3 && i >= (runtime.boilers?.[c.id] ?? 0));
   }
-  let result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  const solveBatteryNetwork = () => {
+    let r = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+    const packs = project.components.filter(c => c.kind === 'battery' && c.props.cells);
+    for (let iteration = 0; packs.length && iteration < 24; iteration++) {
+      let residual = 0;
+      for (const c of packs) {
+        const x = r.readings[c.id]; if (!x || failures[c.id] || x.voltageValid === false || models[c.id].lower === 0 && models[c.id].upper === 0 || x.regulation === 'cc') continue;
+        const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, h = runtime.devices?.h ?? 0;
+        const avg = batteryAverageOCV(c, soc, x.current, h), temperature = runtime.temperatures?.[c.id] ?? 20;
+        const branch = polarizationBranch(c, temperature, h), vp = runtime.devices?.polarization?.[c.id] ?? 0;
+        const resistance = prop(c, 'internalResistance') * batteryResistanceFactor(c, temperature) + (branch?.seriesResistance ?? 0);
+        const voltage = avg.voltage + (branch?.emfWeight ?? 0) * vp;
+        residual = Math.max(residual, Math.abs(x.voltage - voltage - resistance * x.current) / Math.max(1, Math.abs(voltage)));
+        models[c.id] = { ...models[c.id], voltage: voltage - avg.resistance * x.current, resistance: resistance + avg.resistance };
+      }
+      if (residual < 1e-10) return r;
+      r = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+    }
+    if (packs.length) throw Error('Battery mean-OCV coupling did not converge.');
+    return r;
+  };
+  let result = solveBatteryNetwork();
   const overcurrentCandidates = new Set<string>();
   const bmsVoltage = new Map<string, string>();
   for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
@@ -121,14 +145,14 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
     if (r.current < -1e-9 && r.voltage < prop(c, 'bmsLowVoltage')) { models[c.id].lower = 0; bmsVoltage.set(c.id, 'BMS low voltage'); }
     if (r.current > 1e-9 && r.voltage > prop(c, 'bmsHighVoltage')) { models[c.id].upper = 0; bmsVoltage.set(c.id, 'BMS high voltage'); }
   }
-  if (bmsVoltage.size) result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  if (bmsVoltage.size) result = solveBatteryNetwork();
   const bmsTrips = new Set(overcurrentCandidates);
   for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
     const r = result.readings[c.id];
     if (r && (r.current <= -prop(c, 'dischargeCurrentLimit') * (1 - 1e-10) || r.current >= prop(c, 'chargeCurrentLimit') * (1 - 1e-10))) { failures[c.id] = true; bmsTrips.add(c.id); }
   }
   for (const id of bmsTrips) failures[id] = true;
-  if (bmsTrips.size) result = solveConstantPower(project, expanded.project, failures, { ...runtime, sourceModels: models });
+  if (bmsTrips.size) result = solveBatteryNetwork();
   for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
     const r = result.readings[c.id]; if (!r) continue;
     const mode = bmsTrips.has(c.id) || runtime.devices?.solar?.[c.id]?.mode === 'overcurrent' ? 'overcurrent' : bmsVoltage.get(c.id) ?? (r.current > 1e-9 ? 'charging' : r.current < -1e-9 ? 'discharging' : 'idle / BMS limited');
@@ -163,7 +187,7 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
       const temperature = runtime.temperatures?.[c.id] ?? 20, h = runtime.devices?.h ?? 0, branch = polarizationBranch(c, temperature, h);
       const soc = runtime.devices?.batteries[c.id] ?? prop(c, 'initialSOC') / 100, next = Math.max(0, Math.min(1, batteryChargeStep(c, soc, r.current, h)));
       const storage = h > 0
-        ? (batteryEnergy(c, next) - batteryEnergy(c, soc)) / h + (branch ? branch.step(runtime.devices?.polarization?.[c.id] ?? 0, r.current).energy / h : 0)
+        ? batteryEnergyChange(c, soc, next) / h + (branch ? branch.step(runtime.devices?.polarization?.[c.id] ?? 0, r.current).energy / h : 0)
         : batteryOCV(c, soc).voltage * r.current;
       const heat = r.power - storage;
       r.heatPower = heat;
@@ -201,5 +225,6 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
 }
 
 export function solveElectrical(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
-  return project.components.some(c => solarKinds.includes(c.kind)) ? solveSolar(project, failed, runtime, solveDevices) : solveDevices(project, failed, runtime);
+  const base = (p: Project, f: Record<string, boolean>, r: ElectricalRuntime) => p.components.some(c => solarKinds.includes(c.kind)) ? solveSolar(p, f, r, solveDevices) : solveDevices(p, f, r);
+  return project.components.some(c => hybridKinds.includes(c.kind)) ? solveHybrid(project, failed, runtime, base) : base(project, failed, runtime);
 }

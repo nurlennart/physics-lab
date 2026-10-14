@@ -366,11 +366,7 @@ export const actions = {
       ...state.project,
       components: state.project.components
         .filter((c) => !state.selected.includes(c.id))
-        .map((c) =>
-          state.selected.includes(String(c.props.target))
-            ? { ...c, props: { ...c.props, target: "" } }
-            : c,
-        ),
+        .map((c) => ({ ...c, props: { ...c.props, ...Object.fromEntries(['target', 'batteryTarget', 'gridMeterTarget'].filter(field => removed.has(String(c.props[field]))).map(field => [field, ''])) } })),
       probes: (state.project.probes ?? []).filter(
         (p) =>
           !state.selected.includes(p.component) &&

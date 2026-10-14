@@ -35,6 +35,11 @@ const pipe = (dn: number, length: number, family: Family) =>
   preset("pipe", family, `DN${dn} · ${length} m steel`, { diameter: dn / 1000, length, roughness: 0.000045, material: "steel", maxPressure: dn >= 100 ? 1600000 : 1000000 });
 
 export const builtinPresets: ComponentPreset[] = [
+  preset('hybridInverter', 'General-purpose', 'Hybrid Inverter / Charger · 48 V / 3000 VA', {}),
+  preset('gridInverter', 'General-purpose', 'Grid-Connected Inverter · 2400 W', {}),
+  preset('gridMeter', 'General-purpose', 'Grid Energy Meter · PCC', {}),
+  preset('lfpBattery', 'High-capacity', 'LiFePO4 Battery · 51.2 V / 100 Ah', {}, 'Two 25.6 V packs in series; derived configuration.', 'sixteenCell'),
+  preset('mpptController', 'General-purpose', 'MPPT Charge Controller · 48 V / 35 A', {}, '150 V class reference; 145 V operating ceiling.', '48V'),
   preset('solarPanel', 'General-purpose', 'Solar Panel (PV) · 450 W', {}),
   preset('lfpBattery', 'General-purpose', 'LiFePO4 Battery · 12.8 V / 100 Ah', {}),
   preset('lfpBattery', 'General-purpose', 'LiFePO4 Battery · 25.6 V / 100 Ah', {}, '', 'eightCell'),

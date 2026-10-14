@@ -2,9 +2,9 @@ import { simulation } from '../editor/store';
 import { type Component, prop } from '../simulation/model';
 import { batteryEnergy } from '../simulation/devices';
 import { panelModel } from '../simulation/solar-circuits';
-import { solarProvenance } from '../simulation/solar-provenance';
+import { solarVariantProvenance } from '../simulation/solar-provenance';
 export function SolarInspector({ c }: { c: Component }) {
-  const r = simulation.electrical.readings[c.id], s = r?.solar, provenance = solarProvenance[c.kind];
+  const r = simulation.electrical.readings[c.id], s = r?.solar, provenance = solarVariantProvenance(c.kind, c.variant);
   if (!provenance) return null;
   const m = c.kind === 'solarPanel' ? panelModel(c) : null;
   const maxV = m ? Math.max(1, m.voc) : 1, maxI = m ? Math.max(1, m.isc) : 1, maxP = m ? Math.max(1, m.pmp) : 1;

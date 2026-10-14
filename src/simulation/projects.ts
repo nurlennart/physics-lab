@@ -1,3 +1,4 @@
+import { hybridStarter, hybridTitles, type HybridMode } from './hybrid-projects';
 import { solarStarter, solarTitles, type SolarMode } from './solar-projects';
 import { deviceStarter, type DeviceMode } from "./device-projects";
 import { compatibleTarget, legacyUnavailableMeasurement } from "./capabilities";
@@ -16,9 +17,10 @@ import {
   type Measurement,
 } from "./model";
 export function starter(
-  mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode = "heat",
+  mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode = "heat",
   challenge = false,
 ): Project {
+  if (mode in hybridTitles) return hybridStarter(mode as HybridMode);
   if (mode in solarTitles) return solarStarter(mode as SolarMode);
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
@@ -335,6 +337,10 @@ export function parseProject(input: unknown): Project {
   let validated: Project = { ...p, connections: [] };
   const wireIds = new Set();
   for (const c of p.components) {
+    for (const field of ['batteryTarget', 'gridMeterTarget']) if (c.props[field]) {
+      const target = p.components.find(x => x.id === c.props[field]);
+      if (!target || (field === 'batteryTarget' ? !['battery', 'lfpBattery'].includes(target.kind) : target.kind !== 'gridMeter')) throw Error(`${c.name}: invalid ${field}.`);
+    }
     if (typeof c.props.target === "string" && c.props.target) {
       const target = p.components.find(x => x.id === c.props.target);
       if (!target || !compatibleTarget(c, target)) throw Error(`${c.name}: target has no compatible modeled quantity. Reassign the sensor target.`);
@@ -439,6 +445,8 @@ export function validateProbes(p: Project) {
         "power",
         "bodyTemperature", "temperature",
         "energy",
+        "acInputPower", "acOutputPower", "converterLossEnergy", "transferLossEnergy", "batteryHeatEnergy",
+        "gridPower", "gridReactivePower", "gridImportPower", "gridExportPower", "gridImportEnergy", "gridExportEnergy", "gridVoltage", "gridFrequency", "synchronized", "backupAvailable", "dcPower", "acConversionPower",
         "incidentEnergy", "inputPower", "outputPower", "conversionLoss", "mppPower", "mppVoltage", "mppCurrent", "trackingEfficiency", "incidentPower", "generatedEnergy", "outputEnergy", "lostEnergy",
         "stateOfCharge", "chemicalEnergy", "polarizationVoltage", "chargeVoltage", "fieldEnergy", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower",
         "state",

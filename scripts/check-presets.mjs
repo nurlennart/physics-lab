@@ -70,6 +70,20 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
   const b = fixture(), c = b.preset(p), v = c.props;
   let s;
   switch (p.kind) {
+    case 'gridMeter': {
+      const grid=b.add('sourceAC',{voltage:230,maxCurrent:63}),r=load(b,529);
+      b.wire(grid,'a',c,'a');b.wire(c,'b',r,'a');b.wire(grid,'b',r,'b');b.wire(grid,'b',c,'reference');s=simulation(b);run(s);
+      near(report,'PCC measured import (W)',230*230/(529+v.resistance),s.electrical.readings[c.id].hybrid.gridPower);break;
+    }
+    case 'gridInverter': {
+      const pv=b.add('solarPanel'),grid=b.add('sourceAC',{voltage:230,maxCurrent:63}),r=load(b,529);
+      b.wire(pv,'a',c,'a');b.wire(pv,'b',c,'b');b.wire(grid,'a',c,'ga');b.wire(grid,'b',c,'gb');b.wire(grid,'a',r,'a');b.wire(grid,'b',r,'b');s=simulation(b);assert(s.advanceAdaptive(v.reconnectDelay+.5),s.error);run(s);assert(s.electrical.readings[c.id].hybrid.acPower>400);break;
+    }
+    case 'hybridInverter': {
+      const battery=b.add('lfpBattery',{},'sixteenCell'),grid=b.add('sourceAC',{voltage:230,maxCurrent:63}),meter=b.add('gridMeter'),r=load(b,529);
+      c.props.batteryTarget=battery.id;c.props.gridMeterTarget=meter.id;
+      b.wire(battery,'a',c,'a');b.wire(battery,'b',c,'b');b.wire(grid,'a',meter,'a');b.wire(meter,'b',c,'ga');b.wire(grid,'b',c,'gb');b.wire(grid,'b',meter,'reference');b.wire(c,'oa',r,'a');b.wire(c,'ob',r,'b');s=simulation(b);assert(s.advanceAdaptive(v.reconnectDelay+.5),s.error);run(s);near(report,'PCC import target (W)',v.gridSetpoint,s.electrical.readings[meter.id].hybrid.gridPower,1e-7);break;
+    }
     case 'solarPanel': {
       const resistor = load(b, v.vmp / v.imp); b.series(c, resistor); s = simulation(b);
       near(report, 'STC MPP power (W)', v.vmp * v.imp, -s.electrical.readings[c.id].power, 1e-7); run(s); break;
@@ -79,8 +93,8 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       assert(s.devices.batteries[c.id] < before); assert(s.electrical.readings[c.id].heatPower >= 0); break;
     }
     case 'mpptController': {
-      const pv = b.add('solarPanel'), battery = b.add('lfpBattery', {}, v.absorptionVoltage > 20 ? 'eightCell' : 'standard');
-      b.wire(pv, 'a', c, 'a'); b.wire(pv, 'b', c, 'b'); b.wire(c, 'oa', battery, 'a'); b.wire(c, 'ob', battery, 'b');
+      const pv = b.add('solarPanel'), battery = b.add('lfpBattery', {}, v.absorptionVoltage > 40 ? 'sixteenCell' : v.absorptionVoltage > 20 ? 'eightCell' : 'standard');
+      if(v.absorptionVoltage>40){const second=b.add('solarPanel');b.wire(pv,'a',c,'a');b.wire(pv,'b',second,'a');b.wire(second,'b',c,'b');}else{b.wire(pv, 'a', c, 'a'); b.wire(pv, 'b', c, 'b');} b.wire(c, 'oa', battery, 'a'); b.wire(c, 'ob', battery, 'b');
       s = simulation(b); run(s); const r = s.electrical.readings[c.id].solar;
       near(report, 'DC/DC conversion efficiency', v.conversionEfficiency / 100, r.outputPower / r.inputPower, 1e-8); break;
     }

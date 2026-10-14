@@ -24,18 +24,21 @@ step "Unit and integration tests"
 npx vitest run; took
 
 # The Node campaigns are independent single-threaded processes: run them side by side.
-step "Physics validation, scale validation, challenge score guard, preset campaign, shaft events"
+step "Physics validation, scale validation, challenge score guard, preset campaign, shaft events, solar and hybrid energy"
 logs="$(mktemp -d)"
 node scripts/validate-physics.mjs >"$logs/physics" 2>&1 & physics=$!
 node scripts/validate-scaling.mjs >"$logs/scaling" 2>&1 & scaling=$!
 node scripts/check-scores.mjs >"$logs/scores" 2>&1 & scores=$!
 node scripts/check-presets.mjs >"$logs/presets" 2>&1 & presets=$!
 node scripts/check-shaft-events.mjs >"$logs/shaft" 2>&1 & shaft=$!
+node scripts/check-solar.mjs >"$logs/solar" 2>&1 & solar=$!
+node scripts/check-hybrid.mjs >"$logs/hybrid" 2>&1 & hybrid=$!
 failed=0
-for job in "physics:$physics" "scaling:$scaling" "scores:$scores" "presets:$presets" "shaft:$shaft"; do
+for job in "physics:$physics" "scaling:$scaling" "scores:$scores" "presets:$presets" "shaft:$shaft" "solar:$solar" "hybrid:$hybrid"; do
   if ! wait "${job#*:}"; then failed=1; echo "-- ${job%%:*} FAILED:"; cat "$logs/${job%%:*}"; fi
 done
 tail -1 "$logs/physics"; tail -1 "$logs/scaling"; tail -1 "$logs/scores"; tail -1 "$logs/presets"; echo "shaft events: $(grep -c '"pass": true' "$logs/shaft") passed"
+tail -1 "$logs/solar"; tail -1 "$logs/hybrid"
 rm -rf "$logs"
 [ "$failed" = 0 ] || exit 1
 took

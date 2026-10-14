@@ -14,6 +14,7 @@ const conj = (a: Cx): Cx => [a[0], -a[1]];
 /** Induction machine per-phase steady equivalent circuit (double cage, iron loss) at mechanical speed ω (rad/s). */
 export const inductionCircuit = (c: Component, frequency: number, omega: number) => steadyCircuit(machineParams(c, frequency), omega);
 export interface ElectricalReading {
+  hybrid?: import("./hybrid").HybridReading;
   /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
   stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
   solar?: { trackingActive?: boolean; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
@@ -134,7 +135,15 @@ export interface ElectricalRuntime {
    * and `inductors`: winding current (A). Without stored state a capacitor is steady DC (open apart from its leakage)
    * and an inductor its winding resistance.
    */
-  devices?: { solar?: Record<string, import("./solar").SolarState>; batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
+  devices?: { hybrid?: Record<string, import("./hybrid").HybridState>; solar?: Record<string, import("./solar").SolarState>; batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
+  /** Controlled AC branch currents into terminal a. These never establish a voltage reference. */
+  acInjections?: Record<string, [number, number]>;
+  chargingTargets?: Record<string, number>;
+  /** Ephemeral converter iteration hook; never retained in Devices or serialized. */
+  coupling?: {
+    prepare: (last: ElectricalResult | undefined, models: NonNullable<ElectricalRuntime['sourceModels']>, failures: Record<string, boolean>) => void;
+    residual: (result: ElectricalResult, tangent: (patch: Partial<ElectricalRuntime>) => ElectricalResult) => number;
+  };
   sourceModels?: Record<string, { voltage: number; resistance: number; lower: number; upper: number }>;
   /** Resistance of expanded constant-power loads (electric circulators) for this solve (Ω); overrides the stored value. */
   loadResistances?: Record<string, number>;
@@ -211,6 +220,7 @@ export function solveElectricalCore(
     (c) =>
       !["ground", "junction"].includes(c.kind) &&
       !failed[c.id] &&
+      !(isSource(c) && runtime.sourceModels?.[c.id]?.lower === 0 && runtime.sourceModels[c.id].upper === 0) &&
       !(isSource(c) && c.props.enabled === false) &&
       !((c.kind === "breaker" || c.kind === "motorProtector") && (c.props.closed === false || runtime.open?.has(c.id))) &&
       !(c.kind === "motor" && runtime.motors?.[c.id]?.enabled === false) &&
@@ -481,6 +491,11 @@ export function solveElectricalCore(
     const impedance = new Map<string, Cx>(), circuits = new Map<string, ReturnType<typeof inductionCircuit>>();
     const dynamic = new Map<string, { m: MachineParams; state: NonNullable<ElectricalRuntime["inductionMotors"]>[string]; e?: Cx }>();
     const inject = (p: number | undefined, q: number | undefined, j: Cx) => { if (p !== undefined) B[p] = cadd(B[p], j); if (q !== undefined) B[q] = csub(B[q], j); };
+    const injections = members.filter(c => runtime.acInjections?.[c.id]);
+    for (const c of injections) {
+      const current = runtime.acInjections![c.id];
+      inject(indices.get(node(c.id, "a")), indices.get(node(c.id, "b")), [-current[0], -current[1]]);
+    }
     const reactances = new Map<string, number>();
     const closedLoop = (m: Component) => closedLoopIn(members, m, drive);
     for (const c of members.filter((c) => !isSource(c) && c.kind !== "transformer")) {
@@ -555,6 +570,10 @@ export function solveElectricalCore(
       const S = cmul(voltage, conj(current)), P = phases * S[0], Q = phases * S[1], apparent = Math.hypot(P, Q);
       acReadings[c.id] = {
         voltage: cabs(voltage), current: cabs(current), contactCurrent: cabs(current), currentNC: 0, power: P, voltageValid: true,
+        // AC storage readings still dissipate their real winding/ESR power. Keep the
+        // heat channel present across DC-to-AC substeps, otherwise averaging a prior
+        // DC heat reading would omit this interval's AC heating.
+        ...(['inductor', 'capacitor'].includes(c.kind) ? { heatPower: P } : {}),
         ac: true, currentPhasor: current, reactivePower: Q, powerFactor: apparent > 1e-12 ? Math.abs(P) / apparent : null, frequency, ...(phases === 3 ? { phases: 3 as const } : {}), ...(drive ? { supply: drive.id } : {}), ...extra,
       };
     };
@@ -563,6 +582,7 @@ export function solveElectricalCore(
       const delivered: Cx = [-x[k][0], -x[k][1]];
       driveOutputs[drive.id] = { voltage, current: delivered, power: phases * cmul(voltage, conj(delivered))[0] };
     }
+    for (const c of injections) record(c, csub(V(node(c.id, "a")), V(node(c.id, "b"))), runtime.acInjections![c.id], { regulation: "cc" });
     sources.forEach((src, i) => {
       const current = x[unknown.length + i], voltage = csub(V(node(src.id, "a")), V(node(src.id, "b")));
       record(src, voltage, current, { regulation: "cv" });
@@ -625,7 +645,7 @@ export function solveElectricalCore(
   const ordered = [...groups].sort(([, x], [, y]) => driveAt(y).length - driveAt(x).length);
   for (const [island, ns] of ordered) {
     const members = active.filter((c) => ns.includes(node(c.id, "a"))),
-      sources = members.filter(isSource);
+      sources = members.filter(c => isSource(c) && !runtime.acInjections?.[c.id]);
     const fed = driveAt(ns);
     if (fed.length > 1) throw Error(`${fed[1].name}: two drive outputs cannot share one network.`);
     if (fed.length) {
@@ -814,7 +834,15 @@ export function solveElectricalCore(
     // Branch variable k is the current *into* terminal a (negative while delivering).
     // CV row: Va − Vb − Rᵢ·I = Vset. CC row: I = −limit·direction.
     // CV/CC crossover is an active-set iteration, as in a regulated laboratory supply.
-    const fixed: (number | null)[] = sources.map((s) => shorted(s) && sourceLimit(s) < Infinity ? -sourceLimit(s) : null);
+    const fixed: (number | null)[] = sources.map((s) => {
+      if (shorted(s) && sourceLimit(s) < Infinity) return -sourceLimit(s);
+      const model = runtime.sourceModels?.[s.id];
+      // Parallel unidirectional converter outputs may initially request identical ideal CV
+      // rows. Start at their physical delivery bounds; the active set restores CV where
+      // compliance permits it. Unbounded ideal sources remain errors, not regularized rows.
+      if (model && model.lower === model.upper) return model.lower;
+      return model?.resistance === 0 && model.upper === 0 && Number.isFinite(model.lower) ? model.lower : null;
+    });
     /** Source rows of the matrix for the present CV/CC state; nodes no element stamps are pinned to 0 V. */
     const assembleMatrix = (a: number[][]) => {
       const am = a.map((row) => [...row]);
@@ -852,7 +880,8 @@ export function solveElectricalCore(
           if (!(cause instanceof Error) || !cause.message.startsWith('Singular circuit') || !fixed.some(v => v !== null)) throw cause;
           let best: { index: number; score: number; x: number[]; am: number[][]; bm: number[] } | undefined;
           for (let j = 0; j < sources.length; j++) {
-            if (fixed[j] === null) continue;
+            const model = runtime.sourceModels?.[sources[j].id];
+            if (fixed[j] === null || model && model.lower === model.upper) continue;
             const held = fixed[j]; fixed[j] = null;
             try {
               const trialMatrix = assembleMatrix(a), trialRhs = assembleRhs(b), trial = solveLinear(trialMatrix, trialRhs);
@@ -874,6 +903,7 @@ export function solveElectricalCore(
           const limit = sourceLimit(s), current = x[unknown.length + i];
           const model = runtime.sourceModels?.[s.id];
           if (model) {
+            if (model.lower === model.upper) return; // A commanded current has no CV compliance row.
             const va = indices.has(node(s.id, "a")) ? x[indices.get(node(s.id, "a"))!] : 0, vb = indices.has(node(s.id, "b")) ? x[indices.get(node(s.id, "b"))!] : 0;
             const emf = va - vb - model.resistance * current, tol = 1e-10 * Math.max(1, model.voltage);
             if (fixed[i] === null && (current < model.lower - 1e-12 || current > model.upper + 1e-12)) { const next = Math.max(model.lower, Math.min(model.upper, current)); update(i, next, Math.abs(current - next) / Math.max(1, Math.abs(next))); }

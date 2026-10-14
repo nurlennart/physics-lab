@@ -11,6 +11,8 @@ import {
 import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
+  acInputPower: 'W', acOutputPower: 'W', converterLossEnergy: 'J', transferLossEnergy: 'J', batteryHeatEnergy: 'J',
+  gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
@@ -38,6 +40,23 @@ export function readProbe(p: Probe, s: Simulation): number | null {
   const r = s.electrical.readings[c.id];
   const h = s.multiphysics.hydraulic.readings[c.kind === "heatExchanger" ? `${c.id}#${p.port ?? "hot"}` : c.id], motor = s.multiphysics.motors[c.id];
   switch (p.measurement) {
+    case 'acInputPower': return r?.hybrid?.acInputPower ?? null;
+    case 'acOutputPower': return r?.hybrid?.outputPower ?? null;
+    case 'converterLossEnergy': return s.devices.hybrid[c.id]?.converterLossEnergy ?? 0;
+    case 'transferLossEnergy': return s.devices.hybrid[c.id]?.transferLossEnergy ?? 0;
+    case 'batteryHeatEnergy': return s.devices.batteryHeat[c.id] ?? 0;
+    case 'gridPower': return r?.hybrid?.gridPower ?? null;
+    case 'gridReactivePower': return r?.hybrid?.gridReactive ?? null;
+    case 'gridImportPower': return r?.hybrid ? Math.max(0, r.hybrid.gridPower) : null;
+    case 'gridExportPower': return r?.hybrid ? Math.max(0, -r.hybrid.gridPower) : null;
+    case 'gridImportEnergy': return (s.devices.hybrid[c.id]?.imported ?? 0) / 3600;
+    case 'gridExportEnergy': return (s.devices.hybrid[c.id]?.exported ?? 0) / 3600;
+    case 'gridVoltage': return r?.hybrid?.gridVoltage ?? null;
+    case 'gridFrequency': return r?.hybrid?.gridFrequency ?? null;
+    case 'synchronized': return r?.hybrid ? Number(r.hybrid.connected) : null;
+    case 'backupAvailable': return r?.hybrid ? Number(r.hybrid.backupAvailable) : null;
+    case 'dcPower': return r?.hybrid?.dcPower ?? null;
+    case 'acConversionPower': return r?.hybrid?.acPower ?? null;
     case 'incidentEnergy': return s.devices.solar[c.id]?.generated ?? 0;
     case 'inputPower': return r?.solar?.inputPower ?? null;
     case 'outputPower': return r?.solar?.outputPower ?? null;

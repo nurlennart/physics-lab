@@ -84,6 +84,12 @@ function CircuitSymbol({ c }: { c: Component }) {
       <text x="87" y="126" textAnchor="middle" className="symbol-readout dim">{hasStarted() ? `${(h?.duty ?? 0).toFixed(0)} W to room` : `Φ₅₀ ${prop(c, 'ratedOutput').toFixed(0)} W · n ${prop(c, 'exponent').toFixed(3)}`}</text>
     </g>;
   }
+  if (['gridInverter', 'hybridInverter', 'gridMeter'].includes(c.kind)) return <g>
+    <rect x="24" y="35" width="126" height="60" rx="8" stroke={T.electricalText} fill="none" strokeWidth="2" />
+    <text x="87" y="59" textAnchor="middle" className="scale-label">{c.kind === 'gridMeter' ? 'PCC · P / Q' : 'DC ↔ AC'}</text>
+    <text x="87" y="80" textAnchor="middle" className="scale-label">{hasStarted() ? `${(r?.hybrid?.gridPower ?? 0).toFixed(0)} W grid` : c.kind === 'hybridInverter' ? 'Grid + backup' : 'Grid following'}</text>
+    <text x="87" y="118" textAnchor="middle" className="scale-label">{hasStarted() ? r?.hybrid?.mode ?? 'off' : 'External source required'}</text>
+  </g>;
   if (c.kind === 'solarPanel') return <g>
     <path d="M0 66H42M132 66H174" stroke={T.electricalText} strokeWidth="3" />
     <rect x="42" y="38" width="90" height="56" rx="2" fill={T.n5} stroke={T.electricalText} strokeWidth="2" />

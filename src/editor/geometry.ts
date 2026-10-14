@@ -33,6 +33,8 @@ export function portLocal(c: Component, port: string): Point {
   if (c.kind === "radiator" && p?.domain === "electrical") return { x: port === "a" ? w * 0.3 : w * 0.7, y: h + 12 };
   // Circulator: supply terminals on top (control inputs below, water through the sides).
   if (c.kind === "circulator" && p?.domain === "electrical") return { x: port === "a" ? w * 0.3 : w * 0.7, y: -12 };
+  if (['hybridInverter', 'gridInverter'].includes(c.kind) && p?.domain === 'electrical') return { x: port === 'a' || port === 'b' ? -12 : w + 12, y: port === 'a' ? h * .3 : port === 'b' ? h * .7 : port === 'ga' ? h * .2 : port === 'gb' ? h * .4 : port === 'oa' ? h * .65 : h * .85 };
+  if (c.kind === 'gridMeter' && port === 'reference') return { x: w / 2, y: -12 };
   if (["mpptController", "inverter"].includes(c.kind) && p?.domain === "electrical") return { x: port === "a" || port === "b" ? -12 : w + 12, y: port === "a" || port === "oa" ? h * 0.3 : h * 0.7 };
   if (c.kind === "batteryProtection" && port === "reference") return { x: w / 2, y: -12 };
   if (c.kind === "transformer" && p?.domain === "electrical") return { x: port === "a" || port === "b" ? -12 : w + 12, y: port === "a" || port === "sa" ? h * 0.3 : h * 0.7 };

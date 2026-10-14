@@ -281,7 +281,7 @@ export class Multiphysics {
   }
   /** Contactors, protection, starter modes and drive run states: a change is a switching event. */
   private discreteKey(s: Simulation, controls: ReturnType<Multiphysics['controls']>) {
-    return JSON.stringify([Object.values(controls).map(c => c.enabled), Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running), [...s.openDevices()], s.failed, s.automation.contacts, s.devices.contactors]);
+    return JSON.stringify([Object.values(controls).map(c => c.enabled), Object.values(this.starters).map(st => st.mode), Object.values(this.drives).map(d => d.running), [...s.openDevices()], s.failed, s.automation.contacts, s.devices.contactors, Object.values(s.devices.hybrid).map(h => [h.mode, h.connected, h.fault])]);
   }
   /**
    * `loads`: signed external shaft load per motor (N·m, positive opposes positive rotation). The
@@ -662,8 +662,9 @@ export class Multiphysics {
         }
         if (!converged) throw Error('Electromechanical midpoint coupling failed to converge.');
         accepted = accepted ?? this.solve(s, midpoint, controls, levels, loads, h);
-        const safe = Math.min(boundaryTime(s.project, this.tanks, accepted.hydraulic, h), s.devices.boundaryTime(s.project, accepted.electrical, h));
-        if (safe < h * (1 - 1e-9)) { h = Math.max(1e-10, safe); accepted = undefined; acceptedTrial = undefined; continue; }
+        const hydraulicSafe = boundaryTime(s.project, this.tanks, accepted.hydraulic, h), deviceSafe = s.devices.boundaryTime(s.project, accepted.electrical, h);
+        const safe = Math.min(hydraulicSafe, deviceSafe);
+        if (safe < h * (1 - 1e-9)) { h = deviceSafe < hydraulicSafe ? Math.max(Number.MIN_VALUE, deviceSafe) : Math.max(1e-10, safe); accepted = undefined; acceptedTrial = undefined; continue; }
         // A loaded rotor that would pass through zero speed stops within this step: split the step at
         // the stopping instant (linear in ω) so the load never drives it backwards.
         const stop = Math.min(1, ...motors.map((c, i) => {
@@ -774,7 +775,7 @@ export class Multiphysics {
         const change = Math.max(-100 * h / prop(c, 'responseTime'), Math.min(100 * h / prop(c, 'responseTime'), Math.max(0, Math.min(100, target)) - this.positions[c.id]));
         if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] += change;
       }
-      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.heatingPower !== undefined ? { heatingPower: 0, auxiliaryPower: 0 } : {}), ...(v.solar ? { solar: { ...v.solar, inputPower: 0, outputPower: 0, irradiation: 0 } } : {}), ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
+      if (!totalElectrical) totalElectrical = { ...r.electrical, sourcePower: 0, dissipatedPower: 0, storedPower: 0, readings: Object.fromEntries(Object.entries(r.electrical.readings).map(([id, v]) => [id, { ...v, power: 0, ...(v.heatingPower !== undefined ? { heatingPower: 0, auxiliaryPower: 0 } : {}), ...(v.hybrid ? { hybrid: { ...v.hybrid, acInputPower: 0, gridPower: 0, gridReactive: 0, dcPower: 0, acPower: 0, outputPower: 0, conversionLoss: 0, transferLoss: 0 } } : {}), ...(v.solar ? { solar: { ...v.solar, inputPower: 0, outputPower: 0, irradiation: 0 } } : {}), ...(v.inputPower !== undefined ? { inputPower: 0 } : {}), ...(v.chemicalPower !== undefined ? { chemicalPower: 0 } : {}), ...(v.heatPower !== undefined ? { heatPower: 0 } : {}), ...(v.fanPower !== undefined ? { fanPower: 0 } : {}), ...(v.chargeCurrent !== undefined ? { chargeCurrent: 0 } : {}), ...(v.inductanceVoltage !== undefined ? { inductanceVoltage: 0 } : {}), ...(v.fieldPower !== undefined ? { fieldPower: 0 } : {}), peakCurrent: undefined }])) };
       totalElectrical.sourcePower += r.electrical.sourcePower * h / dt;
       totalElectrical.dissipatedPower += r.electrical.dissipatedPower * h / dt;
       totalElectrical.storedPower! += (r.electrical.storedPower ?? 0) * h / dt;
@@ -783,6 +784,10 @@ export class Multiphysics {
         // A drive's braking resistor is external: its heat goes to ambient, not into the drive's heat sink.
         const braking = v.drive?.braking ?? 0;
         total.power += (v.power - braking) * h / dt;
+        if (v.hybrid && total.hybrid) {
+          const prior = total.hybrid; total.hybrid = { ...v.hybrid };
+          for (const field of ['acInputPower', 'gridPower', 'gridReactive', 'dcPower', 'acPower', 'outputPower', 'conversionLoss', 'transferLoss'] as const) total.hybrid[field] = prior[field] + v.hybrid[field] * h / dt;
+        }
         if (v.solar && total.solar) {
           const inputPower = total.solar.inputPower + v.solar.inputPower * h / dt, outputPower = total.solar.outputPower + v.solar.outputPower * h / dt, irradiation = (total.solar.irradiation ?? 0) + (v.solar.irradiation ?? 0) * h / dt;
           total.solar = { ...v.solar, inputPower, outputPower, irradiation, efficiency: inputPower > 1e-9 ? outputPower / inputPower : 0 };
@@ -825,6 +830,10 @@ export class Multiphysics {
       this.acceptedKey = this.discreteKey(s, controls);
       // Drive and starter states advance last: the angle window above used the substep's start angle.
       this.advanceConverters(s, h, r.electrical, commands);
+      for (const c of s.project.components.filter(c => c.kind === 'hybridInverter' || c.kind === 'gridInverter')) {
+        const next = r.electrical.readings[c.id]?.hybrid;
+        if (next && next.mode !== s.devices.hybrid[c.id]?.mode) s.log(`${c.name}: ${next.mode}${next.fault ? ' — Reset required' : ''}.`, next.fault ? 'warning' : 'info');
+      }
       s.devices.advance(s.project, r.electrical, h, s.temperatures);
       this.lastElectrical = r.electrical;
       remaining -= h;

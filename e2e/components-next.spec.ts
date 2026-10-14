@@ -26,6 +26,9 @@ test('off-grid MPPT resumes after night through live Inspector edits', async ({ 
   expect((Object.values(day.readings) as any[]).some(r => r.solar?.mode === 'bulk' && r.solar.outputPower > 200)).toBe(true);
 });
 for (const [kind, title, label] of [
+  ['gridInverter', 'Grid-tied solar inverter', 'Grid & conversion state'],
+  ['hybridInverter', 'Grid-connected hybrid storage', 'grid-connected reserve'],
+  ['gridMeter', 'Grid-connected hybrid storage', 'Wh imported'],
   ['solarPanel', 'Basic solar charging', 'Model provenance & limitations'],
   ['lfpBattery', 'Basic solar charging', 'state of charge'],
   ['mpptController', 'Basic solar charging', 'MPP tracking efficiency'],
@@ -72,4 +75,26 @@ for (const [kind, title, label] of [
   await page.getByRole('button', { name: 'Reset simulation', exact: true }).click();
   const reset = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
   expect(reset.time).toBe(0); expect(reset.error).toBeNull(); expect(errors).toEqual([]);
+});
+
+test('hybrid isolates the utility during an outage and restores synchronized transfer', async ({ page }) => {
+  await openExample(page, 'Grid outage and backup');
+  await page.getByLabel('Advance by', { exact: true }).selectOption('1');
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+  await page.locator('[data-component="sourceAC"]').click();
+  await page.getByLabel('Enabled', { exact: true }).click();
+  await page.getByLabel('Advance by', { exact: true }).selectOption('1');
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+  const off = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
+  expect(off.error).toBeNull();
+  expect((Object.values(off.readings) as any[]).some(r => r.hybrid?.backupAvailable && !r.hybrid.connected)).toBe(true);
+  await page.getByLabel('Enabled', { exact: true }).click();
+  await page.getByLabel('Advance by', { exact: true }).selectOption('1');
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+  const restored = await page.evaluate(() => (window as any).labTools.read_lab_measurements.execute({}));
+  expect(restored.error).toBeNull();
+  expect((Object.values(restored.readings) as any[]).some(r => r.hybrid?.connected && r.hybrid.backupAvailable)).toBe(true);
+  const csv = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export CSV', exact: true }).click();
+  expect((await csv).suggestedFilename()).toContain('measurements.csv');
 });

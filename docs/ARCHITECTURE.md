@@ -97,3 +97,5 @@ Hand-placed bend points override the router for one wire and stay at absolute po
 
 - A Web Worker for the simulation becomes worthwhile only if measured scene cost demands it; every caption, probe and inspector field would then read results asynchronously.
 - Spatial fluids, moving equipment with fluid inventory and damage models would need a conservative mass, momentum and energy exchange between the hydraulic network and the rigid-body world.
+
+See [grid-connected energy architecture and solar reliability audit](HYBRID-ENERGY.md) for generic grid-following and hybrid inverter models, PCC metering, manufacturer calibration, isolation policies, confirmed solar fixes and validation limitations.

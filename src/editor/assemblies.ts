@@ -15,9 +15,8 @@ export function captureAssembly(
     components = structuredClone(
       p.components.filter((c) => selected.has(c.id)),
     );
-  for (const c of components)
-    if (typeof c.props.target === "string" && !selected.has(c.props.target))
-      c.props.target = "";
+  for (const c of components) for (const field of ["target", "batteryTarget", "gridMeterTarget"])
+    if (typeof c.props[field] === "string" && !selected.has(c.props[field] as string)) c.props[field] = "";
   const joints = structuredClone((p.world?.joints ?? []).filter(j => selected.has(j.a) && selected.has(j.b)).filter((j, _, all) => j.kind !== 'gear' || all.some(x => x.id === j.joint1) && all.some(x => x.id === j.joint2)));
   return {
     id: uid(),
@@ -50,9 +49,7 @@ export function insertAssembly(p: Project, a: Assembly, dx = 40, dy = 40) {
       props: {
         ...c.props,
         ...(c.spatial?.elevationLinked ? { elevation: c.spatial.y + 1 + c.spatial.elevationOffset } : {}),
-        ...(typeof c.props.target === "string"
-          ? { target: ids.get(c.props.target) ?? "" }
-          : {}),
+        ...Object.fromEntries(["target", "batteryTarget", "gridMeterTarget"].filter(field => typeof c.props[field] === "string").map(field => [field, ids.get(c.props[field] as string) ?? ""])),
       },
     });
   }

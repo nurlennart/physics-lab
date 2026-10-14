@@ -68,3 +68,5 @@ The image builds the app and serves the static bundle with nginx on port 8080. N
 | [VALIDATION.md](docs/VALIDATION.md) | Test layers, validation campaigns and their reports in [`validation/`](validation/) |
 | [WORKFLOW.md](docs/WORKFLOW.md) | Branches, test tiers, release gate, deployment |
 | [DESIGN.md](docs/DESIGN.md) | Design tokens, colour roles, type, layout |
+
+See [grid-connected energy architecture and solar reliability audit](docs/HYBRID-ENERGY.md) for generic grid-following and hybrid inverter models, PCC metering, manufacturer calibration, isolation policies, confirmed solar fixes and validation limitations.

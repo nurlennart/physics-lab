@@ -29,7 +29,8 @@
     "test:e2e:quick": "scripts/e2e.sh --grep-invert @slow",
     "deploy": "scripts/deploy.sh",
     "tokens": "UPDATE_TOKENS=1 vitest run src/theme/tokens.test.ts",
-    "validate:solar": "node scripts/check-solar.mjs"
+    "validate:solar": "node scripts/check-solar.mjs",
+    "validate:hybrid": "node scripts/check-hybrid.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",

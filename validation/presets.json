@@ -1,12 +1,173 @@
 {
   "summary": {
-    "presets": 88,
-    "coveredPresets": 88,
-    "scenarios": 132,
-    "passed": 132,
+    "presets": 93,
+    "coveredPresets": 93,
+    "scenarios": 137,
+    "passed": 137,
     "failed": 0
   },
   "reports": [
+    {
+      "name": "Hybrid Inverter / Charger · 48 V / 3000 VA",
+      "presets": [
+        "builtin:hybridInverter:Hybrid Inverter / Charger · 48 V / 3000 VA"
+      ],
+      "checks": [
+        {
+          "label": "PCC import target (W)",
+          "expected": 50,
+          "measured": 49.999999999670315,
+          "absoluteError": 3.296847239653289e-10,
+          "tolerance": 0.0000050099999999999995
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.001002771289769555,
+          "absoluteError": 0.001002771289769555,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 61.49999999999994,
+      "energyResidual": -0.001002771289769555,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Grid-Connected Inverter · 2400 W",
+      "presets": [
+        "builtin:gridInverter:Grid-Connected Inverter · 2400 W"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000011472657206468284,
+          "absoluteError": 0.000011472657206468284,
+          "tolerance": 641.9951818171937
+        }
+      ],
+      "pass": true,
+      "time": 61.49999999999994,
+      "energyResidual": -0.000011472657206468284,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Grid Energy Meter · PCC",
+      "presets": [
+        "builtin:gridMeter:Grid Energy Meter · PCC"
+      ],
+      "checks": [
+        {
+          "label": "PCC measured import (W)",
+          "expected": 99.99981096444053,
+          "measured": 99.99981096257217,
+          "absoluteError": 1.8683579128264682e-9,
+          "tolerance": 0.0000010099981096444052
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00038634830132468304,
+          "absoluteError": 0.00038634830132468304,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00038634830132468304,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "LiFePO4 Battery · 51.2 V / 100 Ah",
+      "presets": [
+        "builtin:lfpBattery:LiFePO4 Battery · 51.2 V / 100 Ah"
+      ],
+      "checks": [
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00020458577325559445,
+          "absoluteError": 0.00020458577325559445,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": -0.00020458577325559445,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "MPPT Charge Controller · 48 V / 35 A",
+      "presets": [
+        "builtin:mpptController:MPPT Charge Controller · 48 V / 35 A"
+      ],
+      "checks": [
+        {
+          "label": "DC/DC conversion efficiency",
+          "expected": 0.98,
+          "measured": 0.9800000000665037,
+          "absoluteError": 6.650369144267643e-11,
+          "tolerance": 1.98e-8
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 6.220943760126829e-10,
+          "absoluteError": 6.220943760126829e-10,
+          "tolerance": 19.981079999999984
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 6.220943760126829e-10,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
     {
       "name": "Solar Panel (PV) · 450 W",
       "presets": [
@@ -58,14 +219,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 0.0010235494723703554,
-          "absoluteError": 0.0010235494723703554,
+          "measured": 0.001023549627580067,
+          "absoluteError": 0.001023549627580067,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": 0.0010235494723703554,
+      "energyResidual": 0.001023549627580067,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -86,14 +247,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -0.0001911106230444659,
-          "absoluteError": 0.0001911106230444659,
+          "measured": -0.00019111021308848564,
+          "absoluteError": 0.00019111021308848564,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": -0.0001911106230444659,
+      "energyResidual": -0.00019111021308848564,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -107,8 +268,8 @@
         {
           "label": "DC/DC conversion efficiency",
           "expected": 0.98,
-          "measured": 0.9799999999456216,
-          "absoluteError": 5.437839067923278e-11,
+          "measured": 0.9799999999456218,
+          "absoluteError": 5.4378168634627855e-11,
           "tolerance": 1.98e-8
         },
         {
@@ -121,14 +282,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -4.190496838418767e-10,
-          "absoluteError": 4.190496838418767e-10,
+          "measured": -1.1755219020415097e-10,
+          "absoluteError": 1.1755219020415097e-10,
           "tolerance": 9.990539999999992
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": -4.190496838418767e-10,
+      "energyResidual": -1.1755219020415097e-10,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -142,8 +303,8 @@
         {
           "label": "DC/DC conversion efficiency",
           "expected": 0.98,
-          "measured": 0.9800000000580241,
-          "absoluteError": 5.802414104749687e-11,
+          "measured": 0.9800000000580243,
+          "absoluteError": 5.8024363092101794e-11,
           "tolerance": 1.98e-8
         },
         {
@@ -156,14 +317,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.184616849059239e-10,
-          "absoluteError": 1.184616849059239e-10,
+          "measured": -6.230038707144558e-11,
+          "absoluteError": 6.230038707144558e-11,
           "tolerance": 9.990539999999992
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": 1.184616849059239e-10,
+      "energyResidual": -6.230038707144558e-11,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -191,14 +352,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -0.000008273959181437016,
-          "absoluteError": 0.000008273959181437016,
-          "tolerance": 0.5521527777475304
+          "measured": -0.000008274034120068705,
+          "absoluteError": 0.000008274034120068705,
+          "tolerance": 0.5636805555246374
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": -0.000008273959181437016,
+      "energyResidual": -0.000008274034120068705,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -254,8 +415,8 @@
         {
           "label": "polarization voltage (V)",
           "expected": -0.0004909689449322165,
-          "measured": -0.0004909689442499464,
-          "absoluteError": 6.822701041284129e-13,
+          "measured": -0.0004909689442499465,
+          "absoluteError": 6.822699957081957e-13,
           "tolerance": 1.0000490968944933e-8
         },
         {
@@ -275,14 +436,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 0.00005737206971048181,
-          "absoluteError": 0.00005737206971048181,
+          "measured": 0.00005737206352425991,
+          "absoluteError": 0.00005737206352425991,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": 0.00005737206971048181,
+      "energyResidual": 0.00005737206352425991,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -303,8 +464,8 @@
         {
           "label": "polarization voltage (V)",
           "expected": -0.0004844015192278905,
-          "measured": -0.0004844015186946857,
-          "absoluteError": 5.332047737366397e-13,
+          "measured": -0.00048440151869468776,
+          "absoluteError": 5.332027137525119e-13,
           "tolerance": 1.0000484401519229e-8
         },
         {
@@ -324,14 +485,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -0.0003489849650255413,
-          "absoluteError": 0.0003489849650255413,
+          "measured": -0.000348984367983481,
+          "absoluteError": 0.000348984367983481,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 1.0000000000000013,
-      "energyResidual": -0.0003489849650255413,
+      "energyResidual": -0.000348984367983481,
       "massResidual": 0,
       "violations": [],
       "failed": {}

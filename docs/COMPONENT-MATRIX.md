@@ -4,6 +4,9 @@ Every component kind is connected to a solver or to the automation graph; equati
 
 | Component | Status / integration | Physical model / simplification | Validation | Missing functionality / priority |
 | --- | --- | --- | --- | --- |
+| Grid-Connected Inverter | Implemented E/T; grid-following current injection | Actual PV/DC extraction, fixed-Q control, power/current limits, external-reference qualification | hybrid analytical, protection, preset, example and browser tests | Single-phase RMS; no certified grid-code modes |
+| Hybrid Inverter / Charger | Implemented E/T/C; bidirectional battery/grid/backup | Separate converter limits, real PCC ESS feedback, two-pole transfer, synchronized backup, SOC reserve | hybrid/solar audit tests, one-hour and outage ledger reports | Generic control assumptions; no AC-coupled PV frequency shifting |
+| Grid Energy Meter | Implemented E/T; series line and neutral reference | Solved RMS real/reactive PCC flow and signed import/export energy, 1 mΩ shunt | analytical import/export, examples, preset/browser tests | Fundamental only; assumed shunt |
 | Solar Panel (PV) | Implemented E; external sunlight boundary | Calibrated nonlinear single diode, irradiance and cell-temperature coefficients, series/parallel network wiring, I–V/P–V Inspector | solar tests, withheld NOCT, preset/example/browser campaigns | Bypass diodes, mismatch and panel thermal inertia omitted |
 | LiFePO4 Battery | Implemented E/T, chemical storage | LFP plateau, actual-current SOC, OCV-integral energy, directional temperature/voltage BMS and latched overcurrent | solar tests, preset/example/browser campaigns | Assumed OCV/heat capacity; cold capacity, ageing and cell imbalance omitted |
 | MPPT Charge Controller | Implemented E/T, two electrical ports | Perturb-and-observe, averaged buck power balance, input limits, bulk/absorption/float and current/voltage curtailment | solar tests, preset/example/browser campaigns, long sun/night ledger | Constant efficiency, no quiescent loss or proprietary firmware |
@@ -87,3 +90,5 @@ Spatial representations are available for motor, pump, tank, heater, cooler, sou
 | Generic safety interlock | Existing Boolean gates, sensors and motor enable; independent thermal contact | Actual source/high-level logic works. Separate hydraulic latched hardware cutoff and common-cause fault studies remain medium priority |
 | Turbine, dedicated generator, semiconductors, steam, structural failure | Unsupported | AC phasors and induction machines are implemented above; these extensions require separate models. |
 
+
+See [grid-connected energy architecture and solar reliability audit](HYBRID-ENERGY.md) for generic grid-following and hybrid inverter models, PCC metering, manufacturer calibration, isolation policies, confirmed solar fixes and validation limitations.

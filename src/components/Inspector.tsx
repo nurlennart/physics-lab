@@ -1,3 +1,4 @@
+import { HybridInspector } from './HybridInspector';
 import { SolarInspector } from './SolarInspector';
 import { BoilerInspector } from './BoilerInspector';
 import { PanelRadiatorInspector } from './PanelRadiatorInspector';
@@ -153,7 +154,7 @@ export default function Inspector() {
           </div>
         ) : (
           <>
-            <SolarInspector c={c} />
+            <SolarInspector c={c} /><HybridInspector c={c} />
             {c.kind === "electricBoiler" && <BoilerInspector c={c} />}
             {c.kind === "panelRadiator" && <PanelRadiatorInspector c={c} />}
             <div className="inspector-section">

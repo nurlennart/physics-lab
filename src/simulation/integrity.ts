@@ -179,6 +179,12 @@ export function componentError(c: Component): string | null {
   if ((c.kind === "battery" || c.kind === "lfpBattery") && prop(c, "fullVoltage") < prop(c, "emptyVoltage")) return "Battery full voltage must be at least its empty voltage.";
   if (c.kind === "contactor" && prop(c, "dropoutRatio") >= prop(c, "pickupRatio")) return "Contactor dropout must be below pickup.";
   if (c.kind === "motor" && prop(c, "torqueConstant") !== prop(c, "emfConstant")) return "SI motor torque and EMF constants must match for energy consistency.";
+  if (c.kind === 'hybridInverter' || c.kind === 'gridInverter') {
+    if (prop(c,'gridMinVoltage') >= prop(c,'gridMaxVoltage') || prop(c,'gridMinFrequency') >= prop(c,'gridMaxFrequency')) return 'Grid acceptance bounds must increase.';
+    if (prop(c,'minVoltage') >= prop(c,'restartVoltage') || prop(c,'restartVoltage') >= prop(c,'maxInputVoltage')) return 'DC voltage limits must satisfy cutoff < restart < maximum.';
+    if (prop(c,'floatVoltage') > prop(c,'absorptionVoltage')) return 'Float voltage must not exceed absorption voltage.';
+    if (prop(c,'acInputCurrentLimit') > prop(c,'transferCurrent')) return 'AC input limit must not exceed transfer contact rating.';
+  }
   if (c.kind === 'solarPanel' && !(prop(c, 'voc') > prop(c, 'vmp') && prop(c, 'isc') > prop(c, 'imp'))) return 'PV ratings require Voc > Vmpp and Isc > Impp.';
   if (c.kind === 'mpptController' && !(prop(c, 'absorptionVoltage') >= prop(c, 'floatVoltage') && prop(c, 'floatVoltage') > prop(c, 'rebulkVoltage'))) return 'Charge profile requires absorption ≥ float > rebulk voltage.';
   if ((c.kind === 'inverter' || c.kind === 'batteryProtection') && prop(c, 'restartVoltage') <= prop(c, c.kind === 'inverter' ? 'minVoltage' : 'disconnectVoltage')) return 'Restart voltage must exceed disconnect voltage.';
@@ -253,6 +259,10 @@ export function transitionError(
   for (const c of next.components) {
     if (ids.has(c.id)) return "Duplicate component ID.";
     ids.add(c.id);
+    for (const field of ['batteryTarget', 'gridMeterTarget']) if (c.props[field]) {
+      const target = next.components.find(x => x.id === c.props[field]);
+      if (!target || (field === 'batteryTarget' ? !['battery','lfpBattery'].includes(target.kind) : target.kind !== 'gridMeter')) return `${c.name}: invalid ${field} measurement target.`;
+    }
     if (typeof c.props.target === "string" && c.props.target) {
       const target = next.components.find(x => x.id === c.props.target);
       if (!target || !compatibleTarget(c, target)) return `${c.name}: target has no compatible modeled quantity. Clear or reassign the target first.`;

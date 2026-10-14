@@ -48,11 +48,16 @@ export function pvModel(c: Component) {
   const vmp = (lo + hi) / 2, imp = at(vmp).current;
   return { at, voc, isc: at(0).current, vmp, imp, pmp: vmp * imp, irradiation: prop(c, 'area') * prop(c, 'irradiance') };
 }
-/** Maximum efficiency is attained at half rated active load. Idle and I² losses are always nonnegative. */
+/** Idle + load-proportional switching + I² conduction loss. The configured peak is an upper bound. */
 export function inverterLoss(c: Component, active: number, apparent = active) {
-  const p0 = prop(c, 'idlePower'), peakLoad = prop(c, 'ratedPower') / 2;
-  const budget = peakLoad * (100 / prop(c, 'peakEfficiency') - 1);
-  return p0 + Math.max(0, budget - p0) * (apparent / peakLoad) ** 2;
+  const idle = prop(c, 'idlePower'), peakLoad = prop(c, 'ratedPower') / 2, excess = 100 / prop(c, 'peakEfficiency') - 1;
+  if (2 * idle / peakLoad <= excess) {
+    const switching = excess - 2 * idle / peakLoad;
+    return idle + switching * active + idle * (apparent / peakLoad) ** 2;
+  }
+  // When idle consumption makes the requested half-load peak impossible, the maximum
+  // occurs above it at 2 Pidle/(1/η − 1). No negative switching-loss coefficient is used.
+  return idle + excess * excess * apparent * apparent / (4 * idle);
 }
 export function advanceSolar(project: Project, states: Record<string, SolarState>, r: ElectricalResult, h: number) {
   for (const c of project.components.filter(c => solarKinds.includes(c.kind))) {

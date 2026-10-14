@@ -1,0 +1,305 @@
+{
+  "version": 3,
+  "id": "example-gridSolar",
+  "name": "Grid-tied solar inverter",
+  "components": [
+    {
+      "id": "gridSolar-component-1",
+      "kind": "sourceAC",
+      "name": "Utility grid · 230 V",
+      "x": 70,
+      "y": 430,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 63,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "gridSolar-component-2",
+      "kind": "gridMeter",
+      "name": "Point of common coupling",
+      "x": 390,
+      "y": 430,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 0.001,
+        "ratedCurrent": 100,
+        "enabled": true,
+        "heatCapacity": 200,
+        "loss": 1,
+        "maxTemperature": 85,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridSolar-component-3",
+      "kind": "resistor",
+      "name": "Household demand · 300 W",
+      "x": 710,
+      "y": 730,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 176.33333333333334,
+        "ratedPower": 600,
+        "heatCapacity": 2000,
+        "loss": 5,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridSolar-component-4",
+      "kind": "solarPanel",
+      "name": "Solar Panel (PV)",
+      "x": 70,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "gridSolar-component-5",
+      "kind": "gridInverter",
+      "name": "Grid-Connected Inverter",
+      "x": 710,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "ratedPower": 2400,
+        "ratedApparentPower": 3000,
+        "surgePower": 5500,
+        "surgeTime": 2,
+        "peakEfficiency": 95,
+        "chargeEfficiency": 94,
+        "idlePower": 11,
+        "standbyPower": 2,
+        "minVoltage": 16,
+        "restartVoltage": 20,
+        "maxInputVoltage": 145,
+        "maxDCDischargeCurrent": 40,
+        "maxChargeCurrent": 35,
+        "maxACCurrent": 24,
+        "transferCurrent": 32,
+        "acInputCurrentLimit": 32,
+        "gridMinVoltage": 187,
+        "gridMaxVoltage": 265,
+        "gridMinFrequency": 45,
+        "gridMaxFrequency": 65,
+        "transferTime": 0.016,
+        "reconnectDelay": 0.1,
+        "syncTolerance": 5,
+        "phaseSlew": 90,
+        "absorptionVoltage": 56.8,
+        "floatVoltage": 54,
+        "rebulkVoltage": 52.8,
+        "absorptionTime": 1800,
+        "reserveSOC": 20,
+        "coordinateSolar": true,
+        "gridCharge": false,
+        "gridChargePower": 1000,
+        "gridChargeSOC": 80,
+        "allowExport": true,
+        "exportLimit": 2400,
+        "gridSetpoint": 50,
+        "reactiveSetpoint": 0,
+        "activeSetpoint": 0,
+        "energyMode": "selfConsumption",
+        "batteryTarget": "",
+        "gridMeterTarget": "gridSolar-component-2",
+        "standby": false,
+        "enabled": true,
+        "heatCapacity": 8000,
+        "loss": 15,
+        "conductance": 30,
+        "maxTemperature": 65,
+        "dcTrackingVoltage": 44.6,
+        "dcTrackingStep": 0.25,
+        "dcTrackingInterval": 0.2,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "gridSolar-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "gridSolar-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridSolar-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridSolar-component-2",
+        "port": "reference"
+      }
+    },
+    {
+      "id": "gridSolar-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridSolar-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridSolar-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridSolar-component-3",
+        "port": "b"
+      }
+    },
+    {
+      "id": "gridSolar-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-4",
+        "port": "a"
+      },
+      "to": {
+        "component": "gridSolar-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridSolar-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridSolar-component-5",
+        "port": "b"
+      }
+    },
+    {
+      "id": "gridSolar-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridSolar-component-5",
+        "port": "ga"
+      }
+    },
+    {
+      "id": "gridSolar-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "gridSolar-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridSolar-component-5",
+        "port": "gb"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "gridSolar-probe-1",
+      "component": "gridSolar-component-2",
+      "measurement": "gridPower",
+      "name": "Grid import (+) / export (−)",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "gridSolar-probe-2",
+      "component": "gridSolar-component-2",
+      "measurement": "gridImportEnergy",
+      "name": "Purchased grid energy",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "gridSolar-probe-3",
+      "component": "gridSolar-component-2",
+      "measurement": "gridExportEnergy",
+      "name": "Exported grid energy",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "gridSolar-probe-4",
+      "component": "gridSolar-component-3",
+      "measurement": "power",
+      "name": "Household AC consumption",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "gridSolar-probe-5",
+      "component": "gridSolar-component-4",
+      "measurement": "outputPower",
+      "name": "PV generated power",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "gridSolar-probe-6",
+      "component": "gridSolar-component-5",
+      "measurement": "acConversionPower",
+      "name": "AC solar injection",
+      "color": "#22c55e",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

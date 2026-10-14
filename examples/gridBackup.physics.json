@@ -1,0 +1,547 @@
+{
+  "version": 3,
+  "id": "example-gridBackup",
+  "name": "Grid outage and backup",
+  "components": [
+    {
+      "id": "gridBackup-component-1",
+      "kind": "sourceAC",
+      "name": "Utility grid · 230 V",
+      "x": 70,
+      "y": 430,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 63,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "gridBackup-component-2",
+      "kind": "gridMeter",
+      "name": "Point of common coupling",
+      "x": 390,
+      "y": 430,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 0.001,
+        "ratedCurrent": 100,
+        "enabled": true,
+        "heatCapacity": 200,
+        "loss": 1,
+        "maxTemperature": 85,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridBackup-component-3",
+      "kind": "resistor",
+      "name": "Household demand · 300 W",
+      "x": 710,
+      "y": 730,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 176.33333333333334,
+        "ratedPower": 600,
+        "heatCapacity": 2000,
+        "loss": 5,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridBackup-component-4",
+      "kind": "lfpBattery",
+      "name": "LiFePO4 Battery · 51.2 V",
+      "x": 1030,
+      "y": 100,
+      "rotation": 0,
+      "variant": "sixteenCell",
+      "props": {
+        "capacityAh": 100,
+        "initialSOC": 50,
+        "cells": 16,
+        "emptyVoltage": 40,
+        "fullVoltage": 58.4,
+        "internalResistance": 0.0032,
+        "chemistry": "lfp",
+        "coulombicEfficiency": 99.5,
+        "selfDischarge": 0,
+        "polarizationResistance": 0,
+        "polarizationTimeConstant": 30,
+        "resistanceActivation": 0,
+        "maxCurrent": 200,
+        "chargeCurrentLimit": 50,
+        "dischargeCurrentLimit": 100,
+        "maxPower": 10240,
+        "enabled": true,
+        "heatCapacity": 56000,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 50,
+        "minChargeTemperature": 5,
+        "minDischargeTemperature": -20,
+        "bmsLowVoltage": 44.8,
+        "bmsHighVoltage": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridBackup-component-5",
+      "kind": "hybridInverter",
+      "name": "Hybrid Inverter / Charger",
+      "x": 1030,
+      "y": 430,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "ratedPower": 2400,
+        "ratedApparentPower": 3000,
+        "surgePower": 5500,
+        "surgeTime": 2,
+        "peakEfficiency": 95,
+        "chargeEfficiency": 94,
+        "idlePower": 11,
+        "standbyPower": 2,
+        "minVoltage": 38,
+        "restartVoltage": 44,
+        "maxInputVoltage": 66,
+        "maxDCDischargeCurrent": 75,
+        "maxChargeCurrent": 35,
+        "maxACCurrent": 24,
+        "transferCurrent": 32,
+        "acInputCurrentLimit": 32,
+        "gridMinVoltage": 187,
+        "gridMaxVoltage": 265,
+        "gridMinFrequency": 45,
+        "gridMaxFrequency": 65,
+        "transferTime": 0.016,
+        "reconnectDelay": 0.1,
+        "syncTolerance": 5,
+        "phaseSlew": 90,
+        "absorptionVoltage": 56.8,
+        "floatVoltage": 54,
+        "rebulkVoltage": 52.8,
+        "absorptionTime": 1800,
+        "reserveSOC": 20,
+        "coordinateSolar": true,
+        "gridCharge": false,
+        "gridChargePower": 1000,
+        "gridChargeSOC": 80,
+        "allowExport": false,
+        "exportLimit": 2400,
+        "gridSetpoint": 50,
+        "reactiveSetpoint": 0,
+        "activeSetpoint": 0,
+        "energyMode": "selfConsumption",
+        "batteryTarget": "gridBackup-component-4",
+        "gridMeterTarget": "gridBackup-component-2",
+        "standby": false,
+        "enabled": true,
+        "heatCapacity": 8000,
+        "loss": 15,
+        "conductance": 30,
+        "maxTemperature": 65,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridBackup-component-6",
+      "kind": "resistor",
+      "name": "Protected AC demand · 200 W",
+      "x": 1350,
+      "y": 430,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 264.5,
+        "ratedPower": 500,
+        "heatCapacity": 2000,
+        "loss": 5,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "gridBackup-component-7",
+      "kind": "solarPanel",
+      "name": "PV string 1 · module 1",
+      "x": 70,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "gridBackup-component-8",
+      "kind": "solarPanel",
+      "name": "PV string 1 · module 2",
+      "x": 390,
+      "y": 100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true
+      }
+    },
+    {
+      "id": "gridBackup-component-9",
+      "kind": "mpptController",
+      "name": "MPPT Charge Controller 1",
+      "x": 710,
+      "y": 100,
+      "rotation": 0,
+      "variant": "48V",
+      "props": {
+        "maxInputVoltage": 145,
+        "maxInputCurrent": 40,
+        "maxCurrent": 35,
+        "conversionEfficiency": 98,
+        "absorptionVoltage": 56.8,
+        "floatVoltage": 54,
+        "absorptionTime": 1800,
+        "rebulkVoltage": 52.8,
+        "minVoltage": 32,
+        "startupHeadroom": 5,
+        "runningHeadroom": 1,
+        "trackingStep": 0.25,
+        "trackingInterval": 0.2,
+        "initialTrackingVoltage": 89.2,
+        "enabled": true,
+        "heatCapacity": 600,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "gridBackup-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "gridBackup-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-2",
+        "port": "reference"
+      }
+    },
+    {
+      "id": "gridBackup-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-3",
+        "port": "b"
+      }
+    },
+    {
+      "id": "gridBackup-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-4",
+        "port": "a"
+      },
+      "to": {
+        "component": "gridBackup-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-5",
+        "port": "b"
+      }
+    },
+    {
+      "id": "gridBackup-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-5",
+        "port": "ga"
+      }
+    },
+    {
+      "id": "gridBackup-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-5",
+        "port": "gb"
+      }
+    },
+    {
+      "id": "gridBackup-connection-9",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-5",
+        "port": "oa"
+      },
+      "to": {
+        "component": "gridBackup-component-6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-10",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-5",
+        "port": "ob"
+      },
+      "to": {
+        "component": "gridBackup-component-6",
+        "port": "b"
+      }
+    },
+    {
+      "id": "gridBackup-connection-11",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-7",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-8",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-12",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-7",
+        "port": "a"
+      },
+      "to": {
+        "component": "gridBackup-component-9",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-13",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-8",
+        "port": "b"
+      },
+      "to": {
+        "component": "gridBackup-component-9",
+        "port": "b"
+      }
+    },
+    {
+      "id": "gridBackup-connection-14",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-9",
+        "port": "oa"
+      },
+      "to": {
+        "component": "gridBackup-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "gridBackup-connection-15",
+      "domain": "electrical",
+      "from": {
+        "component": "gridBackup-component-9",
+        "port": "ob"
+      },
+      "to": {
+        "component": "gridBackup-component-4",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "gridBackup-probe-1",
+      "component": "gridBackup-component-2",
+      "measurement": "gridPower",
+      "name": "Grid import (+) / export (−)",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-2",
+      "component": "gridBackup-component-2",
+      "measurement": "gridImportEnergy",
+      "name": "Purchased grid energy",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-3",
+      "component": "gridBackup-component-2",
+      "measurement": "gridExportEnergy",
+      "name": "Exported grid energy",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-4",
+      "component": "gridBackup-component-3",
+      "measurement": "power",
+      "name": "Household AC consumption",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-5",
+      "component": "gridBackup-component-9",
+      "measurement": "outputPower",
+      "name": "Solar charger 1 output",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-6",
+      "component": "gridBackup-component-4",
+      "measurement": "stateOfCharge",
+      "name": "Battery SOC",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-7",
+      "component": "gridBackup-component-4",
+      "measurement": "chemicalEnergy",
+      "name": "Stored chemical energy",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-8",
+      "component": "gridBackup-component-4",
+      "measurement": "current",
+      "name": "Battery current (+ charging)",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-9",
+      "component": "gridBackup-component-5",
+      "measurement": "acConversionPower",
+      "name": "Hybrid AC conversion",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-10",
+      "component": "gridBackup-component-5",
+      "measurement": "backupAvailable",
+      "name": "Protected output available",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-11",
+      "component": "gridBackup-component-6",
+      "measurement": "power",
+      "name": "Protected AC consumption",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "gridBackup-probe-12",
+      "component": "gridBackup-component-5",
+      "measurement": "conversionLoss",
+      "name": "Hybrid losses",
+      "color": "#ef4444",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

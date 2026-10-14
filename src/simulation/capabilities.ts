@@ -30,13 +30,14 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.kind === "dynamometer" ? ["rpm", "torque", "shaftPower", "energy"] as Measurement[] : []),
     ...(["sourceAC", "source3", "inductor", "capacitor", "inductionMotor"].includes(c.kind) || isElectrical(c) ? ["reactivePower", "powerFactor"] as Measurement[] : []),
     ...(['solarPanel', 'mpptController', 'inverter', 'batteryProtection'].includes(c.kind) ? ['inputPower', 'outputPower', 'conversionLoss', 'efficiency', 'generatedEnergy', 'outputEnergy', 'lostEnergy'] as Measurement[] : []),
+    ...(['gridInverter', 'hybridInverter', 'gridMeter'].includes(c.kind) ? ['acInputPower', 'acOutputPower', 'converterLossEnergy', 'transferLossEnergy', 'gridPower', 'gridReactivePower', 'gridImportPower', 'gridExportPower', 'gridImportEnergy', 'gridExportEnergy', 'gridVoltage', 'gridFrequency', 'synchronized', 'backupAvailable', 'dcPower', 'acConversionPower', 'conversionLoss', 'secondaryVoltage', 'secondaryCurrent'] as Measurement[] : []),
     ...(c.kind === 'solarPanel' ? ['mppPower', 'mppVoltage', 'mppCurrent', 'incidentPower', 'incidentEnergy'] as Measurement[] : []),
     ...(c.kind === 'mpptController' ? ['trackingEfficiency', 'secondaryVoltage', 'secondaryCurrent'] as Measurement[] : []),
     ...(c.kind === 'inverter' ? ['secondaryVoltage', 'secondaryCurrent'] as Measurement[] : []),
     ...(isElectrical(c)
       ? (["voltage", "current", "power", "energy"] as Measurement[])
       : []),
-    ...((c.kind === "battery" || c.kind === "lfpBattery") ? ["stateOfCharge", "chemicalEnergy", "polarizationVoltage"] as Measurement[] : []),
+    ...((c.kind === "battery" || c.kind === "lfpBattery") ? ["stateOfCharge", "chemicalEnergy", "polarizationVoltage", "batteryHeatEnergy"] as Measurement[] : []),
     ...(c.kind === "capacitor" ? ["chargeVoltage", "fieldEnergy"] as Measurement[] : []),
     ...(c.kind === "inductor" ? ["fieldEnergy"] as Measurement[] : []),
     ...(c.kind === "contactor" ? ["coilVoltage", "coilCurrent"] as Measurement[] : []),
@@ -115,6 +116,8 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   return plainLabels[m] ?? m;
 }
 const plainLabels: Partial<Record<Measurement, string>> = {
+  acInputPower: 'AC grid-port power (+ into device)', acOutputPower: 'AC output power', converterLossEnergy: 'converter loss energy', transferLossEnergy: 'transfer contact loss energy', batteryHeatEnergy: 'battery heat generated',
+  gridPower: 'grid power (+ import)', gridReactivePower: 'grid reactive power', gridImportPower: 'grid import', gridExportPower: 'grid export', gridImportEnergy: 'imported grid energy', gridExportEnergy: 'exported grid energy', gridVoltage: 'grid RMS voltage', gridFrequency: 'grid frequency', synchronized: 'grid synchronized and connected', backupAvailable: 'backup output available', dcPower: 'DC power (+ discharge)', acConversionPower: 'AC conversion (+ injection)',
   incidentEnergy: 'incident solar energy', inputPower: 'input power', outputPower: 'output power', conversionLoss: 'conversion loss / rejected sunlight', mppPower: 'available MPP power', mppVoltage: 'MPP voltage', mppCurrent: 'MPP current', trackingEfficiency: 'MPP tracking efficiency', incidentPower: 'incident sunlight', generatedEnergy: 'generated / input electrical energy', outputEnergy: 'output electrical energy', lostEnergy: 'dissipated / rejected energy',
   supplyTemperature: "supply (inlet) water temperature", excessTemperature: "excess temperature over the air (EN 442 ΔT)", heatInput: "heat delivered by the water flow, ṁ·c_p·(T_in − T_out)",
   returnTemperature: "return temperature", elementTemperature: "element temperature", heatingStages: "active heating stages", heatingPower: "element electrical power", heatLoss: "shell heat loss",
