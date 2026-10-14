@@ -150,3 +150,17 @@ describe('full battery with DC-coupled solar, absorption/float and islanded back
   expect(s.electrical.readings[battery.id].voltage).toBeCloseTo(54,6);expect(s.electrical.readings[backup.id].power).toBeCloseTo(200,4);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
  },60000);
 });
+it.each(['grid side','backup line'] as const)('reconnects a full DC-coupled system with a small load on the %s and carries it from solar',side=>{
+ // The PCC meter resolves its 1 mΩ shunt drop to ~2e-10 of the flow. Integrating that noise in the ESS command
+ // stalled the coupling just above its tolerance at reconnect, when the full battery leaves no other free loop.
+ const b=new Builder(),battery=b.add('lfpBattery',{initialSOC:100},'sixteenCell'),mppt=b.add('mpptController',{},'48V'),pv1=b.add('solarPanel'),pv2=b.add('solarPanel');
+ const grid=b.add('sourceAC',{voltage:230,maxCurrent:16}),meter=b.add('gridMeter'),hybrid=b.add('hybridInverter',{batteryTarget:battery.id,gridMeterTarget:meter.id,reconnectDelay:1}),load=b.add('resistor',{resistance:1100,ratedPower:50});
+ b.wire(pv2,'b',pv1,'a');b.wire(pv2,'a',mppt,'a');b.wire(pv1,'b',mppt,'b');b.wire(mppt,'oa',battery,'a');b.wire(mppt,'ob',battery,'b');b.wire(hybrid,'a',battery,'a');b.wire(hybrid,'b',battery,'b');
+ b.wire(grid,'a',meter,'a');b.wire(meter,'b',hybrid,'ga');b.wire(hybrid,'gb',grid,'b');b.wire(hybrid,side==='grid side'?'ga':'oa',load,'a');b.wire(hybrid,side==='grid side'?'gb':'ob',load,'b');
+ let s=new Simulation(b.p);expect(s.error).toBeNull();run(s,3,.1);
+ // Default 50 W grid setpoint: the household deliberately imports 50 W, so a 48 W load stays on the grid.
+ expect(s.electrical.readings[hybrid.id].hybrid!.connected).toBe(true);expect(s.electrical.readings[meter.id].hybrid!.gridPower).toBeCloseTo(50,4);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+ hybrid.props.gridSetpoint=0;s=new Simulation(b.p);run(s,3,.1);const x=s.electrical.readings;
+ expect(Math.abs(x[meter.id].hybrid!.gridPower)).toBeLessThan(1e-4);expect(x[hybrid.id].hybrid!.acPower).toBeCloseTo(x[load.id].power,3);expect(x[mppt.id].solar!.outputPower).toBeGreaterThan(x[load.id].power);
+ expect(Math.abs(x[battery.id].current)).toBeLessThan(1e-6);expect(s.devices.batteries[battery.id]).toBe(1);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+},60000);

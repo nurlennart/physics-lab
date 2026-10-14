@@ -121,6 +121,11 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   const previous=result; result=next;
   error=0;
   const change=(record:Record<string,number>,id:string,next:number)=>{error=Math.max(error,Math.abs(next-record[id])/Math.max(1,Math.abs(next)));record[id]+=.5*(next-record[id]);};
+  // Power commands are control setpoints fed back from the PCC meter, whose current comes from a 1 mΩ shunt drop:
+  // at 230 V it resolves about 1e-8 W. Below 0.1 µW a correction is measurement noise: integrating it drifted the
+  // command forever and left the DC balance just above the coupling tolerance. The network is still solved
+  // exactly for the command in force, so the deadband does not affect energy conservation.
+  const setCommand=(id:string,next:number)=>{if(Math.abs(next-activePower[id])>1e-7)change(activePower,id,next);};
   for(const c of converters) {
    if(!enabled.get(c.id))continue;
    const [dc,ac,line,neutral]=e.ids.get(c.id)!,g=grid.get(c.id)!,s=state(c),x=result.readings[dc],y=result.readings[ac],v=x.voltage;
@@ -140,7 +145,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
     const meter=p.components.find(m=>m.id===c.props.gridMeterTarget),flow=meter?meterFlow(result,meter):null;
     if(!c.props.allowExport&&!flow){disconnect('PCC meter missing');continue;}
     const command=flow?Math.min(rated,available,activePower[c.id]+flow[0]+(c.props.allowExport?prop(c,'exportLimit'):0)):Math.min(rated,available);
-    change(activePower,c.id,Math.max(0,command));
+    setCommand(c.id,Math.max(0,command));
     const limited=command<available-1e-8 || activePower[c.id]>=rated-1e-6;
     const nextCap=limited?Math.min(prop(c,'maxDCDischargeCurrent'),Math.max(0,(delivered+loss)/v)):prop(c,'maxDCDischargeCurrent');
     const cap=currentCap[c.id],residual=nextCap-cap;let next=cap+.5*residual;
@@ -167,7 +172,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
       command=Math.max(command,-prop(c,'maxChargeCurrent')*v/(prop(c,'chargeEfficiency')/100));
      }
      const maxS=Math.min(prop(c,'ratedApparentPower'),prop(c,'maxACCurrent')*g.voltage),maxP=Math.min(rated,maxS,prop(c,'maxDCDischargeCurrent')*v*.9);
-     change(activePower,c.id,Math.max(-maxP,Math.min(maxP,command)));
+     setCommand(c.id,Math.max(-maxP,Math.min(maxP,command)));
     }
    }
    // AC power/current iteration must converge as well as the DC converter boundary.

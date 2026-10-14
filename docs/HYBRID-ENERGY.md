@@ -130,6 +130,12 @@ Regressions are in `hybrid-protection.test.ts`, and each one fails on the previo
 
 New regressions: the curve's table points, continuity, monotonicity and energy integral (`components-next.test.ts`); grid-connected and islanded operation at 100 % SOC in absorption (battery current below 1 µA, SOC 1, PV carries the 200 W backup load); and float, where the battery settles once to 54.0 V (≈99.5 %) and PV then carries the load with no further discharge (`hybrid-protection.test.ts`). Example files, example measurements and the solar, hybrid and preset campaign records were regenerated.
 
+### Reconnect with a full battery — 2026-10-14
+
+A hybrid with a full DC-coupled battery and a small load stopped at grid reconnect with "Solar electrical coupling did not converge (relative residual 1.73e-10)", whether the load was on the grid side or on the backup output. The PCC meter derives its current from the 0.2 mV drop across its 1 mΩ shunt at 230 V, which floating point resolves only to about 2×10⁻¹⁰ of the flow. The ESS command integrates the grid error, so it kept correcting a constant measurement offset that it could never remove. With a full battery, no other free loop absorbed the drift, and the converter's DC balance stayed just above the 10⁻¹⁰ coupling tolerance. Power commands are control setpoints, so corrections below 0.1 µW (about ten times the meter's 10⁻⁸ W resolution) are now ignored. The network is still solved exactly for the command in force, so energy conservation is unaffected. A regression covers both load positions.
+
+The default 50 W grid setpoint (the reference ESS default, which avoids accidental export) means a household load below 50 W is carried by the grid. Set the setpoint to 0 W for the converter to cover small loads from solar.
+
 Thermal derating uses the simulated lumped component temperature as a conservative proxy for the datasheet's ambient-temperature rating points. This mapping and the thermal capacitance/loss parameters are educational assumptions, not a calibrated manufacturer internal-temperature controller.
 
 The subsequent delivery commit updates only this audit document and generated scaling reports; implementation, tests, dependencies and release-gate scripts are identical to the exact tested commit above. The campaign refreshed reports during the gate, so its automatic clean-tree deployment record was not written. A future deployment will run its normal verification gate.
