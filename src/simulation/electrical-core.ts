@@ -726,7 +726,10 @@ export function solveElectricalCore(
         if (sq === 0) continue;
         const k = leads.get(c.id)?.i ?? 1, rms = Math.sqrt(r.current ** 2 + sq * k * k);
         Object.assign(r, { current: (Math.sign(r.current) || 1) * rms, contactCurrent: rms, harmonicCurrent: Math.sqrt(sq) * k, harmonicLoss: c.kind === "vfd" ? 0 : loss });
-        if (c.kind !== "vfd") r.power += loss;
+        if (c.kind !== "vfd") {
+          r.power += loss;
+          if (r.heatPower !== undefined) r.heatPower += loss;
+        }
         const real = c.kind === "vfd" ? input(c) : r.inputPower ?? fundamentalPower.get(c.id) ?? r.power, apparent = (r.phases ?? 1) * r.voltage * rms;
         r.powerFactor = apparent > 1e-12 ? Math.min(1, Math.abs(real) / apparent) : null;
       }

@@ -345,6 +345,7 @@ describe("drive input harmonics", () => {
     }, { internalReactance: 0.1 });
     run(s, 4);
     const cap = s.project.components.find((c) => c.kind === "capacitor")!;
+    expect(s.electrical.readings[cap.id].heatPower).toBeCloseTo(s.electrical.readings[cap.id].power, 9);
     expect(s.electrical.readings[cap.id].harmonicCurrent!).toBeGreaterThan(3 * s.electrical.readings[vfd.id].harmonicCurrent!);
     expect(s.electrical.readings[src.id].harmonicCurrent!).toBeGreaterThan(s.electrical.readings[vfd.id].harmonicCurrent!);
     closes(s, 1e-8);
