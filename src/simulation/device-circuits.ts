@@ -155,7 +155,8 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
   if (bmsTrips.size) result = solveBatteryNetwork();
   for (const c of project.components.filter(c => c.kind === 'battery' && c.props.cells)) {
     const r = result.readings[c.id]; if (!r) continue;
-    const mode = bmsTrips.has(c.id) || runtime.devices?.solar?.[c.id]?.mode === 'overcurrent' ? 'overcurrent' : bmsVoltage.get(c.id) ?? (r.current > 1e-9 ? 'charging' : r.current < -1e-9 ? 'discharging' : 'idle / BMS limited');
+    // 1 µA status deadband: nanoampere currents are coupled-iteration residuals, not charge transfer.
+    const mode = bmsTrips.has(c.id) || runtime.devices?.solar?.[c.id]?.mode === 'overcurrent' ? 'overcurrent' : bmsVoltage.get(c.id) ?? (r.current > 1e-6 ? 'charging' : r.current < -1e-6 ? 'discharging' : 'idle / BMS limited');
     r.solar = { inputPower: Math.max(0, r.power), outputPower: Math.max(0, -r.power), efficiency: 0, mode, running: mode === 'charging' || mode === 'discharging' };
   }
   for (const c of project.components.filter(c => c.kind === 'electricBoiler')) {

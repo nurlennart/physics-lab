@@ -121,3 +121,10 @@ it('tracks a cold PV module to its maximum power point above 85% of Voc',()=>{
  const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,8,.05);const x=s.electrical.readings[pv.id].solar!;
  expect(x.mppVoltage!).toBeGreaterThan(.86*pvModel(pv).voc);expect(x.outputPower).toBeGreaterThan(.9995*x.mppPower!);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
 });
+it('exports only charger output, never stored energy, from a full battery with export enabled',()=>{
+ const p=hybridStarter('zeroExport'),hybrid=p.components.find(c=>c.kind==='hybridInverter')!,battery=p.components.find(c=>c.kind==='lfpBattery')!,meter=p.components.find(c=>c.kind==='gridMeter')!,mppt=p.components.find(c=>c.kind==='mpptController')!,pvs=p.components.filter(c=>c.kind==='solarPanel');
+ hybrid.props.allowExport=true;pvs.forEach(c=>{c.props.irradiance=700;});const s=new Simulation(p);expect(s.error).toBeNull();run(s,.3,1/60);
+ const check=(t:number)=>{const soc=s.devices.batteries[battery.id];for(let k=0;k<Math.round(t*60);k++){expect(s.step(1/60),s.error??'').toBe(true);const b=s.electrical.readings[battery.id];expect(Math.abs(b.current)).toBeLessThan(1e-6);expect(b.solar!.mode).toBe('idle / BMS limited');}expect(s.devices.batteries[battery.id]).toBeCloseTo(soc,12);};
+ check(1);const low=s.electrical.readings[mppt.id].solar!.outputPower;for(const c of pvs)edit(s,c,{irradiance:1000});check(1.5);
+ const out=s.electrical.readings[mppt.id].solar!.outputPower;expect(out).toBeGreaterThan(1.3*low);const h=s.electrical.readings[hybrid.id].hybrid!;expect(h.dcPower).toBeCloseTo(out,4);expect(-s.electrical.readings[meter.id].hybrid!.gridPower).toBeGreaterThan(h.acPower-500-1);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+},60000);

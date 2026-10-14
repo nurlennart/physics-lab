@@ -172,7 +172,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
         const [input, output] = e.ids.get(c.id)!;
         const island = result.nodeIslands?.[`${input}:a`];
         const mppPower = units.filter(pv => pv.kind === 'solarPanel' && result!.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv).pmp, 0);
-        result.readings[c.id] = { ...result.readings[input], solar: { inputPower: result.readings[input].power, outputPower: -result.readings[output].power, mode: 'iteration', running: !off.has(c.id), efficiency: prop(c, 'conversionEfficiency') / 100, mppPower } };
+        result.readings[c.id] = { ...result.readings[input], solar: { inputPower: result.readings[input].power, outputPower: -result.readings[output].power, mode: 'iteration', running: !off.has(c.id), efficiency: prop(c, 'conversionEfficiency') / 100, mppPower, curtailed: result.readings[input].regulation === 'cc' || result.readings[output].regulation === 'cv' } };
         for (const port of ['oa', 'ob']) if (result.nodeIds) result.nodeIds[`${c.id}:${port}`] = result.nodeIds[`${output}:${port === 'oa' ? 'a' : 'b'}`];
       }
       const tangent = (patch: Partial<ElectricalRuntime>) => solve(e.project, failures, { ...runtime, ...patch, coupling: undefined, sourceModels: { ...models, ...patch.sourceModels }, acInjections: { ...runtime.acInjections, ...patch.acInjections } });

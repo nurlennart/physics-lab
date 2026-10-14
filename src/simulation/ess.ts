@@ -17,7 +17,10 @@ export function solarCoordination(p:Project,r:ElectricalResult,battery:Component
   const reading=r.readings[controller.id]?.solar;
   if(!reading||controller.props.enabled===false)continue;
   commands[controller.id]=Math.min(prop(battery,'bmsHighVoltage',prop(battery,'fullVoltage'))-.1,Math.max(prop(controller,'absorptionVoltage'),prop(battery,'fullVoltage')));
-  available+=Math.min((reading.mppPower??0)*prop(controller,'conversionEfficiency')/100,prop(controller,'maxCurrent')*voltage);
+  // A curtailed controller offers its capability, so export can rise to draw it out. A freely
+  // tracking one offers only its actual output: requesting the ideal MPP power would make the
+  // battery cover every tracking shortfall and export stored energy.
+  available+=reading.curtailed?Math.min((reading.mppPower??0)*prop(controller,'conversionEfficiency')/100,prop(controller,'maxCurrent')*voltage):Math.max(0,reading.outputPower);
  }
  return{commands,available};
 }

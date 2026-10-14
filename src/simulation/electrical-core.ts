@@ -17,7 +17,7 @@ export interface ElectricalReading {
   hybrid?: import("./hybrid").HybridReading;
   /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
   stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
-  solar?: { trackingActive?: boolean; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
+  solar?: { trackingActive?: boolean; curtailed?: boolean; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
   inputPower?: number;
   /**
    * DC storage: a capacitor's current into its dielectric (excluding leakage), an inductor's voltage across its inductance,
