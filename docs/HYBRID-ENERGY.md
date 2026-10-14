@@ -91,3 +91,17 @@ Example projects start in steady sunlight; edit irradiance, utility Enabled, loa
 [Hybrid analytical, manufacturer-fitting and long-duration report](../validation/hybrid-energy.md) separates published fitting points from independent circuit/conservation checks, includes one-hour storage operation and changing sunlight/outage scenarios, and reports numerical residuals. [Solar reference report](../validation/solar-energy.md) retains the original panel calibration and independent checks. Example generated/file runs are recorded in `validation/examples.json`; preset results are in `validation/presets.json`.
 
 The release gate now includes both solar and hybrid campaigns alongside all existing physics, scaling, score, preset, shaft, build and browser checks. The exact final tested commit and release-gate result are reported in the delivery message and the Git verification record; neither a passing partial campaign nor dirty-tree execution constitutes the final release claim.
+
+### Final release-gate execution — 2026-10-14
+
+Exact tested implementation commit: `c3b555c095ace8b9a9ab8c24cd62d1e9449f01f2`.
+
+`npm run check` passed in 1338 seconds: TypeScript; **803/803 unit/integration tests across 45 files**; **96/96 physics checks**; **124/124 scaling checks**, including 1332 parameter-boundary cases; unchanged challenge reference scores; **137/137 operating scenarios for all 93 presets**; two shaft-event checks; **16/16 solar checks**; **34/34 hybrid checks**; production build; and **108/108 production-browser tests**. All five new examples passed browser advance/reset/save/reload and generated/file solvability checks. Existing conservation tolerances were retained.
+
+The one-hour run's absolute global residual was **5.50412 µJ** (relative **5.81295×10⁻¹²**); its separately summed device-chain residual was **7.16781 µJ** (relative **7.72392×10⁻¹²**). The weather/outage run's global residual was **0.225453 µJ**, and its device-chain residual **0.308704 µJ**. These values and individual energy channels are retained in `validation/hybrid-energy.json`.
+
+Two integration issues found during development were also corrected: grid-current violation reporting now uses apparent power, including reactive demand; and the explicit AC heat channel includes harmonic ESR/winding losses accumulated after the fundamental solve. The existing resonant-capacitor drive test passes its original `1e-8` conservation bound, with an additional heat-channel assertion.
+
+Thermal derating uses the simulated lumped component temperature as a conservative proxy for the datasheet's ambient-temperature rating points. This mapping and the thermal capacitance/loss parameters are educational assumptions, not a calibrated manufacturer internal-temperature controller.
+
+The subsequent delivery commit updates only this audit document and generated scaling reports; implementation, tests, dependencies and release-gate scripts are identical to the exact tested commit above. The campaign refreshed reports during the gate, so its automatic clean-tree deployment record was not written. A future deployment will run its normal verification gate.
