@@ -177,7 +177,7 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       b.series(c, resistor); s = simulation(b); run(s);
       // Independent reference: RK4 over the two states, charge and the R₁ ∥ C₁ polarization voltage (20 °C), with the
       // documented open-circuit tables (docs/PHYSICS.md) and self-discharge; discharge only, so charge efficiency is moot.
-      const curves = { linear: [[0, 1], [0, 1]], nmc: [[0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.375, 0.458, 0.517, 0.6, 0.708, 0.833, 1]], lfp: [[0, 0.05, 0.1, 0.2, 0.5, 0.8, 0.95, 1], [0, 0.545, 0.636, 0.682, 0.718, 0.745, 0.773, 1]] };
+      const curves = { linear: [[0, 1], [0, 1]], nmc: [[0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.375, 0.458, 0.517, 0.6, 0.708, 0.833, 1]], lfp: [[0, 0.09, 0.14, 0.17, 0.2, 0.3, 0.4, 0.7, 0.9, 0.99, 1], [10, 12, 12.5, 12.8, 12.9, 13, 13.1, 13.2, 13.3, 13.4, 13.6].map((u) => (u - 10) / 3.6)] };
       const ocv = (soc) => { const [xs, fs] = curves[v.chemistry]; const k = Math.min(xs.length - 2, xs.findIndex((x, i) => i === xs.length - 1 || soc < xs[i + 1])); return v.emptyVoltage + delta * (fs[k] + (fs[k + 1] - fs[k]) * (soc - xs[k]) / (xs[k + 1] - xs[k])); };
       const q = v.capacityAh * 3600, r1 = v.polarizationResistance, c1 = r1 > 0 ? v.polarizationTimeConstant / r1 : 0, leak = q * v.selfDischarge / 100 / (30 * 86400);
       const rate = ([soc, vp]) => { const current = -(ocv(soc) + vp) / (r + v.internalResistance); return [(current - leak) / q, r1 > 0 ? (current - vp / r1) / c1 : 0]; };

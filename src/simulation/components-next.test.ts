@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { Builder } from './scaling-validation';
 import { Simulation, DT } from './engine';
 import { solveElectrical, solveLinear, solveComplex, nodeVoltage } from './electrical';
-import { batteryEnergy, batteryOCV, batteryResistanceFactor, selfDischargeCurrent } from './devices';
+import { batteryEnergy, batteryEnergyChange, batteryOCV, batteryResistanceFactor, selfDischargeCurrent } from './devices';
+import { prop } from './model';
 import { parseProject } from './projects';
 import { readProbe } from './measurements';
 
@@ -112,15 +113,40 @@ describe('battery polarization and temperature', () => {
 });
 describe('battery chemistry, charge acceptance and self-discharge', () => {
   it('follows its open-circuit curve and integrates it exactly for the chemical energy', () => {
-    const b = new Builder(), nmc = b.add('battery', { chemistry: 'nmc', emptyVoltage: 3, fullVoltage: 4.2, capacityAh: 1 }), lfp = b.add('battery', { chemistry: 'lfp', emptyVoltage: 2.5, fullVoltage: 3.65, capacityAh: 1 });
+    const b = new Builder(), nmc = b.add('battery', { chemistry: 'nmc', emptyVoltage: 3, fullVoltage: 4.2, capacityAh: 1 }), lfp = b.add('battery', { chemistry: 'lfp', emptyVoltage: 2.5, fullVoltage: 3.4, capacityAh: 1 });
     expect(batteryOCV(nmc, 0.5).voltage).toBeCloseTo(3 + 1.2 * 0.654, 12); // between 0.6 (40 %) and 0.708 (60 %)
-    expect(batteryOCV(lfp, 0.5).voltage).toBeCloseTo(2.5 + 1.15 * 0.718, 12); // LFP plateau ≈ 3.33 V
+    expect(batteryOCV(lfp, 0.5).voltage).toBeCloseTo((13.1 + 0.1 / 3) / 4, 12); // rested plateau between 40 % (13.1 V) and 70 % (13.2 V) per 4 cells
     // Midpoint quadrature of Q·∫E ds on a fine grid.
     for (const c of [nmc, lfp]) {
       let quadrature = 0;
       for (let i = 0; i < 100000; i++) quadrature += 3600 * batteryOCV(c, (i + 0.5) / 100000 * 0.73).voltage * 0.73 / 100000;
       expect(batteryEnergy(c, 0.73) / quadrature - 1).toBeLessThan(1e-9);
     }
+  });
+  it('uses a continuous, monotonic rested LFP curve whose charge settings bracket full rest', () => {
+    const b = new Builder(), pack = b.add('lfpBattery');
+    // Published 4-cell rested table (V): independent of the normalized implementation.
+    for (const [soc, v] of [[0, 10], [0.09, 12], [0.2, 12.9], [0.5, 13.1 + 0.1 / 3], [0.9, 13.3], [0.99, 13.4], [1, 13.6]]) expect(batteryOCV(pack, soc).voltage).toBeCloseTo(v, 10);
+    let last = -Infinity;
+    for (let i = 0; i <= 100000; i++) {
+      const soc = i / 100000, v = batteryOCV(pack, soc).voltage;
+      expect(v).toBeGreaterThan(last); // strictly increasing
+      if (i) expect(v - last).toBeLessThan(2.3e-4); // continuous: no jump beyond the steepest segment (2 V over 0–9 %) per 0.00001 SOC
+      last = v;
+    }
+    // Full rest lies between the float and absorption settings: float holds about 99.5 %, absorption charges to full.
+    expect(batteryOCV(pack, 1).voltage).toBeGreaterThan(prop(pack, 'fullVoltage') - 1e-12);
+    expect(batteryOCV(pack, 0.995).voltage).toBeCloseTo(13.5, 10);
+    const mppt = b.add('mpptController');
+    expect(prop(mppt, 'absorptionVoltage')).toBeGreaterThan(prop(pack, 'fullVoltage'));
+    expect(prop(mppt, 'floatVoltage')).toBeLessThan(prop(pack, 'fullVoltage'));
+    // Chemical energy is the exact integral of the same curve; nominal 1280 Wh is 12.8 V x 100 Ah.
+    let quadrature = 0;
+    for (let i = 0; i < 100000; i++) quadrature += 3600 * prop(pack, 'capacityAh') * batteryOCV(pack, (i + 0.5) / 100000).voltage / 100000;
+    expect(batteryEnergy(pack, 1) / quadrature - 1).toBeLessThan(1e-9);
+    expect(batteryEnergyChange(pack, 0.3, 0.99) / (batteryEnergy(pack, 0.99) - batteryEnergy(pack, 0.3)) - 1).toBeLessThan(1e-9);
+    expect(batteryEnergy(pack, 1) / 3600).toBeGreaterThan(1250);
+    expect(batteryEnergy(pack, 1) / 3600).toBeLessThan(1320);
   });
   it('stores only the coulombic share of the charge and turns the rest into heat', () => {
     const b = new Builder(), charger = b.add('source', { mode: 'cc', current: 2, voltage: 30 });

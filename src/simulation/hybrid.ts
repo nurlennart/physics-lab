@@ -45,8 +45,9 @@ export function advanceHybrid(p: Project, states: Record<string,HybridState>, r:
    }
   }
   if(c.kind==='hybridInverter') {
-   // Any regulated AC charging counts, including surplus from AC-coupled PV, not only grid charging.
-   if(x.connected&&x.acPower<0&&!c.props.standby&&(r.readings[c.id]?.voltage??0)>=prop(c,'absorptionVoltage')-1e-6)s.absorption+=h;
+   // Any regulated AC charging counts, including surplus from AC-coupled PV, not only grid charging. A battery that
+   // is already full accepts nothing more, so the charger is holding at its setpoint even though no DC current flows.
+   if(x.connected&&x.acPower<0&&!c.props.standby&&((r.readings[c.id]?.voltage??0)>=prop(c,'absorptionVoltage')-1e-6||x.soc!==null&&x.soc>=1-1e-12))s.absorption+=h;
    if((r.readings[c.id]?.voltage??0)<prop(c,'rebulkVoltage'))s.absorption=0;
   }
  }

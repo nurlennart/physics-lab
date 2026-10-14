@@ -30,7 +30,7 @@ const modelCache = new WeakMap<Component, ReturnType<typeof pvModel>>();
 export function panelModel(c: Component) { let m = modelCache.get(c); if (!m) { m = pvModel(c); modelCache.set(c, m); } return m; }
 export function solveSolar(p: Project, failed: Record<string, boolean>, runtime: ElectricalRuntime, solve: Solve): ElectricalResult {
   const e = expand(p), units = p.components.filter(c => solarKinds.includes(c.kind));
-  const chargingVoltage = (c: Component) => runtime.chargingTargets?.[c.id] ?? (states(c).absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage'));
+  const chargingVoltage = (c: Component) => (states(c).absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage'));
   const states = (c: Component) => runtime.devices?.solar?.[c.id] ?? initialSolarState(c);
   const models = { ...runtime.sourceModels }, failures = { ...failed }, loads = { ...runtime.loadResistances };
   const targets: Record<string, number> = {};
@@ -172,7 +172,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
         const [input, output] = e.ids.get(c.id)!;
         const island = result.nodeIslands?.[`${input}:a`];
         const mppPower = units.filter(pv => pv.kind === 'solarPanel' && result!.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv).pmp, 0);
-        result.readings[c.id] = { ...result.readings[input], solar: { inputPower: result.readings[input].power, outputPower: -result.readings[output].power, mode: 'iteration', running: !off.has(c.id), efficiency: prop(c, 'conversionEfficiency') / 100, mppPower, curtailed: result.readings[input].regulation === 'cc' || result.readings[output].regulation === 'cv' } };
+        result.readings[c.id] = { ...result.readings[input], solar: { inputPower: result.readings[input].power, outputPower: -result.readings[output].power, mode: 'iteration', running: !off.has(c.id), efficiency: prop(c, 'conversionEfficiency') / 100, mppPower, achievablePower: off.has(c.id) ? 0 : demand[c.id] * sense(result, c, 'oa', 'ob') } };
         for (const port of ['oa', 'ob']) if (result.nodeIds) result.nodeIds[`${c.id}:${port}`] = result.nodeIds[`${output}:${port === 'oa' ? 'a' : 'b'}`];
       }
       const tangent = (patch: Partial<ElectricalRuntime>) => solve(e.project, failures, { ...runtime, ...patch, coupling: undefined, sourceModels: { ...models, ...patch.sourceModels }, acInjections: { ...runtime.acInjections, ...patch.acInjections } });

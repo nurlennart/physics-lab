@@ -16,12 +16,12 @@ Fitted diode ideality voltage **2.854151 V**, series resistance **0.02921673 Ω*
 | Withheld manufacturer reference | Pmax temperature coefficient near STC (%/K) | -0.29000000 | -0.30513459 | 0.01513 | 0.06000 | yes |
 | Analytical network | 230 V / 264.5 Ω AC load (W) | 200.00000 | 200.00000 | 0.000 | 1.000e-7 | yes |
 | Calibration assumption | Inverter peak at half load (1) | 0.90000000 | 0.90000000 | 5.085e-11 | 1.000e-8 | yes |
-| Conservation | 20 s coupled run at h=0.1 (J) | 0.0000000 | -9.4587449e-11 | 9.459e-11 | 0.001000 | yes |
-| Conservation | 1200 s solar + night global energy residual (J) | 0.0000000 | 4.6566129e-10 | 4.657e-10 | 0.01000 | yes |
+| Conservation | 20 s coupled run at h=0.1 (J) | 0.0000000 | -5.3114491e-10 | 5.311e-10 | 0.001000 | yes |
+| Conservation | 1200 s solar + night global energy residual (J) | 0.0000000 | 4.4237822e-9 | 4.424e-9 | 0.01000 | yes |
 | Behavior | Sunlight charges battery while serving both loads (boolean) | 1.0000000 | 1.0000000 | 0.000 | 0.000 | yes |
 | Behavior | Night draws down stored chemical charge (boolean) | 1.0000000 | 1.0000000 | 0.000 | 0.000 | yes |
-| Conservation | 20 s coupled run at h=0.05 (J) | 0.0000000 | -1.1641532e-9 | 1.164e-9 | 0.001000 | yes |
-| Timestep convergence | SOC difference h=0.1 versus h=0.05 after 20 s (1) | 0.0000000 | 5.5511151e-16 | 5.551e-16 | 0.000002000 | yes |
+| Conservation | 20 s coupled run at h=0.05 (J) | 0.0000000 | -1.3860699e-9 | 1.386e-9 | 0.001000 | yes |
+| Timestep convergence | SOC difference h=0.1 versus h=0.05 after 20 s (1) | 0.0000000 | 2.2204460e-16 | 2.220e-16 | 0.000002000 | yes |
 
 NOCT is a manufacturer table reference, not an independent laboratory trace. Peak-efficiency load location and SOC curve are assumptions. Fixed maximum tolerances are stated per row; fitting constraints are not held-out validation.
 

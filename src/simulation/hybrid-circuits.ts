@@ -1,4 +1,4 @@
-import { acDischargeBudget, essActiveCommand, solarCoordination } from './ess';
+import { acDischargeBudget, essActiveCommand, solarSurplus } from './ess';
 /** Grid-following current injection and isolated backup, coupled through actual MNA port powers. */
 import { definitions, prop, type Component, type Project, type Terminal } from './model';
 import type { ElectricalReading, ElectricalResult, ElectricalRuntime } from './electrical-core';
@@ -40,7 +40,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
  const key=(c:Component,port:string)=>{const t=e.map({component:c.id,port});return `${t.component}:${t.port}`;};
  const phasor=(r:ElectricalResult,c:Component,a:string,b:string):Cx=>subtract(r.phasors?.[key(c,a)]??[r.nodes[key(c,a)]??0,0],r.phasors?.[key(c,b)]??[r.nodes[key(c,b)]??0,0]);
  const dcVoltage=(r:ElectricalResult,c:Component)=>r.readings[e.ids.get(c.id)![0]]?.voltage??0;
- const failures={...failed}, models={...runtime.sourceModels}, injections={...runtime.acInjections}, chargingTargets={...runtime.chargingTargets};
+ const failures={...failed}, models={...runtime.sourceModels}, injections={...runtime.acInjections};
  // Open both transfer poles and all converter ports before testing the external voltage reference.
  for(const c of converters)e.ids.get(c.id)!.forEach(id=>{failures[id]=true;});
  let result=solve(e.project,failures,runtime);
@@ -159,12 +159,8 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
      const target=p.components.find(b=>b.id===c.props.batteryTarget),soc=target?runtime.devices?.batteries[target.id]??prop(target,'initialSOC')/100:null;
      const meter=p.components.find(m=>m.id===c.props.gridMeterTarget),m=meter?meterFlow(result,meter):null;
      if(!m){disconnect('PCC meter missing');continue;}
-     const coordination=solarCoordination(p,result,target,result.nodeIds?.[key(c,'a')],v,!!c.props.coordinateSolar&&soc!==null&&soc>=.999&&g.connected);
-     for(const [id,voltage] of Object.entries(coordination.commands)) {
-       if(chargingTargets[id]===undefined)error=1;else if(chargingTargets[id]!==voltage)error=Math.max(error,Math.abs(chargingTargets[id]-voltage)/Math.max(1,voltage));
-       chargingTargets[id]=voltage;
-     }
-     let command=essActiveCommand(c,{acPower:activePower[c.id],dcPower:x.power,batteryPower:target?result.readings[target.id]?.power??0:0,soc,capacityAh:target?prop(target,'capacityAh'):0,dcVoltage:v,gridVoltage:g.voltage,gridPower:m[0],gridReactive:m[1],converterReactive:-(y.reactivePower??0),h:runtime.devices?.h??1/60,solarAvailable:coordination.available});
+     const solarAvailable=solarSurplus(p,result,target,result.nodeIds?.[key(c,'a')],!!c.props.coordinateSolar&&soc!==null&&soc>=.999);
+     let command=essActiveCommand(c,{acPower:activePower[c.id],dcPower:x.power,batteryPower:target?result.readings[target.id]?.power??0:0,soc,capacityAh:target?prop(target,'capacityAh'):0,dcVoltage:v,gridVoltage:g.voltage,gridPower:m[0],gridReactive:m[1],converterReactive:-(y.reactivePower??0),h:runtime.devices?.h??1/60,solarAvailable});
      if(command<0) {
       if(models[dc].lower<0&&(x.regulation==='cv'||v>=(s.absorption>=prop(c,'absorptionTime')?prop(c,'floatVoltage'):prop(c,'absorptionVoltage'))-1e-8))command=Math.max(command,(x.power-inverterLoss(c,0,Math.abs(y.reactivePower??0)))/(prop(c,'chargeEfficiency')/100));
       if(soc!==null&&soc>=1-1e-12)command=Math.max(command,-prop(c,'idlePower')/(prop(c,'chargeEfficiency')/100));
@@ -180,10 +176,10 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   return error;
  };
  if (e.project.components.some(c=>['solarPanel','lfpBattery','mpptController','inverter','batteryProtection'].includes(c.kind))) {
-  result=solve(e.project,failures,{...runtime,sourceModels:models,acInjections:injections,chargingTargets,coupling:{prepare,residual:observe}});
+  result=solve(e.project,failures,{...runtime,sourceModels:models,acInjections:injections,coupling:{prepare,residual:observe}});
  } else for(let k=0;k<300;k++) {
   prepare(result,models,failures);
-  const next=solve(e.project,failures,{...runtime,sourceModels:models,acInjections:injections,chargingTargets});
+  const next=solve(e.project,failures,{...runtime,sourceModels:models,acInjections:injections});
   if(observe(next)<1e-10)break;
   if(k===299)throw Error(`Hybrid electrical coupling did not converge (relative residual ${error}).`);
  }

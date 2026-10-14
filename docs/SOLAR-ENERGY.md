@@ -57,7 +57,7 @@ A preflight solve with converter ports open checks available PV voltage, actual 
 
 An inhibited preflight preserves the last tracking target through darkness or a disabled panel. On restart, the loaded target also respects startup headroom; checking only open-circuit voltage would allow a persistent startup lockout. During curtailment, output demand is evaluated with input curtailment released in the current MNA tangent network. The released solve also supplies voltage and output-power sensitivities for a bounded Newton correction of the input-current power-balance equation. This avoids the nearly unit fixed-point derivative close to the PV power maximum and prevents temporary input-power undershoots from reducing both output demand and input current together. The nonlinear PV equations, measured converter power residual, 10⁻¹⁰ convergence threshold and 500-iteration limit still apply unchanged.
 
-The battery reuses the existing piecewise-linear LFP OCV plateau, exact OCV integral and accepted-step charge integration:
+The battery uses a piecewise-linear rested LFP open-circuit curve (2.5–3.40 V per cell; table in [PHYSICS.md](PHYSICS.md)), its exact integral and accepted-step charge integration:
 
 ```
 SOCnext = SOC + (ηc max(I,0) + min(I,0)) h / (3600 capacityAh)
@@ -69,7 +69,7 @@ Pheat = Vterminal I − ΔEchemical/h
 
 Current is positive into the battery. Coulombic efficiency 99.5% is assumed. Stored energy is the OCV integral, rather than nominal voltage × remaining Ah. Internal ohmic and charge-acceptance losses enter the existing thermal mass. SOC boundaries split the accepted interval. A full pack blocks charging; an empty/low-voltage pack blocks discharge but can recover by charging. Temperature restrictions are directional. Excessive configured charge/discharge current or terminal power opens and latches the BMS until Reset. Cell-count edits reset voltage limits and resistance consistently; capacity and initial SOC require Reset.
 
-The OCV curve, lumped heat capacities and ambient UA are engineering assumptions, not manufacturer measurements. The manufacturer's 92% round-trip efficiency is not forced by a correction term: simulated efficiency follows the actual load and losses. Capacity reduction at 0/−20°C, cell imbalance, ageing, voltage hysteresis and detailed BMS electronics are omitted.
+The OCV curve, lumped heat capacities and ambient UA are engineering assumptions, not manufacturer measurements. Open-circuit voltage, charger setpoints and BMS limits are separate quantities. Rested full is 3.40 V per cell (13.6 V). The reference charge profile is absorption 14.2 V and float 13.5 V, and charging may reach the 3.65 V per cell charge cut-off. BMS cell limits are 2.8 V and 3.75 V (11.2 / 15 V). Because the model has no polarization knee at the top of charge, bulk charging continues to 100 % SOC; the charger then holds its setpoint while the full battery accepts no further current, which counts as absorption time. The manufacturer's 92% round-trip efficiency is not forced by a correction term: simulated efficiency follows the actual load and losses. Capacity reduction at 0/−20°C, cell imbalance, ageing, voltage hysteresis and detailed BMS electronics are omitted.
 
 ## Inverter and distribution
 

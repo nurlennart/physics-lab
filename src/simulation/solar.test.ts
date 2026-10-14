@@ -10,7 +10,7 @@ import { type Project, type Property } from './model';
 import { batteryEnergy } from './devices';
 
 function rig(ac = false) {
-  const b = new Builder(), pv = b.add('solarPanel'), mppt = b.add('mpptController', ac ? { absorptionVoltage: 28.4, floatVoltage: 27, rebulkVoltage: 26.4, minVoltage: 16 } : {}), battery = b.add('lfpBattery', ac ? { cells: 8, emptyVoltage: 20, fullVoltage: 29.2, bmsLowVoltage: 22.4, bmsHighVoltage: 30, internalResistance: 0.0016 } : {});
+  const b = new Builder(), pv = b.add('solarPanel'), mppt = b.add('mpptController', ac ? { absorptionVoltage: 28.4, floatVoltage: 27, rebulkVoltage: 26.4, minVoltage: 16 } : {}), battery = b.add('lfpBattery', ac ? { cells: 8, emptyVoltage: 20, fullVoltage: 27.2, bmsLowVoltage: 22.4, bmsHighVoltage: 30, internalResistance: 0.0016 } : {});
   b.wire(pv, 'a', mppt, 'a'); b.wire(pv, 'b', mppt, 'b'); b.wire(mppt, 'oa', battery, 'a'); b.wire(mppt, 'ob', battery, 'b');
   let inverter, load;
   if (ac) { inverter = b.add('inverter'); load = b.add('resistor', { resistance: 529, ratedPower: 200 }); b.wire(battery, 'a', inverter, 'a'); b.wire(battery, 'b', inverter, 'b'); b.wire(inverter, 'oa', load, 'a'); b.wire(inverter, 'ob', load, 'b'); }
@@ -190,8 +190,9 @@ describe('solar references, events and numerical integrity', () => {
 
 describe('solar regulation interoperability', () => {
   it('regulates absorption then float on the battery terminal voltage', () => {
-    const { b, battery, mppt } = rig(); battery.props.initialSOC = 95;
-    Object.assign(mppt.props, { absorptionVoltage: 13.56, absorptionTime: 1, floatVoltage: 13.5, rebulkVoltage: 13.4 });
+    // Reference 14.2 V absorption / 13.5 V float profile; a 1 Ah pack at 99.95 % reaches full within 0.1 s.
+    const { b, battery, mppt } = rig(); Object.assign(battery.props, { initialSOC: 99.95, capacityAh: 1 });
+    mppt.props.absorptionTime = 1;
     const s = new Simulation(b.p); expect(s.error).toBeNull(); run(s, 1.5);
     expect(s.devices.solar[mppt.id].absorption).toBeGreaterThanOrEqual(1);
     expect(s.electrical.readings[mppt.id].solar!.mode).toBe('float');

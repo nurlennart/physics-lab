@@ -48,7 +48,7 @@ export const builtinPresets: ComponentPreset[] = [
   preset('inverter', 'General-purpose', 'DC/AC Inverter · 24 V / 500 VA', {}),
   preset('batteryProtection', 'General-purpose', 'Battery Protection Switch · 65 A', {}),
   preset("battery", "Laboratory", "12 V rechargeable · 20 Ah", {}),
-  preset("battery", "Industrial", "48 V rechargeable · 100 Ah", { capacityAh: 100, chemistry: "lfp", emptyVoltage: 40, fullVoltage: 58.4, coulombicEfficiency: 99.5, selfDischarge: 2, internalResistance: 0.03, polarizationResistance: 0.02, polarizationTimeConstant: 40, maxCurrent: 200, maxPower: 10000, heatCapacity: 30000, loss: 8 }),
+  preset("battery", "Industrial", "48 V rechargeable · 100 Ah", { capacityAh: 100, chemistry: "lfp", emptyVoltage: 40, fullVoltage: 54.4, coulombicEfficiency: 99.5, selfDischarge: 2, internalResistance: 0.03, polarizationResistance: 0.02, polarizationTimeConstant: 40, maxCurrent: 200, maxPower: 10000, heatCapacity: 30000, loss: 8 }),
   preset("contactor", "General-purpose", "24 V DC coil · 25 A contact", {}),
   preset("transformer", "Laboratory", "230 / 24 V · 250 VA", {}),
   preset("electricBoiler", "General-purpose", "Bosch TH3000 9 · external pump", {}, "Three 3 kW stages; 3.7 L water. External circulator required. See model basis for control and thermal assumptions."),

@@ -24,8 +24,7 @@ describe('adversarial solar audit',()=>{
   if(kind==='inverter') {
    const inv=b.add('inverter',{minVoltage:8,restartVoltage:10,maxInputVoltage:18}); b.wire(battery,'a',sw,'a');b.wire(sw,'b',inv,'a');b.wire(battery,'b',inv,'b');b.wire(inv,'oa',load,'a');b.wire(inv,'ob',load,'b');
   } else { b.wire(battery,'a',sw,'a');b.wire(sw,'b',load,'a');b.wire(battery,'b',load,'b'); }
-  // This numerical curtailment fixture places the charger ceiling above the simplified full-pack OCV.
-  for(const {mppt}of controllers)Object.assign(mppt.props,{absorptionVoltage:14.7,floatVoltage:14.65});
+  // Reference 14.2 V absorption lies above the full pack's rested 13.6 V, so a full battery curtails without a raised ceiling.
   const s=new Simulation(b.p); expect(s.error).toBeNull();run(s,0.2);
   expect(controllers.reduce((n,{pv})=>n+(s.electrical.readings[pv.id].solar?.outputPower??0),0)).toBeLessThan(1e-6);
   for(let k=0;k<3;k++) {edit(s,sw.id,{closed:true});run(s,0.3);expect(s.electrical.readings[load.id].power).toBeGreaterThan(40);expect(controllers.reduce((n,{pv})=>n+(s.electrical.readings[pv.id].solar?.outputPower??0),0)).toBeGreaterThan(40);edit(s,sw.id,{closed:false});run(s,0.3);}
@@ -49,7 +48,7 @@ describe('adversarial solar audit',()=>{
 });
 
 it('two MPPT voltage regulators survive absorption, interruptions and float on one bus',()=>{
- const {b,controllers}=shared(95);for(const {mppt}of controllers)Object.assign(mppt.props,{absorptionVoltage:13.56,floatVoltage:13.5,rebulkVoltage:13.4,absorptionTime:1});
+ const {b,controllers}=shared(99.95,1);for(const {mppt}of controllers)mppt.props.absorptionTime=1;
  const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.3);const before=controllers.map(({mppt})=>s.devices.solar[mppt.id].absorption);
  for(const {pv}of controllers)edit(s,pv.id,{irradiance:0});run(s,.4);for(const [k,{mppt}]of controllers.entries())expect(s.devices.solar[mppt.id].absorption).toBeCloseTo(before[k],8);
  for(const [k,{pv}]of controllers.entries())edit(s,pv.id,{irradiance:k?370:1000});run(s,1.3);
@@ -58,7 +57,7 @@ it('two MPPT voltage regulators survive absorption, interruptions and float on o
  expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
 });
 it('single MPPT absorption time pauses through darkness and resumes only at regulated voltage',()=>{
- const b=new Builder(),battery=b.add('lfpBattery',{initialSOC:95}),pv=b.add('solarPanel'),mppt=b.add('mpptController',{absorptionVoltage:13.56,floatVoltage:13.5,rebulkVoltage:13.4,absorptionTime:1});b.wire(pv,'a',mppt,'a');b.wire(pv,'b',mppt,'b');b.wire(mppt,'oa',battery,'a');b.wire(mppt,'ob',battery,'b');const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.3);const time=s.devices.solar[mppt.id].absorption;expect(time).toBeGreaterThan(.1);edit(s,pv.id,{irradiance:0});run(s,.5);expect(s.devices.solar[mppt.id].absorption).toBeCloseTo(time,9);edit(s,pv.id,{irradiance:1000});run(s,.8);expect(s.devices.solar[mppt.id].absorption).toBeGreaterThanOrEqual(1);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+ const b=new Builder(),battery=b.add('lfpBattery',{initialSOC:99.95,capacityAh:1}),pv=b.add('solarPanel'),mppt=b.add('mpptController',{absorptionTime:1});b.wire(pv,'a',mppt,'a');b.wire(pv,'b',mppt,'b');b.wire(mppt,'oa',battery,'a');b.wire(mppt,'ob',battery,'b');const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.3);const time=s.devices.solar[mppt.id].absorption;expect(time).toBeGreaterThan(.1);edit(s,pv.id,{irradiance:0});run(s,.5);expect(s.devices.solar[mppt.id].absorption).toBeCloseTo(time,9);edit(s,pv.id,{irradiance:1000});run(s,.8);expect(s.devices.solar[mppt.id].absorption).toBeGreaterThanOrEqual(1);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
 });
 it('rejects an undefined floating current-only island without inventing compliance voltage',()=>{
  const b=new Builder(),a=b.add('source'),c=b.add('source');b.wire(a,'a',c,'a');b.wire(a,'b',c,'b');expect(()=>solveElectrical(b.p,{}, {sourceModels:{[a.id]:{voltage:0,resistance:0,lower:1,upper:1},[c.id]:{voltage:0,resistance:0,lower:-1,upper:-1}}})).toThrow(/Singular/);

@@ -11,7 +11,7 @@
       "reference": "Victron Lithium Battery Smart 12.8/100 and 25.6/100",
       "url": "https://www.victronenergy.com/upload/documents/Datasheet-12,8-&-25,6-Volt-lithium-iron-phosphate-batteries-Smart-EN.pdf",
       "facts": "100 Ah, 4/8 cells, 1280/2560 Wh nominal; 0.8/1.6 mΩ. Maximum charge/discharge 200 A; recommended charge ≤50 A, discharge ≤100 A. Charge +5…50°C, discharge −20…50°C; end of discharge 11.2/22.4 V; recommended absorption 14.2/28.4 V and float 13.5/27 V.",
-      "assumptions": "The reference pack REQUIRES an external BMS. This generic component bundles a simplified directional BMS and configurable overcurrent isolation, with immediate thermal recovery. SOC curve is a typical LFP plateau, not a measured manufacturer curve. Coulombic efficiency 99.5%, lumped heat capacity and UA are assumed. Published 92% round-trip efficiency is not forced; actual efficiency depends on current, voltage and losses. Cold capacity derating, cell imbalance, ageing and hysteresis omitted."
+      "assumptions": "The reference pack REQUIRES an external BMS. This generic component bundles a simplified directional BMS and configurable overcurrent isolation, with immediate thermal recovery. SOC curve is a typical rested LFP open-circuit table (2.5–3.40 V per cell, 13.6 V full for 4 cells), not a measured manufacturer curve; the 3.65 V per cell charge cut-off is a terminal voltage under charge, not an OCV. Coulombic efficiency 99.5%, lumped heat capacity and UA are assumed. Published 92% round-trip efficiency is not forced; actual efficiency depends on current, voltage and losses. Cold capacity derating, cell imbalance, ageing and hysteresis omitted."
     },
     "mpptController": {
       "reference": "Victron SmartSolar MPPT 100/20",
@@ -141,8 +141,8 @@
       "category": "Conservation",
       "name": "20 s coupled run at h=0.1",
       "expected": 0,
-      "measured": -9.458744898438454e-11,
-      "error": 9.458744898438454e-11,
+      "measured": -5.311449058353901e-10,
+      "error": 5.311449058353901e-10,
       "tolerance": 0.001,
       "unit": "J",
       "pass": true
@@ -151,8 +151,8 @@
       "category": "Conservation",
       "name": "1200 s solar + night global energy residual",
       "expected": 0,
-      "measured": 4.656612873077393e-10,
-      "error": 4.656612873077393e-10,
+      "measured": 4.423782229423523e-9,
+      "error": 4.423782229423523e-9,
       "tolerance": 0.01,
       "unit": "J",
       "pass": true
@@ -181,8 +181,8 @@
       "category": "Conservation",
       "name": "20 s coupled run at h=0.05",
       "expected": 0,
-      "measured": -1.1641532182693481e-9,
-      "error": 1.1641532182693481e-9,
+      "measured": -1.3860699255019426e-9,
+      "error": 1.3860699255019426e-9,
       "tolerance": 0.001,
       "unit": "J",
       "pass": true
@@ -191,8 +191,8 @@
       "category": "Timestep convergence",
       "name": "SOC difference h=0.1 versus h=0.05 after 20 s",
       "expected": 0,
-      "measured": 5.551115123125783e-16,
-      "error": 5.551115123125783e-16,
+      "measured": 2.220446049250313e-16,
+      "error": 2.220446049250313e-16,
       "tolerance": 0.000002,
       "unit": "1",
       "pass": true

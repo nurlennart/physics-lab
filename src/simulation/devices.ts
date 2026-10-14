@@ -150,13 +150,17 @@ export function polarizationBranch(c: Component, temperature: number, h: number)
 }
 /**
  * Normalized open-circuit curves f(s), E(s) = E_empty + (E_full − E_empty)·f(s), linear between the tabulated states of
- * charge. NMC/graphite (3.0–4.2 V per cell) rises steeply from empty, then gently; LFP (2.5–3.65 V) is a flat plateau
- * with steep ends. Typical cell data, not a specific manufacturer's.
+ * charge. NMC/graphite (3.0–4.2 V per cell) rises steeply from empty, then gently. LFP is a rested open-circuit table,
+ * 2.5–3.40 V per cell: steep below 20 %, a flat plateau, and a top knee from 3.35 V at 99 % to 3.40 V at 100 %. The
+ * 3.65 V charge cut-off is not an open-circuit voltage; it belongs to charger settings and terminal polarization.
+ * Typical cell data, not a specific manufacturer's.
  */
+// Rested 4-cell (12.8 V nominal) LFP table, 10.0–13.6 V, normalized to the empty–full span.
+const LFP_REST_12V: [number, number][] = [[0, 10], [0.09, 12], [0.14, 12.5], [0.17, 12.8], [0.2, 12.9], [0.3, 13], [0.4, 13.1], [0.7, 13.2], [0.9, 13.3], [0.99, 13.4], [1, 13.6]];
 const OCV_CURVES: Record<string, [number[], number[]]> = {
   linear: [[0, 1], [0, 1]],
   nmc: [[0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.375, 0.458, 0.517, 0.6, 0.708, 0.833, 1]],
-  lfp: [[0, 0.05, 0.1, 0.2, 0.5, 0.8, 0.95, 1], [0, 0.545, 0.636, 0.682, 0.718, 0.745, 0.773, 1]],
+  lfp: [LFP_REST_12V.map(([s]) => s), LFP_REST_12V.map(([, v]) => (v - 10) / 3.6)],
 };
 const ocvCurve = (c: Component) => OCV_CURVES[String(c.props.chemistry ?? 'linear')] ?? OCV_CURVES.linear;
 /** Open-circuit voltage at a state of charge and its slope dE/ds there (the segment above s; at full, the last one). */

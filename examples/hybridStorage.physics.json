@@ -78,7 +78,7 @@
         "initialSOC": 50,
         "cells": 16,
         "emptyVoltage": 40,
-        "fullVoltage": 58.4,
+        "fullVoltage": 54.4,
         "internalResistance": 0.0032,
         "chemistry": "lfp",
         "coulombicEfficiency": 99.5,

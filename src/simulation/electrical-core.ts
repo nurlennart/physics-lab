@@ -17,7 +17,7 @@ export interface ElectricalReading {
   hybrid?: import("./hybrid").HybridReading;
   /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
   stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
-  solar?: { trackingActive?: boolean; curtailed?: boolean; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
+  solar?: { trackingActive?: boolean; achievablePower?: number; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
   inputPower?: number;
   /**
    * DC storage: a capacitor's current into its dielectric (excluding leakage), an inductor's voltage across its inductance,
@@ -138,7 +138,6 @@ export interface ElectricalRuntime {
   devices?: { hybrid?: Record<string, import("./hybrid").HybridState>; solar?: Record<string, import("./solar").SolarState>; batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
   /** Controlled AC branch currents into terminal a. These never establish a voltage reference. */
   acInjections?: Record<string, [number, number]>;
-  chargingTargets?: Record<string, number>;
   /** Ephemeral converter iteration hook; never retained in Devices or serialized. */
   coupling?: {
     prepare: (last: ElectricalResult | undefined, models: NonNullable<ElectricalRuntime['sourceModels']>, failures: Record<string, boolean>) => void;

@@ -243,7 +243,14 @@ Q·ds/dt = η·I (charging) or I (discharging) − I_sd,   I_sd = Q·r_sd/30 d
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Linear (lead-acid-like) | 0 | | | | | 0.5 | | | | 1 |
 | Li-ion NMC (3.0–4.2 V per cell) | 0 | 0.375 | 0.458 | 0.517 | 0.6 | | 0.708 | 0.833 | | 1 |
-| LiFePO₄ (2.5–3.65 V per cell) | 0 | 0.545 | 0.636 | 0.682 | | 0.718 | | 0.745 | 0.773 | 1 |
+
+LiFePO₄ uses a rested open-circuit table, 2.5–3.40 V per cell. Below is the 4-cell (12.8 V nominal) form; f = (V − 10)/3.6:
+
+| s | 0 | 0.09 | 0.14 | 0.17 | 0.2 | 0.3 | 0.4 | 0.7 | 0.9 | 0.99 | 1 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Rested OCV, 4 cells (V) | 10.0 | 12.0 | 12.5 | 12.8 | 12.9 | 13.0 | 13.1 | 13.2 | 13.3 | 13.4 | 13.6 |
+
+The table is a published resting-voltage chart ([Footprint Hero](https://footprinthero.com/lifepo4-battery-voltage-charts), labeled open-circuit at rest), not a cell manufacturer's measurement; Victron publishes no OCV curve for its Lithium Battery Smart. Its integral is 12.90 V × capacity (1290 Wh for 100 Ah, against the reference battery's 1280 Wh nominal energy). The 3.65 V per cell (14.6 V) that LFP reaches at the end of a charge is a terminal voltage under charging current, not an open-circuit voltage. Full rest therefore lies between the reference float (13.5 V) and absorption (14.2 V) settings: absorption charges to full, and float holds about 99.5 %.
 
 **Charge acceptance and self-discharge.** On charge only the coulombic efficiency η of the charge is stored (default 97 %; lead-acid 85–95 %, Li-ion above 99 %); the rest drives side reactions. A charged battery loses r_sd per 30 days (default 3 %/month) through an internal current. Both losses heat the pack. At full the battery accepts only the trickle current that offsets its self-discharge (an ideal charge termination); at empty, self-discharge stops.
 
