@@ -63,7 +63,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
  for(const c of converters) {
   const s=state(c),g=grid.get(c.id)!,v=dcVoltage(result,c),battery=p.components.find(b=>b.id===c.props.batteryTarget);
   const ok=result.readings[e.ids.get(c.id)![0]]?.voltageValid!==false&&c.props.enabled!==false&&!failed[c.id]&&!s.fault&&(runtime.temperatures?.[c.id]??20)<=prop(c,'maxTemperature')&&v>=prop(c,c.kind==='hybridInverter'&&g.connected?'minVoltage':s.mode==='off'||s.mode==='DC voltage lockout'?'restartVoltage':'minVoltage')&&v<=prop(c,'maxInputVoltage');
-  dcTargets[c.id]=c.kind==='gridInverter'&&g.connected&&ok?Math.max(prop(c,'minVoltage'),Math.min(s.target,.85*v)):s.target;
+  dcTargets[c.id]=c.kind==='gridInverter'&&g.connected&&ok?Math.max(prop(c,'minVoltage'),(s.target>.98*v?.85*v:s.target)):s.target;
   enabled.set(c.id,ok);activePower[c.id]=c.props.standby&&g.connected?-prop(c,'standbyPower'):0;dcDemand[c.id]=0;currentCap[c.id]=prop(c,'maxDCDischargeCurrent');
   const canDischarge=!battery || (runtime.devices?.batteries[battery.id]??prop(battery,'initialSOC')/100)>1e-14 && v>prop(battery,'bmsLowVoltage',0) && (runtime.temperatures?.[battery.id]??20)>=prop(battery,'minDischargeTemperature',-Infinity);
   const backup=canDischarge&&c.kind==='hybridInverter'&&!g.connected&&ok&&!c.props.standby&&s.outageElapsed+1e-10>=prop(c,'transferTime');
@@ -74,7 +74,9 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   if(c.kind==='hybridInverter'){failures[parts[2]]=failures[parts[3]]=!g.connected;}
   failures[parts[0]]=!enabled.get(c.id) || c.kind==='gridInverter' && (!g.connected || c.props.standby===true);
   failures[parts[1]]=!(g.connected&&ok||backup);
-  if(c.kind==='hybridInverter'&&battery&&Math.abs(prop(battery,'cells',0)*3.2-48)>16&&prop(c,'minVoltage')>=38)throw Error(`${c.name}: 48 V configuration requires a compatible external battery; selected pack is ${prop(battery,'cells')*3.2} V nominal.`);
+  // LFP packs: 3.2 V per cell. A generic battery has no cell count; use its mid-range OCV.
+  const nominal=battery?battery.props.cells?prop(battery,'cells')*3.2:(prop(battery,'emptyVoltage')+prop(battery,'fullVoltage'))/2:0;
+  if(c.kind==='hybridInverter'&&battery&&Math.abs(nominal-48)>16&&prop(c,'minVoltage')>=38)throw Error(`${c.name}: 48 V configuration requires a compatible external battery; selected pack is ${+nominal.toFixed(2)} V nominal.`);
  }
  let error=Infinity;
  const prepare = (last: ElectricalResult | undefined, networkModels: NonNullable<ElectricalRuntime['sourceModels']>, networkFailures: Record<string, boolean>) => {
@@ -208,7 +210,8 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
    const converterI=y.currentPhasor??[0,0],outI:Cx=[contactI[0]-converterI[0],contactI[1]-converterI[1]],out=power(outputV,outI);
    const h:HybridReading={targetVoltage:c.kind==='gridInverter'&&enabled.get(c.id)&&g.connected?dcTargets[c.id]:undefined,acInputPower:c.kind==='hybridInverter'?power(phasor(result,c,'ga','gb'),contactI)[0]:y.power,mode:faults.get(c.id)||modes.get(c.id)!,gridValid:g.valid,connected:g.connected,backupAvailable:magnitude(outputV)>1&&c.kind==='hybridInverter',gridVoltage:g.voltage,gridFrequency:g.frequency,gridPhase:g.phase,gridPower:flow?.[0]??(c.kind==='hybridInverter'?power(phasor(result,c,'ga','gb'),contactI)[0]:y.power),gridReactive:flow?.[1]??0,dcPower:x.power,acPower:-y.power,outputPower:out[0],conversionLoss:loss,transferLoss,overload:-y.power>hybridRatedPower(c,runtime.temperatures?.[c.id]??20)||Math.hypot(y.power,y.reactivePower??0)>prop(c,'ratedApparentPower'),fault:faults.get(c.id)==='overload'||faults.get(c.id)==='transfer overcurrent'?faults.get(c.id)!:'',soc};
    if(g.connected&&h.dcPower< -1e-6) h.mode=s.absorption>=prop(c,'absorptionTime')?'grid charging · float':vChargeStage(c,x.voltage);
-   if(g.connected&&Math.hypot(h.gridPower,h.gridReactive)>prop(c,'acInputCurrentLimit')*g.voltage+1e-5) h.mode='grid import limit exceeded';
+   // The input current limit applies to import; export is bounded separately by exportLimit.
+   if(g.connected&&h.gridPower>0&&Math.hypot(h.gridPower,h.gridReactive)>prop(c,'acInputCurrentLimit')*g.voltage+1e-5) h.mode='grid import limit exceeded';
    reading={...x,power:loss+transferLoss,heatPower:loss+transferLoss,reactivePower:-(y.reactivePower??0),secondaryVoltage:magnitude(outputV),secondaryCurrent:magnitude(outI),hybrid:h,solar:{inputPower:Math.max(0,x.power)+Math.max(0,y.power),outputPower:Math.max(0,-x.power)+Math.max(0,-y.power),efficiency:Math.max(Math.abs(x.power),Math.abs(y.power))>1e-9?Math.min(Math.abs(x.power),Math.abs(y.power))/Math.max(Math.abs(x.power),Math.abs(y.power)):0,mode:h.mode,running:enabled.get(c.id)===true}};
   }
   result.readings[c.id]=reading;

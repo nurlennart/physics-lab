@@ -5,6 +5,7 @@ import { Simulation } from './engine';
 import { solveElectrical } from './electrical';
 import { Builder } from './scaling-validation';
 import { initialHybridState } from './hybrid';
+import { pvModel } from './solar';
 import { parseProject,serializeProject } from './projects';
 import { captureAssembly,insertAssembly } from '../editor/assemblies';
 import { readProbe } from './measurements';
@@ -100,4 +101,23 @@ it('reports a grid current limit exceeded by reactive demand alone',()=>{
  const l=b.add('inductor',{inductance:.1,resistance:.1,tempCoefficient:0,ratedCurrent:20});b.wire(meter,'b',l,'a');b.wire(grid,'b',l,'b');
  const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.1);const flow=s.electrical.readings[meter.id].hybrid!;expect(flow.gridPower).toBeLessThan(230);expect(Math.hypot(flow.gridPower,flow.gridReactive)).toBeGreaterThan(230);
  expect(s.electrical.readings[hybrid.id].hybrid!.mode).toBe('grid import limit exceeded');expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
+it('accepts a generic 48 V battery as the SOC measurement target',()=>{
+ const {b,hybrid}=hybridRig(),generic=b.add('battery',{capacityAh:100,emptyVoltage:44,fullVoltage:54,initialSOC:60,internalResistance:.01,maxCurrent:200,maxPower:10000});
+ hybrid.props.batteryTarget=generic.id;expect(new Simulation(b.p).error).toBeNull();
+ Object.assign(generic.props,{emptyVoltage:11,fullVoltage:13});expect(new Simulation(b.p).error).toMatch(/selected pack is 12 V nominal/);
+});
+it('does not report the import current limit while exporting',()=>{
+ const {b,hybrid,meter}=hybridRig();Object.assign(hybrid.props,{energyMode:'power',activeSetpoint:1600,allowExport:true,acInputCurrentLimit:1});const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.1);
+ expect(s.electrical.readings[meter.id].hybrid!.gridPower).toBeLessThan(-230);expect(s.electrical.readings[hybrid.id].hybrid!.mode).toBe('grid connected');expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
+it('times absorption for any AC charging, not only grid charging',()=>{
+ const {b,battery,hybrid}=hybridRig();Object.assign(battery.props,{initialSOC:95,capacityAh:.1});Object.assign(hybrid.props,{energyMode:'power',activeSetpoint:-1000,gridCharge:false,absorptionVoltage:54.5,floatVoltage:54.2,absorptionTime:1,rebulkVoltage:53.5});
+ const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,1.2);expect(s.devices.hybrid[hybrid.id].absorption).toBeGreaterThan(.5);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
+it('tracks a cold PV module to its maximum power point above 85% of Voc',()=>{
+ const b=new Builder(),pv=b.add('solarPanel',{cellTemperature:-10}),grid=b.add('sourceAC',{voltage:230,maxCurrent:63}),inv=b.add('gridInverter',{reconnectDelay:.01}),load=b.add('resistor',{resistance:52.9,ratedPower:2000});
+ b.wire(pv,'a',inv,'a');b.wire(pv,'b',inv,'b');b.wire(grid,'a',inv,'ga');b.wire(grid,'b',inv,'gb');b.wire(grid,'a',load,'a');b.wire(grid,'b',load,'b');
+ const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,8,.05);const x=s.electrical.readings[pv.id].solar!;
+ expect(x.mppVoltage!).toBeGreaterThan(.86*pvModel(pv).voc);expect(x.outputPower).toBeGreaterThan(.9995*x.mppPower!);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
 });

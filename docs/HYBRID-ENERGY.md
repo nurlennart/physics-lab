@@ -102,6 +102,19 @@ The one-hour run's absolute global residual was **5.50412 µJ** (relative **5.81
 
 Two integration issues found during development were also corrected: grid-current violation reporting now uses apparent power, including reactive demand; and the explicit AC heat channel includes harmonic ESR/winding losses accumulated after the fundamental solve. The existing resonant-capacitor drive test passes its original `1e-8` conservation bound, with an additional heat-channel assertion.
 
+### Follow-up audit — 2026-10-14
+
+The datasheet values cited above and in [SOLAR-ENERGY.md](SOLAR-ENERGY.md) were re-checked against the linked manufacturer PDFs and manual pages: Trina TSM-450NEG9R.28 (STC and NOCT rows, coefficients, NOCT 43 °C, 1762 × 1134 mm), Phoenix 24/500 (500 VA / 400 W, 350 W at 40 °C, 900 W peak, 90%, 6.5 W, ECO 1.5 W, 18.6 / 21.8 V, 18.4–34.0 V), MultiPlus-II 48/3000/35-32 (38–66 V, 3000 VA, 2400 / 2200 / 1700 W, 5500 W, 95%, 11 / 7 / 2 W, 35 A, 32 A, 187–265 V, 45–65 Hz), SmartSolar MPPT 100/20 and Lithium Battery Smart 12.8/100 and 25.6/100. All match. The Phoenix datasheet also publishes 1.25%/°C derating above 40 °C, and the battery datasheet publishes capacity at 0 and −20 °C. Neither is modeled, as stated above.
+
+Four defects were corrected:
+
+1. **Generic battery as SOC target.** The 48 V compatibility check computed nominal voltage as `cells × 3.2 V`. A generic `battery`, which the Inspector and integrity rules accept as `batteryTarget`, has no cell count, so every such battery was rejected as "0 V nominal". A generic battery now uses its mid-range OCV, (empty + full)/2.
+2. **Import limit reported during export.** Since the apparent-power change, the "grid import limit exceeded" mode compared |S| with the input current limit regardless of direction. An export above that current was therefore labeled as an import violation. The check now applies only while the PCC imports real power. Export is bounded by `exportLimit` and the transfer rating.
+3. **Grid-inverter tracking bound.** The DC tracking target was capped at 0.85 × the open-circuit voltage. For the reference module, Vmp/Voc is 0.843 at 25 °C and rises to 0.857–0.862 at −10 °C, so in cold sunlight the cap held the operating point below the MPP (about 0.2% power loss at −10 °C, 1000 W/m²). Tracking may now reach 0.98 × Voc, the bound the MPPT controller already uses. A target above that bound cannot be reached, for example after sunlight weakens. It restarts at 0.85 × Voc, a fractional open-circuit estimate that keeps a weak module above the inverter's idle demand.
+4. **Absorption timer gated on grid charging.** The hybrid charger counted absorption time only when grid charging or keep-charged mode was selected. A battery charged from AC-coupled PV surplus, or by a negative power setpoint, never reached float. Any regulated AC charging outside standby now counts.
+
+Regressions are in `hybrid-protection.test.ts`, and each one fails on the previous code.
+
 Thermal derating uses the simulated lumped component temperature as a conservative proxy for the datasheet's ambient-temperature rating points. This mapping and the thermal capacitance/loss parameters are educational assumptions, not a calibrated manufacturer internal-temperature controller.
 
 The subsequent delivery commit updates only this audit document and generated scaling reports; implementation, tests, dependencies and release-gate scripts are identical to the exact tested commit above. The campaign refreshed reports during the gate, so its automatic clean-tree deployment record was not written. A future deployment will run its normal verification gate.
