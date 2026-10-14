@@ -95,3 +95,9 @@ it.each(['hybrid','standalone'] as const)('starts an existing AC circulator thro
 it('rejects a three-phase induction motor on a single-phase backup output',()=>{
  const {b,grid,hybrid}=hybridRig();grid.props.enabled=false;const motor=b.add('inductionMotor');b.wire(hybrid,'oa',motor,'a');b.wire(hybrid,'ob',motor,'b');const s=new Simulation(b.p);for(let k=0;k<10&&!s.error;k++)s.step(.01);expect(s.error).toMatch(/three-phase.*supply/);
 });
+it('reports a grid current limit exceeded by reactive demand alone',()=>{
+ const {b,battery,hybrid,grid,meter,local,backup}=hybridRig();battery.props.initialSOC=20;hybrid.props.acInputCurrentLimit=1;local.props.resistance=52900;backup.props.resistance=52900;
+ const l=b.add('inductor',{inductance:.1,resistance:.1,tempCoefficient:0,ratedCurrent:20});b.wire(meter,'b',l,'a');b.wire(grid,'b',l,'b');
+ const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.1);const flow=s.electrical.readings[meter.id].hybrid!;expect(flow.gridPower).toBeLessThan(230);expect(Math.hypot(flow.gridPower,flow.gridReactive)).toBeGreaterThan(230);
+ expect(s.electrical.readings[hybrid.id].hybrid!.mode).toBe('grid import limit exceeded');expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
