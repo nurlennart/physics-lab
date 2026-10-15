@@ -230,6 +230,7 @@ function face(c: Component): Face {
         detail: si(prop(c, "inductance"), "H"),
       };
     case "battery": case "lfpBattery": {
+      // Terminal power follows the load convention: positive is energy into the pack (charging).
       const soc = s.devices.batteries[c.id] ?? prop(c, "initialSOC") / 100, p = r?.power ?? 0;
       return {
         symbol: <g>
@@ -238,7 +239,7 @@ function face(c: Component): Face {
           <Gauge x={57} y={90} w={60} value={soc} color={soc < 0.15 ? T.warning : T.ok} />
         </g>,
         hero: `${(soc * 100).toFixed(1)} %`,
-        detail: failed ? "Disconnected" : started && Math.abs(p) > 0.05 ? `${p < 0 ? "Charging" : "Discharging"} ${watts(Math.abs(p))}` : c.kind === "lfpBattery" ? `${(prop(c, "fullVoltage") * 0.9412).toFixed(1)} V · ${prop(c, "capacityAh")} Ah` : `${prop(c, "capacityAh")} Ah`,
+        detail: failed ? "Disconnected" : started && Math.abs(p) > 0.05 ? `${p > 0 ? "Charging" : "Discharging"} ${watts(Math.abs(p))}` : c.kind === "lfpBattery" ? `${(prop(c, "fullVoltage") * 0.9412).toFixed(1)} V · ${prop(c, "capacityAh")} Ah` : `${prop(c, "capacityAh")} Ah`,
         tone: failed ? "fault" : undefined, pins: pm,
       };
     }
