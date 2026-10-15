@@ -79,6 +79,8 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   if(c.kind==='hybridInverter'&&battery&&Math.abs(nominal-48)>16&&prop(c,'minVoltage')>=38)throw Error(`${c.name}: 48 V configuration requires a compatible external battery; selected pack is ${+nominal.toFixed(2)} V nominal.`);
  }
  let error=Infinity;
+ /** The pack's BMS blocks discharge: empty, or at or below its low-voltage limit. The converter's DC port may then only charge. */
+ const dischargeBlocked=(battery:Component|undefined,v:number)=>!!battery&&((runtime.devices?.batteries[battery.id]??prop(battery,'initialSOC')/100)<=1e-14||v<=prop(battery,'bmsLowVoltage',0));
  const prepare = (last: ElectricalResult | undefined, networkModels: NonNullable<ElectricalRuntime['sourceModels']>, networkFailures: Record<string, boolean>) => {
   if(last) result=last;
   for(const c of converters) {
@@ -86,8 +88,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
    if(c.kind==='gridInverter')models[dc]={voltage:Math.min(dcTargets[c.id],prop(c,'maxInputVoltage')-.1),resistance:0,lower:0,upper:currentCap[c.id]};
    else {
     const battery=p.components.find(b=>b.id===c.props.batteryTarget);
-    const inhibited=battery&&((runtime.devices?.batteries[battery.id]??prop(battery,'initialSOC')/100)<=1e-14||v<=prop(battery,'bmsLowVoltage',0));
-    const i=inhibited?Math.min(0,dcDemand[c.id]/v):dcDemand[c.id]/v;
+    const i=dischargeBlocked(battery,v)?Math.min(0,dcDemand[c.id]/v):dcDemand[c.id]/v;
     const chargeVoltage=s.absorption>=prop(c,'absorptionTime')?prop(c,'floatVoltage'):prop(c,'absorptionVoltage');
     models[dc]=i<0?{voltage:chargeVoltage,resistance:0,lower:i,upper:0}:i>0
       ?{voltage:0,resistance:v*v/dcDemand[c.id],lower:0,upper:Infinity}
@@ -171,8 +172,16 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
       if(soc!==null&&soc>=1-1e-12)command=Math.max(command,-prop(c,'idlePower')/(prop(c,'chargeEfficiency')/100));
       command=Math.max(command,-prop(c,'maxChargeCurrent')*v/(prop(c,'chargeEfficiency')/100));
      }
+     // While the BMS blocks discharge the DC port only charges (prepare): the command may not draw on DC at all, so the
+     // idle electronics are supplied from the AC input, as for a full pack. Asking for discharge left a permanent
+     // power residual between the command and the charge-only port.
+     const blocked=dischargeBlocked(target,v);
+     if(blocked)command=Math.min(command,-inverterLoss(c,0,Math.abs(y.reactivePower??0))/(prop(c,'chargeEfficiency')/100));
      const maxS=Math.min(prop(c,'ratedApparentPower'),prop(c,'maxACCurrent')*g.voltage),maxP=Math.min(rated,maxS,prop(c,'maxDCDischargeCurrent')*v*.9);
-     setCommand(c.id,Math.max(-maxP,Math.min(maxP,command)));
+     const bounded=Math.max(-maxP,Math.min(maxP,command));
+     // The charge-only bound is exact, not a PCC measurement: it is enforced without the measurement deadband, which
+     // would otherwise leave the command a fraction of a microwatt on the discharge side of the blocked port.
+     if(blocked&&activePower[c.id]>bounded)change(activePower,c.id,bounded);else setCommand(c.id,bounded);
     }
    }
    // AC power/current iteration must converge as well as the DC converter boundary.

@@ -164,3 +164,19 @@ it.each(['grid side','backup line'] as const)('reconnects a full DC-coupled syst
  expect(Math.abs(x[meter.id].hybrid!.gridPower)).toBeLessThan(1e-4);expect(x[hybrid.id].hybrid!.acPower).toBeCloseTo(x[load.id].power,3);expect(x[mppt.id].solar!.outputPower).toBeGreaterThan(x[load.id].power);
  expect(Math.abs(x[battery.id].current)).toBeLessThan(1e-6);expect(s.devices.batteries[battery.id]).toBe(1);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
 },60000);
+// A pack below its BMS discharge limit (an empty or nearly empty 16-cell LFP rests below 44.8 V) blocks the converter's
+// discharge direction. The ESS command must not ask for discharge (or for idle losses from DC) that the port cannot
+// deliver: the coupled solve then had a permanent relative residual of 1 and stopped the experiment.
+it.each([0,3,5])('stays connected and recovers by charging when started at %s% SOC below the BMS discharge limit',soc=>{
+ const {b,battery,hybrid}=hybridRig();battery.props.initialSOC=soc;Object.assign(hybrid.props,{gridCharge:true});const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.2);
+ expect(s.electrical.readings[hybrid.id].hybrid!.mode).toMatch(/grid charging/);expect(s.electrical.readings[battery.id].power).toBeGreaterThan(0);
+ expect(s.devices.batteries[battery.id]).toBeGreaterThan(soc/100);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
+it.each([0,5])('self-consumption idles without discharging at %s% SOC below the BMS discharge limit',soc=>{
+ const {b,battery,hybrid}=hybridRig();battery.props.initialSOC=soc;const s=new Simulation(b.p);expect(s.error).toBeNull();run(s,.2);
+ expect(s.electrical.readings[battery.id].power).toBeGreaterThanOrEqual(-1e-9);expect(s.devices.batteries[battery.id]).toBeGreaterThanOrEqual(soc/100-1e-12);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
+it.each([0,5])('hybrid storage starter with PV charges a pack started at %s% SOC',soc=>{
+ const p=hybridStarter('hybridStorage');const battery=p.components.find(c=>c.kind==='lfpBattery')!;battery.props.initialSOC=soc;const s=new Simulation(p);expect(s.error).toBeNull();run(s,2,1/60);
+ expect(s.electrical.readings[battery.id].power).toBeGreaterThan(0);expect(s.devices.batteries[battery.id]).toBeGreaterThan(soc/100);expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+});
