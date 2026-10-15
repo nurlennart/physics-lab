@@ -29,6 +29,15 @@ function freeze<T>(value: T): T {
   }
   return value;
 }
+/** The project without schematic layout (component position/rotation, wire routes, room plan position). */
+function physicalConfiguration(p: Project) {
+  return JSON.stringify({
+    ...p,
+    components: p.components.map(({ x, y, rotation, ...c }) => c),
+    connections: p.connections.map(({ route, ...w }) => w),
+    thermalSpaces: p.thermalSpaces?.map(({ x, y, ...r }) => r),
+  });
+}
 export const DT = 1 / 60;
 /** Largest step the adaptive integrator may take (thermal/electrical/control systems only). */
 export const MAX_ADAPTIVE_STEP = 30;
@@ -276,9 +285,15 @@ export class Simulation {
       return false;
     }
     this.lockedChallenge ??= project.challenge;
+    // Schematic placement has no physical meaning. At t = 0 the state is rebuilt from the
+    // configuration alone, so a layout-only edit keeps it instead of re-solving on every
+    // drag frame. A live refresh also re-samples controls at the current instant (recorded
+    // and replayed), so it keeps the full path.
+    const layoutOnly = this.time === 0 && !this.error && physicalConfiguration(this.acceptedProject) === physicalConfiguration(project);
     this.acceptedProject = structuredClone(project);
     this.project = freeze(structuredClone(project));
     this.ownedProject = this.project;
+    if (layoutOnly) { bindSpaceTemperatures(this.project, this.spaceTemperatures); return true; }
     if (this.time === 0) { this.spaceTemperatures = Object.fromEntries((this.project.thermalSpaces ?? []).map(r => [r.id, r.initialTemperature])); this.spaceReadings = {}; this.roomStored = 0; }
     bindSpaceTemperatures(this.project, this.spaceTemperatures);
     this.electricalKey = "";

@@ -368,3 +368,26 @@ describe("property-based stability across scales", () => {
     }
   });
 });
+
+describe("layout-only edits", () => {
+  const moved = (s: Simulation, dx: number) => ({ ...s.project,
+    components: s.project.components.map((c, i) => (i === 0 ? { ...c, x: c.x + dx, rotation: (c.rotation + 90) % 360 } : c)),
+    connections: s.project.connections.map((w, i) => (i === 0 ? { ...w, route: [{ x: 40, y: 40 }] } : w)) });
+  it("keep the solved state instead of re-initializing and re-solving", () => {
+    const s = new Simulation(starter("hybridStorage" as never));
+    const { multiphysics, devices, electrical } = s;
+    expect(s.refresh(moved(s, 20)), s.error ?? "").toBe(true);
+    expect(s.multiphysics).toBe(multiphysics); expect(s.devices).toBe(devices); expect(s.electrical).toBe(electrical);
+    expect(s.project.components[0].x).toBe(moved(s, 0).components[0].x);
+    const panel = s.project.components.find((c) => c.kind === "solarPanel")!;
+    expect(s.refresh(withProperty(s.project, panel, "irradiance", 500))).toBe(true);
+    expect(s.multiphysics).not.toBe(multiphysics);
+  });
+  it("re-sample controls on a live layout edit (recorded inputs replay unchanged)", () => {
+    const s = new Simulation(starter("hybridStorage" as never));
+    for (let i = 0; i < 30; i++) expect(s.step(), s.error ?? "").toBe(true);
+    const { electrical, time } = s;
+    expect(s.refresh(moved(s, -20))).toBe(true);
+    expect(s.time).toBe(time); expect(s.electrical).not.toBe(electrical);
+  });
+});
