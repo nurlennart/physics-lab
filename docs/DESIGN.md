@@ -30,6 +30,17 @@ Each colour family has four steps: base (`--hydraulic`, lines and fills), `-text
 
 Radii `--r-sm` 6, `--r-md` 9, `--r-lg` 12 px. Touch targets at least 32 px on desktop, 44 px on touch layouts.
 
+## Schematic modules
+
+A module on the canvas is a compact instrument housing, not a card. It answers four questions in a fixed order and leaves everything else to the Inspector. `src/components/ModuleFace.tsx` draws the face; `Workspace.tsx` draws the frame and the terminals.
+
+1. **What is it?** A technical symbol (IEC 60617 style for electrical parts, ISA bubbles for instruments, IEC 61131 function blocks for logic) in neutral ink (`n-14`). Conductors entering the symbol keep their domain colour; a symbol part is coloured only when it is physically active (a lit filament, an energised heating stage, a turning impeller).
+2. **Where do I connect it?** Exactly the ports of the catalog definition, at the positions `editor/geometry.ts` gives them; a face never adds, moves or implies a terminal. Labels (12 px mono) are drawn where polarity or function matters (`+ −`, `L N`, `BAT+`, `IN L`/`OUT L`, `A1 A2`, `EN`, `SPD`). Multi-terminal converters use a terminal strip: a short lead at the edge with the label on the terminal line. Labels of terminals entering from above sit beside the stub outside the body, since the name band is inside.
+3. **What is it doing?** The status lamp in the name band: `ok` operating, grey idle or ready, `warning` outside rating or degraded (lockout, sensor fault, overflow), `fault` failed, tripped or latched (`moduleStatus`). Its tooltip names the state. A sentence-case state line repeats it in words where the state is the point (`Bulk`, `Grid connected`, `Tripped / latched`).
+4. **Most important measurement?** One hero value (13 px mono) and at most one state or detail line (12 px sans). Before the first Run they show the rating or setting instead of operating values. Readouts never overlap a terminal label: they are fitted to the free span between edge labels and shortened with an ellipsis (full text in the tooltip).
+
+Layout: 31 px name band (double-click renames) with the name in the domain colour and the lamp at the right; the symbol on the terminal axis; readouts in the bottom rows (moved up one row when terminals enter from below). Module footprints and terminal coordinates are unchanged by face design, so routes and saved projects are unaffected.
+
 ## Layout
 
 - **Top bar:** brand, File, project name (truncates), mode badge; run controls and clock in the centre; Open, Save, Help on the right.

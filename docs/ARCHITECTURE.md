@@ -53,7 +53,7 @@ Physics Lab is a static single-page application (React 19, TypeScript, Vite). Th
 
 ### `src/components/`: user interface
 
-`Workspace.tsx` (schematic SVG), `PhysicalView.tsx` (spatial view, tools and inspector), `Inspector.tsx` and `ParameterEditor.tsx`, `Library.tsx`, `Telemetry.tsx` (charts, events, energy balance), `Challenges.tsx` and `Learning.tsx` (assignments, example shelf, guidebooks), `Models.tsx` (in-app model reference), `ErrorBoundary.tsx` (per-pane recovery). `src/theme/` holds the design tokens; see [DESIGN.md](DESIGN.md).
+`Workspace.tsx` (schematic SVG) and `ModuleFace.tsx` (module symbols, status lamps and readouts), `PhysicalView.tsx` (spatial view, tools and inspector), `Inspector.tsx` and `ParameterEditor.tsx`, `Library.tsx`, `Telemetry.tsx` (charts, events, energy balance), `Challenges.tsx` and `Learning.tsx` (assignments, example shelf, guidebooks), `Models.tsx` (in-app model reference), `ErrorBoundary.tsx` (per-pane recovery). `src/theme/` holds the design tokens; see [DESIGN.md](DESIGN.md).
 
 ## Clock and editor loop
 

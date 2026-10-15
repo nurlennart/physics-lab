@@ -1,4 +1,3 @@
-import { effectiveAmbient } from "../simulation/environment";
 import { T } from "../theme/tokens";
 import {
   useState,
@@ -41,525 +40,9 @@ import {
   routePoints,
 } from "../editor/geometry";
 import { nodeVoltage } from "../simulation/electrical";
+import { ModuleFace, hasStarted, fitName, moduleStatus, modulePins } from "./ModuleFace";
 export { dimensions, portPoint } from "../editor/geometry";
-/**
- * Before the first Run the experiment is ready but not running: the canvas shows no operating values
- * (currents, powers, flows, speeds) and nothing glows. The engine still holds the switch-on solution.
- */
-export const hasStarted = () => simulation.time > 0;
-/** Module names are 600 12 px IBM Plex Mono (about 7 px per character): shorten to the name band with an ellipsis. */
-export function fitName(name: string, width: number) {
-  const fits = Math.floor((width - 18) / 7);
-  return name.length <= fits ? name : `${name.slice(0, fits - 1).trimEnd()}…`;
-}
-function CircuitSymbol({ c }: { c: Component }) {
-  const w = dimensions(c).w,
-    r = simulation.electrical.readings[c.id],
-    power = hasStarted() ? r?.power ?? 0 : 0;
-  const failed = simulation.failed[c.id];
-  if (c.kind === 'electricBoiler') {
-    // Everything stays below the 31 px name band; the mains stubs end at the module edge.
-    const state = simulation.multiphysics.boilers[c.id], water = simulation.fluidTemperatureMeasurement(c.id) ?? prop(c, 'initialTemperature');
-    const stages = hasStarted() ? state?.stages ?? 0 : 0;
-    return <g>
-      <path d="M0 66H40M134 66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
-      <rect x="40" y="39" width="94" height="52" rx="7" fill={T.n5} stroke={state?.fault ? T.faultText : T.thermalText} strokeWidth="2" />
-      {[0, 1, 2].map(i => <path key={i} d={`M${66 + 21 * i} 44v8l-5 5 10 7-10 7 5 5v8`} fill="none" stroke={i < stages ? T.electricalText : T.n11} strokeWidth="2" />)}
-      <text x="87" y="109" textAnchor="middle" className={`symbol-readout ${state?.fault ? 'fault' : 'thermal'}`}>{state?.fault ? `TRIPPED · ${water.toFixed(1)} °C` : `${water.toFixed(1)} °C water`}</text>
-      <text x="87" y="124" textAnchor="middle" className="symbol-readout dim">{hasStarted() ? `${stages}/3 stages · ${(power / 1000).toFixed(2)} kW` : 'TH3000 9 · external pump'}</text>
-    </g>;
-  }
-  if (c.kind === 'panelRadiator') {
-    // Cells in flow order (front panel, then rear), shaded by their excess over the room air.
-    const cells = (simulation.multiphysics.pipeCells[c.id] ?? []).map(t => t - 273.15), air = effectiveAmbient(simulation.project, c), h = simulation.multiphysics.hydraulic.readings[c.id];
-    const mean = cells.length ? cells.reduce((a, t) => a + t, 0) / cells.length : prop(c, 'initialTemperature'), flowing = hasStarted() && Math.abs(h?.flow ?? 0) >= 1e-12;
-    const width = 114 / Math.max(1, cells.length);
-    return <g>
-      <path d="M0 66H20V46H30M144 90H154V66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
-      <rect x="30" y="39" width="114" height="58" rx="3" fill={T.n5} />
-      {cells.map((t, i) => <rect key={i} x={30 + i * width} y="39" width={width} height="58" fill={T.thermal} fillOpacity={Math.max(0.04, Math.min(0.85, (t - air) / 60))} />)}
-      {cells.map((_, i) => i && i % 2 === 0 ? <path key={i} d={`M${30 + i * width} 43V93`} stroke={T.n9} strokeWidth="0.75" /> : null)}
-      <rect x="30" y="39" width="114" height="58" rx="3" fill="none" stroke={T.thermalText} strokeWidth="1.5" />
-      <text x="87" y="112" textAnchor="middle" className="symbol-readout thermal">{flowing && h?.supplyTemperature !== undefined && h.returnTemperature !== undefined ? `${(h.supplyTemperature - 273.15).toFixed(1)} → ${(h.returnTemperature - 273.15).toFixed(1)} °C` : `${mean.toFixed(1)} °C water`}</text>
-      <text x="87" y="126" textAnchor="middle" className="symbol-readout dim">{hasStarted() ? `${(h?.duty ?? 0).toFixed(0)} W to room` : `Φ₅₀ ${prop(c, 'ratedOutput').toFixed(0)} W · n ${prop(c, 'exponent').toFixed(3)}`}</text>
-    </g>;
-  }
-  if (['gridInverter', 'hybridInverter', 'gridMeter'].includes(c.kind)) return <g>
-    <rect x="24" y="35" width="126" height="60" rx="8" stroke={T.electricalText} fill="none" strokeWidth="2" />
-    <text x="87" y="59" textAnchor="middle" className="scale-label">{c.kind === 'gridMeter' ? 'PCC · P / Q' : 'DC ↔ AC'}</text>
-    <text x="87" y="80" textAnchor="middle" className="scale-label">{hasStarted() ? `${(r?.hybrid?.gridPower ?? 0).toFixed(0)} W grid` : c.kind === 'hybridInverter' ? 'Grid + backup' : 'Grid following'}</text>
-    <text x="87" y="118" textAnchor="middle" className="scale-label">{hasStarted() ? r?.hybrid?.mode ?? 'off' : 'External source required'}</text>
-  </g>;
-  if (c.kind === 'solarPanel') return <g>
-    <path d="M0 66H42M132 66H174" stroke={T.electricalText} strokeWidth="3" />
-    <rect x="42" y="38" width="90" height="56" rx="2" fill={T.n5} stroke={T.electricalText} strokeWidth="2" />
-    {[60, 78, 96, 114].map(x => <path key={x} d={`M${x} 38V94`} stroke={T.electricalText} />)}
-    <path d="M42 56H132M42 75H132M61 18L71 28M91 14V28M121 18L111 28" stroke={T.electricalText} />
-    <text x="87" y="112" textAnchor="middle" className="scale-label">{prop(c, 'irradiance').toFixed(0)} W/m² · {prop(c, 'cellTemperature')} °C</text>
-  </g>;
-  if (c.kind === 'mpptController' || c.kind === 'inverter') return <g>
-    <path d="M0 40H42M0 92H42M132 40H174M132 92H174" stroke={T.electricalText} strokeWidth="2" />
-    <rect x="42" y="30" width="90" height="72" rx="4" fill={T.n5} stroke={T.electricalText} strokeWidth="2" />
-    <path d="M48 96L126 36M52 48H72M52 55H72" stroke={T.electricalText} />
-    {c.kind === 'inverter' ? <path d="M100 81Q105 63 110 81Q115 99 120 81" stroke={T.electricalText} fill="none" /> : <path d="M102 78H122M102 85H122" stroke={T.electricalText} />}
-    <text x="87" y="119" textAnchor="middle" className="scale-label">{hasStarted() ? r?.solar?.mode ?? 'off' : c.kind === 'inverter' ? 'DC → AC' : 'PV → battery'}</text>
-  </g>;
-  if (c.kind === 'batteryProtection') return <g>
-    <path d={r?.solar?.running ? 'M0 66H174' : 'M0 66H60L110 43M114 66H174'} stroke={T.electricalText} strokeWidth="3" fill="none" />
-    <path d="M87 0V25M76 25H98" stroke={T.electricalText} />
-    <text x="87" y="110" textAnchor="middle" className="scale-label">{hasStarted() ? r?.solar?.mode ?? 'off' : 'Protected DC branch'}</text>
-  </g>;
-  if (c.kind === "battery" || c.kind === "lfpBattery") return <g>
-    <path d="M0 66H65M109 66H174M65 45V87M77 53V79M97 45V87M109 53V79" stroke={T.electricalText} strokeWidth="3" />
-    <text x="87" y="110" textAnchor="middle" className="scale-label">{((simulation.devices.batteries[c.id] ?? prop(c, 'initialSOC') / 100) * 100).toFixed(1)} % charge</text>
-  </g>;
-  if (c.kind === "capacitor") return <g>
-    <path d="M0 66H81M93 66H174M81 44V88M93 44V88" stroke={T.electricalText} strokeWidth="3" />
-    <text x="87" y="110" textAnchor="middle" className="scale-label">{r?.ac && r.frequency ? `X = ${(1 / (2 * Math.PI * r.frequency * prop(c, 'capacitance'))).toPrecision(3)} Ω` : `${(simulation.devices.capacitors[c.id] ?? prop(c, 'chargeVoltage')).toFixed(2)} V stored`}</text>
-  </g>;
-  if (c.kind === "inductor") return <g>
-    <path d="M0 66H52M122 66H174M52 66C52 40 75 40 75 66C75 40 99 40 99 66C99 40 122 40 122 66" stroke={T.electricalText} strokeWidth="3" fill="none" />
-    <text x="87" y="110" textAnchor="middle" className="scale-label">{r?.ac && r.frequency ? `X = ${(2 * Math.PI * r.frequency * prop(c, 'inductance')).toPrecision(3)} Ω` : `${(simulation.devices.inductors[c.id] ?? 0).toFixed(3)} A stored`}</text>
-  </g>;
-  if (c.kind === "contactor") {
-    const closed = !failed && (simulation.faults[c.id] === 'stuckClosed' || simulation.faults[c.id] !== 'stuckOpen' && simulation.devices.contactors[c.id]?.closed);
-    return <g>
-      <path d={closed ? "M0 66H174" : "M0 66H65L106 44M110 66H174"} stroke={T.electricalText} strokeWidth="3" fill="none" />
-      <rect x="59" y="92" width="56" height="22" fill={T.n4} stroke={T.electricalText} />
-      <path d="M52 132V103H59M115 103H122V132M87 92V72" stroke={T.electricalText} fill="none" />
-      <text x="87" y="108" textAnchor="middle" className="scale-label">DC coil</text>
-      <text x="87" y="37" textAnchor="middle" className="scale-label">{closed ? 'CLOSED' : 'OPEN'}</text>
-    </g>;
-  }
-  if (c.kind === "transformer") return <g>
-    <path d="M0 40H55V49Q75 49 75 57Q75 65 55 65Q75 65 75 73Q75 81 55 81V92H0M174 40H119V49Q99 49 99 57Q99 65 119 65Q99 65 99 73Q99 81 119 81V92H174M83 43V89M91 43V89" stroke={T.electricalText} strokeWidth="2" fill="none" />
-    <circle cx="55" cy="40" r="3" fill={T.electricalText} /><circle cx="119" cy="40" r="3" fill={T.electricalText} />
-    <text x="87" y="115" textAnchor="middle" className="scale-label">{prop(c, 'turnsRatio').toPrecision(3)} : 1 · isolated AC</text>
-  </g>;
-  if (c.kind === "radiator") return <g>
-    <path d="M0 66H39M135 66H174" stroke={T.hydraulicText} strokeWidth="3" />
-    <rect x="39" y="40" width="96" height="51" fill={T.n4} stroke={T.hydraulicText} />
-    {[49, 61, 73, 85, 97, 109, 121].map(x => <path key={x} d={`M${x} 44V87`} stroke={T.hydraulicText} />)}
-    <circle cx="87" cy="65" r="18" fill={T.n4} stroke={T.electricalText} />
-    <path d="M74 65H100M87 52V78M52 132V102H122V132" stroke={T.electricalText} />
-    <text x="87" y="119" textAnchor="middle" className="scale-label">{hasStarted() ? (r?.fanPower ?? 0).toFixed(1) : '—'} W fan</text>
-  </g>;
-  if (c.kind === "tank") {
-    const temp = simulation.temperatures[c.id] ?? 20,
-      fill = Math.min(1, (simulation.multiphysics.tanks[c.id]?.volume ?? prop(c, "volume") / 1000) * 1000 / prop(c, "capacity"));
-    return (
-      <g>
-        <rect
-          x="21"
-          y="47"
-          width="160"
-          height="98"
-          rx="5"
-          fill={T.n3}
-          stroke={T.n11}
-        />
-        <path
-          d={`M22 ${144 - 90 * fill}H180V140Q180 144 176 144H26Q22 144 22 140Z`}
-          fill={T.hydraulicDim}
-        />
-        <path
-          d={`M22 ${144 - 90 * fill}H180`}
-          stroke={T.hydraulic}
-          strokeWidth="1.5"
-        />
-        <path d="M101 0V47" stroke={T.thermalText} strokeWidth="2" />
-        <path
-          d="M83 49v35q0 9 9 9h20q9 0 9-9V49"
-          stroke={T.thermalText}
-          strokeWidth="3"
-          fill="none"
-        />
-        <text x="101" y="125" className="tank-number" textAnchor="middle">
-          {temp.toFixed(2)}
-          <tspan className="unit"> °C</tspan>
-        </text>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <g key={i}>
-            <path d={`M167 ${56 + i * 19}h10`} stroke={T.n11} />
-            <text
-              x="159"
-              y={59 + i * 19}
-              textAnchor="end"
-              className="scale-label"
-            >
-              {Math.round(prop(c, "capacity") * (1 - i / 4))}
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
-  if (c.kind === "flywheel" || c.kind === "dynamometer") {
-    // Shaft-train elements turn with their motor (a flywheel at motor speed / gear ratio).
-    const wire = simulation.project.connections.find(w => w.domain === "mechanical" && !simulation.disconnected.has(w.id) && (w.from.component === c.id || w.to.component === c.id));
-    const motor = wire ? simulation.multiphysics.motors[wire.from.component === c.id ? wire.to.component : wire.from.component] : undefined;
-    const ratio = c.kind === "flywheel" ? prop(c, "gearRatio", 1) : 1, angle = ((motor?.angle ?? 0) / ratio * 180 / Math.PI) % 360, element = simulation.multiphysics.shaftElements[c.id];
-    const speed = motor ? `${(motor.omega / ratio * 30 / Math.PI).toFixed(0)} RPM` : "not coupled";
-    return c.kind === "flywheel"
-      ? <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><circle cx="87" cy="66" r="36" fill={T.n5} stroke={T.mechanicalText} strokeWidth="3"/><circle cx="87" cy="66" r="9" fill={T.mechanicalText}/><path d="M87 36V96M57 66H117" stroke={T.mechanicalText} strokeWidth="2" transform={`rotate(${angle},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{speed}{ratio !== 1 ? ` · ${ratio}:1` : ""}</text></g>
-      : <g><path d="M87 0V30" stroke={T.mechanicalText} strokeWidth="3"/><rect x="47" y="34" width="80" height="64" rx="8" fill={T.n5} stroke={T.mechanicalText} strokeWidth="2"/><path d="M87 66L87 44" stroke={T.mechanicalText} strokeWidth="3" transform={`rotate(${Math.min(270, (element?.torque ?? 0) / prop(c, "ratedTorque") * 270) - 135},87,66)`}/><circle cx="87" cy="66" r="4" fill={T.mechanicalText}/><text x="87" y="112" textAnchor="middle" className="scale-label">{speed}</text><text x="87" y="126" textAnchor="middle" className="scale-label">{(element?.torque ?? 0).toFixed(1)} N·m · {((element?.power ?? 0) / 1000).toFixed(2)} kW</text></g>;
-  }
-  if (c.kind === "circulator") {
-    // Pump circle with the discharge triangle and the integrated motor and electronics box above it (supply leads
-    // up, control leads down). The impeller turns by the accumulated rotor rotation.
-    const state = simulation.multiphysics.circulators[c.id], view = simulation.multiphysics.circulatorView[c.id];
-    const mode = { proportionalPressure: `PP ${prop(c, "headSetpoint")} m`, constantPressure: `CP ${prop(c, "headSetpoint")} m`, constantSpeed: `${prop(c, "speedSetting")} % speed` }[String(c.props.mode)] ?? "";
-    const status = !hasStarted() ? mode : state?.lockedOut ? "undervoltage · off" : `${((state?.omega ?? 0) * 30 / Math.PI).toFixed(0)} RPM · ${(view?.inputPower ?? 0).toFixed(1)} W`;
-    // Below the 31 px name band: supply leads into the EC box; the pipe on the terminal axis (y = 66) runs under the pump's fill.
-    return <g>
-      <path d="M0 66H72M102 66H174" stroke={T.hydraulic} strokeWidth="2" />
-      <path d="M52 31V41H67M122 31V41H107" stroke={T.electricalText} strokeWidth="2" fill="none" />
-      <rect x="67" y="34" width="40" height="14" rx="3" fill={T.n4} stroke={T.electricalText} />
-      <text x="87" y="44.5" textAnchor="middle" className="scale-label">EC</text>
-      <circle cx="87" cy="75" r="23" fill={T.n5} stroke={T.hydraulic} strokeWidth="2" />
-      <path d="M73.5 58L109.5 75L73.5 92" stroke={T.hydraulic} fill="none" />
-      <path d="M77 75H97M87 65V85" stroke={T.hydraulic} transform={`rotate(${((state?.angle ?? 0) * 180 / Math.PI) % 360},87,75)`} />
-      <text x="87" y="121" textAnchor="middle" className="symbol-readout dim">{status}</text>
-    </g>;
-  }
-  if (["motor", "inductionMotor", "pump"].includes(c.kind)) {
-    // The drawn rotor turns by the accumulated rotation of the driving motor (not speed × elapsed time).
-    // A pump without a driving motor has no modelled shaft speed (hydraulic back-driving is not modelled).
-    const driver = c.kind === "motor" || c.kind === "inductionMotor" ? c.id : (() => { const wire = simulation.project.connections.find(w => w.domain === "mechanical" && !simulation.disconnected.has(w.id) && (w.from.component === c.id || w.to.component === c.id)); return wire ? (wire.from.component === c.id ? wire.to.component : wire.from.component) : undefined; })();
-    const motor = driver ? simulation.multiphysics.motors[driver] : undefined;
-    return <g><path d="M0 66H52M122 66H174M87 0V32" stroke={T.hydraulic} strokeWidth="2"/><circle cx="87" cy="66" r="34" fill={T.n5} stroke={T.hydraulic} strokeWidth="2"/><path d="M65 66H109M87 44V88" stroke={T.hydraulic} transform={`rotate(${((motor?.angle ?? 0) * 180 / Math.PI) % 360},87,66)`}/><text x="87" y="119" textAnchor="middle" className="scale-label">{motor ? `${(motor.omega * 30 / Math.PI).toFixed(0)} RPM` : "free shaft · speed not modelled"}</text></g>;
-  }
-  if (c.kind === "heatExchanger") {
-    const hot = simulation.multiphysics.hydraulic.readings[`${c.id}#hot`], cold = simulation.multiphysics.hydraulic.readings[`${c.id}#cold`];
-    return (
-      <g>
-        <rect x="18" y="30" width="138" height="72" rx="4" fill={T.n5} stroke={T.hydraulic} />
-        <path d="M0 40H174" stroke={T.thermalText} strokeWidth="2" />
-        <path d="M174 99H0" stroke={T.hydraulic} strokeWidth="2" />
-        <path d="M30 48V91M50 48V91M70 48V91M90 48V91M110 48V91M130 48V91M150 48V91" stroke={T.n11} />
-        <text x="87" y="73" textAnchor="middle" className="component-state">{((hot?.duty ?? 0) / 1000).toFixed(2)} kW · UA {prop(c, "ua")} W/K</text>
-        <text x="87" y="123" textAnchor="middle" className="scale-label">A {((hot?.flow ?? 0) * 60000).toFixed(1)} · B {((cold?.flow ?? 0) * 60000).toFixed(1)} L/min</text>
-      </g>
-    );
-  }
-  if (["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction", "pressureReducingValve"].includes(c.kind)) {
-    const r = simulation.multiphysics.hydraulic.readings[c.id], opening = simulation.faults[c.id] === "stuckClosed" ? 0 : simulation.faults[c.id] === "stuckOpen" ? 100 : c.kind === "checkValve" ? (Math.abs(r?.flow ?? 0) > 1e-12 ? 100 : 0) : simulation.multiphysics.positions[c.id] ?? prop(c, "opening", 100);
-    return <g><path d="M0 66H174" stroke={T.hydraulic} strokeWidth={c.kind === "pipe" ? 8 : 2}/>{c.kind.includes("alve") && <path d="M61 49L111 83V49L61 83Z" fill={T.n8} stroke={T.hydraulicText}/>}<text x="87" y="107" textAnchor="middle" className="scale-label">{c.kind.includes("alve") ? `${opening.toFixed(0)}% · ` : ""}{((r?.flow ?? 0) * 60000).toFixed(2)} L/min</text><text x="87" y="123" textAnchor="middle" className="scale-label">{((r?.pressure ?? 0) / 100000).toFixed(3)} bar {Math.abs(r?.flow ?? 0) < 1e-12 ? "" : r!.flow > 0 ? "→" : "←"}</text></g>;
-  }
-  if (c.kind === "source3")
-    return (
-      <g>
-        <rect x="17" y="43" width="140" height="61" rx="3" fill={T.n3} stroke={T.n10} />
-        <text x="87" y="80" textAnchor="middle" className="supply-number">
-          {prop(c, "lineVoltage").toFixed(0)}
-          <tspan className="unit"> V 3~</tspan>
-        </text>
-        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? T.faultText : T.ok} />
-        <text x="39" y="95" className="scale-label">{c.props.enabled === false ? "OUTPUT OFF" : failed ? "TRIPPED" : `${prop(c, "frequency")} Hz · PER-PHASE MODEL`}</text>
-        <path d="M0 66H17M157 66H174" stroke={T.n13} />
-        <text x="5" y="57" className="polarity">L</text>
-        <text x="161" y="57" className="polarity">N</text>
-      </g>
-    );
-  if (c.kind === "source")
-    return (
-      <g>
-        <rect
-          x="17"
-          y="43"
-          width="140"
-          height="61"
-          rx="3"
-          fill={T.n3}
-          stroke={T.n10}
-        />
-        <text x="87" y="80" textAnchor="middle" className="supply-number">
-          {prop(c, "voltage").toFixed(1)}
-          <tspan className="unit"> V</tspan>
-        </text>
-        <circle cx="29" cy="92" r="2.5" fill={c.props.enabled === false || failed ? T.faultText : r?.regulation === "cc" ? T.electricalText : T.ok} />
-        <text x="39" y="95" className="scale-label">
-          {c.props.enabled === false ? "OUTPUT OFF" : failed ? "TRIPPED" : r?.regulation === "cc" ? "CC LIMIT" : c.props.mode === "cvcc" ? "DC OUT · CV/CC" : c.props.mode === "cc" ? "DC OUT · CC" : "DC OUTPUT"}
-        </text>
-        <path d="M0 66H17M157 66H174" stroke={T.n13} />
-        <text x="7" y="57" className="polarity">
-          +
-        </text>
-        <text x="161" y="57" className="polarity">
-          −
-        </text>
-      </g>
-    );
-  if (c.kind === "switch")
-    return (
-      <g>
-        <path d="M0 51H49M106 51H154" stroke={T.n13} strokeWidth="2" />
-        <circle cx="49" cy="51" r="4" fill={T.n6} stroke={T.n14} />
-        <circle cx="106" cy="51" r="4" fill={T.n6} stroke={T.n14} />
-        <path
-          d={c.props.closed ? "M49 51L106 51" : "M49 51L101 28"}
-          stroke={c.props.closed ? T.n13 : T.n14}
-          strokeWidth="3"
-        />
-        <text x="77" y="82" className="component-state" textAnchor="middle">
-          {c.props.closed ? "CLOSED" : "OPEN"}
-        </text>
-      </g>
-    );
-  if (c.kind === "lamp")
-    return (
-      <g>
-        <path d="M0 66H62M112 66H174" stroke={T.n12} strokeWidth="2" />
-        {power > 1 && !failed && (
-          <circle
-            cx="87"
-            cy="66"
-            r="35"
-            fill={T.electricalText}
-            opacity={Math.min(0.25, power / 120)}
-            filter="url(#lampGlow)"
-          />
-        )}
-        <circle
-          cx="87"
-          cy="66"
-          r="25"
-          fill={power > 1 && !failed ? T.n8 : T.n5}
-          stroke={power > 1 && !failed ? T.electricalText : T.n13}
-          strokeWidth="2"
-        />
-        <path
-          d="M70 49L104 83M70 83L104 49"
-          stroke={power > 1 && !failed ? T.electricalText : T.n13}
-          strokeWidth="2"
-        />
-        <text x="87" y="111" textAnchor="middle" className="component-state">
-          {failed ? "FAILED" : power > 1 ? "ILLUMINATED" : "UNPOWERED"}
-        </text>
-      </g>
-    );
-  if (c.kind === "ground")
-    return (
-      <g stroke={T.n13} fill="none">
-        <path d="M0 66H87V81M65 81H109M72 89H102M80 97H94" />
-      </g>
-    );
-  if (c.kind === "meter")
-    return (
-      <g>
-        <path d="M0 66H57M117 66H174" stroke={T.n12} />
-        <circle cx="87" cy="66" r="29" fill={T.n4} stroke={T.n13} />
-        <text x="87" y="73" textAnchor="middle" className="meter-number">
-          {hasStarted() ? `${(r?.voltage ?? 0).toFixed(1)} V` : "— V"}
-        </text>
-      </g>
-    );
-  if (["relay", "safety"].includes(c.kind)) {
-    const on = simulation.automation.contacts[c.id],
-      trip = simulation.automation.memory[c.id]?.tripped;
-    return (
-      <g>
-        <path d="M0 66H47M125 66H174" stroke={T.n12} />
-        <circle cx="47" cy="66" r="4" fill={T.mechanicalText} />
-        <path
-          d={on ? "M47 66H125" : "M47 66L118 42"}
-          stroke={trip ? T.faultText : T.n13}
-          strokeWidth="3"
-        />
-        {c.kind === "relay" && (
-          <path
-            d="M125 107H174M125 66V107"
-            fill="none"
-            stroke={T.n11}
-            strokeDasharray="3 3"
-          />
-        )}
-        <text
-          x="87"
-          y="113"
-          textAnchor="middle"
-          className="component-state"
-          fill={trip ? T.faultText : T.mechanicalText}
-        >
-          {trip ? "TRIPPED / LATCHED" : on ? "CONTACT CLOSED" : "CONTACT OPEN"}
-        </text>
-      </g>
-    );
-  }
-  if (c.kind === "junction")
-    return (
-      <g>
-        <path d="M0 66H87" stroke={T.electricalText} />
-        <circle cx="87" cy="66" r="7" fill={T.electricalText} />
-        <text x="87" y="108" textAnchor="middle" className="component-state">
-          EXPLICIT NODE
-        </text>
-      </g>
-    );
-  if (c.kind === "cooler")
-    return (
-      <g stroke={T.hydraulic}>
-        <path d="M40 50V94H134V50M50 57H124M50 68H124M50 79H124" fill="none" />
-        <text x="87" y="114" textAnchor="middle" className="component-state">
-          {simulation.faults[c.id] === "coolingFailed"
-            ? "COOLANT LOST"
-            : `${prop(c, "conductance")} W/K`}
-        </text>
-      </g>
-    );
-  if (c.kind === "thermalMass")
-    return (
-      <g>
-        <rect x="37" y="44" width="100" height="52" rx="4" fill={T.n5} stroke={T.thermal} />
-        <path d="M47 44V34M62 44V34M77 44V34M92 44V34M107 44V34M122 44V34" stroke={T.n11} />
-        <text x="87" y="76" textAnchor="middle" className="component-state" fill={T.thermalText}>
-          {(simulation.temperatures[c.id] ?? prop(c, "initialTemperature")).toFixed(1)} °C
-        </text>
-        <text x="87" y="114" textAnchor="middle" className="component-state">
-          {(prop(c, "heatCapacity") / 1000).toPrecision(3)} kJ/K · {prop(c, "loss")} W/K
-        </text>
-      </g>
-    );
-  if (c.kind === "starDeltaStarter" || c.kind === "softStarter") {
-    const st = simulation.multiphysics.starters[c.id], mode = st?.mode ?? "off", live = mode !== "off" && mode !== "open";
-    const label = c.kind === "softStarter" ? (mode === "ramp" ? `${st?.stopping ? "STOP" : "RAMP"} ${((st?.ratio ?? 1) * 100).toFixed(0)} %` : mode === "bypass" ? "BYPASS" : "OFF") : mode.toUpperCase();
-    return (
-      <g>
-        <path d="M0 66H50M124 66H174" stroke={live ? T.electrical : T.n13} strokeWidth="2" />
-        <rect x="50" y="44" width="74" height="44" rx="3" fill={T.n4} stroke={live ? T.electricalText : T.n11} />
-        {c.kind === "starDeltaStarter" ? (
-          <g stroke={T.n14} strokeWidth="1.6" fill="none">
-            <path d="M70 54V66M70 66L61 74M70 66L79 74" stroke={mode === "star" ? T.electricalText : T.n12} />
-            <path d="M104 53L95 75H113Z" stroke={mode === "delta" ? T.electricalText : T.n12} />
-          </g>
-        ) : (
-          <g stroke={T.n14} strokeWidth="1.6" fill="none">
-            <path d="M66 74L74 58M74 58V74M74 66H68" stroke={mode === "ramp" ? T.electricalText : T.n12} />
-            <path d="M92 74L100 58M100 58V74M100 66H94" stroke={mode === "ramp" ? T.electricalText : T.n12} />
-            <path d="M58 82H116" stroke={mode === "bypass" ? T.electricalText : T.n11} />
-          </g>
-        )}
-        <text x="87" y="110" textAnchor="middle" className="component-state">{prop(c, "ratedCurrent")} A · {label}</text>
-      </g>
-    );
-  }
-  if (c.kind === "vfd") {
-    const d = simulation.multiphysics.drives[c.id];
-    return (
-      <g>
-        <path d="M0 40H40M0 92H40M134 40H174M134 92H174" stroke={d?.running ? T.electrical : T.n13} strokeWidth="2" />
-        <rect x="40" y="28" width="94" height="76" rx="3" fill={T.n4} stroke={d?.running ? T.electricalText : T.n11} />
-        <path d="M50 76H70M50 70H70" stroke={T.n12} strokeWidth="1.4" />
-        <path d="M84 66C90 52 96 52 102 66S114 80 120 66" fill="none" stroke={d?.running ? T.electricalText : T.n12} strokeWidth="1.8" />
-        <path d="M78 34V98" stroke={T.n9} strokeDasharray="3 3" />
-        <text x="87" y="122" textAnchor="middle" className="component-state">{d?.running ? `${d.frequency.toFixed(1)} Hz` : "STOPPED"} · {(prop(c, "ratedPower") / 1000).toFixed(1)} kW</text>
-      </g>
-    );
-  }
-  if (c.kind === "breaker" || c.kind === "motorProtector") {
-    const tripped = simulation.breakers[c.id]?.tripped, open = tripped || c.props.closed === false;
-    return (
-      <g>
-        <path d="M0 66H55M119 66H174" stroke={T.n13} strokeWidth="2" />
-        <path d={open ? "M55 66L112 44" : "M55 66L119 66"} stroke={tripped ? T.faultText : T.n14} strokeWidth="2" />
-        <rect x="70" y="76" width="34" height="16" rx="2" fill="none" stroke={T.n12} />
-        <text x="87" y="110" textAnchor="middle" className="component-state">
-          {prop(c, "ratedCurrent")} A · {tripped ? "TRIPPED" : open ? "OPEN" : "CLOSED"}
-        </text>
-      </g>
-    );
-  }
-  if (definitions[c.kind].ports.some((p) => p.domain === "control")) {
-    const v = simulation.automation.signals[c.id],
-      sensor = simulation.automation.sensors[c.id];
-    return (
-      <g>
-        <rect
-          x="20"
-          y="44"
-          width="134"
-          height="49"
-          rx="3"
-          fill={T.n4}
-          stroke={T.n11}
-        />
-        <text
-          x="87"
-          y="75"
-          textAnchor="middle"
-          className="meter-number"
-          fill={T.mechanicalText}
-        >
-          {!v?.valid
-            ? "INVALID"
-            : typeof v.value === "boolean"
-              ? v.value
-                ? "ON"
-                : "OFF"
-              : Number(v.value).toFixed(2)}
-        </text>
-        <text x="87" y="114" textAnchor="middle" className="component-state">
-          {sensor?.valid
-            ? Number(sensor.value).toPrecision(5) + " " + (definitions[c.kind].ports.find(p => p.id === "out")?.unit ?? "°C")
-            : c.kind === "timer"
-              ? `${simulation.automation.memory[c.id]?.elapsed.toFixed(2) ?? "0"} s`
-              : definitions[c.kind].spec}
-        </text>
-      </g>
-    );
-  }
-  const heater = c.kind === "heater";
-  return (
-    <g>
-      <path
-        d="M0 66H34M140 66H174"
-        stroke={heater ? T.thermalText : T.n13}
-        strokeWidth="2"
-      />
-      <path
-        d="M34 66h9l7-14 12 28 12-28 12 28 12-28 12 28 12-28 7 14h11"
-        fill="none"
-        stroke={failed ? T.faultText : heater ? T.thermalText : T.n14}
-        strokeWidth="2"
-      />
-      {heater && (
-        <>
-          <path d="M87 82V132" stroke={T.thermalText} strokeDasharray="4 3" />
-          <text
-            x="87"
-            y="107"
-            textAnchor="middle"
-            className="component-state"
-            fill={T.thermalText}
-          >
-            {(simulation.temperatures[c.id] ?? 20).toFixed(1)} °C
-          </text>
-        </>
-      )}
-      {c.kind === "fuse" && (
-        <rect
-          x="40"
-          y="45"
-          width="95"
-          height="42"
-          fill="none"
-          stroke={T.n13}
-          rx="3"
-        />
-      )}
-      {!heater && (
-        <text x="87" y="110" textAnchor="middle" className="component-state">
-          {failed
-            ? "OPEN / FAILED"
-            : c.kind === "cable"
-              ? `${c.props.material === "aluminium" ? "Al" : "Cu"} ${prop(c, "area")} mm² · ${prop(c, "length")} m`
-              : `${Number(prop(c, "resistance").toPrecision(4))} Ω`}
-        </text>
-      )}
-    </g>
-  );
-}
-
+export { hasStarted, fitName } from "./ModuleFace";
 /** Signed volume flow along a hydraulic wire (from → to), from the branch reading at either end. */
 function wireFlow(w: Connection) {
   if (w.domain !== "hydraulic") return 0;
@@ -1058,11 +541,17 @@ export default function Workspace() {
           {project.components.map((c) => {
             const { w, h } = dimensions(c),
               sel = selected.includes(c.id),
-              r = simulation.electrical.readings[c.id];
+              r = simulation.electrical.readings[c.id],
+              status = moduleStatus(c),
+              pins = modulePins(c),
+              // The name runs from x = 12 to the status lamp; terminals on the right edge inside the name band (grid side of
+              // inverters, tank overflow) take the end of the band.
+              nameWidth = definitions[c.kind].ports.some((p) => { const q = portLocal(c, p.id); return q.x > w && q.y < 31; }) ? w - 68 : w - 35;
             return (
               <g
                 key={c.id}
                 data-component={c.kind}
+                data-status={status?.tone}
                 className={`component-node domain-${domainOf(c)}`}
                 transform={`translate(${c.x},${c.y})`}
                 onPointerDown={(e) => {
@@ -1082,15 +571,22 @@ export default function Workspace() {
                   <rect
                     width={w}
                     height={h}
-                    rx="8"
+                    rx="6"
                     className={`component-body ${sel ? "component-selected" : ""} ${simulation.failed[c.id] ? "component-failed" : ""}`}
                   />
-                  <path d={`M0 31H${w}`} stroke={T.n9} />
-                  <text x="13" y="20" className="component-id">
-                    {fitName(c.name, w)}
+                  <path d={`M1 31V7a6 6 0 0 1 6-6H${w - 7}a6 6 0 0 1 6 6V31Z`} className="component-header" />
+                  <path d={`M0 31.5H${w}`} className="component-rule" />
+                  <text x="12" y="20.5" className="component-id">
+                    {fitName(c.name, nameWidth)}
                     <title>{c.name}</title>
                   </text>
-                  <CircuitSymbol c={c} />
+                  {status && (
+                    <g className={`status-lamp ${status.tone}`}>
+                      <title>{status.text}</title>
+                      <circle cx={w - 15} cy="16" r="4.5" />
+                    </g>
+                  )}
+                  <ModuleFace c={c} />
                   {definitions[c.kind].ports.map((p) => {
                     const { x, y } = portLocal(c, p.id);
                     const branches = project.connections.filter(
@@ -1147,16 +643,11 @@ export default function Workspace() {
                               : potential.toFixed(2) + " V"}
                           </text>
                         )}
+                        {/* Stub from the terminal straight to the module edge it faces. */}
                         <path
-                          d={
-                            (c.kind === "electricBoiler" && p.domain === "electrical") ? `M${x} ${y}V0` : p.domain === "control" &&
-                            ["electricBoiler", "relay", "safety", "cooler"].includes(c.kind)
-                              ? `M${x} ${y}V${h}`
-                              : (p.id === "heat" || c.kind === "contactor" && ["ca", "cb"].includes(p.id) || c.kind === "radiator" && ["a", "b"].includes(p.id) || c.kind === "circulator" && ["a", "b"].includes(p.id))
-                                ? `M${x} ${y}V${c.kind === "tank" || c.kind === "circulator" ? 0 : h}`
-                                : `M${x} ${y}H${x < 0 ? 0 : w}`
-                          }
+                          d={x < 0 ? `M${x} ${y}H0` : x > w ? `M${x} ${y}H${w}` : y < 0 ? `M${x} ${y}V0` : `M${x} ${y}V${h}`}
                           stroke="currentColor"
+                          strokeWidth="2"
                         />
                         <circle cx={x} cy={y} r="13" fill="transparent" />
                         <circle cx={x} cy={y} r="5" className="port-circle" />
@@ -1166,6 +657,26 @@ export default function Workspace() {
                       </g>
                     );
                   })}
+                  {pins && (
+                    // Terminal labels: a separate, non-interactive layer, so each terminal's hit area stays its port.
+                    // On the body: on the terminal line at the edge of a terminal strip, above a lead that runs on
+                    // into the symbol, or above a terminal entering from below; a terminal entering from above is
+                    // labelled beside its stub (the name band is above it inside).
+                    <g className="pin-labels">
+                      {Object.entries(pins.labels).map(([id, text]) => {
+                        const { x, y } = portLocal(c, id), domain = definitions[c.kind].ports.find((p) => p.id === id)?.domain;
+                        const at: { x: number; y: number; a: "start" | "middle" | "end" } = x < 0 ? (pins.strip ? { x: 12, y: y + 4.5, a: "start" } : { x: 7, y: y - 7, a: "start" })
+                          : x > w ? (pins.strip ? { x: w - 12, y: y + 4.5, a: "end" } : { x: w - 7, y: y - 7, a: "end" })
+                          : y < 0 ? { x: x + 8, y: -5, a: "start" } : { x, y: h - 5, a: "middle" };
+                        return (
+                          <g key={id} className={`terminal-label ${domain}`}>
+                            {pins.strip && (x < 0 || x > w) && <path d={`M${x < 0 ? 0 : w} ${y}h${x < 0 ? 7 : -7}`} stroke="currentColor" strokeWidth="2" />}
+                            <text x={at.x} y={at.y} textAnchor={at.a} className={`pin-label${y < 0 ? " outside" : ""}`}>{text}</text>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  )}
                 </g>
                 <text
                   x={w / 2}

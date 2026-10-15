@@ -59,13 +59,9 @@ test("builds a functioning light circuit and completes challenge 001", async ({
   await expect(page.locator(".challenge-strip")).toContainText("3 stars · 100/100", {
     timeout: 15000,
   });
-  await expect(page.locator('[data-component="lamp"]')).toContainText(
-    "ILLUMINATED",
-  );
+  await expect(page.locator('[data-component="lamp"] .face-state')).toHaveText("Illuminated");
   await page.locator('[data-component="switch"]').dblclick();
-  await expect(page.locator('[data-component="lamp"]')).toContainText(
-    "UNPOWERED",
-  );
+  await expect(page.locator('[data-component="lamp"] .face-state')).toHaveText("Unpowered");
 });
 test("builds and completes heating challenge 002 using real fixed steps", { tag: "@slow" }, async ({
   page,
@@ -269,9 +265,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
       .filter({ hasText: "Experiment faults" })
       .click();
   await page.getByLabel("Inject component fault").selectOption("sensorFault");
-  await expect(page.locator('[data-component="relay"]')).toContainText(
-    "CONTACT OPEN",
-  );
+  await expect(page.locator('[data-component="relay"] .face-value')).toHaveText("Open");
   await expect(page.locator(".trace-readouts")).toContainText("0.000 W");
   await page.locator('[data-component="relay"]').click();
   if (!(await page.getByLabel("Inject component fault").isVisible()))
@@ -280,9 +274,7 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
       .filter({ hasText: "Experiment faults" })
       .click();
   await page.getByLabel("Inject component fault").selectOption("stuckClosed");
-  await expect(page.locator('[data-component="relay"]')).toContainText(
-    "CONTACT CLOSED",
-  );
+  await expect(page.locator('[data-component="relay"] .face-value')).toHaveText("Closed");
   await page.locator('[data-component="safety"]').click();
   if (!(await page.getByLabel("Inject component fault").isVisible()))
     await page
@@ -290,18 +282,14 @@ test("closed-loop starter exposes actual faults, probes, independent safety and 
       .filter({ hasText: "Experiment faults" })
       .click();
   await page.getByLabel("Inject component fault").selectOption("sensorFault");
-  await expect(page.locator('[data-component="safety"]')).toContainText(
-    "TRIPPED / LATCHED",
-  );
+  await expect(page.locator('[data-component="safety"] .face-value')).toHaveText("Tripped / latched");
   await expect(page.locator(".trace-readouts")).toContainText("0.000 W");
   await page.getByRole("button", { name: /Event log/ }).click();
   await page.getByRole("button", { name: "Replay experiment" }).click();
   await expect(page.locator(".event-log")).toContainText(
     "Deterministic replay completed",
   );
-  await expect(page.locator('[data-component="safety"]')).toContainText(
-    "TRIPPED / LATCHED",
-  );
+  await expect(page.locator('[data-component="safety"] .face-value')).toHaveText("Tripped / latched");
   await page.getByRole("button", { name: "Live telemetry" }).click();
   await page.getByRole("button", { name: "Manage traces" }).click();
   await page.getByLabel("Trace component").selectOption({ label: "RY-01" });

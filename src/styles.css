@@ -545,16 +545,6 @@ kbd {
   fill: var(--n-14);
   letter-spacing: 0.4px;
 }
-.component-domain {
-  font: 8px var(--mono);
-  fill: var(--n-13);
-  letter-spacing: 0.5px;
-}
-.component-state {
-  font: 8px var(--mono);
-  fill: var(--n-13);
-  letter-spacing: 0.7px;
-}
 .component-caption {
   font:
     12px "IBM Plex Sans",
@@ -566,7 +556,6 @@ kbd {
   fill: var(--n-12);
   letter-spacing: 0.15px;
 }
-.supply-number,
 .tank-number {
   font: 24px var(--mono);
   fill: var(--n-14);
@@ -580,28 +569,6 @@ kbd {
   font: 11px var(--mono);
   fill: var(--n-13);
   letter-spacing: 0;
-}
-.scale-label {
-  font: 7px var(--mono);
-  fill: var(--n-12);
-  letter-spacing: 0.5px;
-}
-/* In-symbol live readouts: same size and contrast as wire chips, readable at the default zoom. */
-.symbol-readout {
-  font: 500 11px var(--mono);
-  fill: var(--n-14);
-  letter-spacing: 0;
-}
-.symbol-readout.thermal { fill: var(--thermal-text); }
-.symbol-readout.fault { fill: var(--fault-text); }
-.symbol-readout.dim { fill: var(--n-13); font-weight: 400; }
-.polarity {
-  font: 10px var(--mono);
-  fill: var(--electrical-text);
-}
-.meter-number {
-  font: 12px var(--mono);
-  fill: var(--n-14);
 }
 .terminal {
   cursor: crosshair;
@@ -2776,9 +2743,6 @@ select option {
 .telemetry {
   overflow: auto;
 }
-.component-domain {
-  font-size: 8px !important;
-}
 
 @media (max-width: 700px) {
   .challenge-cards {
@@ -3276,7 +3240,6 @@ select option {
 .live-caption { font: 500 12px var(--mono); fill: var(--n-13); letter-spacing: 0; }
 /* A halo in the stage colour keeps captions legible where a wire into a bottom terminal passes under them. */
 .component-caption, .live-caption { paint-order: stroke; stroke: var(--n-5); stroke-width: 4px; stroke-linejoin: round; }
-.scale-label { font-size: 9px; letter-spacing: 0.2px; }
 
 .wire-line { stroke: var(--electrical); stroke-width: 3; stroke-linecap: round; }
 .connection.thermal .wire-line { stroke: var(--thermal); stroke-width: 2.5; stroke-dasharray: 6 5; }
@@ -3422,3 +3385,37 @@ button.component-name:hover > svg, button.component-name:focus-visible > svg { o
 .render-error code { font-size: 11px; opacity: 0.85; overflow-wrap: anywhere; }
 .render-error div { display: flex; flex-wrap: wrap; gap: 8px; }
 .render-error button { color: var(--fault-text); text-decoration: underline; font-size: 11px; }
+
+/* ─── Schematic modules ────────────────────────────────────────────────────
+   A module is a restrained instrument housing: a name band with a status lamp,
+   a neutral technical symbol on the terminal axis, one hero value and one state
+   line. Colour means physics (conductors, terminals) or status (lamp, alarms). */
+.component-body { fill: var(--n-3); stroke: var(--n-9); stroke-width: 1; }
+.component-header { fill: var(--n-2); }
+.component-rule { stroke: var(--n-8); stroke-width: 1; }
+.component-selected { fill: var(--n-4); stroke: var(--n-15); stroke-width: 2; filter: drop-shadow(0 0 6px rgb(var(--n-15-rgb) / 0.25)); }
+.component-failed { stroke: var(--fault); stroke-width: 2; }
+.component-id { font: 600 12px var(--mono); letter-spacing: -0.4px; }
+.status-lamp circle { stroke-width: 1.5; }
+.status-lamp.idle circle { fill: var(--n-6); stroke: var(--n-10); }
+.status-lamp.ok circle { fill: var(--ok); stroke: var(--ok-text); filter: drop-shadow(0 0 3px rgb(var(--ok-rgb) / 0.6)); }
+.status-lamp.warning circle { fill: var(--warning); stroke: var(--warning-text); filter: drop-shadow(0 0 3px rgb(var(--warning-rgb) / 0.6)); }
+.status-lamp.fault circle { fill: var(--fault); stroke: var(--fault-text); filter: drop-shadow(0 0 3px rgb(var(--fault-rgb) / 0.6)); }
+.face-value { font: 500 13px var(--mono); fill: var(--n-15); letter-spacing: 0; }
+.face-value.thermal { fill: var(--thermal-text); }
+.face-value.warning, .face-state.warning { fill: var(--warning-text); }
+.face-value.fault, .face-state.fault { fill: var(--fault-text); }
+.face-state { font: 400 12px var(--sans); fill: var(--n-13); }
+.face-glyph { font-family: var(--sans); font-weight: 600; }
+.face-glyph.mono { font-family: var(--mono); font-weight: 500; }
+.tank-number { font: 500 20px var(--mono); fill: var(--n-15); letter-spacing: -0.5px; }
+.tank-number .unit { font: 400 12px var(--mono); fill: var(--n-13); }
+/* Terminal labels: on the module body (halo in the body colour), or on the stage beside a stub entering from above. */
+.pin-label { font: 500 12px var(--mono); fill: var(--n-13); letter-spacing: 0; paint-order: stroke; stroke: var(--n-3); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.component-selected ~ * .pin-label, .component-node:has(.component-selected) .pin-label { stroke: var(--n-4); }
+.pin-label.outside, .component-node:has(.component-selected) .pin-label.outside { stroke: var(--n-5); fill: var(--n-12); }
+.pin-labels { pointer-events: none; }
+.terminal-label { color: var(--electrical); }
+.terminal-label.hydraulic { color: var(--hydraulic); }
+.terminal-label.thermal { color: var(--thermal); }
+.terminal-label.control { color: var(--n-13); }
