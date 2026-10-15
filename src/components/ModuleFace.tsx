@@ -58,7 +58,8 @@ function active(c: Component) {
 
 /** Terminal labels by port, drawn by the workspace next to each terminal; `strip` puts them on the terminal line. */
 export type Pins = { labels: Record<string, string>; strip?: boolean };
-type Face = { symbol: ReactNode; hero?: string; detail?: string; tone?: "fault" | "warning" | "thermal"; pins?: Pins; readoutY?: number };
+/** `title`: the full state text when the state line shows a compact form. */
+type Face = { symbol: ReactNode; hero?: string; detail?: string; title?: string; tone?: "fault" | "warning" | "thermal"; pins?: Pins; readoutY?: number };
 
 // Number formatting: three significant figures with an SI prefix, or fixed decimals for familiar quantities.
 const PREFIX: [number, string][] = [[1e6, "M"], [1e3, "k"], [1, ""], [1e-3, "m"], [1e-6, "µ"], [1e-9, "n"]];
@@ -76,6 +77,8 @@ const celsius = (t: number) => `${t.toFixed(1)} °C`;
 const lpm = (q: number) => `${(q * 60000).toFixed(Math.abs(q * 60000) >= 100 ? 0 : 1)} L/min`;
 const rpm = (omega: number) => `${Math.abs(omega * 30 / Math.PI).toFixed(0)} RPM`;
 const sentence = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s);
+/** Converter states in the width beside a terminal strip; the full engine wording stays in the tooltip and Inspector. */
+const compactMode = (mode: string) => sentence(mode.replace(/^grid charging · /, "charging · ").replace(/^grid import limit exceeded$/, "over import limit"));
 
 // Line work: neutral ink for symbols, domain colour for conductors (wires continue into the module).
 const INK = T.n14, FAINT = T.n11, SW = 1.75;
@@ -271,7 +274,8 @@ function face(c: Component): Face {
         // Arrow: energy from the battery to AC (inverting) or from AC into the battery (charging).
         symbol: <Converter x={60} y={40} w={54} h={46} from="dc" to="ac" live={started && !!x && x.mode !== "off"} flow={hybrid && started && Math.abs(x?.dcPower ?? 0) >= 1 ? Math.sign(x!.dcPower) : 0} />,
         hero: started ? watts(Math.abs(hybrid ? x?.dcPower ?? 0 : x?.acPower ?? 0)) : `${watts(prop(c, "ratedPower"))}`,
-        detail: started ? sentence(x?.mode ?? "off") : hybrid ? "Hybrid ESS" : "Grid following",
+        detail: started ? compactMode(x?.mode ?? "off") : hybrid ? "Hybrid ESS" : "Grid following",
+        title: started ? sentence(x?.mode ?? "off") : undefined,
         tone: x?.fault ? "fault" : undefined,
         pins: { labels: hybrid ? { a: "BAT+", b: "BAT−", ga: "IN L", gb: "IN N", oa: "OUT L", ob: "OUT N" } : { a: "DC+", b: "DC−", ga: "L", gb: "N" }, strip: true },
       };
@@ -569,10 +573,27 @@ function face(c: Component): Face {
   };
 }
 
-/** Shorten a readout to `width` px at about `char` px per character, with an ellipsis (the full text is the tooltip). */
-function fit(text: string | undefined, width: number, char: number) {
-  const n = Math.floor(width / char);
-  return text === undefined || text.length <= n ? text : `${text.slice(0, n - 1).trimEnd()}…`;
+/** Readout fonts (styles.css: .face-value, .face-state, .pin-label) with per-character fallbacks for unloaded fonts. */
+const FONTS = { value: ['500 13px "IBM Plex Mono"', 8], state: ['400 12px "IBM Plex Sans"', 6.6], pin: ['500 12px "IBM Plex Mono"', 7.2] } as const;
+const widths = new Map<string, number>();
+let context: CanvasRenderingContext2D | null | undefined;
+/** Rendered width of `text` in px: measured once the web fonts have loaded (and cached), estimated before. */
+function textWidth(text: string, font: keyof typeof FONTS) {
+  const [css, char] = FONTS[font], key = `${font}|${text}`, cached = widths.get(key);
+  if (cached !== undefined) return cached;
+  if (context === undefined) try { context = document.createElement("canvas").getContext("2d"); } catch { context = null; }
+  if (!context || typeof document === "undefined" || document.fonts?.status !== "loaded") return text.length * char;
+  context.font = css;
+  const width = context.measureText(text).width;
+  widths.set(key, width);
+  return width;
+}
+/** Shorten a readout to `width` px with an ellipsis (the full text is the tooltip). */
+function fit(text: string | undefined, width: number, font: keyof typeof FONTS) {
+  if (text === undefined || textWidth(text, font) <= width) return text;
+  let n = text.length - 1;
+  while (n > 1 && textWidth(`${text.slice(0, n).trimEnd()}…`, font) > width) n--;
+  return `${text.slice(0, n).trimEnd()}…`;
 }
 /** Terminal labels of a module (only real ports of its catalog definition). */
 export function modulePins(c: Component): Pins | undefined {
@@ -593,9 +614,9 @@ export function ModuleFace({ c }: { c: Component }) {
   const detailY = f.hero === undefined ? heroY : heroY + 15;
   // Edge labels of side terminals beside a readout row narrow that row to the free span between them.
   const free = (baseline: number) => {
-    let left = 8, right = w - 8;
+    let left = 6, right = w - 6;
     for (const [id, text] of Object.entries(f.pins?.labels ?? {})) {
-      const q = portLocal(c, id), y = f.pins?.strip ? q.y + 4.5 : q.y - 7, extent = (f.pins?.strip ? 12 : 7) + text.length * 7.3 + 6;
+      const q = portLocal(c, id), y = f.pins?.strip ? q.y + 4.5 : q.y - 7, extent = (f.pins?.strip ? 12 : 7) + textWidth(text, "pin") + 5;
       if (y - 11 > baseline + 3 || y + 3 < baseline - 11) continue;
       if (q.x < 0) left = Math.max(left, extent);
       else if (q.x > w) right = Math.min(right, w - extent);
@@ -605,14 +626,14 @@ export function ModuleFace({ c }: { c: Component }) {
   const rows = [f.hero !== undefined ? free(heroY) : null, f.detail !== undefined ? free(detailY) : null].filter((r): r is number[] => !!r);
   const left = Math.max(...rows.map((r) => r[0])), right = Math.min(...rows.map((r) => r[1]));
   // Rows centre on the module unless centred text would reach a narrowed side: then they align to that side's edge.
-  const half = Math.max((f.hero?.length ?? 0) * 3.9, (f.detail?.length ?? 0) * 3.3);
+  const half = Math.max(f.hero === undefined ? 0 : textWidth(f.hero, "value"), f.detail === undefined ? 0 : textWidth(f.detail, "state")) / 2;
   const centred = Math.abs(left - (w - right)) < 4 || (w / 2 - half >= left && w / 2 + half <= right);
   const anchor = centred ? "middle" : w - right > left ? "end" : "start", x = centred ? w / 2 : anchor === "end" ? right : left;
   const span = (r: number[] | null | undefined) => (r ? (anchor === "end" ? right - r[0] : anchor === "start" ? r[1] - left : Math.min(w / 2 - r[0], r[1] - w / 2) * 2) : 0);
-  const hero = fit(f.hero, span(f.hero !== undefined ? rows[0] : null), 7.8), detail = fit(f.detail, span(rows.at(-1)), 6.6);
+  const hero = fit(f.hero, span(f.hero !== undefined ? rows[0] : null), "value"), detail = fit(f.detail, span(rows.at(-1)), "state");
   return <g>
     {f.symbol}
     {hero !== undefined && <text x={x} y={heroY} textAnchor={anchor} className={`face-value${toneClass}`}>{hero}{hero !== f.hero && <title>{f.hero}</title>}</text>}
-    {detail !== undefined && <text x={x} y={detailY} textAnchor={anchor} className={`face-state${alarm}`}>{detail}{detail !== f.detail && <title>{f.detail}</title>}</text>}
+    {detail !== undefined && <text x={x} y={detailY} textAnchor={anchor} className={`face-state${alarm}`}>{detail}{(detail !== f.detail || f.title) && <title>{f.title ?? f.detail}</title>}</text>}
   </g>;
 }

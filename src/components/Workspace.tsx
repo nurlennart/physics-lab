@@ -90,6 +90,11 @@ export default function Workspace() {
   const svg = useRef<SVGSVGElement>(null);
   const wrapper = useRef<HTMLDivElement>(null);
   const [camera, setCamera] = useState({ x: 20, y: 20, z: 1 });
+  // Module readouts are fitted with measured text widths once the web fonts have loaded: redraw then.
+  const [, setFontsLoaded] = useState(false);
+  useEffect(() => {
+    document.fonts?.ready.then(() => setFontsLoaded(true));
+  }, []);
   const [pending, setPending] = useState<Terminal | null>(null);
   // The terminal a wire was started from can disappear (Delete, undo, loading a project): drop the pending wire.
   const pendingComponent = pending ? project.components.find((c) => c.id === pending.component) : undefined;
