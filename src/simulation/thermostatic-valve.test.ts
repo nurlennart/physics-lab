@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { trvPosition, trvSensorStep, trvSetpoint } from './thermostatic-valve';
+import { trvPosition, trvSensorStep, trvSetpoint, trvTemperatureLabel } from './thermostatic-valve';
 import { Builder } from './scaling-validation';
 import { makeComponent } from './model';
 import { Simulation } from './engine';
@@ -23,6 +23,12 @@ describe('self-acting RA 2910 / RA-FN 15 reference valve', () => {
       c.props.dial = dial; expect(trvSetpoint(c)).toBe(t);
     }
     c.props.dial = 2.5; expect(trvSetpoint(c)).toBe(18.5);
+  });
+  it('labels fractional dial temperatures without interpolation round-off', () => {
+    const c = makeComponent('thermostaticValve', 0, 0); c.props.dial = 4.1;
+    expect(trvSetpoint(c)).not.toBe(23.3);
+    expect(trvTemperatureLabel(trvSetpoint(c))).toBe('23.3'); expect(trvTemperatureLabel(trvSetpoint(c) + 2)).toBe('25.3');
+    c.props.dial = 3; expect(trvTemperatureLabel(trvSetpoint(c))).toBe('20');
   });
   it('reproduces published Kv points at deviations from closure and seats exactly', () => {
     const c = makeComponent('thermostaticValve', 0, 0);

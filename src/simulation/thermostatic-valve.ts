@@ -6,6 +6,8 @@ export function trvSetpoint(c: Component): number {
   const dial = Math.max(0, Math.min(5, prop(c, 'dial'))), i = Math.floor(dial);
   return dialTemperatures[i] + (dialTemperatures[Math.min(5, i + 1)] - dialTemperatures[i]) * (dial - i);
 }
+/** Dial reference or closure temperature for display, without interpolation round-off (23.299999999999997 → "23.3"). */
+export const trvTemperatureLabel = (t: number) => String(Number(t.toFixed(2)));
 /** RA-FN 15 Kv at 0, 0.5, 1, 1.5 and 2 K deviation from closure; linear interpolation.
  * Beyond the published 2 K point we assume maximum lift at 3 K (Kvs = 0.90 m³/h).
  * The returned position is effective Kv/Kvs, not measured stem travel.

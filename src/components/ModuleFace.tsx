@@ -4,7 +4,7 @@ import { definitions, prop, textProp, type Component } from "../simulation/model
 import { simulation } from "../editor/store";
 import { dimensions, portLocal } from "../editor/geometry";
 import { effectiveAmbient } from "../simulation/environment";
-import { trvSetpoint } from "../simulation/thermostatic-valve";
+import { trvSetpoint, trvTemperatureLabel } from "../simulation/thermostatic-valve";
 
 /**
  * Schematic module faces (docs/DESIGN.md § Modules). Every module answers, in this order: what it is (symbol and
@@ -451,8 +451,8 @@ function face(c: Component): Face {
       return {
         symbol: <g><Leads x0={69} x1={105} color={T.hydraulic} width={3} /><ValveBody opening={o} />{extra}</g>,
         hero: c.kind === "checkValve" ? (o > 0 ? "Open" : "Closed") : `${o.toFixed(0)} % ${c.kind === 'thermostaticValve' ? 'Kv' : 'open'}`,
-        detail: c.kind === "thermostaticValve" ? `${prop(c, 'dial') === 0 ? '❄' : prop(c, 'dial')} · ≈${trvSetpoint(c)} °C` : started ? lpm(hr?.flow ?? 0) : c.kind === "pressureReducingValve" ? `${(prop(c, "pressureSetpoint") / 1e5).toFixed(2)} bar set` : sentence(textProp(c, "characteristic", "linear").replace(/([A-Z])/g, " $1").toLowerCase()),
-        title: c.kind === "thermostaticValve" ? `Effective Kv/Kvs ${(o / 100).toFixed(3)} · sensed ${(s.multiphysics.trvSensors[c.id] ?? effectiveAmbient(s.project, c)).toFixed(1)} °C · closes at ${trvSetpoint(c) + 2} °C` : undefined,
+        detail: c.kind === "thermostaticValve" ? `${prop(c, 'dial') === 0 ? '❄' : prop(c, 'dial')} · ≈${trvTemperatureLabel(trvSetpoint(c))} °C` : started ? lpm(hr?.flow ?? 0) : c.kind === "pressureReducingValve" ? `${(prop(c, "pressureSetpoint") / 1e5).toFixed(2)} bar set` : sentence(textProp(c, "characteristic", "linear").replace(/([A-Z])/g, " $1").toLowerCase()),
+        title: c.kind === "thermostaticValve" ? `Effective Kv/Kvs ${(o / 100).toFixed(3)} · sensed ${(s.multiphysics.trvSensors[c.id] ?? effectiveAmbient(s.project, c)).toFixed(1)} °C · closes at ${trvTemperatureLabel(trvSetpoint(c) + 2)} °C` : undefined,
         pins: { labels: { position: "POS" } },
       };
     }
