@@ -567,7 +567,9 @@ function face(c: Component): Face {
       {definitions[c.kind].ports.filter((p) => p.domain === "control").map((p) => { const q = portLocal(c, p.id); return q.y > 92 ? null : <path key={p.id} d={q.x < 0 ? `M0 ${q.y}H58` : `M${c.kind === "not" ? 124 : 116} ${q.y}H174`} stroke={T.n13} strokeWidth="1.5" />; })}
     </g>,
     hero: out ?? "—",
-    detail: c.kind === "timer" ? `${s.automation.memory[c.id]?.elapsed?.toFixed(2) ?? "0.00"} s` : definitions[c.kind].spec,
+    detail: c.kind === "thermostat" ? `${prop(c, "setpoint")} °C · ${prop(c, "hysteresis")} K band`
+      : c.kind === "hysteresis" ? `${prop(c, "low")} / ${prop(c, "high")}`
+      : c.kind === "timer" ? `${s.automation.memory[c.id]?.elapsed?.toFixed(2) ?? "0.00"} s` : definitions[c.kind].spec,
     tone: out === "Invalid" ? "warning" : undefined,
     pins: { labels: labels[c.kind] ?? {}, strip: c.kind === "selector" },
   };
