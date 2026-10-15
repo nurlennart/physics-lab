@@ -157,7 +157,7 @@ export function ParameterSections({ c }: { c: Component }) {
   const grouped = groupOrder.map((g) => [g, fields.filter(([k]) => (paramSpec(c.kind, k)?.group ?? "advanced") === g)] as const).filter(([, list]) => list.length);
   return (
     <>
-      {c.kind === 'thermostaticValve' && <p className="field-hint">Dial {prop(c, 'dial') === 0 ? '❄' : prop(c, 'dial')} ≈ {trvSetpoint(c)} °C · closes at {trvSetpoint(c) + 2} °C. Sensed air: {(simulation.multiphysics.trvSensors[c.id] ?? effectiveAmbient(s.project, c)).toFixed(2)} °C. Effective opening reports Kv/Kvs, not stem travel. Retain a bypass or another open circuit for circulation.</p>}
+      {c.kind === 'thermostaticValve' && <section className="inspector-section"><p className="field-hint">Dial {prop(c, 'dial') === 0 ? '❄' : prop(c, 'dial')} ≈ {trvSetpoint(c)} °C · closes at {trvSetpoint(c) + 2} °C. Sensed air: {(simulation.multiphysics.trvSensors[c.id] ?? effectiveAmbient(s.project, c)).toFixed(2)} °C. Effective opening reports Kv/Kvs, not stem travel. Retain a bypass or another open circuit for circulation.</p></section>}
       {grouped.map(([group, list]) => (
         <details className="inspector-section param-group" key={group} open={group !== "advanced"}>
           <summary className="section-label">{groupTitles[group]}</summary>
