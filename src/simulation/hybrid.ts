@@ -9,11 +9,16 @@ export interface HybridReading {
  gridVoltage: number; gridFrequency: number; gridPhase: number; gridPower: number; gridReactive: number;
  dcPower: number; acPower: number; outputPower: number; conversionLoss: number; transferLoss: number;
  overload: boolean; fault: string; soc: number | null;
+ /** Converged coupling unknowns of this solve: the next accepted step's starting guess. */
+ warm?: HybridWarmStart;
 }
+/** Starting guess for the ESS coupling iteration. Only the start point; the converged fixed point and tolerance are unchanged. */
+export interface HybridWarmStart { activePower: number; dcDemand: number; currentCap: number; connected: boolean }
 export interface HybridState {
  mode: string; connected: boolean; gridValid: boolean; gridStable: number; outageElapsed: number; phase: number; frequency: number;
  overload: number; fault: string; imported: number; exported: number; dcIn: number; dcOut: number; lost: number; converterLossEnergy: number; transferLossEnergy: number;
  target: number; elapsed: number; direction: number; previousPower: number; absorption: number;
+ warm?: HybridWarmStart;
 }
 export function initialHybridState(c: Component): HybridState {
  return { mode:'off', connected:false, gridValid:false, gridStable:0, outageElapsed:0, phase:0, frequency:prop(c,'frequency',50), overload:0, fault:'', imported:0, exported:0, dcIn:0, dcOut:0, lost:0, converterLossEnergy:0, transferLossEnergy:0, target:prop(c,'dcTrackingVoltage',44.6),elapsed:0,direction:1,previousPower:0,absorption:0 };
@@ -25,7 +30,7 @@ export function hybridRatedPower(c: Component, t: number) {
 export function advanceHybrid(p: Project, states: Record<string,HybridState>, r: ElectricalResult,h:number) {
  for(const c of p.components.filter(c=>hybridKinds.includes(c.kind))) {
   const s=states[c.id], x=r.readings[c.id]?.hybrid; if(!s||!x) continue;
-  s.mode=x.mode;s.connected=x.connected;s.gridValid=x.gridValid;
+  s.mode=x.mode;s.connected=x.connected;s.gridValid=x.gridValid;s.warm=x.warm;
   s.gridStable=x.gridValid?s.gridStable+h:0;s.outageElapsed=x.connected?0:s.outageElapsed+h;
   if(x.fault) s.fault=x.fault;
   s.overload=x.overload?s.overload+h:0;

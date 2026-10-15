@@ -141,8 +141,8 @@
       "category": "Conservation",
       "name": "20 s coupled run at h=0.1",
       "expected": 0,
-      "measured": -5.311449058353901e-10,
-      "error": 5.311449058353901e-10,
+      "measured": 5.456968210637569e-10,
+      "error": 5.456968210637569e-10,
       "tolerance": 0.001,
       "unit": "J",
       "pass": true
@@ -151,8 +151,8 @@
       "category": "Conservation",
       "name": "1200 s solar + night global energy residual",
       "expected": 0,
-      "measured": 4.423782229423523e-9,
-      "error": 4.423782229423523e-9,
+      "measured": 5.122274160385132e-9,
+      "error": 5.122274160385132e-9,
       "tolerance": 0.01,
       "unit": "J",
       "pass": true
@@ -181,8 +181,8 @@
       "category": "Conservation",
       "name": "20 s coupled run at h=0.05",
       "expected": 0,
-      "measured": -1.3860699255019426e-9,
-      "error": 1.3860699255019426e-9,
+      "measured": 2.874003257602453e-10,
+      "error": 2.874003257602453e-10,
       "tolerance": 0.001,
       "unit": "J",
       "pass": true
@@ -191,8 +191,8 @@
       "category": "Timestep convergence",
       "name": "SOC difference h=0.1 versus h=0.05 after 20 s",
       "expected": 0,
-      "measured": 2.220446049250313e-16,
-      "error": 2.220446049250313e-16,
+      "measured": 4.440892098500626e-15,
+      "error": 4.440892098500626e-15,
       "tolerance": 0.000002,
       "unit": "1",
       "pass": true

@@ -7,6 +7,8 @@ export interface SolarState {
   target: number; direction: number; previousPower: number; elapsed: number;
   mode: string; absorption: number; running: boolean; overload: number;
   generated: number; output: number; lost: number;
+  /** Converged converter demand of the last accepted step: the next coupling iteration's starting guess. */
+  warm?: { demand?: number; inputLimit?: number; voltage?: number };
 }
 export function initialSolarState(c: Component): SolarState {
   return { target: prop(c, 'initialTrackingVoltage', 40), direction: 1, previousPower: 0, elapsed: 0, mode: 'off', absorption: 0, running: false, overload: 0, generated: 0, output: 0, lost: 0 };
@@ -65,7 +67,7 @@ export function advanceSolar(project: Project, states: Record<string, SolarState
     s.generated += (x.solar?.inputPower ?? 0) * h;
     s.output += (x.solar?.outputPower ?? (c.kind === 'solarPanel' ? -x.power : 0)) * h;
     s.lost += (x.heatPower ?? 0) * h;
-    s.mode = x.solar?.mode ?? 'off'; s.running = !!x.solar?.running;
+    s.mode = x.solar?.mode ?? 'off'; s.running = !!x.solar?.running; s.warm = x.solar?.warm;
     if (c.kind === 'mpptController') {
       if (x.solar?.targetVoltage !== undefined) s.target = x.solar.targetVoltage;
       if (s.mode === 'absorption') s.absorption += h;

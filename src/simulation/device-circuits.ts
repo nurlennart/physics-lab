@@ -4,7 +4,7 @@ import { hybridKinds } from './hybrid';
 import { solveSolar } from './solar-circuits';
 import { solarKinds } from './solar';
 import { definitions, prop, type Component, type Project } from './model';
-import { solveElectricalCore, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
+import { solveElectricalCore, WarmStartUnconverged, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { batteryAverageOCV, batteryChargeStep, batteryEnergy, batteryEnergyChange, batteryOCV, batteryResistanceFactor, polarizationBranch, selfDischargeCurrent } from './devices';
 
 type Expansion = { project: Project; coils: Map<string, string>; boilers: Map<string, string[]> };
@@ -227,5 +227,9 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
 
 export function solveElectrical(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
   const base = (p: Project, f: Record<string, boolean>, r: ElectricalRuntime) => p.components.some(c => solarKinds.includes(c.kind)) ? solveSolar(p, f, r, solveDevices) : solveDevices(p, f, r);
-  return project.components.some(c => hybridKinds.includes(c.kind)) ? solveHybrid(project, failed, runtime, base) : base(project, failed, runtime);
+  const run = (r: ElectricalRuntime) => project.components.some(c => hybridKinds.includes(c.kind)) ? solveHybrid(project, failed, r, base) : base(project, failed, r);
+  // Converter couplings start from the last accepted step; if that does not converge within the budget, the
+  // whole solve repeats from the cold start (the same fixed point, reached by the original iteration path).
+  try { return run(runtime); }
+  catch (e) { if (e instanceof WarmStartUnconverged && !runtime.coldStart) return run({ ...runtime, coldStart: true }); throw e; }
 }

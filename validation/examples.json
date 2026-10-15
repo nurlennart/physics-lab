@@ -526,17 +526,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 242797.95982991435,
-    "energyResidual": -1.6871490515768528e-7,
+    "suppliedEnergy": 242797.9598340721,
+    "energyResidual": -1.2275995686650276e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 49.99999999966929
+        "value": 50.00000007157582
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.8402777305135899
+        "value": 0.8402777317099502
       },
       {
         "name": "Exported grid energy",
@@ -544,27 +544,27 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 299.9994328925114
+        "value": 299.9994328925082
       },
       {
         "name": "Solar charger 1 output",
-        "value": 881.9857325813316
+        "value": 881.9857325871615
       },
       {
         "name": "Battery SOC",
-        "value": 50.1276252761951
+        "value": 50.127625276219526
       },
       {
         "name": "Stored chemical energy",
-        "value": 9066136.883151084
+        "value": 9066136.883155702
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 7.686370888635958
+        "value": 7.686370890213685
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 450.01138945589435
+        "value": 450.01138938611655
       },
       {
         "name": "Protected output available",
@@ -572,11 +572,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.0071834207596
+        "value": 200.0071834207554
       },
       {
         "name": "Hybrid losses",
-        "value": 27.98628032408743
+        "value": 27.986280316727594
       }
     ]
   },
@@ -587,17 +587,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 242797.95982991435,
-    "energyResidual": -1.6871490515768528e-7,
+    "suppliedEnergy": 242797.9598340721,
+    "energyResidual": -1.2275995686650276e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 49.99999999966929
+        "value": 50.00000007157582
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.8402777305135899
+        "value": 0.8402777317099502
       },
       {
         "name": "Exported grid energy",
@@ -605,27 +605,27 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 299.9994328925114
+        "value": 299.9994328925082
       },
       {
         "name": "Solar charger 1 output",
-        "value": 881.9857325813316
+        "value": 881.9857325871615
       },
       {
         "name": "Battery SOC",
-        "value": 50.1276252761951
+        "value": 50.127625276219526
       },
       {
         "name": "Stored chemical energy",
-        "value": 9066136.883151084
+        "value": 9066136.883155702
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 7.686370888635958
+        "value": 7.686370890213685
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 450.01138945589435
+        "value": 450.01138938611655
       },
       {
         "name": "Protected output available",
@@ -633,11 +633,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.0071834207596
+        "value": 200.0071834207554
       },
       {
         "name": "Hybrid losses",
-        "value": 27.98628032408743
+        "value": 27.986280316727594
       }
     ]
   },
@@ -648,17 +648,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 239802.95982977087,
-    "energyResidual": -2.1641608327627182e-7,
+    "suppliedEnergy": 239802.95983505665,
+    "energyResidual": -2.1755113266408443e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 0
+        "value": 8.4980911196908e-8
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.00833328607463102
+        "value": 0.008333287488497921
       },
       {
         "name": "Exported grid energy",
@@ -666,11 +666,11 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 300
+        "value": 299.99999999999903
       },
       {
         "name": "Solar charger 1 output",
-        "value": 530.0753900737379
+        "value": 530.0753899818535
       },
       {
         "name": "Battery SOC",
@@ -686,7 +686,7 @@
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 500.0158791179387
+        "value": 500.0158790296893
       },
       {
         "name": "Protected output available",
@@ -694,11 +694,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.00907382692307
+        "value": 200.00907382691975
       },
       {
         "name": "Hybrid losses",
-        "value": 30.066316248804803
+        "value": 30.06631624516578
       }
     ]
   },
@@ -709,17 +709,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 239802.95982977087,
-    "energyResidual": -2.1641608327627182e-7,
+    "suppliedEnergy": 239802.95983505665,
+    "energyResidual": -2.1755113266408443e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 0
+        "value": 8.4980911196908e-8
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.00833328607463102
+        "value": 0.008333287488497921
       },
       {
         "name": "Exported grid energy",
@@ -727,11 +727,11 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 300
+        "value": 299.99999999999903
       },
       {
         "name": "Solar charger 1 output",
-        "value": 530.0753900737379
+        "value": 530.0753899818535
       },
       {
         "name": "Battery SOC",
@@ -747,7 +747,7 @@
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 500.0158791179387
+        "value": 500.0158790296893
       },
       {
         "name": "Protected output available",
@@ -755,11 +755,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.00907382692307
+        "value": 200.00907382691975
       },
       {
         "name": "Hybrid losses",
-        "value": 30.066316248804803
+        "value": 30.06631624516578
       }
     ]
   },
@@ -770,17 +770,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 242797.95982991435,
-    "energyResidual": -1.6871490515768528e-7,
+    "suppliedEnergy": 242797.9598340721,
+    "energyResidual": -1.2275995686650276e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 49.99999999966929
+        "value": 50.00000007157582
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.8402777305135899
+        "value": 0.8402777317099502
       },
       {
         "name": "Exported grid energy",
@@ -788,27 +788,27 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 299.9994328925114
+        "value": 299.9994328925082
       },
       {
         "name": "Solar charger 1 output",
-        "value": 881.9857325813316
+        "value": 881.9857325871615
       },
       {
         "name": "Battery SOC",
-        "value": 50.1276252761951
+        "value": 50.127625276219526
       },
       {
         "name": "Stored chemical energy",
-        "value": 9066136.883151084
+        "value": 9066136.883155702
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 7.686370888635958
+        "value": 7.686370890213685
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 450.01138945589435
+        "value": 450.01138938611655
       },
       {
         "name": "Protected output available",
@@ -816,11 +816,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.0071834207596
+        "value": 200.0071834207554
       },
       {
         "name": "Hybrid losses",
-        "value": 27.98628032408743
+        "value": 27.986280316727594
       }
     ]
   },
@@ -831,17 +831,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 242797.95982991435,
-    "energyResidual": -1.6871490515768528e-7,
+    "suppliedEnergy": 242797.9598340721,
+    "energyResidual": -1.2275995686650276e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 49.99999999966929
+        "value": 50.00000007157582
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.8402777305135899
+        "value": 0.8402777317099502
       },
       {
         "name": "Exported grid energy",
@@ -849,27 +849,27 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 299.9994328925114
+        "value": 299.9994328925082
       },
       {
         "name": "Solar charger 1 output",
-        "value": 881.9857325813316
+        "value": 881.9857325871615
       },
       {
         "name": "Battery SOC",
-        "value": 50.1276252761951
+        "value": 50.127625276219526
       },
       {
         "name": "Stored chemical energy",
-        "value": 9066136.883151084
+        "value": 9066136.883155702
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 7.686370888635958
+        "value": 7.686370890213685
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 450.01138945589435
+        "value": 450.01138938611655
       },
       {
         "name": "Protected output available",
@@ -877,11 +877,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.0071834207596
+        "value": 200.0071834207554
       },
       {
         "name": "Hybrid losses",
-        "value": 27.98628032408743
+        "value": 27.986280316727594
       }
     ]
   },
@@ -892,17 +892,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 398650.3838299143,
-    "energyResidual": -1.6781268641352654e-7,
+    "suppliedEnergy": 398650.3838340723,
+    "energyResidual": -1.223525032401085e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 49.99999999966929
+        "value": 50.00000007157582
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.8402777305135899
+        "value": 0.8402777317099502
       },
       {
         "name": "Exported grid energy",
@@ -910,31 +910,31 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 299.9994328925114
+        "value": 299.9994328925082
       },
       {
         "name": "Solar charger 1 output",
-        "value": 881.9857325809685
+        "value": 881.9857325871901
       },
       {
         "name": "Solar charger 2 output",
-        "value": 558.8385815559732
+        "value": 558.8385815549091
       },
       {
         "name": "Battery SOC",
-        "value": 50.30372202705473
+        "value": 50.30372202707885
       },
       {
         "name": "Stored chemical energy",
-        "value": 9099442.123686263
+        "value": 9099442.123690825
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 18.3061873212038
+        "value": 18.306187322766622
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 450.01138945589435
+        "value": 450.01138938611655
       },
       {
         "name": "Protected output available",
@@ -942,11 +942,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.0071834207596
+        "value": 200.0071834207554
       },
       {
         "name": "Hybrid losses",
-        "value": 27.98628032408419
+        "value": 27.986280316724937
       }
     ]
   },
@@ -957,17 +957,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 398650.3838299143,
-    "energyResidual": -1.6781268641352654e-7,
+    "suppliedEnergy": 398650.3838340723,
+    "energyResidual": -1.223525032401085e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Grid import (+) / export (−)",
-        "value": 49.99999999966929
+        "value": 50.00000007157582
       },
       {
         "name": "Purchased grid energy",
-        "value": 0.8402777305135899
+        "value": 0.8402777317099502
       },
       {
         "name": "Exported grid energy",
@@ -975,31 +975,31 @@
       },
       {
         "name": "Household AC consumption",
-        "value": 299.9994328925114
+        "value": 299.9994328925082
       },
       {
         "name": "Solar charger 1 output",
-        "value": 881.9857325809685
+        "value": 881.9857325871901
       },
       {
         "name": "Solar charger 2 output",
-        "value": 558.8385815559732
+        "value": 558.8385815549091
       },
       {
         "name": "Battery SOC",
-        "value": 50.30372202705473
+        "value": 50.30372202707885
       },
       {
         "name": "Stored chemical energy",
-        "value": 9099442.123686263
+        "value": 9099442.123690825
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 18.3061873212038
+        "value": 18.306187322766622
       },
       {
         "name": "Hybrid AC conversion",
-        "value": 450.01138945589435
+        "value": 450.01138938611655
       },
       {
         "name": "Protected output available",
@@ -1007,11 +1007,11 @@
       },
       {
         "name": "Protected AC consumption",
-        "value": 200.0071834207596
+        "value": 200.0071834207554
       },
       {
         "name": "Hybrid losses",
-        "value": 27.98628032408419
+        "value": 27.986280316724937
       }
     ]
   },
@@ -1022,21 +1022,21 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 119886.47999999997,
-    "energyResidual": -2.0372681319713593e-10,
+    "suppliedEnergy": 119886.47999999995,
+    "energyResidual": -7.275957614183426e-11,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 268.3761183997663
+        "value": 268.37611836671925
       },
       {
         "name": "Charger output",
-        "value": 263.0085960171973
+        "value": 263.0085960172579
       },
       {
         "name": "Battery SOC",
-        "value": 50.331666666667175
+        "value": 50.33166666666718
       },
       {
         "name": "Stored chemical energy",
@@ -1055,21 +1055,21 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 119886.47999999997,
-    "energyResidual": -2.0372681319713593e-10,
+    "suppliedEnergy": 119886.47999999995,
+    "energyResidual": -7.275957614183426e-11,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 268.3761183997663
+        "value": 268.37611836671925
       },
       {
         "name": "Charger output",
-        "value": 263.0085960171973
+        "value": 263.0085960172579
       },
       {
         "name": "Battery SOC",
-        "value": 50.331666666667175
+        "value": 50.33166666666718
       },
       {
         "name": "Stored chemical energy",
@@ -1089,7 +1089,7 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 119886.48,
-    "energyResidual": 1.1204974725842476e-9,
+    "energyResidual": -7.712515071034431e-10,
     "massResidual": 0,
     "probes": [
       {
@@ -1098,23 +1098,23 @@
       },
       {
         "name": "Charger output",
-        "value": 440.9286560156902
+        "value": 440.92865601047555
       },
       {
         "name": "Battery SOC",
-        "value": 50.193365964041995
+        "value": 50.193365964041305
       },
       {
         "name": "Stored chemical energy",
-        "value": 4539285.134244563
+        "value": 4539285.134244499
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 11.68298976857746
+        "value": 11.68298976814383
       },
       {
         "name": "Inverter DC input",
-        "value": 112.73611110491677
+        "value": 112.73611111110645
       },
       {
         "name": "AC useful load",
@@ -1122,7 +1122,7 @@
       },
       {
         "name": "DC useful load",
-        "value": 21.084693583510376
+        "value": 21.084693583509253
       }
     ]
   },
@@ -1134,7 +1134,7 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 119886.48,
-    "energyResidual": 1.1204974725842476e-9,
+    "energyResidual": -7.712515071034431e-10,
     "massResidual": 0,
     "probes": [
       {
@@ -1143,23 +1143,23 @@
       },
       {
         "name": "Charger output",
-        "value": 440.9286560156902
+        "value": 440.92865601047555
       },
       {
         "name": "Battery SOC",
-        "value": 50.193365964041995
+        "value": 50.193365964041305
       },
       {
         "name": "Stored chemical energy",
-        "value": 4539285.134244563
+        "value": 4539285.134244499
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 11.68298976857746
+        "value": 11.68298976814383
       },
       {
         "name": "Inverter DC input",
-        "value": 112.73611110491677
+        "value": 112.73611111110645
       },
       {
         "name": "AC useful load",
@@ -1167,7 +1167,7 @@
       },
       {
         "name": "DC useful load",
-        "value": 21.084693583510376
+        "value": 21.084693583509253
       }
     ]
   },
@@ -1178,29 +1178,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 119886.47999999997,
-    "energyResidual": 1.5404082454040235e-9,
+    "suppliedEnergy": 119886.47999999994,
+    "energyResidual": 1.6131678215458578e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 263.64605214834427
+        "value": 263.6460521206079
       },
       {
         "name": "Charger output",
-        "value": 258.3731310910759
+        "value": 258.3731310912319
       },
       {
         "name": "Battery SOC",
-        "value": 20.320429973211706
+        "value": 20.320429973211702
       },
       {
         "name": "Stored chemical energy",
-        "value": 867182.6161125709
+        "value": 867182.6161125706
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 19.31621453033363
+        "value": 19.316214530333955
       },
       {
         "name": "Circulator electrical power",
@@ -1219,29 +1219,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 119886.47999999997,
-    "energyResidual": 1.5404082454040235e-9,
+    "suppliedEnergy": 119886.47999999994,
+    "energyResidual": 1.6131678215458578e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 263.64605214834427
+        "value": 263.6460521206079
       },
       {
         "name": "Charger output",
-        "value": 258.3731310910759
+        "value": 258.3731310912319
       },
       {
         "name": "Battery SOC",
-        "value": 20.320429973211706
+        "value": 20.320429973211702
       },
       {
         "name": "Stored chemical energy",
-        "value": 867182.6161125709
+        "value": 867182.6161125706
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 19.31621453033363
+        "value": 19.316214530333955
       },
       {
         "name": "Circulator electrical power",
@@ -1261,28 +1261,28 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 191818.368,
-    "energyResidual": 2.0372681319713593e-10,
+    "energyResidual": -3.2014213502407074e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 449.93785927378514
+        "value": 449.9378592728911
       },
       {
         "name": "Charger output",
-        "value": 440.93910209545425
+        "value": 440.9391021037145
       },
       {
         "name": "Battery SOC",
-        "value": 50.27770224075514
+        "value": 50.27770224076019
       },
       {
         "name": "Stored chemical energy",
-        "value": 4547260.44930822
+        "value": 4547260.449308698
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 16.768745668298873
+        "value": 16.768745668612063
       },
       {
         "name": "Solar Panel (PV) operating voltage",
@@ -1318,28 +1318,28 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 191818.368,
-    "energyResidual": 2.0372681319713593e-10,
+    "energyResidual": -3.2014213502407074e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 449.93785927378514
+        "value": 449.9378592728911
       },
       {
         "name": "Charger output",
-        "value": 440.93910209545425
+        "value": 440.9391021037145
       },
       {
         "name": "Battery SOC",
-        "value": 50.27770224075514
+        "value": 50.27770224076019
       },
       {
         "name": "Stored chemical energy",
-        "value": 4547260.44930822
+        "value": 4547260.449308698
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 16.768745668298873
+        "value": 16.768745668612063
       },
       {
         "name": "Solar Panel (PV) operating voltage",

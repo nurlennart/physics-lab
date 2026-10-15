@@ -1,7 +1,7 @@
 import { acDischargeBudget, essActiveCommand, solarSurplus } from './ess';
 /** Grid-following current injection and isolated backup, coupled through actual MNA port powers. */
 import { definitions, prop, type Component, type Project, type Terminal } from './model';
-import type { ElectricalReading, ElectricalResult, ElectricalRuntime } from './electrical-core';
+import { WARM_START_BUDGET, WarmStartUnconverged, type ElectricalReading, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { hybridKinds, hybridRatedPower, initialHybridState, phaseDifference, type HybridReading } from './hybrid';
 import { inverterLoss } from './solar';
 type Solve=(p:Project,f:Record<string,boolean>,r:ElectricalRuntime)=>ElectricalResult;
@@ -65,6 +65,9 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   const ok=result.readings[e.ids.get(c.id)![0]]?.voltageValid!==false&&c.props.enabled!==false&&!failed[c.id]&&!s.fault&&(runtime.temperatures?.[c.id]??20)<=prop(c,'maxTemperature')&&v>=prop(c,c.kind==='hybridInverter'&&g.connected?'minVoltage':s.mode==='off'||s.mode==='DC voltage lockout'?'restartVoltage':'minVoltage')&&v<=prop(c,'maxInputVoltage');
   dcTargets[c.id]=c.kind==='gridInverter'&&g.connected&&ok?Math.max(prop(c,'minVoltage'),(s.target>.98*v?.85*v:s.target)):s.target;
   enabled.set(c.id,ok);activePower[c.id]=c.props.standby&&g.connected?-prop(c,'standbyPower'):0;dcDemand[c.id]=0;currentCap[c.id]=prop(c,'maxDCDischargeCurrent');
+  // Warm start: the previous accepted step's converged unknowns, while the transfer state is unchanged. Only the
+  // iteration's starting point moves; the fixed point, deadband and 1e-10 convergence test are unchanged.
+  if(!runtime.coldStart&&s.warm&&s.warm.connected===g.connected&&!c.props.standby){activePower[c.id]=s.warm.activePower;dcDemand[c.id]=s.warm.dcDemand;currentCap[c.id]=s.warm.currentCap;}
   const canDischarge=!battery || (runtime.devices?.batteries[battery.id]??prop(battery,'initialSOC')/100)>1e-14 && v>prop(battery,'bmsLowVoltage',0) && (runtime.temperatures?.[battery.id]??20)>=prop(battery,'minDischargeTemperature',-Infinity);
   const backup=canDischarge&&c.kind==='hybridInverter'&&!g.connected&&ok&&!c.props.standby&&s.outageElapsed+1e-10>=prop(c,'transferTime');
   if(!g.connected&&!canDischarge)enabled.set(c.id,false);
@@ -195,6 +198,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   prepare(result,models,failures);
   const next=solve(e.project,failures,{...runtime,sourceModels:models,acInjections:injections});
   if(observe(next)<1e-10)break;
+  if(!runtime.coldStart&&k===WARM_START_BUDGET-1)throw new WarmStartUnconverged('Warm-started hybrid coupling exceeded its iteration budget.');
   if(k===299)throw Error(`Hybrid electrical coupling did not converge (relative residual ${error}).`);
  }
  function vChargeStage(c:Component,v:number){return v>=prop(c,'absorptionVoltage')-1e-6?'grid charging · absorption':'grid charging · bulk';}
@@ -218,7 +222,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
    const outputV=phasor(result,c,c.kind==='gridInverter'?'ga':'oa',c.kind==='gridInverter'?'gb':'ob');
    const contactI:Cx=c.kind==='hybridInverter'?result.readings[line].currentPhasor??[0,0]:[0,0];
    const converterI=y.currentPhasor??[0,0],outI:Cx=[contactI[0]-converterI[0],contactI[1]-converterI[1]],out=power(outputV,outI);
-   const h:HybridReading={targetVoltage:c.kind==='gridInverter'&&enabled.get(c.id)&&g.connected?dcTargets[c.id]:undefined,acInputPower:c.kind==='hybridInverter'?power(phasor(result,c,'ga','gb'),contactI)[0]:y.power,mode:faults.get(c.id)||modes.get(c.id)!,gridValid:g.valid,connected:g.connected,backupAvailable:magnitude(outputV)>1&&c.kind==='hybridInverter',gridVoltage:g.voltage,gridFrequency:g.frequency,gridPhase:g.phase,gridPower:flow?.[0]??(c.kind==='hybridInverter'?power(phasor(result,c,'ga','gb'),contactI)[0]:y.power),gridReactive:flow?.[1]??0,dcPower:x.power,acPower:-y.power,outputPower:out[0],conversionLoss:loss,transferLoss,overload:-y.power>hybridRatedPower(c,runtime.temperatures?.[c.id]??20)||Math.hypot(y.power,y.reactivePower??0)>prop(c,'ratedApparentPower'),fault:faults.get(c.id)==='overload'||faults.get(c.id)==='transfer overcurrent'?faults.get(c.id)!:'',soc};
+   const h:HybridReading={targetVoltage:c.kind==='gridInverter'&&enabled.get(c.id)&&g.connected?dcTargets[c.id]:undefined,acInputPower:c.kind==='hybridInverter'?power(phasor(result,c,'ga','gb'),contactI)[0]:y.power,mode:faults.get(c.id)||modes.get(c.id)!,gridValid:g.valid,connected:g.connected,backupAvailable:magnitude(outputV)>1&&c.kind==='hybridInverter',gridVoltage:g.voltage,gridFrequency:g.frequency,gridPhase:g.phase,gridPower:flow?.[0]??(c.kind==='hybridInverter'?power(phasor(result,c,'ga','gb'),contactI)[0]:y.power),gridReactive:flow?.[1]??0,dcPower:x.power,acPower:-y.power,outputPower:out[0],conversionLoss:loss,transferLoss,overload:-y.power>hybridRatedPower(c,runtime.temperatures?.[c.id]??20)||Math.hypot(y.power,y.reactivePower??0)>prop(c,'ratedApparentPower'),fault:faults.get(c.id)==='overload'||faults.get(c.id)==='transfer overcurrent'?faults.get(c.id)!:'',soc,warm:{activePower:activePower[c.id],dcDemand:dcDemand[c.id],currentCap:currentCap[c.id],connected:g.connected}};
    if(g.connected&&h.dcPower< -1e-6) h.mode=s.absorption>=prop(c,'absorptionTime')?'grid charging · float':vChargeStage(c,x.voltage);
    // The input current limit applies to import; export is bounded separately by exportLimit.
    if(g.connected&&h.gridPower>0&&Math.hypot(h.gridPower,h.gridReactive)>prop(c,'acInputCurrentLimit')*g.voltage+1e-5) h.mode='grid import limit exceeded';

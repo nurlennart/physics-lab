@@ -1,6 +1,6 @@
 /** Renewable devices expand into normal MNA branches. Iteration couples ports by measured electrical power. */
 import { definitions, prop, type Component, type Project, type Terminal } from './model';
-import type { ElectricalResult, ElectricalRuntime } from './electrical-core';
+import { WARM_START_BUDGET, WarmStartUnconverged, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { initialSolarState, inverterLoss, pvModel, solarKinds } from './solar';
 
 type Solve = (p: Project, f: Record<string, boolean>, r: ElectricalRuntime) => ElectricalResult;
@@ -50,9 +50,14 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       // Overcurrent is latched until reset. Undervoltage recovers with hysteresis; the engine owns thermal failure latches.
       if (st.mode === 'overcurrent') off.set(c.id, 'overcurrent');
     }
-    if (c.kind === 'solarPanel') volts[c.id] = panelModel(c).voc;
-    if (c.kind === 'mpptController') { targets[c.id] = st.target; demand[c.id] = prop(c, 'maxCurrent'); inputLimits[c.id] = prop(c, 'maxInputCurrent'); }
-    if (c.kind === 'inverter') { demand[c.id] = c.props.standby ? prop(c, 'standbyPower') : prop(c, 'idlePower'); if (st.mode === 'overload') off.set(c.id, 'overload'); }
+    // Panels start at open circuit for the converter startup check; a panel that was delivering power then
+    // resumes from its last accepted operating voltage (below), the warm start of the PV iteration.
+    if (c.kind === 'solarPanel') volts[c.id] = runtime.coldStart || st.warm?.voltage === undefined || units.some(u => u.kind === 'mpptController' || u.kind === 'inverter') ? panelModel(c).voc : st.warm.voltage;
+    // Warm start: a converter that was running starts from its last accepted converged demand (and input limit).
+    // Only the iteration's starting point moves; the fixed point and 1e-10 convergence test are unchanged.
+    const warm = !runtime.coldStart && st.running ? st.warm : undefined;
+    if (c.kind === 'mpptController') { targets[c.id] = st.target; demand[c.id] = warm?.demand ?? prop(c, 'maxCurrent'); inputLimits[c.id] = warm?.inputLimit ?? prop(c, 'maxInputCurrent'); }
+    if (c.kind === 'inverter') { demand[c.id] = c.props.standby ? prop(c, 'standbyPower') : warm?.demand ?? prop(c, 'idlePower'); if (st.mode === 'overload') off.set(c.id, 'overload'); }
     if (off.has(c.id)) parts?.forEach(id => failures[id] = true);
   }
   let boot = units.some(c => c.kind === 'mpptController' || c.kind === 'inverter');
@@ -151,6 +156,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
     }
     if (error < 1e-10 && boot) {
       boot = false;
+      if (!runtime.coldStart) for (const c of units) { const v = states(c).warm?.voltage; if (c.kind === 'solarPanel' && v !== undefined) volts[c.id] = v; }
       for (const c of units.filter(c => c.kind === 'mpptController' || c.kind === 'inverter')) {
         const parts = e.ids.get(c.id)!, st = states(c), vin = sense(result, c, 'a', 'b'), vb = sense(result, c, 'oa', 'ob');
         if (c.kind === 'mpptController') {
@@ -179,6 +185,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       error = Math.max(error, runtime.coupling.residual(result, tangent));
     }
     if (error < 1e-10) break;
+    if (!runtime.coldStart && k === WARM_START_BUDGET - 1) throw new WarmStartUnconverged('Warm-started solar coupling exceeded its iteration budget.');
     if (k === 499) throw Error(`Solar electrical coupling did not converge (relative residual ${error}). Check converter settings and bus wiring.`);
   }
   const r = result!;
@@ -196,7 +203,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       r.sourcePower += m.irradiation + x.power;
       r.dissipatedPower += waste;
       // Optical rejection and module heat leave to the cell-temperature reservoir, an external boundary.
-      x.solar = { inputPower: m.irradiation, outputPower: electrical, irradiation: m.irradiation, efficiency: m.irradiation > 0 ? electrical / m.irradiation : 0, mppPower: m.pmp, mppVoltage: m.vmp, mppCurrent: m.imp, mode: off.get(c.id) ?? (electrical > 0 ? 'generating' : 'open circuit'), running: electrical > 0 };
+      x.solar = { inputPower: m.irradiation, outputPower: electrical, irradiation: m.irradiation, efficiency: m.irradiation > 0 ? electrical / m.irradiation : 0, mppPower: m.pmp, mppVoltage: m.vmp, mppCurrent: m.imp, mode: off.get(c.id) ?? (electrical > 0 ? 'generating' : 'open circuit'), running: electrical > 0, ...(electrical > 0 ? { warm: { voltage: volts[c.id] } } : {}) };
       x.heatPower = waste;
     } else if (c.kind === 'mpptController' || c.kind === 'inverter') {
       const input = Math.max(0, x.power), output = Math.max(0, -y!.power), heat = input - output;
@@ -206,7 +213,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       else { r.sourcePower += y!.power; r.dissipatedPower -= x.power; }
       r.dissipatedPower += heat;
       x.heatPower = heat; x.power = heat;
-      x.solar = { inputPower: input, outputPower: output, efficiency: input > 1e-9 ? output / input : 0, mode: off.get(c.id) ?? (c.props.standby ? 'standby' : c.kind === 'inverter' ? 'inverting' : st.absorption >= prop(c, 'absorptionTime') ? 'float' : y!.voltage >= prop(c, 'absorptionVoltage') - 1e-8 ? 'absorption' : 'bulk'), running: !off.has(c.id) && !c.props.standby, apparentPower: y?.apparentPower ?? Math.hypot(output, y?.reactivePower ?? 0) };
+      x.solar = { inputPower: input, outputPower: output, efficiency: input > 1e-9 ? output / input : 0, mode: off.get(c.id) ?? (c.props.standby ? 'standby' : c.kind === 'inverter' ? 'inverting' : st.absorption >= prop(c, 'absorptionTime') ? 'float' : y!.voltage >= prop(c, 'absorptionVoltage') - 1e-8 ? 'absorption' : 'bulk'), running: !off.has(c.id) && !c.props.standby, apparentPower: y?.apparentPower ?? Math.hypot(output, y?.reactivePower ?? 0), warm: { demand: demand[c.id], inputLimit: inputLimits[c.id] ?? 0 } };
       if (c.kind === 'mpptController') { x.solar.targetVoltage = targets[c.id]; x.solar.trackingActive = !off.has(c.id) && input > 1e-6 && Math.abs(x.voltage - targets[c.id]) < 1e-6 && Math.abs(y!.current) < prop(c, 'maxCurrent') - 1e-6 && y!.voltage < (chargingVoltage(c)) - 1e-6; x.solar.mppPower = available.get(c.id) ?? 0; x.solar.trackingEfficiency = x.solar.mppPower > 0 ? input / x.solar.mppPower : 0; }
       x.secondaryVoltage = y!.voltage; x.secondaryCurrent = Math.abs(y!.current);
     } else {

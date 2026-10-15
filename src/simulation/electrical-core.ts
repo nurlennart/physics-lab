@@ -17,7 +17,7 @@ export interface ElectricalReading {
   hybrid?: import("./hybrid").HybridReading;
   /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
   stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
-  solar?: { trackingActive?: boolean; achievablePower?: number; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
+  solar?: { warm?: { demand?: number; inputLimit?: number; voltage?: number }; trackingActive?: boolean; achievablePower?: number; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
   inputPower?: number;
   /**
    * DC storage: a capacitor's current into its dielectric (excluding leakage), an inductor's voltage across its inductance,
@@ -138,6 +138,8 @@ export interface ElectricalRuntime {
   devices?: { hybrid?: Record<string, import("./hybrid").HybridState>; solar?: Record<string, import("./solar").SolarState>; batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
   /** Controlled AC branch currents into terminal a. These never establish a voltage reference. */
   acInjections?: Record<string, [number, number]>;
+  /** Fallback solve: converter iterations start from their cold initial values instead of the last accepted step. */
+  coldStart?: boolean;
   /** Ephemeral converter iteration hook; never retained in Devices or serialized. */
   coupling?: {
     prepare: (last: ElectricalResult | undefined, models: NonNullable<ElectricalRuntime['sourceModels']>, failures: Record<string, boolean>) => void;
@@ -172,6 +174,10 @@ export interface ElectricalRuntime {
   /** Lamp filament resistance relative to the configured hot resistance (filament.ts); missing = hot. */
   filaments?: Record<string, number>;
 }
+/** A warm-started converter iteration exceeded its budget; solveElectrical repeats the solve from the cold start. */
+export class WarmStartUnconverged extends Error {}
+/** Iterations a warm-started converter coupling may take before the cold-start fallback. */
+export const WARM_START_BUDGET = 100;
 /** DC insulation (self-discharge) leakage of a capacitor, across its terminals (Ω). */
 export const CAPACITOR_LEAKAGE = 1e9;
 /** Path across an energized inductor that carries an interrupted current: the switching arc and winding capacitance (Ω). */
