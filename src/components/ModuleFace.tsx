@@ -4,6 +4,7 @@ import { definitions, prop, textProp, type Component } from "../simulation/model
 import { simulation } from "../editor/store";
 import { dimensions, portLocal } from "../editor/geometry";
 import { effectiveAmbient } from "../simulation/environment";
+import { trvSetpoint } from "../simulation/thermostatic-valve";
 
 /**
  * Schematic module faces (docs/DESIGN.md § Modules). Every module answers, in this order: what it is (symbol and
@@ -440,16 +441,18 @@ function face(c: Component): Face {
         hero: started ? lpm(hr?.flow ?? 0) : `${prop(c, "length")} m · Ø${(prop(c, "diameter") * 1000).toFixed(0)} mm`,
         detail: started ? `Δp ${si(Math.abs(hr?.differentialPressure ?? 0), "Pa")}` : prop(c, "insulation") > 0 ? "Insulated" : sentence(textProp(c, "material", "steel")),
       };
-    case "valve": case "checkValve": case "actuatedValve": case "pressureReducingValve": {
+    case "valve": case "checkValve": case "actuatedValve": case "thermostaticValve": case "pressureReducingValve": {
       const o = opening(c);
       const extra = c.kind === "checkValve" ? <circle cx="87" cy="66" r="4" fill={INK} />
+        : c.kind === "thermostaticValve" ? <g><path d="M87 54V49" stroke={INK} strokeWidth="1.5" /><circle cx="87" cy="39" r="10" fill={T.n4} stroke={INK} strokeWidth="1.25" /><Glyph x={87} y={43} size={11} mono>{prop(c, 'dial') === 0 ? '❄' : prop(c, 'dial')}</Glyph></g>
         : c.kind === "actuatedValve" ? <g><path d="M87 54V48" stroke={INK} strokeWidth="1.5" /><rect x="77" y="36" width="20" height="12" rx="2" fill={T.n4} stroke={INK} strokeWidth="1.25" /><Glyph x={87} y={46} size={12} mono>M</Glyph></g>
         : c.kind === "pressureReducingValve" ? <path d="M87 54V42M80 42h14M81 38l12-4M81 34l12-4" stroke={INK} strokeWidth="1.25" fill="none" />
         : <path d="M87 54V44M79 44h16" stroke={INK} strokeWidth="1.5" />;
       return {
         symbol: <g><Leads x0={69} x1={105} color={T.hydraulic} width={3} /><ValveBody opening={o} />{extra}</g>,
-        hero: c.kind === "checkValve" ? (o > 0 ? "Open" : "Closed") : `${o.toFixed(0)} % open`,
-        detail: started ? lpm(hr?.flow ?? 0) : c.kind === "pressureReducingValve" ? `${(prop(c, "pressureSetpoint") / 1e5).toFixed(2)} bar set` : sentence(textProp(c, "characteristic", "linear").replace(/([A-Z])/g, " $1").toLowerCase()),
+        hero: c.kind === "checkValve" ? (o > 0 ? "Open" : "Closed") : `${o.toFixed(0)} % ${c.kind === 'thermostaticValve' ? 'Kv' : 'open'}`,
+        detail: c.kind === "thermostaticValve" ? `${prop(c, 'dial') === 0 ? '❄' : prop(c, 'dial')} · ≈${trvSetpoint(c)} °C` : started ? lpm(hr?.flow ?? 0) : c.kind === "pressureReducingValve" ? `${(prop(c, "pressureSetpoint") / 1e5).toFixed(2)} bar set` : sentence(textProp(c, "characteristic", "linear").replace(/([A-Z])/g, " $1").toLowerCase()),
+        title: c.kind === "thermostaticValve" ? `Effective Kv/Kvs ${(o / 100).toFixed(3)} · sensed ${(s.multiphysics.trvSensors[c.id] ?? effectiveAmbient(s.project, c)).toFixed(1)} °C · closes at ${trvSetpoint(c) + 2} °C` : undefined,
         pins: { labels: { position: "POS" } },
       };
     }

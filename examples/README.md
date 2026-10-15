@@ -1,5 +1,7 @@
 # Experiment shelf
 
+`thermostaticRoom.physics.json` demonstrates the self-acting radiator valve: a numbered dial senses room air, while the Bosch regulates its water temperature and a balanced bypass maintains circulation.
+
 Open **File → Starters & examples** in the app for descriptions and suggested experiments. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
 
 - `boiler`: Bosch TH3000 9 (no internal pump), ALPHA2-style external circulator, insulated pipes, balancing valve and panel radiator in a sealed loop; staged phase loading, supply/return and heat-flow measurements, optional flow protection. See [model basis](../docs/ELECTRIC-BOILER.md).

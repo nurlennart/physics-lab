@@ -724,7 +724,7 @@ export default function Workspace() {
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(-(simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 9806.65).toFixed(2)} m head`
                       : c.kind === "panelRadiator"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ΔT ${(simulation.multiphysics.hydraulic.readings[c.id]?.excessTemperature ?? 0).toFixed(1)} K`
-                        : ["pipe", "valve", "checkValve", "actuatedValve", "fluidJunction"].includes(c.kind)
+                        : ["pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction"].includes(c.kind)
                           ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar`
                         : c.kind === "motor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A armature · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`

@@ -19,10 +19,10 @@ import {
   type Measurement,
 } from "./model";
 export function starter(
-  mode: "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode = "heat",
+  mode: "thermostaticRoom" | "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode = "heat",
   challenge = false,
 ): Project {
-  if (mode === "livingRoom" || mode === "roomCooldown") return thermalStarter(mode);
+  if (mode === "livingRoom" || mode === "roomCooldown" || mode === "thermostaticRoom") return thermalStarter(mode);
   if (mode in hybridTitles) return hybridStarter(mode as HybridMode);
   if (mode in solarTitles) return solarStarter(mode as SolarMode);
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi"].includes(mode)) return deviceStarter(mode as DeviceMode);

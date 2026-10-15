@@ -194,10 +194,28 @@ describe('variant changes', () => {
 });
 
 describe('global ambient propagation', () => {
+  it('thermostaticValve senses live global air through its lag and retains local overrides', () => {
+    for (const override of [false, true]) {
+      const p = starter('blank'), c = makeComponent('thermostaticValve', 0, 0);
+      c.props.ambientMode = override ? 'override' : 'inherit'; c.props.ambient = 12;
+      p.environment = { ambient: 15 }; p.components.push(c);
+      const s = new Simulation(p); expect(s.step()).toBe(true);
+      const before = s.multiphysics.trvSensors[c.id];
+      expect(s.refresh({ ...p, environment: { ambient: 40 } })).toBe(true);
+      expect(s.multiphysics.trvSensors[c.id]).toBe(before);
+      expect(s.step()).toBe(true);
+      if (override) expect(s.multiphysics.trvSensors[c.id]).toBe(12);
+      else {
+        expect(s.multiphysics.trvSensors[c.id]).toBeGreaterThan(before);
+        expect(s.multiphysics.trvSensors[c.id]).toBeLessThan(40);
+      }
+      expect(s.energyResidual).toBe(0);
+    }
+  });
   const thermalMasses = boundaryKinds.filter(k => isThermalMass(makeComponent(k, 0, 0)));
 
   it('every boundary component is covered by a behavioural test above', () => {
-    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler']);
+    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve']);
     expect(boundaryKinds.filter(k => !covered.has(k))).toEqual([]);
   });
 

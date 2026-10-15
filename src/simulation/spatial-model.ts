@@ -31,7 +31,7 @@ export interface MechanicalJoint {
 }
 export interface SpatialWorld { gravity: Point; joints: MechanicalJoint[]; }
 export const defaultWorld = (): SpatialWorld => ({ gravity: { x: 0, y: -9.80665 }, joints: [] });
-export const physicalKinds = new Set(['rigidBody', 'motor', 'pump', 'tank', 'heater', 'cooler', 'source', 'resistor', 'lamp', 'valve', 'actuatedValve', 'checkValve', 'pipe']);
+export const physicalKinds = new Set(['rigidBody', 'motor', 'pump', 'tank', 'heater', 'cooler', 'source', 'resistor', 'lamp', 'valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pipe']);
 export function makeSpatial(shape: ShapeKind = 'rectangle', x = 3, y = 3): SpatialBody {
   const structural = ['platform', 'wall', 'floor'].includes(shape);
   return { type: structural ? 'static' : 'dynamic', shape, x, y, angle: 0, width: shape === 'floor' ? 16 : shape === 'beam' || shape === 'platform' ? 3 : shape === 'wall' ? 0.3 : 1,

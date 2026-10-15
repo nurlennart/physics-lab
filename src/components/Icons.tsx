@@ -16,7 +16,7 @@ import type { Kind } from "../simulation/model";
 export const kindIcons: Record<Kind, LucideIcon> = {
   rigidBody: Box, positionSensor: Move, speedSensor: RotateCw, forceActuator: Activity, flywheel: Disc3, dynamometer: CircleGauge,
   motor: Fan, pump: Waves, pipe: Pipette, valve: ToggleRight, checkValve: Shield,
-  actuatedValve: ToggleRight, fluidJunction: GitBranch, pressureSensor: Gauge,
+  actuatedValve: ToggleRight, thermostaticValve: CircleGauge, fluidJunction: GitBranch, pressureSensor: Gauge,
   flowSensor: Activity, levelSensor: Container, pid: Activity,
   gridInverter: Waves, hybridInverter: Activity, gridMeter: Gauge, solarPanel: Zap, lfpBattery: BatteryCharging, mpptController: Activity, inverter: Waves, batteryProtection: Shield,
   battery: BatteryCharging, contactor: ToggleRight, transformer: Waves, radiator: Fan, circulator: RefreshCw,

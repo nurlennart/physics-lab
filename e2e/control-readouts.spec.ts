@@ -5,7 +5,7 @@ test('control faces reflect edited thermostat and hysteresis settings', async ({
   await page.getByRole('button', { name: 'New empty experiment', exact: true }).click();
   const search = page.getByLabel('Search component library');
   await search.fill('Thermostat');
-  await page.locator('.library-component').filter({ hasText: 'Thermostat' }).click();
+  await page.locator('.library-component').filter({ has: page.getByText('Thermostat', { exact: true }) }).click();
   for (const [label, value] of [['Setpoint', '21'], ['Hysteresis band', '0.5']]) {
     await page.getByLabel(label, { exact: true }).fill(value);
     await page.getByLabel(label, { exact: true }).press('Enter');

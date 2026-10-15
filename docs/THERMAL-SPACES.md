@@ -1,5 +1,7 @@
 # Thermal Spaces
 
+For mechanical room-temperature regulation, use the [Thermostatic radiator valve](THERMOSTATIC-RADIATOR-VALVE.md) or open the **Thermostatic radiator room** example.
+
 Thermal Spaces are finite, well-mixed environments coupled to the existing component thermal and hydraulic models. They store energy; their temperature is never set to a heater or radiator temperature.
 
 ## Use

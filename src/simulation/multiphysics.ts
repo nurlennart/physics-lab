@@ -1,4 +1,6 @@
 import { advanceSpaceThermal } from './thermal-coupling';
+import { effectiveAmbient } from './environment';
+import { trvPosition, trvSensorStep } from './thermostatic-valve';
 import { controlBoiler, newBoiler, type BoilerState } from './boiler';
 import { radiatorUA } from './devices';
 import { prop, isMotor, type Component, type Project } from './model';
@@ -33,6 +35,7 @@ export class Multiphysics {
   tanks: Record<string, TankState> = {};
   motors: Record<string, MotorState> = {};
   positions: Record<string, number> = {};
+  trvSensors: Record<string, number> = {};
   /** Water-cell temperatures (K): pipes inlet → outlet; a boiler has one fully mixed cell. */
   pipeCells: Record<string, number[]> = {};
   hydraulic = emptyHydraulics();
@@ -73,7 +76,7 @@ export class Multiphysics {
   /** Dynamic state only. Immutable project/circuit references and Newton caches are retained by reference. */
   checkpoint() {
     return {
-      boilers: structuredClone(this.boilers),
+      boilers: structuredClone(this.boilers), trvSensors: { ...this.trvSensors },
       tanks: Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => [id, { ...t }])),
       motors: { ...this.motors }, circulators: { ...this.circulators }, circulatorView: { ...this.circulatorView }, positions: { ...this.positions },
       pipeCells: Object.fromEntries(Object.entries(this.pipeCells).map(([id, t]) => [id, [...t]])),
@@ -98,6 +101,10 @@ export class Multiphysics {
       }
       if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
+      if (c.kind === 'thermostaticValve') {
+        this.trvSensors[c.id] = effectiveAmbient(p, c);
+        this.positions[c.id] = trvPosition(c, this.trvSensors[c.id]);
+      }
       if (c.kind === 'circulator') this.circulators[c.id] = { omega: 0, lockedOut: false, restartIn: 0, angle: 0 };
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
@@ -764,6 +771,10 @@ export class Multiphysics {
         const t = this.tanks[id], actual = w.flow * h * RHO / kellDensity(Math.min(100, Math.max(0, U.kToCelsius(t?.temperature ?? 293.15))));
         this.overflowed[id] = (this.overflowed[id] ?? 0) + actual;
         spilledThisStep[id] = (spilledThisStep[id] ?? 0) + actual;
+      }
+      for (const c of s.project.components.filter(c => c.kind === 'thermostaticValve')) {
+        this.trvSensors[c.id] = trvSensorStep(c, this.trvSensors[c.id], effectiveAmbient(s.project, c), h);
+        if (!['stuckClosed', 'stuckOpen'].includes(s.faults[c.id])) this.positions[c.id] = trvPosition(c, this.trvSensors[c.id]);
       }
       for (const c of s.project.components.filter(c => c.kind === 'pressureReducingValve')) {
         // Pilot-operated regulator: integral action on outlet gauge pressure, stroke-rate limited.

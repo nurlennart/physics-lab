@@ -427,6 +427,7 @@ export class Simulation {
         if ((reading?.surcharge ?? 0) > 1e-9 && (reading?.overflow ?? 0) > 0) limit = Math.min(limit, 0.3 * area / (1.5 * reading!.overflow! / reading!.surcharge!));
       }
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
+      if (c.kind === "thermostaticValve") limit = Math.min(limit, 5, prop(c, "sensorTimeConstant") / 20);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
       if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
       // Panel radiators: water and steel cells change by at most the thermal tolerance per step (as lumped masses).
@@ -463,7 +464,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -558,7 +559,7 @@ export class Simulation {
     const c = this.project.components.find((c) => c.id === id);
     if (!c || (fault && !allowedFaults(c).includes(fault)))
       return "Unsupported fault for this component.";
-    if ((c.kind === "actuatedValve" || c.kind === "pressureReducingValve") && (fault === "stuckClosed" || fault === "stuckOpen")) this.multiphysics.positions[id] = fault === "stuckOpen" ? 100 : 0;
+    if ((c.kind === "actuatedValve" || c.kind === "thermostaticValve" || c.kind === "pressureReducingValve") && (fault === "stuckClosed" || fault === "stuckOpen")) this.multiphysics.positions[id] = fault === "stuckOpen" ? 100 : 0;
     if (fault === "depleted" && c.kind === "tank") {
       const tank = this.multiphysics.tanks[id];
       this.multiphysics.removedMass += tank.mass;
@@ -778,9 +779,10 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
+        if (r && c.kind === "thermostaticValve" && Math.abs(r.differentialPressure) > prop(c, "maxDifferentialPressure")) this.violation(`${c.name}: thermostatic regulating differential pressure exceeded.`);
       }
       for (const c of p.components.filter((c) => c.kind === "tank")) {
         // Start/stop events use a 1e-6 m³/s (0.06 L/min) reporting threshold: a draining weir decays
@@ -856,6 +858,10 @@ export class Simulation {
         const water = this.fluidTemperatureMeasurement(c.id) ?? 20;
         if (water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
         if (water >= 100 || water < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
+      }
+      if (c.kind === 'thermostaticValve') {
+        const water = this.fluidTemperatureMeasurement(c.id);
+        if (water !== undefined && water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
       }
       if (c.kind === 'panelRadiator') {
         const cells = (this.multiphysics.pipeCells[c.id] ?? []).map(t => t - 273.15), hottest = Math.max(...cells), coldest = Math.min(...cells);

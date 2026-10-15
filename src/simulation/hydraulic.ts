@@ -61,12 +61,12 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator']);
 /** Centrifugal pump branches: shaft-driven pumps and electric circulators share the curve model. */
 export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
-export const positionedValves = new Set(['actuatedValve', 'pressureReducingValve']);
-const valveKinds = new Set(['valve', 'actuatedValve', 'checkValve', 'pressureReducingValve']);
+export const positionedValves = new Set(['actuatedValve', 'thermostaticValve', 'pressureReducingValve']);
+const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve']);
 /** Parse "q:h; q:h" (L/min : m at rated speed) into SI points, or an error message. */
 export function parsePumpPoints(text: string): { q: number; h: number }[] | string {
   const parts = text.split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
@@ -350,7 +350,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
       linear: prop(c, 'laminarK') * mu / (2 * d * area) / fraction ** 2,
-      quadratic: prop(c, 'lossCoefficient') / fraction ** 2 * RHO / (2 * area ** 2),
+      quadratic: c.kind === 'thermostaticValve' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, 'lossCoefficient') / fraction ** 2 * RHO / (2 * area ** 2),
       offset: c.kind === 'checkValve' && !stuckOpen ? prop(c, 'crackingPressure') : 0,
       mu,
     };

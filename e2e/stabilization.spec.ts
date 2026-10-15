@@ -33,7 +33,7 @@ for (const example of examples) test(`UI starter: ${example.title} runs, resets 
   await page.getByRole('button', { name: 'Live telemetry', exact: true }).click();
   await expect(page.locator('.trace-readouts')).not.toContainText('invalid');
   const expected = {
-    livingRoom: ['Room air', 14.95, 15.05], roomCooldown: ['Room air', 14.95, 15.05],
+    thermostaticRoom: ['Room air', 19.95, 20.05], livingRoom: ['Room air', 14.95, 15.05], roomCooldown: ['Room air', 14.95, 15.05],
     gridSolar: ['AC solar injection', 400, 450], hybridStorage: ['Protected AC consumption', 199, 201], zeroExport: ['Protected AC consumption', 199, 201], gridBackup: ['Protected AC consumption', 199, 201], multipleSolar: ['Protected AC consumption', 199, 201],
     solarCharging: ['Charger output', 260, 280], solarOffGrid: ['AC useful load', 99, 101], solarCirculation: ['Circulation flow', 12, 12.5], solarExperiment: ['PV generated power', 449, 451],
     battery: ['State of charge', 62, 64], capacitor: ['Capacitor voltage', 10.85, 10.95], inductor: ['Inductor current', 1.13, 1.14], contactor: ['Coil voltage', 23.9, 24.1], transformer: ['Secondary RMS voltage', 23.9, 24.1], radiator: ['Radiator outlet', 58, 59], circulator: ['Circulated flow', 20, 23], boiler: ['Boiler supply', 32, 34], kermi: ['Radiator flow', 2.2, 2.7],

@@ -2,7 +2,7 @@ export type Kind =
   | "gridInverter" | "hybridInverter" | "gridMeter"
   | "solarPanel" | "lfpBattery" | "mpptController" | "inverter" | "batteryProtection"
   | "rigidBody" | "positionSensor" | "speedSensor" | "forceActuator" | "flywheel" | "dynamometer"
-  | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve"
+  | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve" | "thermostaticValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
   | "electricBoiler" | "panelRadiator"
@@ -285,6 +285,7 @@ export const definitions: Record<Kind, Definition> = {
   valve: { label: "Manual valve", category: "Hydraulic", description: "Quadratic loss K/φ², φ = Kv/Kvs from the selected inherent characteristic (linear, equal percentage, quick opening); exact isolation at zero opening", spec: "0–100% · bidirectional", cost: 14, prefix: "V", ports: fluid, defaults: { ...valveDefaults, characteristic: "linear", rangeability: 50 } },
   checkValve: { label: "Check valve", category: "Hydraulic", description: "Forward-only hydraulic branch with cracking pressure and reverse isolation", spec: "1 kPa cracking", cost: 18, prefix: "CV", ports: fluid, defaults: { ...valveDefaults, laminarK: 1500, crackingPressure: 1000 } },
   actuatedValve: { label: "Actuated valve", category: "Hydraulic", description: "Control valve with equal-percentage trim (R = 50) by default; rate-limited ideal external actuator, numeric percent command, defined fail position; actuator supply power omitted", spec: "5 s full stroke · equal %", cost: 35, prefix: "AV", ports: [...fluid, input("position", "number", true)], defaults: { ...valveDefaults, characteristic: "equalPercentage", rangeability: 50, responseTime: 5, failOpen: false } },
+  thermostaticValve: { label: "Thermostatic radiator valve", category: "Hydraulic", description: "Self-acting RA 2910-style head with RA-FN 15 flow data. Senses its assigned room, progressively throttles radiator flow; no power or control wiring. Dial 3 ≈ 20 °C; closure at 22 °C. Sensor lag and full-lift extrapolation are documented approximations.", spec: "❄–5 · RA-FN 15 · Kvs 0.90", cost: 40, prefix: "TRV", ports: fluid, defaults: { dial: 3, kvs: 0.9, sensorTimeConstant: 600, diameter: 0.015, laminarK: 0, maxPressure: 1000000, maxDifferentialPressure: 60000, maxTemperature: 120, ambient: 20, elevation: 0 } },
   fluidJunction: { label: "Fluid junction", category: "Hydraulic", description: "Ideal zero-volume mixing junction; pressure and continuity solved from connected branches", spec: "Conservative junction", cost: 2, prefix: "HJ", ports: [{ id: "fluid", domain: "hydraulic", label: "Fluid node" }], defaults: { elevation: 0, maxPressure: 1000000 } },
   pressureSensor: { label: "Pressure sensor", category: "Sensors", description: "Gauge pressure of the target outlet, measured from the hydraulic solution", spec: "Pa output", cost: 12, prefix: "PSN", ports: [output("number", "Pa")], defaults: { ...sensing, quantity: "pressure", stream: "hot" } },
   flowSensor: { label: "Flow sensor", category: "Sensors", description: "Signed target branch flow from the hydraulic solution", spec: "m³/s output", cost: 12, prefix: "FS", ports: [output("number", "m³/s")], defaults: { ...sensing, stream: "hot", resolution: 0.000000001 } },
@@ -1023,7 +1024,7 @@ const costDrivers: Partial<Record<Kind, (p: Record<string, Property>) => number>
   relay: p => +p.ratedCurrent * +p.ratedVoltage, safety: p => +p.ratedCurrent * +p.ratedVoltage,
   motor: p => +p.ratedPower, panelRadiator: p => +p.ratedOutput, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
   cooler: p => +p.conductance, pipe: p => +p.length * (+p.diameter) ** 1.5, valve: p => (+p.diameter) ** 2,
-  checkValve: p => (+p.diameter) ** 2, actuatedValve: p => (+p.diameter) ** 2, cable: p => +p.area * +p.length,
+  checkValve: p => (+p.diameter) ** 2, actuatedValve: p => (+p.diameter) ** 2, thermostaticValve: p => +p.kvs, cable: p => +p.area * +p.length,
 };
 /** True when the configuration equals its catalog model (ignoring operating and initial-state values). */
 export function isCatalogConfiguration(c: Component, ignored: (key: string) => boolean) {

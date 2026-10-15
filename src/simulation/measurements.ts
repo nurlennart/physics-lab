@@ -161,7 +161,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
       if (c.kind === "electricBoiler") return Number((s.multiphysics.boilers[c.id]?.stages ?? 0) > 0 && !s.multiphysics.boilers[c.id]?.fault);
       if (c.kind === "contactor") return s.failed[c.id] ? 0 : s.faults[c.id] === "stuckClosed" ? 1 : s.faults[c.id] === "stuckOpen" ? 0 : Number(s.devices.contactors[c.id]?.closed ?? false);
       if (c.kind === "checkValve") return h ? Number(h.flow > 1e-12) : null;
-      if (["valve", "actuatedValve"].includes(c.kind)) return Number((s.faults[c.id] === "stuckClosed" ? 0 : s.faults[c.id] === "stuckOpen" ? 100 : s.multiphysics.positions[c.id] ?? Number(c.props.opening)) > 0);
+      if (["valve", "actuatedValve", "thermostaticValve"].includes(c.kind)) return Number((s.faults[c.id] === "stuckClosed" ? 0 : s.faults[c.id] === "stuckOpen" ? 100 : s.multiphysics.positions[c.id] ?? Number(c.props.opening)) > 0);
       if (s.failed[c.id] || s.faults[c.id] === "failedOpen") return 0;
       if (typeof s.automation.contacts[c.id] === "boolean")
         return Number(s.automation.contacts[c.id]);
