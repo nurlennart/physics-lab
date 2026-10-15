@@ -182,7 +182,7 @@ export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? 
 /** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
 export const sourceLimit = (c: Component) => sourceMode(c) === "cc" ? prop(c, "current") : sourceMode(c) === "cvcc" ? prop(c, "maxCurrent") : Infinity;
 /** Wire connectivity depends only on the immutable project and disconnected wires; it is cached. */
-type ElectricalTopology = { cs: Component[]; grounds: Component[]; root: Map<string, string> };
+type ElectricalTopology = { cs: Component[]; grounds: Component[]; root: Map<string, string>; ports: Map<string, Record<string, string>>; terminals: string[] };
 const electricalCache = new WeakMap<Project, Map<string, ElectricalTopology>>();
 function electricalTopology(project: Project, disconnected: Set<string>): ElectricalTopology {
   const key = [...disconnected].sort().join(","), byProject = electricalCache.get(project) ?? new Map<string, ElectricalTopology>();
@@ -196,7 +196,14 @@ function electricalTopology(project: Project, disconnected: Set<string>): Electr
   const grounds = cs.filter((c) => c.kind === "ground");
   for (const g of grounds.slice(1)) uf.join(`${g.id}:a`, `${grounds[0].id}:a`);
   const root = new Map([...uf.p.keys()].map((k) => [k, uf.find(k)]));
-  const topology = { cs, grounds, root };
+  // Per-component port roots and every electrical terminal root, in component/port order.
+  const ports = new Map<string, Record<string, string>>(), terminals: string[] = [];
+  for (const c of cs) {
+    const byPort: Record<string, string> = {};
+    for (const p of definitions[c.kind].ports.filter((p) => p.domain === "electrical")) terminals.push(byPort[p.id] = root.get(`${c.id}:${p.id}`)!);
+    ports.set(c.id, byPort);
+  }
+  const topology = { cs, grounds, root, ports, terminals };
   byProject.set(key, topology);
   return topology;
 }
@@ -206,9 +213,9 @@ export function solveElectricalCore(
   runtime: ElectricalRuntime = {},
 ): ElectricalResult {
   const topology = electricalTopology(project, runtime.disconnected ?? new Set());
-  const { cs, grounds, root } = topology;
+  const { cs, grounds, root, ports } = topology;
   const uf = { p: root, find: (k: string) => root.get(k) ?? k };
-  const node = (id: string, p: string) => root.get(`${id}:${p}`)!;
+  const node = (id: string, p: string) => ports.get(id)?.[p] ?? root.get(`${id}:${p}`)!;
   const end = (c: (typeof cs)[number]) =>
     c.kind === "relay" && !contact(c) ? "nc" : "b";
   const contact = (c: (typeof cs)[number]) =>
@@ -230,11 +237,7 @@ export function solveElectricalCore(
       !(c.kind === "safety" && !contact(c)),
   );
   const islands = new Union();
-  for (const c of cs)
-    for (const p of definitions[c.kind].ports.filter(
-      (p) => p.domain === "electrical",
-    ))
-      islands.find(node(c.id, p.id));
+  for (const n of topology.terminals) islands.find(n);
   const galvanic = new Union();
   for (const c of active) {
     islands.join(node(c.id, "a"), node(c.id, end(c)));
@@ -249,7 +252,8 @@ export function solveElectricalCore(
   const groups = new Map<string, string[]>();
   for (const n of new Set([...uf.p.keys()].map((k) => uf.find(k)))) {
     const key = islands.find(n);
-    groups.set(key, [...(groups.get(key) ?? []), n]);
+    const group = groups.get(key);
+    if (group) group.push(n); else groups.set(key, [n]);
   }
   const voltages: Record<string, number> = {},
     sourceI: Record<string, number> = {},
@@ -633,7 +637,7 @@ export function solveElectricalCore(
     }
     return { ref, reactances, frequency, phases };
   };
-  const driveAt = (ns: string[]) => active.filter((c) => c.kind === "vfd" && ns.includes(node(c.id, "oa")));
+  const driveAt = (ns: Set<string>) => active.filter((c) => c.kind === "vfd" && ns.has(node(c.id, "oa")));
   const energized = (d: Component) => active.some((c) => c.kind === "source3" && islands.find(node(c.id, "a")) === islands.find(node(d.id, "a")));
   /** Rectifier demand (W, three-phase): output power plus losses; regenerated surplus goes to the braking resistor. */
   const driveDemand = (d: Component) => {
@@ -641,11 +645,13 @@ export function solveElectricalCore(
     return { input: Math.max(0, net), output, losses, braking: Math.max(0, -net) };
   };
   // Drive output networks first: their power is the demand of the drives' supply networks.
-  const ordered = [...groups].sort(([, x], [, y]) => driveAt(y).length - driveAt(x).length);
+  const inIsland = new Map([...groups].map(([island, ns]) => [island, new Set(ns)]));
+  const drivesFed = new Map([...groups].map(([island]) => [island, driveAt(inIsland.get(island)!).length]));
+  const ordered = [...groups].sort(([x], [y]) => drivesFed.get(y)! - drivesFed.get(x)!);
   for (const [island, ns] of ordered) {
-    const members = active.filter((c) => ns.includes(node(c.id, "a"))),
+    const members = active.filter((c) => inIsland.get(island)!.has(node(c.id, "a"))),
       sources = members.filter(c => isSource(c) && !runtime.acInjections?.[c.id]);
-    const fed = driveAt(ns);
+    const fed = driveAt(inIsland.get(island)!);
     if (fed.length > 1) throw Error(`${fed[1].name}: two drive outputs cannot share one network.`);
     if (fed.length) {
       const d = fed[0], state = runtime.drives?.[d.id];
@@ -1124,11 +1130,14 @@ export function solveElectricalCore(
   const nodes: Record<string, number> = {},
     nodeIds: Record<string, string> = {},
     nodeIslands: Record<string, string> = {};
-  for (const k of uf.p.keys()) {
-    const phasor = phasors[uf.find(k)];
-    nodes[k] = phasor ? cabs(phasor) : voltages[uf.find(k)] ?? 0;
-    nodeIds[k] = uf.find(k);
-    nodeIslands[k] = active.some(c => c.kind === "transformer") ? galvanic.find(uf.find(k)) : islands.find(uf.find(k));
+  const transformers = active.some(c => c.kind === "transformer"), islandOf = new Map<string, string>();
+  for (const [k, n] of root) {
+    const phasor = phasors[n];
+    nodes[k] = phasor ? cabs(phasor) : voltages[n] ?? 0;
+    nodeIds[k] = n;
+    let island = islandOf.get(n);
+    if (island === undefined) islandOf.set(n, island = transformers ? galvanic.find(n) : islands.find(n));
+    nodeIslands[k] = island;
   }
   return {
     readings,
@@ -1142,7 +1151,7 @@ export function solveElectricalCore(
     storedPower,
     powerResidual: sourcePower - dissipatedPower - storedPower,
     islands: groups.size,
-    ...(Object.keys(phasors).length ? { phasors: Object.fromEntries([...uf.p.keys()].filter((k) => phasors[uf.find(k)]).map((k) => [k, phasors[uf.find(k)]])) } : {}),
+    ...(Object.keys(phasors).length ? { phasors: Object.fromEntries([...root].filter(([, n]) => phasors[n]).map(([k, n]) => [k, phasors[n]])) } : {}),
   };
 }
 export function nodeVoltage(
