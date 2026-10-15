@@ -1,3 +1,6 @@
+import { dimensions } from './geometry';
+import { makeThermalSpace, makeEnvelope, THERMAL_PLAN_SCALE, type ThermalSpace, type ThermalElement } from '../simulation/thermal-spaces';
+import { bindSpaceTemperatures } from '../simulation/environment';
 import { useSyncExternalStore } from "react";
 import {
   connect,
@@ -41,7 +44,7 @@ import { createRunArchive, restoreRunArchive, yieldToBrowser, type RecordedInput
 import { makeSpatial, defaultWorld, type ShapeKind, type SpatialBody, type MechanicalJoint } from '../simulation/spatial-model';
 import { makeJoint } from '../simulation/spatial-projects';
 import { layoutEquipment } from './spatial-layout';
-export type Tool = "select" | "pan" | "wire";
+export type Tool = "select" | "pan" | "wire" | "room";
 interface EditorState {
   workspaceView: 'schematic' | 'physical';
   selectedJoint: string | null;
@@ -53,6 +56,7 @@ interface EditorState {
   tool: Tool;
   grid: boolean;
   overlay: boolean;
+  thermalOverlay: boolean;
   dirty: boolean;
   revision: number;
   toast: string | null;
@@ -91,7 +95,7 @@ let state: EditorState = {
   speed: 1,
   tool: "select",
   grid: true,
-  overlay: true,
+  overlay: true, thermalOverlay: false,
   dirty: false,
   revision: 0,
   toast: null,
@@ -107,6 +111,7 @@ let state: EditorState = {
 export const getState = () => state;
 function emit(patch: Partial<EditorState> = {}) {
   state = { ...state, ...patch, revision: state.revision + 1 };
+  bindSpaceTemperatures(state.project, sim.spaceTemperatures);
   listeners.forEach((l) => l());
 }
 export const subscribe = (f: () => void) => {
@@ -158,6 +163,32 @@ export function toast(message: string) {
   }, 3800);
 }
 export const actions = {
+  addRoom(x: number, y: number, width: number, length: number) {
+    const room = makeThermalSpace(x, y, width, length); room.name = `Room ${(state.project.thermalSpaces?.length ?? 0) + 1}`;
+    if (edit({ ...state.project, version: 5, thermalSpaces: [...(state.project.thermalSpaces ?? []), room], thermalElements: [...(state.project.thermalElements ?? []), ...makeEnvelope(room)] })) { emit({ selected: [room.id], tool: 'select' }); actions.finishMove(); }
+  },
+  room(id: string, patch: Partial<ThermalSpace>, record = true) { return edit({ ...state.project, thermalSpaces: state.project.thermalSpaces?.map(r => r.id === id ? { ...r, ...patch } : r) }, record); },
+  element(id: string, patch: Partial<ThermalElement> | null) {
+    return edit({ ...state.project, thermalElements: patch ? state.project.thermalElements?.map(e => e.id === id ? { ...e, ...patch } : e.parentId === id && patch.to ? { ...e, to: patch.to } : e) : state.project.thermalElements?.filter(e => e.id !== id && e.parentId !== id) });
+  },
+  opening(parentId: string, kind: 'window' | 'door') {
+    const parent = state.project.thermalElements?.find(e => e.id === parentId); if (!parent) return;
+    edit({ ...state.project, thermalElements: [...(state.project.thermalElements ?? []), { id: uid(), name: kind === 'window' ? 'Window' : 'Door', kind, parentId, from: parent.from, to: parent.to, area: kind === 'window' ? 2 : 1.8, uValue: kind === 'window' ? 1.1 : 1.5, heatCapacity: 0 }] });
+  },
+  assignSpace(id: string, roomId: string, pinned = true) {
+    return edit({ ...state.project, components: state.project.components.map(c => c.id === id ? { ...c, thermalSpaceId: roomId || undefined, thermalSpacePinned: pinned } : c) });
+  },
+  finishMove() {
+    if (sim.time > 0) return;
+    const movedRoom = state.selected.some(id => state.project.thermalSpaces?.some(r => r.id === id));
+    const components = state.project.components.map(c => {
+      if ((!movedRoom && !state.selected.includes(c.id)) || c.thermalSpacePinned || c.kind === 'pipe') return c;
+      const rooms = (state.project.thermalSpaces ?? []).filter(r => c.x + dimensions(c).w / 2 >= r.x && c.x + dimensions(c).w / 2 <= r.x + r.width * THERMAL_PLAN_SCALE && c.y + dimensions(c).h / 2 >= r.y && c.y + dimensions(c).h / 2 <= r.y + r.length * THERMAL_PLAN_SCALE);
+      if (rooms.length > 1) return c;
+      return { ...c, thermalSpaceId: rooms[0]?.id };
+    });
+    if (components.some((c, i) => c.thermalSpaceId !== state.project.components[i].thermalSpaceId)) edit({ ...state.project, components }, false);
+  },
   set: emit,
   select(ids: string[], wire: string | null = null) {
     emit({ selected: ids, selectedWire: wire, selectedJoint: null, renaming: null });
@@ -232,6 +263,10 @@ export const actions = {
     if (state.project.challenge) challengeDefinition(state.project.challenge).onAdd?.(c, state.project);
     c.x = Math.round(c.x / 20) * 20;
     c.y = Math.round(c.y / 20) * 20;
+    if (kind !== 'pipe') {
+      const rooms = (state.project.thermalSpaces ?? []).filter(r => c.x + dimensions(c).w / 2 >= r.x && c.x + dimensions(c).w / 2 <= r.x + r.width * THERMAL_PLAN_SCALE && c.y + dimensions(c).h / 2 >= r.y && c.y + dimensions(c).h / 2 <= r.y + r.length * THERMAL_PLAN_SCALE);
+      if (rooms.length === 1) c.thermalSpaceId = rooms[0].id;
+    }
     if (
       edit({ ...state.project, components: [...state.project.components, c] })
     )
@@ -364,9 +399,11 @@ export const actions = {
     const removed = new Set(state.selected);
     edit({
       ...state.project,
+      thermalSpaces: state.project.thermalSpaces?.filter(r => !removed.has(r.id)),
+      thermalElements: state.project.thermalElements?.filter(e => !removed.has(e.from) && !removed.has(e.to)),
       components: state.project.components
         .filter((c) => !state.selected.includes(c.id))
-        .map((c) => ({ ...c, props: { ...c.props, ...Object.fromEntries(['target', 'batteryTarget', 'gridMeterTarget'].filter(field => removed.has(String(c.props[field]))).map(field => [field, ''])) } })),
+        .map((c) => ({ ...c, ...(c.thermalSpaceId && removed.has(c.thermalSpaceId) ? { thermalSpaceId: undefined } : {}), props: { ...c.props, ...Object.fromEntries(['target', 'batteryTarget', 'gridMeterTarget'].filter(field => removed.has(String(c.props[field]))).map(field => [field, ''])) } })),
       probes: (state.project.probes ?? []).filter(
         (p) =>
           !state.selected.includes(p.component) &&
@@ -412,6 +449,7 @@ export const actions = {
       });
   },
   duplicate() {
+    if (!state.project.components.some(c => state.selected.includes(c.id))) return;
     actions.copy();
     actions.paste();
   },
@@ -502,11 +540,13 @@ export const actions = {
       toast("Maximum 24 traces.");
       return;
     }
-    const c = state.project.components.find((c) => c.id === component);
+    const room = state.project.thermalSpaces?.find(r => r.id === component);
+    const c = state.project.components.find((c) => c.id === component) ?? room;
     if (!c) return;
     const probe: Probe = {
       id: uid(),
       name: `${c.name} ${measurement}`,
+      ...(room ? { targetKind: "space" as const } : {}),
       component,
       measurement,
       terminal,

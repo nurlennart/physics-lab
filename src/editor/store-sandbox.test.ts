@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach } from "vitest";
 import type * as Store from "./store";
 import { createRunArchive, restoreRunArchive } from "../simulation/replay";
 
@@ -13,6 +13,41 @@ beforeAll(async () => {
   store = await import("./store");
 });
 const heater = () => store.getState().project.components.find((c) => c.kind === "heater")!;
+
+describe('Thermal Space editing transactions', () => {
+  beforeEach(() => store.actions.newProject('blank'));
+  it('assigns dropped equipment, clears it outside, and undoes the entire drag', () => {
+    store.actions.addRoom(0, 0, 4, 4); const room = store.getState().project.thermalSpaces![0];
+    store.actions.add('heater', 100, 100); const component = heater();
+    expect(component.thermalSpaceId).toBe(room.id);
+    store.actions.select([component.id]); store.actions.beginMove(); store.actions.move({ [component.id]: { x: 600, y: 600 } }); store.actions.finishMove();
+    expect(heater().thermalSpaceId).toBeUndefined();
+    store.actions.undo(); expect(heater().x).toBe(100); expect(heater().thermalSpaceId).toBe(room.id);
+  });
+  it('pins explicit assignments and never automatically assigns pipes', () => {
+    store.actions.addRoom(0, 0, 4, 4); const room = store.getState().project.thermalSpaces![0];
+    store.actions.add('pipe', 100, 100); expect(store.getState().project.components[0].thermalSpaceId).toBeUndefined();
+    store.actions.add('heater', 100, 100); const component = heater();
+    store.actions.assignSpace(component.id, room.id); store.actions.select([component.id]); store.actions.beginMove(); store.actions.move({ [component.id]: { x: 600, y: 600 } }); store.actions.finishMove();
+    expect(heater().thermalSpaceId).toBe(room.id);
+  });
+  it('drawing around existing equipment assigns it and moving the region reconciles unpinned membership', () => {
+    store.actions.add('heater', 100, 100); const component = heater();
+    store.actions.addRoom(0, 0, 4, 4); const room = store.getState().project.thermalSpaces![0];
+    expect(heater().thermalSpaceId).toBe(room.id);
+    store.actions.select([room.id]); store.actions.beginMove(); store.actions.room(room.id, { x: 600 }, false); store.actions.finishMove();
+    expect(heater().thermalSpaceId).toBeUndefined(); expect(heater().x).toBe(component.x);
+    store.actions.undo(); expect(heater().thermalSpaceId).toBe(room.id); expect(store.getState().project.thermalSpaces![0].x).toBe(0);
+  });
+  it('deleting a room removes its envelope and clears component and probe references', () => {
+    store.actions.addRoom(0, 0, 4, 4); const room = store.getState().project.thermalSpaces![0];
+    store.actions.add('heater', 100, 100); store.actions.addProbe(room.id, 'roomTemperature');
+    store.actions.select([room.id]); store.actions.remove();
+    expect(store.getState().project.thermalSpaces).toEqual([]); expect(store.getState().project.thermalElements).toEqual([]);
+    expect(heater().thermalSpaceId).toBeUndefined(); expect(store.getState().project.probes).toEqual([]);
+    store.actions.undo(); expect(heater().thermalSpaceId).toBe(room.id);
+  });
+});
 
 describe("editor store: sandbox parameter workflow", () => {
   it("starts missions without modules and allows a valid first purchase", () => {

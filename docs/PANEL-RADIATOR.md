@@ -65,11 +65,13 @@ T_{k−1} is the upstream cell, or the inlet water for the first cell. P_diss = 
 
 **Hydraulics.** A bidirectional two-K branch, Δp = (K₁/Re + K∞)·ρ_ref·v²/2, using the viscosity of the upstream water and a 16 mm reference bore. The radiator stores water, so it can supply a sealed loop's pressure datum (as pipes do). The boiler inlet keeps priority.
 
-**Energy accounting.** Water and steel enthalpy are part of the water/steel storage in the energy panel. The heat output goes to the ambient ledger. Hydraulic dissipation heats the water. No correction factor is applied; the ledger residual stays at round-off level (about 10⁻⁸ J over a 30 min boiler run).
+**Energy accounting.** Water and steel enthalpy are part of the water/steel storage in the energy panel. The heat output goes to the resolved environment: an assigned finite room or the external ambient ledger. Hydraulic dissipation heats the water. No correction factor is applied; the ledger residual stays at round-off level (about 10⁻⁸ J over a 30 min boiler run).
 
-## Room boundary and future thermal spaces
+## Room boundary and Thermal Spaces
 
-The radiator exchanges heat with one air temperature. By default it inherits the experiment ambient (default 20 °C, the EN 442 reference); the *Room air* setting can switch to a local room-air temperature instead. It is an ideal boundary of unlimited capacity. Hydraulic transport, the Inspector, the diagram and the history all take that temperature from the shared resolver `resolveAmbient` (`src/simulation/environment.ts`, see [ENVIRONMENT.md](ENVIRONMENT.md)); the reported output (`duty`, W) is split into radiant and convective parts by Kermi's radiant share. A future thermal space enters through the resolver's containing-space step and receives both parts; nothing else in the model depends on the boundary. Rooms are not simulated yet.
+The radiator exchanges heat with one air temperature through `resolveAmbient`: explicit component override, assigned Thermal Space, then experiment ambient (default 20 °C). The experiment and explicit overrides are prescribed reservoirs. An assigned [Thermal Space](THERMAL-SPACES.md) instead has finite air/effective-contents capacity, envelope and ventilation losses, and optional adjacent-room exchange.
+
+Hydraulic transport, Inspector, diagram and history all use the same resolved boundary. The exact weighted cell exchange removed from water/steel enters the assigned room; it is not also charged to external ambient. The reported output (`duty`, W) is split into radiant and convective shares for inspection, while both shares enter the single effective zone node. Room/body equations and the affine hydraulic response solve implicitly at accepted intervals. EN 442 coefficients, water/steel capacities, reverse-flow and stagnant-cooling models are unchanged. A local component ambient override bypasses room exchange even when the symbol is inside a room.
 
 ## Behaviour
 

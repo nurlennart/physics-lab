@@ -1,3 +1,4 @@
+import { roomMeasurement } from './thermal-spaces';
 import { effectiveAmbient } from "./environment";
 import { batteryEnergy } from "./devices";
 import {
@@ -11,6 +12,7 @@ import {
 import { nodeVoltage } from "./electrical";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
+  roomTemperature: "°C", envelopeLoss: "W", ventilationLoss: "W", netHeat: "W", storedThermalEnergy: "J", temperatureRate: "K/s", adjacentHeat: "W", effectiveHeatCapacity: "J/K", internalHeat: "W",
   acInputPower: 'W', acOutputPower: 'W', converterLossEnergy: 'J', transferLossEnergy: 'J', batteryHeatEnergy: 'J',
   gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
@@ -35,6 +37,7 @@ const isMotorKind = (c: { kind: string }) => c.kind === "motor" || c.kind === "i
 export { measurements } from "./capabilities";
 import { measurements } from "./capabilities";
 export function readProbe(p: Probe, s: Simulation): number | null {
+  if (p.targetKind === "space") return s.error ? null : roomMeasurement(s.project, s.spaceTemperatures, s.spaceReadings, p.component, p.measurement);
   const c = s.project.components.find((c) => c.id === p.component);
   if (!c || s.error || !measurements(c).includes(p.measurement)) return null;
   const r = s.electrical.readings[c.id];
@@ -211,6 +214,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
           ? -(r?.power ?? 0)
           : (r?.power ?? null);
   }
+  return null;
 }
 export const probeColors = [
   "#ef9975",

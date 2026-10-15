@@ -4,6 +4,8 @@ Open **File → Starters & examples** in the app for descriptions and suggested 
 
 - `boiler`: Bosch TH3000 9 (no internal pump), ALPHA2-style external circulator, insulated pipes, balancing valve and panel radiator in a sealed loop; staged phase loading, supply/return and heat-flow measurements, optional flow protection. See [model basis](../docs/ELECTRIC-BOILER.md).
 - `kermi`: the Bosch boiler (one 3 kW stage) and ALPHA2-style circulator heating a Kermi therm-x2 Profil-K type 22, 600 × 1000 mm radiator through a preset lockshield valve; radiator supply/return/mean temperatures, output against water heat input, excess temperature and flow. See [model basis](../docs/PANEL-RADIATOR.md).
+- `livingRoom`: a 5 × 4 × 2.5 m room at 15 °C, 0 °C outdoors, with the same real hydronic circuit, insulated envelope, window, ventilation and effective thermal contents. See [Thermal Spaces](../docs/THERMAL-SPACES.md).
+- `roomCooldown`: the living-room circuit heats for one hour, then a real pulse timer disables the boiler. Advance another two hours to inspect gradual cooling and stored radiator heat release.
 - `battery`: finite charge, polarization sag and recovery, internal heating and chemical-energy accounting.
 - `capacitor`: RC charging and bleeder discharge, stored field energy and the charging loss.
 - `inductor`: RL current rise, freewheeling decay and, without the freewheeling path, an interrupted current's arc.

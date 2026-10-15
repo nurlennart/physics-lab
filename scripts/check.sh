@@ -43,6 +43,9 @@ rm -rf "$logs"
 [ "$failed" = 0 ] || exit 1
 took
 
+step "Thermal Spaces conservation, timed shutdown and hour-scale benchmark"
+node scripts/check-thermal-spaces.mjs --check; took
+
 step "Production build"
 npx vite build --logLevel warn; took
 

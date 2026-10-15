@@ -3419,3 +3419,40 @@ button.component-name:hover > svg, button.component-name:focus-visible > svg { o
 .terminal-label.hydraulic { color: var(--hydraulic); }
 .terminal-label.thermal { color: var(--thermal); }
 .terminal-label.control { color: var(--n-13); }
+
+/* Thermal plans remain behind the schematic and use restrained architectural marks. */
+.tool-room { cursor: crosshair; }
+.thermal-region .room-boundary { stroke: var(--n-11); stroke-width: 1.4; vector-effect: non-scaling-stroke; cursor: move; }
+.thermal-region.selected .room-boundary { stroke: var(--selection); stroke-width: 2; }
+.room-caption { cursor: move; }
+.room-caption rect { fill: var(--n-3); fill-opacity: .86; }
+.room-name { fill: var(--n-14); font-size: 12px; font-weight: 500; }
+.room-live-temperature { fill: var(--n-15); font-size: 24px; font-variant-numeric: tabular-nums; font-weight: 500; }
+.room-unit, .room-flow { fill: var(--n-13); font-size: 12px; }
+.room-dimension { fill: var(--n-13); font-size: 12px; }
+.room-resize { fill: var(--selection); stroke: var(--n-3); stroke-width: 2; cursor: nwse-resize; }
+.room-temperature { padding: 18px; border-bottom: 1px solid var(--n-7); }
+.room-temperature > span { display: block; font-size: 13px; color: var(--n-14); }
+.room-temperature strong { display: block; font-size: 38px; font-weight: 400; font-variant-numeric: tabular-nums; margin: 8px 0; }
+.room-temperature strong small { font-size: 18px; color: var(--n-13); }
+.room-temperature p { font-size: 12px; color: var(--n-13); }
+.room-field { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 9px 0; font-size: 12px; }
+.room-field > span { flex: 1; color: var(--n-14); }
+.room-field > div { display: flex; gap: 5px; align-items: center; }
+.room-field input:not([type=checkbox]) { width: 95px; min-width: 0; padding: 5px; text-align: right; }
+.room-field select { max-width: 155px; font-size: 12px; }
+.room-field small { font-size: 12px; color: var(--n-13); }
+.room-derived { display: grid; gap: 6px; font-size: 12px; margin: 12px 0; }
+.room-derived > span { display: flex; justify-content: space-between; gap: 8px; color: var(--n-13); }
+.room-derived b { font-weight: 500; color: var(--n-14); }
+.room-element { padding: 12px 0; border-top: 1px solid var(--n-7); }
+.room-element-title { display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
+.room-element-actions { display: flex; gap: 8px; }
+.room-element-actions button { display: inline-flex; align-items: center; gap: 4px; padding: 5px 8px; font-size: 12px; }
+.room-reading { display: flex; gap: 7px; align-items: center; font-size: 12px; margin: 9px 0; }
+.room-reading > span { flex: 1; color: var(--n-13); text-transform: capitalize; }
+.room-reading b { font-weight: 500; font-variant-numeric: tabular-nums; }
+
+.room-opening { stroke: var(--n-14); stroke-width: 5; vector-effect: non-scaling-stroke; }
+.room-opening.window { stroke: var(--hydraulic-text); stroke-width: 3; }
+.room-thermal-overlay text { fill: var(--n-14); font-size: 12px; paint-order: stroke; stroke: var(--n-5); stroke-width: 3; stroke-linejoin: round; }

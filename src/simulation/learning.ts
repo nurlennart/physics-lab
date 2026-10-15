@@ -2,6 +2,8 @@ import type { Project } from './model';
 import { serializeProject, starter } from './projects';
 
 export const examples = [
+  { mode: 'livingRoom', group: 'Water & industry', title: 'Heated living room', category: 'Thermal Space · Real hydraulic heating', description: 'A 5 × 4 × 2.5 m insulated room starts at 15 °C with 0 °C outdoors. The existing Bosch boiler, ALPHA2 circulator and Kermi radiator transfer real heat into its finite air and effective contents.', experiment: 'Advance an hour and compare room input, envelope loss and stored energy. The room can initially cool during radiator warm-up. Disable the boiler, then advance several hours to see stored heat release and cooling. Outdoor temperature remains editable live.' },
+  { mode: 'roomCooldown', group: 'Water & industry', title: 'Heating switched off', category: 'Thermal Space · Timed heating and cooling', description: 'The same room and heating circuit, with a real simulation timer disabling the boiler after one hour. Circulation continues and stored radiator heat still reaches the room.', experiment: 'Advance one hour, then continue for several hours. Compare room heat input and losses as the room cools toward 0 °C. Reset to change the timer or effective capacity. A room temperature sensor can drive the existing thermostat controls.' },
   { mode: 'gridSolar', group: 'Electrical & thermal', title: 'Grid-tied solar inverter', category: 'PV · grid following · export', description: 'A real PV curve drives controlled AC current injection. Local loads consume solar first; surplus crosses the PCC meter.', experiment: 'Advance 1 s. Change household resistance, then disable Utility grid. The grid-following inverter must stop. The example uses a short 0.1 s qualification delay for experiments.' },
   { mode: 'hybridStorage', group: 'Electrical & thermal', title: 'Grid-connected hybrid storage', category: '48 V · bidirectional ESS', description: 'Two series PV modules, MPPT and a 51.2 V battery share a bus with a hybrid inverter/charger and protected AC output.', experiment: 'Compare PV output, battery current and the PCC meter. Disable solar, enable grid charging, or permit surplus export. Grid qualification is shortened to 0.1 s in this example.' },
   { mode: 'zeroExport', group: 'Electrical & thermal', title: 'Zero-export household', category: 'PCC feedback · PV curtailment', description: 'A full external battery and real household loads exercise zero-export regulation and coordinated PV curtailment.', experiment: 'Change household resistance or disable loads. Compare available PV MPP with actual generated power; surplus remains unextracted when storage cannot accept it.' },
@@ -44,7 +46,7 @@ export const examples = [
 export function exampleFile(mode: string): Project {
   const p = starter(mode as Parameters<typeof starter>[0]);
   const ids = new Map([[p.id, `example-${mode}`]]);
-  for (const [group, entries] of Object.entries({ component: p.components, connection: p.connections, probe: p.probes ?? [], joint: p.world?.joints ?? [] }))
+  for (const [group, entries] of Object.entries({ component: p.components, connection: p.connections, probe: p.probes ?? [], joint: p.world?.joints ?? [], space: p.thermalSpaces ?? [], element: p.thermalElements ?? [] }))
     entries.forEach((entry, i) => ids.set(entry.id, `${mode}-${group}-${i + 1}`));
   return JSON.parse(serializeProject(p), (_, value) => typeof value === 'string' ? ids.get(value) ?? value : value);
 }

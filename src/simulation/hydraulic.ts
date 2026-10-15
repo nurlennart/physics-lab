@@ -587,7 +587,7 @@ export const cellCapacity = (c: Component, n: number) => c.kind === 'electricBoi
  * ε-NTU. Every outlet temperature is linear in upstream node temperatures, so the
  * whole network is one linear solve and energy is conserved exactly.
  */
-export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, BoilerState> = {}, boilerPower: Record<string, number> = {}) {
+export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, BoilerState> = {}, boilerPower: Record<string, number> = {}, fixedPanel?: Record<string, ReturnType<typeof panelExchange>>) {
   const nodes = Object.keys(result.potentials), index = new Map(nodes.map((n, i) => [n, i]));
   const matrix = nodes.map(() => Array(nodes.length).fill(0)), rhs = nodes.map(() => 0), boundary = new Map<string, string>();
   // A drained (empty, flow-through) tank's node is an ordinary mixer: no storage, no enthalpy exchange.
@@ -604,7 +604,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     const n = pipeCells(c), state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? state : [...state].reverse();
     // Panel radiator: EN 442 conductance per cell from the interval's start state (inlet: last transported node temperature).
-    const panel = c.kind === 'panelRadiator' ? panelExchange(c, order, result.nodeTemperatures[b.from], ambientK, b.rate * CP) : undefined;
+    const panel = c.kind === 'panelRadiator' ? fixedPanel?.[c.id] ?? panelExchange(c, order, result.nodeTemperatures[b.from], ambientK, b.rate * CP) : undefined;
     const ua = panel ? panel.g * n : c.kind === 'electricBoiler' ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0;
     if (n) {
       // Implicit cell chain with exchange temperature w·T_{k−1}' + (1 − w)·T_k' (w = 0 except in panel radiators):
@@ -647,6 +647,8 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   const temperatures = nodes.length ? solveLinear(matrix, rhs) : [], massRate: Record<string, number> = {}, energyRate: Record<string, number> = {};
   const at = (node: string) => temperatures[index.get(node)!];
   let ambient = 0, heat = 0;
+  const environmentExchange: Record<string, number> = {};
+  const release = (id: string, energy: number) => { ambient += energy; environmentExchange[id] = (environmentExchange[id] ?? 0) + energy; };
   for (const b of transfers) {
     const inlet = at(b.from), outlet = b.terms.reduce((s, t) => s + t.coeff * at(t.node), b.offset);
     const source = boundary.get(b.from), destination = boundary.get(b.to);
@@ -663,12 +665,12 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
         upstream = dt === 0 ? old : (mc * old + (flowTerm - dt * uaCell * w) * into + dt * uaCell * b.ambientK + dt * (b.heat / n + (exchange?.source ?? 0))) / (mc + flowTerm + dt * (uaCell * (1 - w) + (exchange?.sink ?? 0)));
         // The same implicit exchange that entered the cell balance is booked (exact ledger).
         const local = w * (into - b.ambientK) + (1 - w) * (upstream - b.ambientK);
-        ambient += uaCell * local * dt; output += uaCell * local; excess += local / n;
+        release(c.id, uaCell * local * dt); output += uaCell * local; excess += local / n;
         return upstream;
       });
       cells[c.id] = b.flow > 0 ? updated : updated.reverse();
       if (c.kind === 'panelRadiator') Object.assign(result.readings[b.id], { duty: output, supplyTemperature: inlet, returnTemperature: outlet, heatInput: b.rate * CP * (inlet - outlet), excessTemperature: excess });
-    } else ambient += b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK) * dt;
+    } else release(c.id, b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK) * dt);
     heat += b.heat * dt;
     if (c.kind === 'electricBoiler') {
       result.readings[b.id].duty = b.rate * CP * (outlet - inlet);
@@ -681,12 +683,12 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   // Stagnant pipes keep their water and exchange heat with ambient only.
   for (const c of project.components.filter(c => pipeCells(c) && !transfers.some(t => t.component === c.id))) {
     const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = U.celsiusToK(effectiveAmbient(project, c));
-    const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? panelExchange(c, before, undefined, ambientK, 0).g : prop(c, c.kind === 'electricBoiler' ? 'loss' : 'thermalUA') / n;
+    const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : prop(c, c.kind === 'electricBoiler' ? 'loss' : 'thermalUA') / n;
     const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     let output = 0;
     cells[c.id] = before.map(old => {
       const next = dt === 0 ? old : (mc * old + dt * uaCell * ambientK + dt * (exchange?.source ?? 0)) / (mc + dt * (uaCell + (exchange?.sink ?? 0)));
-      ambient += uaCell * (next - ambientK) * dt; output += uaCell * (next - ambientK);
+      release(c.id, uaCell * (next - ambientK) * dt); output += uaCell * (next - ambientK);
       return next;
     });
     const mean = cells[c.id].reduce((s, t) => s + t, 0) / n;
@@ -732,7 +734,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     t.volume = inventoryVolume(Math.max(0, t.mass), t.temperature);
   }
   nodes.forEach((n, i) => (result.nodeTemperatures[n] = temperatures[i]));
-  return { ambient, heat, spills };
+  return { ambient, heat, spills, environmentExchange };
 }
 /** Enthalpy (J, relative to 0 K) of all pipe water cells. */
 export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) =>

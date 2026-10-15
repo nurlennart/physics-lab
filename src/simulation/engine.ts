@@ -1,4 +1,5 @@
-import { effectiveAmbient } from "./environment";
+import { type SpaceReading } from "./thermal-spaces";
+import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
 import { resetBoiler } from './boiler';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
@@ -115,6 +116,7 @@ export interface Sample {
   waterStored: number;
   heaterStored: number;
   stored: number;
+  roomStored: number;
   ambient: number;
   spatialEnergy: number; spatialExternal: number; mechanicalLoss: number;
 }
@@ -170,6 +172,9 @@ export class Simulation {
   interruptions: Record<string, boolean> = {};
   /** Largest |dT/dt| of any thermal mass in the last step (K/s). */
   thermalRate = Infinity;
+  spaceTemperatures: Record<string, number> = {};
+  spaceReadings: Record<string, SpaceReading> = {};
+  roomStored = 0;
   sampleInterval = 0.25;
   temperatures: Record<string, number> = {};
   overload: Record<string, number> = {};
@@ -202,10 +207,13 @@ export class Simulation {
   reset(project = this.project) {
     const invalid = transitionError(project, project, 0, project.challenge);
     if (invalid) throw Error(invalid);
+    this.spaceTemperatures = Object.fromEntries((project.thermalSpaces ?? []).map(r => [r.id, r.initialTemperature])); this.spaceReadings = {}; this.roomStored = 0;
     this.lockedChallenge = project.challenge;
     this.acceptedProject = structuredClone(project);
     this.project = freeze(structuredClone(project));
     this.ownedProject = this.project;
+    if (this.time === 0) { this.spaceTemperatures = Object.fromEntries((this.project.thermalSpaces ?? []).map(r => [r.id, r.initialTemperature])); this.spaceReadings = {}; this.roomStored = 0; }
+    bindSpaceTemperatures(this.project, this.spaceTemperatures);
     this.time =
       this.energy =
       this.suppliedEnergy =
@@ -271,6 +279,8 @@ export class Simulation {
     this.acceptedProject = structuredClone(project);
     this.project = freeze(structuredClone(project));
     this.ownedProject = this.project;
+    if (this.time === 0) { this.spaceTemperatures = Object.fromEntries((this.project.thermalSpaces ?? []).map(r => [r.id, r.initialTemperature])); this.spaceReadings = {}; this.roomStored = 0; }
+    bindSpaceTemperatures(this.project, this.spaceTemperatures);
     this.electricalKey = "";
     if (this.time === 0) {
       this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project); this.multiphysics = new Multiphysics(); this.multiphysics.initialize(this.project);
@@ -453,7 +463,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -639,10 +649,12 @@ export class Simulation {
       const temperaturesBefore = { ...this.temperatures }, electricalBefore = this.electrical;
       const spatialBefore = this.spatial.hasMovingBodies ? this.spatial.checkpoint() : undefined;
       const spatialLedger = { externalWork: this.spatial.externalWork, shaftWork: this.spatial.shaftWork, contactLoss: this.spatial.contactLoss, limitLoss: this.spatial.limitLoss, dampingLoss: this.spatial.dampingLoss, brakeEnergy: { ...this.spatial.brakeEnergy } };
+      const spacesBefore = this.project.thermalSpaces?.length ? structuredClone({ spaceTemperatures: this.spaceTemperatures, spaceReadings: this.spaceReadings, roomStored: this.roomStored, filaments: this.filaments, thermalRate: this.thermalRate, suppliedEnergy: this.suppliedEnergy }) : {};
+      if (this.project.thermalSpaces?.length) this.thermalRate = 0;
       const ledgerBefore = { ambientEnergy: this.ambientEnergy, storedEnergy: this.storedEnergy, waterStored: this.waterStored, heaterStored: this.heaterStored };
       rollbackCoupled = () => {
         this.events = eventsBefore; this.failed = failedBefore; this.tripped = trippedBefore;
-        Object.assign(this, ledgerBefore);
+        Object.assign(this, ledgerBefore, spacesBefore); bindSpaceTemperatures(this.project, this.spaceTemperatures);
         Object.assign(this.automation, automationBefore); Object.assign(this.devices, devicesBefore); Object.assign(this.multiphysics, checkpoint);
         if (spatialBefore) this.spatial.restore(spatialBefore);
         Object.assign(this.spatial, spatialLedger);
@@ -660,7 +672,7 @@ export class Simulation {
       }
     }
     const p = this.project,
-      thermal = p.components.filter(c => isThermalMass(c) && (c.kind !== "tank" || (this.multiphysics.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, "vesselHeatCapacity") > 0)),
+      thermal = p.components.filter(c => !p.thermalSpaces?.length && isThermalMass(c) && (c.kind !== "tank" || (this.multiphysics.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, "vesselHeatCapacity") > 0)),
       index = new Map(thermal.map((c, i) => [c.id, i])),
       n = thermal.length;
     const a = Array.from({ length: n }, () => Array(n).fill(0)),
@@ -710,7 +722,7 @@ export class Simulation {
     }
     // Lamp filaments store part of the step's electrical energy; the rest heats the lamp body.
     const filaments: Record<string, { u: number; heat: number }> = {};
-    for (const c of p.components.filter(c => c.kind === "lamp"))
+    for (const c of p.components.filter(c => !p.thermalSpaces?.length && c.kind === "lamp"))
       filaments[c.id] = filamentStep(c, this.filaments[c.id] ?? filamentInitial(effectiveAmbient(this.project, c)), this.failed[c.id] ? 0 : this.electrical.readings[c.id]?.power ?? 0, dt, effectiveAmbient(p, c));
     thermal.forEach((c, i) => {
       a[i][i] = caps[i] / dt;
@@ -748,8 +760,8 @@ export class Simulation {
       this.storedEnergy += filamentEnergy(c, f.u) - filamentEnergy(c, this.filaments[id] ?? filamentInitial(effectiveAmbient(this.project, c)));
       this.filaments[id] = f.u;
     }
-    this.ambientEnergy += p.components.filter(c => c.kind === "radiator").reduce((sum, c) => sum + (this.electrical.readings[c.id]?.fanPower ?? 0) * dt, 0);
-    this.thermalRate = n ? Math.max(0, ...thermal.map((_, i) => Math.abs(temperatures[i] - old[i]) / dt)) : 0;
+    this.ambientEnergy += p.components.filter(c => !p.thermalSpaces?.length && c.kind === "radiator").reduce((sum, c) => sum + (this.electrical.readings[c.id]?.fanPower ?? 0) * dt, 0);
+    if (!p.thermalSpaces?.length) this.thermalRate = n ? Math.max(0, ...thermal.map((_, i) => Math.abs(temperatures[i] - old[i]) / dt)) : 0;
     thermal.forEach((c, i) => {
       this.temperatures[c.id] = temperatures[i];
       if (c.kind === "tank" && this.multiphysics.tanks[c.id]) {
@@ -999,6 +1011,7 @@ export class Simulation {
       waterStored: this.waterStored,
       heaterStored: this.heaterStored,
       stored: this.storedEnergy,
+      roomStored: this.roomStored,
       ambient: this.ambientEnergy,
     });
     // Long experiments keep their full history at progressively coarser spacing.

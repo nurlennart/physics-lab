@@ -1,3 +1,4 @@
+import { thermalSpaceError } from './thermal-spaces';
 import { compatibleTarget } from "./capabilities";
 import {
   connectionError,
@@ -235,6 +236,12 @@ export function transitionError(
   time: number,
   lockedChallenge?: ChallengeId,
 ): string | null {
+  const roomError = thermalSpaceError(next);
+  if (roomError) return roomError;
+  if (time > 1e-10) {
+    const signature = (p: Project) => JSON.stringify({ spaces: (p.thermalSpaces ?? []).map(({name, x, y, outdoorTemperature, internalGain, ...physical}) => physical), elements: p.thermalElements ?? [] });
+    if (signature(previous) !== signature(next)) return 'Reset to Build mode before changing room geometry, capacity or construction.';
+  }
   if (next.components.length > 100 || next.connections.length > 300) return 'Scene limit: 100 components/bodies and 300 connections.';
   if (next.environment !== undefined && (!next.environment || typeof next.environment.ambient !== "number" || !Number.isFinite(next.environment.ambient) || next.environment.ambient < -100 || next.environment.ambient > 500))
     return "Environment ambient temperature must be between −100 and 500 °C.";
@@ -265,7 +272,8 @@ export function transitionError(
     }
     if (typeof c.props.target === "string" && c.props.target) {
       const target = next.components.find(x => x.id === c.props.target);
-      if (!target || !compatibleTarget(c, target)) return `${c.name}: target has no compatible modeled quantity. Clear or reassign the target first.`;
+      const roomTarget = next.thermalSpaces?.some(s => s.id === c.props.target) && ["sensor", "thermostat", "safety"].includes(c.kind) && c.props.quantity !== "fluidTemperature";
+      if (!roomTarget && (!target || !compatibleTarget(c, target))) return `${c.name}: target has no compatible modeled quantity. Clear or reassign the target first.`;
     }
   }
   const checked: Project = { ...next, connections: [] };

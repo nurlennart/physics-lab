@@ -51,6 +51,7 @@ export interface ControlWorld {
   project: Project;
   time: number;
   temperatures: Record<string, number>;
+  spaceTemperatures?: Record<string, number>;
   faults: Record<string, FaultType>;
   failed: Record<string, boolean>;
   disconnected: Set<string>;
@@ -101,11 +102,13 @@ export class Automation {
   }
   sense(c: Component, w: ControlWorld, dt: number): Signal {
     const id = textProp(c, "target"), target = w.project.components.find(x => x.id === id);
-    if (!target || !compatibleTarget(c, target))
+    const room = w.project.thermalSpaces?.find(s => s.id === id);
+    const roomTarget = room && ["sensor", "thermostat", "safety"].includes(c.kind) && c.props.quantity !== "fluidTemperature";
+    if (!roomTarget && (!target || !compatibleTarget(c, target)))
       return this.unavailableSensor(c, "No compatible modeled quantity at the assigned target.");
-    const metric = sensorMeasurement(c, target);
-    const readingId = target.kind === "heatExchanger" ? `${id}#${c.props.stream ?? "hot"}` : id;
-    const actual = metric === "positionX" || metric === "positionY" ? w.mechanicalMeasurement?.(id, metric === "positionX" ? "x" : "y")
+    const metric = target ? sensorMeasurement(c, target) : "bodyTemperature";
+    const readingId = target?.kind === "heatExchanger" ? `${id}#${c.props.stream ?? "hot"}` : id;
+    const actual = roomTarget ? w.spaceTemperatures?.[id] ?? room.initialTemperature : metric === "positionX" || metric === "positionY" ? w.mechanicalMeasurement?.(id, metric === "positionX" ? "x" : "y")
       : metric === "rpm" ? w.mechanicalMeasurement?.(id, "rpm")
       : metric === "bodyTemperature" ? w.temperatures[id]
       : metric === "fluidTemperature" ? w.fluidTemperatureMeasurement?.(readingId)

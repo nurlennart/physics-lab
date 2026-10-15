@@ -2,14 +2,18 @@ import { projectAmbient, type Component, type Project, type Property } from './m
 
 export type AmbientSource = 'override' | 'space' | 'experiment';
 export interface ResolvedAmbient { temperature: number; source: AmbientSource }
+const spaceTemperatures = new WeakMap<object, Record<string, number>>();
+/** Runtime boundary context belongs to one engine-owned project; never serialized. */
+export function bindSpaceTemperatures(project: object, temperatures: Record<string, number>) { spaceTemperatures.set(project, temperatures); }
 
 /**
- * Temperatures in °C. The optional containing-space boundary is a future
- * integration point only; no room state, membership or simulation exists yet.
+ * Temperatures in °C. Membership is explicit; the engine binds accepted or trial
+ * zone temperatures without putting runtime state into serialized projects.
  */
 export function resolveAmbient(project: Pick<Project, 'environment'>, component: Component, containingSpaceAmbient?: number): ResolvedAmbient {
   if (component.props.ambientMode === 'override' && typeof component.props.ambient === 'number')
     return { temperature: component.props.ambient, source: 'override' };
+  containingSpaceAmbient ??= component.thermalSpaceId ? spaceTemperatures.get(project)?.[component.thermalSpaceId] ?? (project as Project).thermalSpaces?.find(s => s.id === component.thermalSpaceId)?.initialTemperature : undefined;
   if (containingSpaceAmbient !== undefined)
     return { temperature: containingSpaceAmbient, source: 'space' };
   return { temperature: projectAmbient(project), source: 'experiment' };

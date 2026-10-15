@@ -8,6 +8,7 @@ A browser engineering sandbox. Build circuits, heating systems, pumped water net
 - **Hydraulic:** finite vented tanks with weir overflow, pipes with water inventory, valves, regulators, centrifugal pumps with cavitation and standalone electric circulators (proportional or constant pressure, power-limited, on DC or single-phase AC).
 - **Machines:** DC motors with a speed-controlled drive, a dynamic double-cage induction motor calibrated to IE3 data, star-delta and soft starters, a variable-frequency drive, flywheels with gear stages and dynamometers.
 - **Mechanics:** a Physical view with rigid bodies, joints, gears, springs, forces and brakes (Planck.js), sharing shafts and sensors with the schematic.
+- **Thermal Spaces:** draw dimensioned rooms on the schematic, assign equipment, and solve real device heat exchange, effective thermal inertia, construction/ventilation losses and inter-room transfer. Includes heated living-room and timed shutdown examples; [model, usage and benchmark](docs/THERMAL-SPACES.md).
 - **Control:** sensors, logic, timers, hysteresis, PID and signal blocks on the simulation clock, plus an independent safety cutoff.
 
 ![The schematic workspace after one simulated minute of the heated circulation example: a motor-driven pump moves heated water between two tanks, with live currents, flows and temperatures on the wires, the selected pump's measurements and operating curve in the inspector, and telemetry charts below.](docs/images/workspace.png)

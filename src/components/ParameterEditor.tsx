@@ -112,6 +112,7 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
     control = (
       <select aria-label={physical ? "Physical target" : "Thermal target"} disabled={disabled} value={String(value)} onChange={(e) => actions.property(c.id, field, e.target.value)}>
         <option value="">Unassigned</option>
+        {["sensor", "thermostat", "safety"].includes(c.kind) && c.props.quantity !== "fluidTemperature" && (s.project.thermalSpaces ?? []).map(r => <option key={r.id} value={r.id}>{r.name} · room air temperature</option>)}
         {s.project.components.filter((x) => compatibleTarget(c, x)).map((x) => (
           <option key={x.id} value={x.id}>{x.name} · {definitions[x.kind].label}{["sensor", "thermostat", "safety"].includes(c.kind) ? ` · ${c.props.quantity === "fluidTemperature" ? "fluid temperature" : temperatureLabel(x)}` : ""}</option>
         ))}
@@ -159,7 +160,7 @@ export function ParameterSections({ c }: { c: Component }) {
         <details className="inspector-section param-group" key={group} open={group !== "advanced"}>
           <summary className="section-label">{groupTitles[group]}</summary>
           {list.map(([field, value]) => <Field key={field} c={c} field={field} value={value} s={s} />)}
-          {group === "thermal" && "ambientMode" in c.props && <p className="field-hint">Effective ambient: {formatEngineering(effectiveAmbient(s.project, c))} °C · {c.props.ambientMode === "override" ? "local override" : "experiment environment"}. Initial temperatures and temperature setpoints are separate parameters.</p>}
+          {group === "thermal" && "ambientMode" in c.props && <p className="field-hint">Effective ambient: {formatEngineering(effectiveAmbient(s.project, c))} °C · {c.props.ambientMode === "override" ? "local override" : c.thermalSpaceId ? "assigned Thermal Space" : "experiment environment"}. Initial temperatures and temperature setpoints are separate parameters.</p>}
         </details>
       ))}
     </>

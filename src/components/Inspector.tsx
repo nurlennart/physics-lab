@@ -1,3 +1,4 @@
+import { ThermalSpaceInspector } from './ThermalSpaceInspector';
 import { HybridInspector } from './HybridInspector';
 import { SolarInspector } from './SolarInspector';
 import { BoilerInspector } from './BoilerInspector';
@@ -42,6 +43,8 @@ export default function Inspector() {
     c = s.project.components.find((c) => c.id === s.selected[0]);
   const [tab, setTab] = useState("properties"),
     [metric, setMetric] = useState<Measurement>("temperature");
+  const room = s.project.thermalSpaces?.find(r => r.id === s.selected[0]);
+  if (room) return <ThermalSpaceInspector key={room.id} room={room} />;
   if (!c)
     return (
       <aside className="inspector">
@@ -131,6 +134,8 @@ export default function Inspector() {
         </button>
       </div>
       <div className="inspector-scroll">
+        {!!s.project.thermalSpaces?.length && <section className="inspector-section"><div className="section-label">Thermal environment</div><label className="room-field"><span>Assigned space</span><select aria-label="Assigned Thermal Space" value={c.thermalSpaceId ?? ''} onChange={e => actions.assignSpace(c.id, e.target.value)}><option value="">Outside · global environment</option>{s.project.thermalSpaces.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label><label className="room-field"><span>Keep explicit assignment</span><input type="checkbox" aria-label="Pin thermal assignment" checked={!!c.thermalSpacePinned} onChange={e => actions.assignSpace(c.id, c.thermalSpaceId ?? '', e.target.checked)} /></label><p className="field-hint">{c.props.ambientMode === 'override' ? 'Local ambient override bypasses room exchange.' : 'In Build mode, unpinned equipment follows its centre when dropped into a single room. Pipes require explicit assignment. Live moves preserve thermal membership.'}</p></section>}
+
         {tab === "model" ? (
           <div className="model-description">
             <Info size={18} />

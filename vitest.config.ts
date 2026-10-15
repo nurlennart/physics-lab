@@ -1,5 +1,6 @@
-import { availableParallelism } from "node:os";
 import { defineConfig } from "vitest/config";
-// One worker per core (Vitest's default leaves one idle); long fixed-step campaigns live in their own files so
-// they spread across workers. The timeout is a hang guard for simulation-heavy tests, not a performance assertion.
-export default defineConfig({ test: { testTimeout: 30000, include: ["src/**/*.test.ts"], maxWorkers: availableParallelism() } });
+// Serialize CPU-heavy physics files for reproducible timings on small hosts.
+// Verbose output reports individual tests instead of appearing idle until a long
+// file completes. Both fork and thread pools pass focused diagnostics; no solver
+// assertions or existing timeouts are changed. Override --maxWorkers as needed.
+export default defineConfig({ test: { testTimeout: 30000, include: ["src/**/*.test.ts"], pool: "forks", maxWorkers: 1, reporters: ["verbose"] } });

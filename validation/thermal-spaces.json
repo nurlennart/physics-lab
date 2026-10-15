@@ -1,0 +1,75 @@
+{
+  "executedAt": "2026-10-15T09:18:13.113Z",
+  "duration": 3600,
+  "reports": [
+    {
+      "mode": "kermi",
+      "heatingSeconds": 3600,
+      "heatingMs": 76092.405158,
+      "simulatedSecondsPerWallSecond": 47.310897750240365,
+      "heatingSteps": 36039,
+      "maxHeatingStep": 0.1,
+      "totalSeconds": 3600,
+      "totalMs": 76092.462896,
+      "heatedTemperature": null,
+      "finalTemperature": null,
+      "coolingSteps": 0,
+      "error": null,
+      "violations": [],
+      "suppliedEnergy": 5833250.759891757,
+      "roomStored": 0,
+      "energyResidual": -4.139463349872585e-8,
+      "massResidual": 0,
+      "boilerStages": [
+        1
+      ],
+      "pass": true
+    },
+    {
+      "mode": "livingRoom",
+      "heatingSeconds": 3600,
+      "heatingMs": 112507.30748700001,
+      "simulatedSecondsPerWallSecond": 31.99792156092592,
+      "heatingSteps": 36039,
+      "maxHeatingStep": 0.1,
+      "totalSeconds": 3600,
+      "totalMs": 112507.32494399999,
+      "heatedTemperature": 15.843120356379679,
+      "finalTemperature": 15.843120356379679,
+      "coolingSteps": 0,
+      "error": null,
+      "violations": [],
+      "suppliedEnergy": 6694549.663401489,
+      "roomStored": 1737080.8702490428,
+      "energyResidual": -0.000040975527172582016,
+      "massResidual": 0,
+      "boilerStages": [
+        1
+      ],
+      "pass": true
+    },
+    {
+      "mode": "roomCooldown",
+      "heatingSeconds": 3600,
+      "heatingMs": 83896.95631099999,
+      "simulatedSecondsPerWallSecond": 42.90978073930428,
+      "heatingSteps": 36039,
+      "maxHeatingStep": 0.1,
+      "totalSeconds": 10800,
+      "totalMs": 344224.982112,
+      "heatedTemperature": 15.843120356379679,
+      "finalTemperature": 14.927959946133262,
+      "coolingSteps": 72002,
+      "error": null,
+      "violations": [],
+      "suppliedEnergy": 6742631.017202679,
+      "roomStored": -148424.122981664,
+      "energyResidual": -0.00012512558361532644,
+      "massResidual": 0,
+      "boilerStages": [
+        0
+      ],
+      "pass": true
+    }
+  ]
+}

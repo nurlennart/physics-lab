@@ -1,5 +1,297 @@
 [
   {
+    "mode": "livingRoom",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 180400.25601795295,
+    "energyResidual": -5.942888128274149e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator supply",
+        "value": 23.496471056253483
+      },
+      {
+        "name": "Radiator return",
+        "value": 19.869379635496387
+      },
+      {
+        "name": "Radiator mean water",
+        "value": 20.156014556127957
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 91.4538012834864
+      },
+      {
+        "name": "Water heat input ṁ·c·ΔT",
+        "value": 617.8224704832143
+      },
+      {
+        "name": "Excess temperature ΔT",
+        "value": 5.280851737932694
+      },
+      {
+        "name": "Radiator flow",
+        "value": 2.4450073344724816
+      },
+      {
+        "name": "Boiler element input",
+        "value": 3000.0000000000005
+      },
+      {
+        "name": "Circulator input",
+        "value": 3.676712425853171
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -5.942888128274149e-7
+      },
+      {
+        "name": "Room air",
+        "value": 14.988389384098562
+      },
+      {
+        "name": "Room device gain",
+        "value": 91.45380128348644
+      },
+      {
+        "name": "Envelope loss",
+        "value": 358.97192574916056
+      },
+      {
+        "name": "Ventilation loss",
+        "value": 125.52776109182545
+      },
+      {
+        "name": "Room stored energy Δ",
+        "value": -23921.351941731737
+      }
+    ]
+  },
+  {
+    "mode": "livingRoom",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 180400.25601795295,
+    "energyResidual": -5.942888128274149e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator supply",
+        "value": 23.496471056253483
+      },
+      {
+        "name": "Radiator return",
+        "value": 19.869379635496387
+      },
+      {
+        "name": "Radiator mean water",
+        "value": 20.156014556127957
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 91.4538012834864
+      },
+      {
+        "name": "Water heat input ṁ·c·ΔT",
+        "value": 617.8224704832143
+      },
+      {
+        "name": "Excess temperature ΔT",
+        "value": 5.280851737932694
+      },
+      {
+        "name": "Radiator flow",
+        "value": 2.4450073344724816
+      },
+      {
+        "name": "Boiler element input",
+        "value": 3000.0000000000005
+      },
+      {
+        "name": "Circulator input",
+        "value": 3.676712425853171
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -5.942888128274149e-7
+      },
+      {
+        "name": "Room air",
+        "value": 14.988389384098562
+      },
+      {
+        "name": "Room device gain",
+        "value": 91.45380128348644
+      },
+      {
+        "name": "Envelope loss",
+        "value": 358.97192574916056
+      },
+      {
+        "name": "Ventilation loss",
+        "value": 125.52776109182545
+      },
+      {
+        "name": "Room stored energy Δ",
+        "value": -23921.351941731737
+      }
+    ]
+  },
+  {
+    "mode": "roomCooldown",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 180400.25601795295,
+    "energyResidual": -5.942888128274149e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator supply",
+        "value": 23.496471056253483
+      },
+      {
+        "name": "Radiator return",
+        "value": 19.869379635496387
+      },
+      {
+        "name": "Radiator mean water",
+        "value": 20.156014556127957
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 91.4538012834864
+      },
+      {
+        "name": "Water heat input ṁ·c·ΔT",
+        "value": 617.8224704832143
+      },
+      {
+        "name": "Excess temperature ΔT",
+        "value": 5.280851737932694
+      },
+      {
+        "name": "Radiator flow",
+        "value": 2.4450073344724816
+      },
+      {
+        "name": "Boiler element input",
+        "value": 3000.0000000000005
+      },
+      {
+        "name": "Circulator input",
+        "value": 3.676712425853171
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -5.942888128274149e-7
+      },
+      {
+        "name": "Room air",
+        "value": 14.988389384098562
+      },
+      {
+        "name": "Room device gain",
+        "value": 91.45380128348644
+      },
+      {
+        "name": "Envelope loss",
+        "value": 358.97192574916056
+      },
+      {
+        "name": "Ventilation loss",
+        "value": 125.52776109182545
+      },
+      {
+        "name": "Room stored energy Δ",
+        "value": -23921.351941731737
+      }
+    ]
+  },
+  {
+    "mode": "roomCooldown",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 180400.25601795295,
+    "energyResidual": -5.942888128274149e-7,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Radiator supply",
+        "value": 23.496471056253483
+      },
+      {
+        "name": "Radiator return",
+        "value": 19.869379635496387
+      },
+      {
+        "name": "Radiator mean water",
+        "value": 20.156014556127957
+      },
+      {
+        "name": "Radiator heat output",
+        "value": 91.4538012834864
+      },
+      {
+        "name": "Water heat input ṁ·c·ΔT",
+        "value": 617.8224704832143
+      },
+      {
+        "name": "Excess temperature ΔT",
+        "value": 5.280851737932694
+      },
+      {
+        "name": "Radiator flow",
+        "value": 2.4450073344724816
+      },
+      {
+        "name": "Boiler element input",
+        "value": 3000.0000000000005
+      },
+      {
+        "name": "Circulator input",
+        "value": 3.676712425853171
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -5.942888128274149e-7
+      },
+      {
+        "name": "Room air",
+        "value": 14.988389384098562
+      },
+      {
+        "name": "Room device gain",
+        "value": 91.45380128348644
+      },
+      {
+        "name": "Envelope loss",
+        "value": 358.97192574916056
+      },
+      {
+        "name": "Ventilation loss",
+        "value": 125.52776109182545
+      },
+      {
+        "name": "Room stored energy Δ",
+        "value": -23921.351941731737
+      }
+    ]
+  },
+  {
     "mode": "gridSolar",
     "source": "generated",
     "simulatedSeconds": 60,

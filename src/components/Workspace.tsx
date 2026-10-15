@@ -1,3 +1,5 @@
+import { ThermalRegions } from './ThermalRegions';
+import { THERMAL_PLAN_SCALE } from '../simulation/thermal-spaces';
 import { T } from "../theme/tokens";
 import {
   useState,
@@ -110,7 +112,7 @@ export default function Workspace() {
     y2: number;
   } | null>(null);
   const gesture = useRef<{
-    type: "pan" | "move" | "box";
+    type: "pan" | "move" | "box" | "room";
     sx: number;
     sy: number;
     camera: typeof camera;
@@ -125,7 +127,7 @@ export default function Workspace() {
   function fit() {
     const el = wrapper.current;
     if (!el) return;
-    if (!project.components.length) {
+    if (!project.components.length && !project.thermalSpaces?.length) {
       setCamera({ x: 60, y: 60, z: 1 });
       return;
     }
@@ -134,21 +136,25 @@ export default function Workspace() {
     );
     const minX =
         Math.min(
+          ...(project.thermalSpaces ?? []).map(r => r.x),
           ...project.components.map((c) => c.x),
           ...routes.map((p) => p.x),
         ) - 65,
       minY =
         Math.min(
+          ...(project.thermalSpaces ?? []).map(r => r.y),
           ...project.components.map((c) => c.y),
           ...routes.map((p) => p.y),
         ) - 80,
       maxX =
         Math.max(
+          ...(project.thermalSpaces ?? []).map(r => r.x + r.width * THERMAL_PLAN_SCALE),
           ...project.components.map((c) => c.x + dimensions(c).w),
           ...routes.map((p) => p.x),
         ) + 70,
       maxY =
         Math.max(
+          ...(project.thermalSpaces ?? []).map(r => r.y + r.length * THERMAL_PLAN_SCALE),
           ...project.components.map((c) => c.y + dimensions(c).h),
           ...routes.map((p) => p.y),
         ) + 45;
@@ -231,7 +237,7 @@ export default function Workspace() {
       setMarquee({ x: p.x, y: p.y, x2: p.x, y2: p.y });
     }
     gesture.current = {
-      type: pan ? "pan" : id ? "move" : "box",
+      type: pan ? "pan" : id ? "move" : tool === "room" ? "room" : "box",
       sx: e.clientX,
       sy: e.clientY,
       camera: { ...camera },
@@ -278,11 +284,17 @@ export default function Workspace() {
           ]),
         ),
       );
-    if (g.type === "box")
+    if (g.type === "box" || g.type === "room")
       setMarquee((m) => (m ? { ...m, x2: p.x, y2: p.y } : null));
   }
   function up() {
     bend.current = null;
+    if (gesture.current?.type === 'room' && marquee) {
+      const x = Math.min(marquee.x, marquee.x2), y = Math.min(marquee.y, marquee.y2);
+      const width = Math.abs(marquee.x2 - marquee.x) / THERMAL_PLAN_SCALE, length = Math.abs(marquee.y2 - marquee.y) / THERMAL_PLAN_SCALE;
+      if (width >= 0.4 && length >= 0.4) actions.addRoom(x, y, width, length);
+    }
+    if (gesture.current?.type === 'move') actions.finishMove();
     if (gesture.current?.type === "box" && marquee) {
       const m = marquee;
       const found = project.components.filter(
@@ -365,6 +377,7 @@ export default function Workspace() {
             { id: "select", icon: MousePointer2, label: "Select (V)" },
             { id: "pan", icon: Hand, label: "Pan (H / Space)" },
             { id: "wire", icon: Cable, label: "Connect terminals (W)" },
+            { id: "room", icon: Grid2X2, label: "Draw Thermal Space" },
           ].map(({ id, icon: Icon, label }) => (
             <button
               key={id}
@@ -399,7 +412,7 @@ export default function Workspace() {
           <button
             title="Rotate (R)"
             aria-label="Rotate selected"
-            disabled={!selected.length}
+            disabled={!project.components.some(c => selected.includes(c.id))}
             onClick={actions.rotate}
           >
             <RotateCw size={16} />
@@ -407,7 +420,7 @@ export default function Workspace() {
           <button
             title="Duplicate (Ctrl D)"
             aria-label="Duplicate selected"
-            disabled={!selected.length}
+            disabled={!project.components.some(c => selected.includes(c.id))}
             onClick={actions.duplicate}
           >
             <Copy size={16} />
@@ -473,6 +486,7 @@ export default function Workspace() {
         </defs>
         {grid && <rect width="100%" height="100%" fill="url(#grid)" />}
         <g transform={`translate(${camera.x},${camera.y}) scale(${camera.z})`}>
+          <ThermalRegions zoom={camera.z} panning={() => space.current} />
           {project.connections.map((w) => {
             const path = wirePath(w, project.components, project.connections),
               from = project.components.find((c) => c.id === w.from.component),

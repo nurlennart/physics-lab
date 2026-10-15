@@ -65,6 +65,8 @@ export interface Component {
   preset?: string;
   props: Record<string, Property>;
   spatial?: SpatialBody;
+  thermalSpaceId?: string;
+  thermalSpacePinned?: boolean;
 }
 export interface Terminal {
   component: string;
@@ -82,6 +84,7 @@ export interface Connection {
   route?: Point[];
 }
 export type Measurement =
+  | "roomTemperature" | "envelopeLoss" | "ventilationLoss" | "netHeat" | "storedThermalEnergy" | "temperatureRate" | "adjacentHeat" | "effectiveHeatCapacity" | "internalHeat"
   | "acInputPower" | "acOutputPower" | "converterLossEnergy" | "transferLossEnergy" | "batteryHeatEnergy"
   | "gridPower" | "gridReactivePower" | "gridImportPower" | "gridExportPower" | "gridImportEnergy" | "gridExportEnergy" | "gridVoltage" | "gridFrequency" | "synchronized" | "backupAvailable" | "dcPower" | "acConversionPower"
   | "incidentEnergy" | "inputPower" | "outputPower" | "conversionLoss" | "mppPower" | "mppVoltage" | "mppCurrent" | "trackingEfficiency" | "incidentPower" | "generatedEnergy" | "outputEnergy" | "lostEnergy"
@@ -103,6 +106,7 @@ export type Measurement =
   | "signal"
   | "nodeVoltage";
 export interface Probe {
+  targetKind?: "space";
   id: string;
   name: string;
   component: string;
@@ -121,7 +125,7 @@ export interface Assembly {
   joints?: MechanicalJoint[];
 }
 export interface Project {
-  version: 1 | 2 | 3 | 4;
+  version: 1 | 2 | 3 | 4 | 5;
   id: string;
   name: string;
   components: Component[];
@@ -132,6 +136,8 @@ export interface Project {
   world?: SpatialWorld;
   /** Sandbox environment. Absent = 20 °C standard laboratory ambient. */
   environment?: { ambient: number };
+  thermalSpaces?: import("./thermal-spaces").ThermalSpace[];
+  thermalElements?: import("./thermal-spaces").ThermalElement[];
 }
 export const DEFAULT_AMBIENT = 20;
 /**

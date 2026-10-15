@@ -1,3 +1,4 @@
+import { roomMeasurements } from '../simulation/thermal-spaces';
 import { operatingMeasurements } from "../simulation/capabilities";
 import { niceRange, formatTick } from "./chart-axis";
 import { T } from "../theme/tokens";
@@ -151,10 +152,11 @@ export default function Telemetry() {
     [offset, setOffset] = useState(0),
     [manage, setManage] = useState(false);
   const probes = s.project.probes ?? [],
+    room = s.project.thermalSpaces?.find(r => r.id === target),
     c =
       s.project.components.find((c) => c.id === target) ??
-      s.project.components[0],
-    options = c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
+      (room ? undefined : s.project.components[0]),
+    options = room ? [...roomMeasurements] : c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
     validMetric = options.some((x) => x === metric) ? metric : options[0];
   const end = Math.max(0.25, simulation.time - offset),
     start = Math.max(simulation.samples[0]?.time ?? 0, end - window),
@@ -169,7 +171,7 @@ export default function Telemetry() {
         | "energy"
         | "waterStored"
         | "heaterStored"
-        | "stored"
+        | "stored" | "roomStored"
         | "ambient",
     ) => (b?.[key] ?? 0) - (a?.[key] ?? 0);
   const balance = delta("supplied") + delta('spatialExternal') - delta("stored") - delta("ambient") - delta("kinetic") - delta("potential") - delta("shaftExport") - delta('spatialEnergy') - delta('mechanicalLoss');
@@ -274,7 +276,7 @@ export default function Telemetry() {
                 </strong>
               </div>
               {[
-                { name: s.project.components.some(c => c.kind === "solarPanel") ? "External supply (including sunlight)" : "Electrical supplied", value: delta("supplied") },
+                { name: s.project.thermalSpaces?.some(r => r.internalGain !== 0) ? "External supply (including internal heat)" : s.project.components.some(c => c.kind === "solarPanel") ? "External supply (including sunlight)" : "Electrical supplied", value: delta("supplied") },
                 { name: 'External mechanical work (signed)', value: delta('spatialExternal') },
                 { name: 'Spatial kinetic / potential / spring Δ', value: delta('spatialEnergy') },
                 { name: 'Contact, stop and brake heat', value: delta('mechanicalLoss') },
@@ -286,6 +288,7 @@ export default function Telemetry() {
                 { name: "Rotor kinetic energy Δ", value: delta("kinetic") },
                 { name: "Fluid potential energy Δ", value: delta("potential") },
                 { name: "External shaft, drain & overflow export", value: delta("shaftExport") },
+                { name: "Room storage Δ", value: delta("roomStored") },
                 { name: "Water storage Δ", value: delta("waterStored") },
                 { name: "Element storage Δ", value: delta("heaterStored") },
                 {
@@ -327,9 +330,10 @@ export default function Telemetry() {
                   <div className="probe-add">
                     <select
                       aria-label="Trace component"
-                      value={c?.id ?? ""}
+                      value={room?.id ?? c?.id ?? ""}
                       onChange={(e) => setTarget(e.target.value)}
                     >
+                      {(s.project.thermalSpaces ?? []).map(r => <option key={r.id} value={r.id}>{r.name} · Thermal Space</option>)}
                       {s.project.components.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -348,7 +352,7 @@ export default function Telemetry() {
                       ))}
                     </select>
                     <button
-                      onClick={() => c && actions.addProbe(c.id, validMetric)}
+                      onClick={() => (room || c) && actions.addProbe((room || c)!.id, validMetric)}
                     >
                       Add trace
                     </button>

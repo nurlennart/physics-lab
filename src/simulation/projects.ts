@@ -1,3 +1,5 @@
+import { thermalStarter } from './thermal-projects';
+import { roomMeasurements } from './thermal-spaces';
 import { hybridStarter, hybridTitles, type HybridMode } from './hybrid-projects';
 import { solarStarter, solarTitles, type SolarMode } from './solar-projects';
 import { deviceStarter, type DeviceMode } from "./device-projects";
@@ -17,9 +19,10 @@ import {
   type Measurement,
 } from "./model";
 export function starter(
-  mode: "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode = "heat",
+  mode: "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode = "heat",
   challenge = false,
 ): Project {
+  if (mode === "livingRoom" || mode === "roomCooldown") return thermalStarter(mode);
   if (mode in hybridTitles) return hybridStarter(mode as HybridMode);
   if (mode in solarTitles) return solarStarter(mode as SolarMode);
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi"].includes(mode)) return deviceStarter(mode as DeviceMode);
@@ -242,9 +245,9 @@ export function parseProject(input: unknown): Project {
   if (!input || typeof input !== "object")
     throw Error("Expected a PHYSICS LAB project object.");
   const p = structuredClone(input) as Project;
-  if (p.version !== 1 && p.version !== 2 && p.version !== 3 && p.version !== 4)
+  if (p.version !== 1 && p.version !== 2 && p.version !== 3 && p.version !== 4 && p.version !== 5)
     throw Error(
-      "Unsupported project version. This application reads versions 1–4.",
+      "Unsupported project version. This application reads versions 1–5.",
     );
   if (
     typeof p.name !== "string" ||
@@ -266,7 +269,7 @@ export function parseProject(input: unknown): Project {
   )
     throw Error("Unknown challenge.");
   const migrated = p.version < 3;
-  p.version = p.world || p.components.some(c => c.spatial) || p.version === 4 ? 4 : 3;
+  p.version = p.version === 5 || p.thermalSpaces?.length ? 5 : p.world || p.components.some(c => c.spatial) || p.version === 4 ? 4 : 3;
   p.probes ??= [];
   p.assemblies ??= [];
   const ids = new Set<string>();
@@ -343,7 +346,8 @@ export function parseProject(input: unknown): Project {
     }
     if (typeof c.props.target === "string" && c.props.target) {
       const target = p.components.find(x => x.id === c.props.target);
-      if (!target || !compatibleTarget(c, target)) throw Error(`${c.name}: target has no compatible modeled quantity. Reassign the sensor target.`);
+      const roomTarget = p.thermalSpaces?.some(s => s.id === c.props.target) && ["sensor", "thermostat", "safety"].includes(c.kind) && c.props.quantity !== "fluidTemperature";
+      if (!roomTarget && (!target || !compatibleTarget(c, target))) throw Error(`${c.name}: target has no compatible modeled quantity. Reassign the sensor target.`);
     }
   }
   for (const w of p.connections) {
@@ -434,6 +438,11 @@ export function validateProbes(p: Project) {
     )
       throw Error("Invalid measurement probe.");
     ids.add(probe.id);
+    if (probe.targetKind === 'space') {
+      if (!p.thermalSpaces?.some(s => s.id === probe.component) || !(roomMeasurements as readonly string[]).includes(probe.measurement) || probe.reference || probe.terminal) throw Error('Invalid Thermal Space probe.');
+      continue;
+    }
+    if (probe.targetKind !== undefined) throw Error('Invalid probe target kind.');
     if (
       ![
         "returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "supplyTemperature", "excessTemperature", "heatInput",

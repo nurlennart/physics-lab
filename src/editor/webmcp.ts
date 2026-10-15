@@ -38,6 +38,7 @@ export function registerLabTools() {
         project: getState().project.name,
         readings: simulation.electrical.readings,
         temperatures: simulation.temperatures,
+        thermalSpaces: { temperatures: simulation.spaceTemperatures, readings: simulation.spaceReadings, storedEnergyChangeJ: simulation.roomStored },
         hydraulics: simulation.multiphysics.hydraulic,
         tanks: simulation.multiphysics.tanks,
         devices: { batteries: simulation.devices.batteries, polarization: simulation.devices.polarization, capacitors: simulation.devices.capacitors, inductors: simulation.devices.inductors, contactors: simulation.devices.contactors },

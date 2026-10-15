@@ -1,3 +1,4 @@
+import { advanceSpaceThermal } from './thermal-coupling';
 import { controlBoiler, newBoiler, type BoilerState } from './boiler';
 import { radiatorUA } from './devices';
 import { prop, isMotor, type Component, type Project } from './model';
@@ -387,7 +388,7 @@ export class Multiphysics {
    * Flywheel: bearing drag and the gear mesh loss (k − 1)·T_t·ω go to ambient; its kinetic energy is in the
    * shaft's kinetic energy. Returns the heat released to ambient (J).
    */
-  private advanceTrain(s: Simulation, c: Component, m: MotorState, opposing: number, electricShare: number, start: number, omega: number, next: number, h: number) {
+  private advanceTrain(s: Simulation, c: Component, m: MotorState, opposing: number, electricShare: number, start: number, omega: number, next: number, h: number, directHeat?: Record<string, number>) {
     const train = shaftTrain(s.project, c.id, s.disconnected), dyno = train.dynamometer, flywheel = train.flywheel;
     let heat = 0;
     if (dyno) {
@@ -403,6 +404,7 @@ export class Multiphysics {
       const transmitted = f.inertia * acceleration + f.drag * omega, loss = f.drag * omega * omega + ((m.gear ?? 1) - 1) * transmitted * omega;
       this.drivetrainLoss += loss * h;
       heat += loss * h;
+      if (directHeat) directHeat[flywheel.id] = (directHeat[flywheel.id] ?? 0) + loss;
       const previous = this.shaftElements[flywheel.id]?.energy ?? 0, speed = next / f.ratio;
       // The flywheel shaft carries i·T_t; the gear loss stays on the motor side of the mesh.
       this.shaftElements[flywheel.id] = { omega: speed, torque: Math.abs(transmitted * f.ratio), power: transmitted * omega, energy: previous + transmitted * omega * h, kinetic: 0.5 * prop(flywheel, 'inertia') * speed * speed };
@@ -690,6 +692,8 @@ export class Multiphysics {
         s.spatial.accept(acceptedTrial ?? s.spatial.trial(s, h, torques), s, torques);
       }
       this.hydraulic = r.hydraulic;
+      const directHeat: Record<string, number> = {};
+      const heatBefore = s.project.thermalSpaces?.length ? { ...heatEnergy } : {};
       motors.forEach((c, i) => {
         const m = r.state[i];
         let next = linked[i] ? s.spatial.readings[linked[i]!].omega : held[i] ? 0 : 2 * midpoint[i] - old[i];
@@ -713,7 +717,7 @@ export class Multiphysics {
         if (c.kind === 'inductionMotor') heatEnergy[c.id] += this.advanceFlux(c, r.electrical.readings[c.id], midpoint[i], h, angleWindow(r.electrical.readings[c.id]));
         // Work exported by the opposing load: loads[i]·ω ≥ 0 while moving, zero while held at rest.
         this.externalShaftWork += loads[i] * midpoint[i] * h;
-        ambient += this.advanceTrain(s, c, m, loads[i], magnitude[i] > 0 ? electric[i] / magnitude[i] : 0, old[i], midpoint[i], next, h);
+        ambient += this.advanceTrain(s, c, m, loads[i], magnitude[i] > 0 ? electric[i] / magnitude[i] : 0, old[i], midpoint[i], next, h, directHeat);
         if (Math.abs(next) > prop(c, 'maxSpeed')) s.violation(`${c.name}: maximum supported rotor speed exceeded.`);
         if (Math.abs(m.torque) > prop(c, 'ratedTorque') * 1.001) s.automation.status[c.id] = 'overloaded';
       });
@@ -728,7 +732,10 @@ export class Multiphysics {
         if (Math.abs(reading.flow) < 1e-14 && dry > 0) { this.dryLoss += dry * h; ambient += dry * h; }
       }
       this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
-      const transported = transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === 'electricBoiler').map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
+      // Device storage must use the same start-temperature coefficients as its electrical stamp.
+      const deviceTemperatures = s.project.thermalSpaces?.length && s.devices.active ? { ...s.temperatures } : s.temperatures;
+      const radiatorConductance = Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)]));
+      const transported = s.project.thermalSpaces?.length ? advanceSpaceThermal(s, r.hydraulic, r.electrical, h, Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, (e - (heatBefore[id] ?? 0)) / h])), radiatorConductance, directHeat) : transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, radiatorConductance, this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === "electricBoiler").map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
       for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) {
         const b = this.boilers[c.id], reading = r.electrical.readings[c.id];
         ambient += (reading?.auxiliaryPower ?? 0) * h;
@@ -834,7 +841,7 @@ export class Multiphysics {
         const next = r.electrical.readings[c.id]?.hybrid;
         if (next && next.mode !== s.devices.hybrid[c.id]?.mode) s.log(`${c.name}: ${next.mode}${next.fault ? ' — Reset required' : ''}.`, next.fault ? 'warning' : 'info');
       }
-      s.devices.advance(s.project, r.electrical, h, s.temperatures);
+      s.devices.advance(s.project, r.electrical, h, deviceTemperatures);
       this.lastElectrical = r.electrical;
       remaining -= h;
     }
