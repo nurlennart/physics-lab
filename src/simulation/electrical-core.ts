@@ -140,6 +140,8 @@ export interface ElectricalRuntime {
   acInjections?: Record<string, [number, number]>;
   /** Fallback solve: converter iterations start from their cold initial values instead of the last accepted step. */
   coldStart?: boolean;
+  /** Last converged constant-power load resistance per circulator within one top-level electrical solve (Ω, at demand W). */
+  constantPowerWarm?: Record<string, { resistance: number; demand: number }>;
   /** Ephemeral converter iteration hook; never retained in Devices or serialized. */
   coupling?: {
     prepare: (last: ElectricalResult | undefined, models: NonNullable<ElectricalRuntime['sourceModels']>, failures: Record<string, boolean>) => void;

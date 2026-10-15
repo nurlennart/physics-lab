@@ -58,11 +58,22 @@ function expand(project: Project): Expansion {
  * flagged `undervoltage`, so the engine plans the substep with the pump unpowered.
  */
 function solveConstantPower(project: Project, expanded: Project, failures: Record<string, boolean>, runtime: ElectricalRuntime): ElectricalResult {
+  // Nested in the converter couplings, this iteration runs many times per solve. It starts from the resistance it last
+  // converged to in the same top-level solve; the fixed point and tolerance are unchanged. Lockout decisions are made on
+  // intermediate voltages, so a warm attempt that switches any unit off is discarded and repeated from the cold start.
+  const warm = runtime.coldStart ? undefined : runtime.constantPowerWarm;
+  if (warm) {
+    const trial = { ...failures }, attempt = constantPowerIteration(project, expanded, trial, runtime, warm);
+    if (!attempt.dropped) { Object.assign(failures, trial); return attempt.result; }
+  }
+  return constantPowerIteration(project, expanded, failures, runtime).result;
+}
+function constantPowerIteration(project: Project, expanded: Project, failures: Record<string, boolean>, runtime: ElectricalRuntime, start?: NonNullable<ElectricalRuntime['constantPowerWarm']>) {
   const units = project.components.filter(c => c.kind === 'circulator');
   const demand = (c: Component) => runtime.circulators?.[c.id] ?? 0;
   for (const c of units) if (!(demand(c) > 0)) failures[c.id] = true;
   const loads: Record<string, number> = { ...runtime.loadResistances }, undervoltage = new Set<string>();
-  for (const c of units) if (!failures[c.id]) loads[c.id] = prop(c, 'ratedVoltage') ** 2 / demand(c);
+  for (const c of units) if (!failures[c.id]) loads[c.id] = start?.[c.id]?.demand === demand(c) ? start[c.id].resistance : prop(c, 'ratedVoltage') ** 2 / demand(c);
   const off = (c: Component) => { undervoltage.add(c.id); failures[c.id] = true; delete loads[c.id]; };
   let result = solveElectricalCore(expanded, failures, { ...runtime, loadResistances: loads });
   for (let k = 0; units.some(c => loads[c.id] !== undefined); k++) {
@@ -84,7 +95,9 @@ function solveConstantPower(project: Project, expanded: Project, failures: Recor
     result = solveElectricalCore(expanded, failures, { ...runtime, loadResistances: loads });
   }
   for (const id of undervoltage) if (result.readings[id]) result.readings[id].undervoltage = true;
-  return result;
+  const memory = runtime.constantPowerWarm;
+  if (memory) for (const c of units) if (loads[c.id] !== undefined) memory[c.id] = { resistance: loads[c.id], demand: demand(c) };
+  return { result, dropped: undervoltage.size > 0 };
 }
 function solveDevices(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
   if (!project.components.some(special)) return solveElectricalCore(project, failed, runtime);
@@ -228,6 +241,7 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
 export function solveElectrical(project: Project, failed: Record<string, boolean> = {}, runtime: ElectricalRuntime = {}): ElectricalResult {
   const base = (p: Project, f: Record<string, boolean>, r: ElectricalRuntime) => p.components.some(c => solarKinds.includes(c.kind)) ? solveSolar(p, f, r, solveDevices) : solveDevices(p, f, r);
   const run = (r: ElectricalRuntime) => project.components.some(c => hybridKinds.includes(c.kind)) ? solveHybrid(project, failed, r, base) : base(project, failed, r);
+  runtime = { ...runtime, constantPowerWarm: {} };
   // Converter couplings start from the last accepted step; if that does not converge within the budget, the
   // whole solve repeats from the cold start (the same fixed point, reached by the original iteration path).
   try { return run(runtime); }
