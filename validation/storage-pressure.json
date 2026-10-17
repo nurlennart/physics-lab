@@ -1,0 +1,282 @@
+[
+  {
+    "section": "Standby loss",
+    "name": "BH 120-5 1 B: loss at 65/20 °C (W)",
+    "reference": 52,
+    "modeled": 51.999932093014905,
+    "error": 0.00006790698509462345,
+    "tolerance": 0.2,
+    "pass": true,
+    "basis": "Bosch ErP standby loss S"
+  },
+  {
+    "section": "Standby loss",
+    "name": "BH 120-5 1 B: 24 h free cool-down loss (kWh)",
+    "reference": 1.1376008274410343,
+    "modeled": 1.1329580987232037,
+    "error": 0.004642728717830558,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Lumped decay C·45 K·(1 − e^(−UA·t/C)); Bosch held at 65 °C: 52 W × 24 h = 1.25 kWh (printed 1.2 kWh/d)"
+  },
+  {
+    "section": "Conservation",
+    "name": "BH 120-5 1 B: energy residual after 24 h (J)",
+    "reference": 0,
+    "modeled": 0,
+    "error": 0,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Ledger closure"
+  },
+  {
+    "section": "Standby loss",
+    "name": "Stora WH 290 LP1 B: loss at 65/20 °C (W)",
+    "reference": 67,
+    "modeled": 66.99995117841324,
+    "error": 0.00004882158675911796,
+    "tolerance": 0.2,
+    "pass": true,
+    "basis": "Bosch ErP standby loss S"
+  },
+  {
+    "section": "Standby loss",
+    "name": "Stora WH 290 LP1 B: 24 h free cool-down loss (kWh)",
+    "reference": 1.5255172184346972,
+    "modeled": 1.5256915222240945,
+    "error": 0.00017430378939731206,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Lumped decay C·45 K·(1 − e^(−UA·t/C)); Bosch held at 65 °C: 52 W × 24 h = 1.25 kWh (printed 1.2 kWh/d)"
+  },
+  {
+    "section": "Conservation",
+    "name": "Stora WH 290 LP1 B: energy residual after 24 h (J)",
+    "reference": 0,
+    "modeled": 0,
+    "error": 0,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Ledger closure"
+  },
+  {
+    "section": "Coil",
+    "name": "Coil output at 55 °C, 45 °C store, 1000 l/h (W)",
+    "reference": 11000,
+    "modeled": 11004.137161358578,
+    "error": 4.137161358577941,
+    "tolerance": 11,
+    "pass": true,
+    "basis": "Bosch WH 290 LP1 maximum coil output (fitted)"
+  },
+  {
+    "section": "Coil",
+    "name": "Coil output at 55 °C, 45 °C store, 500 l/h (W)",
+    "reference": 5789.473107615736,
+    "modeled": 5789.6625473571585,
+    "error": 0.18943974142257503,
+    "tolerance": 11.578946215231472,
+    "pass": true,
+    "basis": "Exponential cell chain against ε = 1 − e^(−UA/ṁc) with the fitted UA (predicted; Bosch gives one point)"
+  },
+  {
+    "section": "Coil",
+    "name": "Coil output at 55 °C, 45 °C store, 1500 l/h (W)",
+    "reference": 14970.602589210928,
+    "modeled": 14982.224081144135,
+    "error": 11.621491933206926,
+    "tolerance": 29.941205178421857,
+    "pass": true,
+    "basis": "Exponential cell chain against ε = 1 − e^(−UA/ṁc) with the fitted UA (predicted; Bosch gives one point)"
+  },
+  {
+    "section": "Coil",
+    "name": "Coil output at 50 °C, 45 °C store, 1000 l/h (W)",
+    "reference": 5499.994522398584,
+    "modeled": 5502.068580679355,
+    "error": 2.074058280771169,
+    "tolerance": 10.999989044797168,
+    "pass": true,
+    "basis": "Exponential cell chain against ε = 1 − e^(−UA/ṁc) with the fitted UA (predicted; Bosch gives one point)"
+  },
+  {
+    "section": "Stratification",
+    "name": "Outlet after 0.5 displacements (°C): model 20.33, ideal plug 20, fully mixed 35.74",
+    "reference": 20,
+    "modeled": 20.333407972653617,
+    "error": 0.33340797265361743,
+    "tolerance": 4,
+    "pass": true,
+    "basis": "20 layers, 100 L, 1 m column: numerical and conductive spreading of the thermocline (information for 0.9/1.1)"
+  },
+  {
+    "section": "Stratification",
+    "name": "Outlet after 0.9 displacements (°C): model 36.95, ideal plug 20, fully mixed 43.74",
+    "reference": 20,
+    "modeled": 36.94793429223063,
+    "error": 16.947934292230627,
+    "tolerance": 20,
+    "pass": true,
+    "basis": "20 layers, 100 L, 1 m column: numerical and conductive spreading of the thermocline (information for 0.9/1.1)"
+  },
+  {
+    "section": "Stratification",
+    "name": "Outlet after 1.1 displacements (°C): model 49.90, ideal plug 60, fully mixed 46.69",
+    "reference": 60,
+    "modeled": 49.89755579959757,
+    "error": 10.10244420040243,
+    "tolerance": 20,
+    "pass": true,
+    "basis": "20 layers, 100 L, 1 m column: numerical and conductive spreading of the thermocline (information for 0.9/1.1)"
+  },
+  {
+    "section": "Stratification",
+    "name": "Outlet after 1.5 displacements (°C): model 59.17, ideal plug 60, fully mixed 51.07",
+    "reference": 60,
+    "modeled": 59.17124026474744,
+    "error": 0.8287597352525609,
+    "tolerance": 4,
+    "pass": true,
+    "basis": "20 layers, 100 L, 1 m column: numerical and conductive spreading of the thermocline (information for 0.9/1.1)"
+  },
+  {
+    "section": "Conservation",
+    "name": "Charging: energy residual (J)",
+    "reference": 0,
+    "modeled": 0.00001580217940500006,
+    "error": 0.00001580217940500006,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Ledger closure incl. header and sink tanks"
+  },
+  {
+    "section": "Expansion vessel",
+    "name": "Expansion of 50.0 L from 10 to 70.00 °C (L)",
+    "reference": 1.1212195799209386,
+    "modeled": 1.1212195799245457,
+    "error": 3.6071146070071336e-12,
+    "tolerance": 0.000001,
+    "pass": true,
+    "basis": "Kell (1975) densities at fixed mass"
+  },
+  {
+    "section": "Expansion vessel",
+    "name": "Reflex N 25 (1.5 bar precharge, 1.8 bar fill): pressure (bar)",
+    "reference": 1.9486964150954509,
+    "modeled": 1.948696415095938,
+    "error": 4.871658632055187e-13,
+    "tolerance": 0.00001,
+    "pass": true,
+    "basis": "Isothermal gas law p₀·V_n/(V_n − V_w)"
+  },
+  {
+    "section": "Expansion vessel",
+    "name": "Usable volume between 1.8 and 2.5 bar (L)",
+    "reference": 4.44996256412318,
+    "modeled": 4.44996256412318,
+    "error": 0,
+    "tolerance": 1e-9,
+    "pass": true,
+    "basis": "Sizing: end pressure 0.5 bar below the 3 bar valve (EN 12828)"
+  },
+  {
+    "section": "Safety valve",
+    "name": "Peak pressure at the valve (bar), TRD 721 limit set + 0.5 bar",
+    "reference": 3,
+    "modeled": 2.9974954081176537,
+    "error": 0.0025045918823463076,
+    "tolerance": 0.5,
+    "pass": true,
+    "basis": "Must not exceed 3.5 bar; sampled every 5 s"
+  },
+  {
+    "section": "Safety valve",
+    "name": "Pressure after heating (bar), between reseat and set",
+    "reference": 2.9,
+    "modeled": 2.8051630007068353,
+    "error": 0.09483699929316458,
+    "tolerance": 0.11,
+    "pass": true,
+    "basis": "Simmering at the reseat pressure"
+  },
+  {
+    "section": "Safety valve",
+    "name": "Discharged water = expansion − growth of the vessel water side (L)",
+    "reference": 2.6974799963285907,
+    "modeled": 2.697479996328515,
+    "error": 7.549516567451064e-14,
+    "tolerance": 0.000001,
+    "pass": true,
+    "basis": "Volume balance of the sealed circuit"
+  },
+  {
+    "section": "Conservation",
+    "name": "Safety valve: mass residual (kg)",
+    "reference": 0,
+    "modeled": 4.440892098500626e-14,
+    "error": 4.440892098500626e-14,
+    "tolerance": 1e-9,
+    "pass": true,
+    "basis": "Discharged mass leaves through the ledger"
+  },
+  {
+    "section": "Conservation",
+    "name": "Safety valve: energy residual (J)",
+    "reference": 0,
+    "modeled": 7.538442332588602e-7,
+    "error": 7.538442332588602e-7,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Cushion work Π·Q on the discharged water booked"
+  },
+  {
+    "section": "Safety valve",
+    "name": "Openings 1, discharged 2.70 L, exported 3.655 MJ",
+    "reference": 0,
+    "modeled": 0,
+    "error": 0,
+    "tolerance": 0,
+    "pass": true,
+    "basis": "Information"
+  },
+  {
+    "section": "Heat pump",
+    "name": "Lowest flow temperature during defrost (°C): 23.10 without buffer (≈ 60 L circuit), 25.41 with the 123 L series buffer",
+    "reference": 23.10402459040671,
+    "modeled": 25.40547109174895,
+    "error": 2.301446501342241,
+    "tolerance": 0,
+    "pass": true,
+    "basis": "2 / 2 defrosts in 6 h; performance factor 4.03 / 3.97. Bosch: defrost energy comes from the buffer and system water. Predicted, unvalidated"
+  },
+  {
+    "section": "Conservation",
+    "name": "Heat pump with buffer, 6 h: energy residual (J)",
+    "reference": 0,
+    "modeled": -0.00016571550200450424,
+    "error": 0.00016571550200450424,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Ledger closure"
+  },
+  {
+    "section": "Heat pump",
+    "name": "Hot-water charge at A7: COP 3.03 at 35 °C flow (100 % speed, 7.97 kW) → 2.65 at 50 °C (91 %, 7.90 kW); 2 h performance factor 3.02",
+    "reference": 0.4299999999999997,
+    "modeled": 0.3811074218640771,
+    "error": 0.048892578135922626,
+    "tolerance": 0,
+    "pass": true,
+    "basis": "Bosch EN 14511 at maximum output: A7/W35 COP 3.07, A7/W55 COP 2.64 (difference 0.43); the model passes 50 °C, not 55 °C, while charging"
+  },
+  {
+    "section": "Conservation",
+    "name": "Hot-water charge, 2 h: energy residual (J)",
+    "reference": 0,
+    "modeled": 1.2693618600678747e-8,
+    "error": 1.2693618600678747e-8,
+    "tolerance": 0.01,
+    "pass": true,
+    "basis": "Ledger closure"
+  }
+]

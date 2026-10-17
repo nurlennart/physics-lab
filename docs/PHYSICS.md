@@ -374,7 +374,15 @@ The bottom pressure is exact for any density profile (the column weight per area
 - **Overflow:** a full tank's surface rises a surcharge h above the rim and discharges over a sharp-crested weir, Q = ⅔·C_d·√(2g)·L·h^1.5 with C_d = 0.62 and L = `weirLength` (default 0.3 m). The surcharge is part of the level, pressure and potential. Rim events (overflow onset, surface returning to the rim) are not located within 1 µL of the rim, so alternating flow around a brim-full tank, e.g. thermal expansion of a vessel filled to capacity, cannot split the step without bound; mass and energy remain exactly booked. The `overflow` port can be piped to another component; if that network reaches a finite tank the flow and its enthalpy are injected there, otherwise they leave the system and are counted as exported mass and energy. A drain whose piezometric pressure exceeds the free surface stops with an explicit unsupported-backpressure error (submerged weirs are not modelled). Direct tank-to-tank wires and overflow-to-overflow connections are rejected.
 - **Filling protection** must be explicit (valve, level switch or controller); overflow does not stop a pump. In hydraulic challenges any overflow is a rule violation.
 
-Not modelled: sealed vessels and gas headspace, multiple port elevations, stratification.
+Not modelled for this vented tank: gas headspace, multiple port elevations, stratification. Sealed, stratified buffers and cylinders are the separate `storageTank`; see [Stratified storage and system pressure](#stratified-storage-and-system-pressure).
+
+### Stratified storage and system pressure
+
+- **Storage tank** (`storageTank`): a sealed, rigid vertical cylinder of N layers solved implicitly with its port inflows and outflows, upwind vertical advection from continuity, vertical conduction, wall losses from the ErP standby loss and an optional coil of exponentially fitted cells; density inversions (Kell) are mixed after each step. Its response is affine in the inlet temperatures and enters the global enthalpy solve.
+- **Expansion vessel** (`expansionVessel`): an isothermal nitrogen cushion, p_abs = p₀,abs·V_n/(V_n − V_w), is the piezometric boundary of its sealed circuit. The water side takes the circuit's thermal expansion E = Σ V_i·(ρ_i,fill/ρ(T_i) − 1) of every fixed inventory (the transport keeps fixed masses), less discharged water. Circuits without a vessel keep the fixed fill-pressure datum.
+- **Safety valve** (`safetyValve`): spring-loaded relief (TRD 721 type H) with pop and blowdown; discharge leaves the system with its mass, enthalpy and potential, supplied from the vessel's water ledger; the cushion's work Π·Q on that water is booked.
+
+Equations, provenance, calibration and limitations: [STORAGE-AND-PRESSURE.md](STORAGE-AND-PRESSURE.md).
 
 ### Heat transport and exchangers
 
@@ -656,7 +664,7 @@ external electrical supply + signed external mechanical work
   + residual
 ```
 
-- Hydraulic gravitational storage is g·(z·m + m²/(2·ρ_ref·A)) per tank. Copper loss, pump shaft work and hydraulic dissipation are internal transfers and are not counted again as sinks.
+- Hydraulic gravitational storage is g·(z·m + m²/(2·ρ_ref·A)) per tank. Expansion-vessel cushions supply the work Π·Q on water discharged by safety valves ("cushion work"); the discharged water is exported with its enthalpy and potential. Copper loss, pump shaft work and hydraulic dissipation are internal transfers and are not counted again as sinks.
 - Exported mass carries its enthalpy m·c_p·T and potential m·g·z_rim.
 - Contact heat uses measured impulse times midpoint relative contact velocity; travel-stop loss uses limit-reaction impulse work; brakes use force times velocity.
 - Editing physical properties while running is an external intervention; reset before using the balance as an uninterrupted conservation test. Live parameters (see [SANDBOX.md](SANDBOX.md)) never inject energy.
@@ -665,7 +673,7 @@ external electrical supply + signed external mechanical work
 ## Limitations
 
 - **Electrical:** single-frequency steady phasors outside induction machines; DC capacitors and inductors are dynamic, but there are no AC switching transients, no network transients from supply or cable inductance, no semiconductors beyond the starter and drive models above, no arcs, contact wear or ageing.
-- **Water:** liquid 1–95 °C only, incompressible flow with ρ_ref, constant c_p. No boiling, evaporation, freezing, sealed vessels, stratification, water hammer, spatial fluid, spills or leaks.
+- **Water:** liquid 1–95 °C only, incompressible flow with ρ_ref, constant c_p. Stratification only in storage tanks; system pressure from thermal expansion only where an expansion vessel is fitted (quasi-static, rigid pipework). No boiling, evaporation, freezing, water hammer, air in the water, spatial fluid, spills or leaks (safety-valve discharge and weir overflow are the only exits).
 - **Machines:** no saturation or single-phase machines; induction-motor stray load loss is folded into the fitted resistances; quasi-steady DC armature; no hydraulic turbine torque; pump curves are teaching approximations; circulator electronics draw an in-phase constant power (no rectifier harmonics) with a constant motor efficiency.
 - **Mechanics:** static housings only; no deformation, fracture or contact heat conduction; last-substep reaction readings.
 - **Control:** ideal actuator power, one-step response quantization, acyclic graphs only.

@@ -37,6 +37,9 @@ for (const [kind, title, label] of [
   ['electricBoiler', 'Bosch boiler and ALPHA2 heating loop', 'Manufacturer specifications'],
   ['panelRadiator', 'Bosch boiler, ALPHA2 and Kermi radiator', 'Manufacturer data (Kermi Technik)'],
   ['heatPump', 'Heat pump and underfloor heating', 'Bosch Compress 6800i AW 7 OR-S'],
+  ['storageTank', 'Sealed boiler circuit: expansion vessel and safety valve', 'Stratified storage tank'],
+  ['expansionVessel', 'Sealed boiler circuit: expansion vessel and safety valve', 'Membrane expansion vessel'],
+  ['safetyValve', 'Sealed boiler circuit: expansion vessel and safety valve', 'Safety valve · 3.0 bar'],
   ['battery', 'Finite battery discharge', 'state of charge'],
   ['capacitor', 'Charging a capacitor', 'stored field energy'],
   ['inductor', 'Switching an inductor', 'stored field energy'],
@@ -68,6 +71,16 @@ for (const [kind, title, label] of [
     await page.getByTestId('heat-pump-basis-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-reference')).toHaveCount(0);
     expect(readings.some(r => Math.abs(r.compressorPower - 90) < 1e-6)).toBe(true);
   }
+  if (kind === 'storageTank') {
+    await expect(page.getByRole('img', { name: /Temperature profile over the height of the tank/ })).toBeVisible();
+    await expect(page.getByTestId('storage-basis-manufacturer')).toContainText('BH 120-5 1 B');
+  }
+  if (kind === 'expansionVessel') {
+    await expect(page.getByTestId('vessel-status')).toContainText('bar');
+    await expect(page.getByRole('img', { name: /Cushion pressure versus water-side volume/ })).toBeVisible();
+    expect((Object.values(state.hydraulics.readings) as any[]).some(r => r.pressure > 1.79e5 && r.pressure < 1.9e5)).toBe(true);
+  }
+  if (kind === 'safetyValve') await expect(page.getByTestId('valve-status')).toContainText('Closed');
   if (kind === 'panelRadiator') {
     await expect(page.getByTestId('panel-status')).toContainText('Heating the room');
     await expect(page.getByRole('img', { name: /EN 442 characteristic/ })).toBeVisible();

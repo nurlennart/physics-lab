@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import { T } from "../theme/tokens";
 import { definitions, prop, textProp, type Component } from "../simulation/model";
 import { simulation } from "../editor/store";
-import { dimensions, portLocal } from "../editor/geometry";
+import { dimensions, portLocal, storageY } from "../editor/geometry";
+import { coilLayers, layerAt, storageLayers } from "../simulation/storage-tank";
 import { effectiveAmbient } from "../simulation/environment";
 import { trvSetpoint, trvTemperatureLabel } from "../simulation/thermostatic-valve";
 
@@ -43,6 +44,10 @@ export function moduleStatus(c: Component): { tone: Tone; text: string } | null 
   if (status === "overloaded" || (s.overload[c.id] ?? 0) > 0 || hybrid?.overload) return { tone: "warning", text: "Outside rating" };
   if (s.multiphysics.circulators[c.id]?.lockedOut) return { tone: "warning", text: "Undervoltage lockout" };
   if ((s.multiphysics.overflowRate[c.id] ?? 0) > 1e-9) return { tone: "warning", text: "Overflowing" };
+  if (c.kind === "safetyValve" && hasStarted() && (s.multiphysics.positions[c.id] ?? 0) > 0) return { tone: "warning", text: "Discharging" };
+  const vessel = s.multiphysics.vessels[c.id];
+  if (vessel && hasStarted() && vessel.water < 0) return { tone: "warning", text: "Vessel empty: below precharge" };
+  if (vessel && hasStarted() && vessel.water > 0.98 * prop(c, "nominalVolume") / 1000) return { tone: "fault", text: "Cushion fully compressed" };
   return hasStarted() && active(c) ? { tone: "ok", text: "Operating" } : { tone: "idle", text: hasStarted() ? "Idle" : "Ready" };
 }
 /** Whether a module is doing work: power, flow, rotation, a true control output. */
@@ -506,6 +511,57 @@ function face(c: Component): Face {
         hero: flowing && hr?.supplyTemperature !== undefined && hr.returnTemperature !== undefined ? `${(hr.supplyTemperature - 273.15).toFixed(1)} → ${(hr.returnTemperature - 273.15).toFixed(1)} °C` : celsius(mean),
         detail: started ? `${watts(hr?.duty ?? 0)} to room` : `Φ₅₀ ${prop(c, "ratedOutput").toFixed(0)} W`,
         tone: "thermal",
+      };
+    }
+    case "storageTank": {
+      const n = storageLayers(c), cells = (s.multiphysics.pipeCells[c.id] ?? Array(n).fill(prop(c, "initialTemperature") + 273.15)).map((t) => t - 273.15);
+      const lo = Math.min(20, ...cells), band = 124 / n, coil = coilLayers(c);
+      const port = (id: string, left: boolean) => { const y = storageY(prop(c, `${id}Height`)); return <path key={id} d={left ? `M0 ${y}H58` : `M116 ${y}H174`} stroke={T.hydraulic} strokeWidth="3" />; };
+      const top = cells[n - 1] ?? 20, bottom = cells[layerAt(c, prop(c, "sensorBottomHeight"))] ?? 20;
+      return {
+        symbol: <g>
+          {port("p1", true)}{port("p2", true)}{port("p3", false)}{port("p4", false)}
+          <rect x="58" y="22" width="58" height="132" rx="12" fill={T.n4} />
+          {cells.map((t, k) => <rect key={k} x="58" y={150 - (k + 1) * band} width="58" height={band + 0.3} fill={T.thermal} fillOpacity={Math.max(0.04, Math.min(0.85, (t - lo) / 55))} />)}
+          {coil.length > 0 && <path d={`M70 ${150 - (coil[0] + 1) * band + 3}${coil.map((k, i) => ` L${i % 2 ? 70 : 104} ${150 - k * band - 2}`).join("")}`} fill="none" stroke={T.hydraulicText} strokeWidth="1.5" />}
+          {coil.length > 0 && <path d={`M${174 * 0.3} 220V200H64M${174 * 0.7} 220V200H110`} fill="none" stroke={T.hydraulic} strokeWidth="2" opacity="0.6" />}
+          <rect x="58" y="22" width="58" height="132" rx="12" fill="none" stroke={INK} strokeWidth={SW} />
+        </g>,
+        hero: `${top.toFixed(1)} / ${bottom.toFixed(1)} °C`,
+        detail: started ? (coil.length ? `Coil ${watts(hr?.duty ?? 0)}` : lpm(hr?.flow ?? 0)) : `${prop(c, "storageVolume").toFixed(0)} L · ${n} layers`,
+        title: "Top layer / lower sensor temperature",
+        tone: "thermal",
+        pins: { labels: { p1: "1", p2: "2", p3: "3", p4: "4", coilIn: "C in", coilOut: "C out" } },
+      };
+    }
+    case "expansionVessel": {
+      const v = s.multiphysics.vessels[c.id], share = v ? Math.max(0, Math.min(1, v.water / (prop(c, "nominalVolume") / 1000))) : 0, membrane = 104 - 52 * share;
+      return {
+        symbol: <g>
+          <path d="M87 104V132" stroke={T.hydraulic} strokeWidth="3" />
+          <rect x="60" y="40" width="54" height="64" rx="24" fill={T.n4} />
+          <path d={`M61 ${membrane}H113V90Q113 104 99 104H75Q61 104 61 90Z`} fill={T.hydraulicDeep} opacity={share > 0 ? 1 : 0} />
+          <path d={`M61 ${membrane}H113`} stroke={T.hydraulicText} strokeWidth="1.5" />
+          <path d="M87 40V32M81 32h12" stroke={INK} strokeWidth="1.5" />
+          <rect x="60" y="40" width="54" height="64" rx="24" fill="none" stroke={s.faults[c.id] === "gasLoss" ? T.faultText : INK} strokeWidth={SW} />
+        </g>,
+        hero: `${((v?.pressure ?? prop(c, "fillPressure")) / 1e5).toFixed(2)} bar`,
+        detail: started && v ? `${(Math.max(0, v.water) * 1000).toFixed(2)} L water` : `${prop(c, "nominalVolume")} L · ${(prop(c, "precharge") / 1e5).toFixed(2)} bar gas`,
+        title: "Gauge pressure at the vessel; water held on the water side",
+      };
+    }
+    case "safetyValve": {
+      const lift = started ? s.multiphysics.positions[c.id] ?? 0 : 0;
+      return {
+        symbol: <g>
+          <Leads x0={69} x1={105} color={T.hydraulic} width={3} />
+          <ValveBody opening={lift} />
+          <path d="M87 54V48M81 48h12M83 46l8-3M83 42l8-3M83 38l8-3M83 34l8-3" stroke={INK} strokeWidth="1.25" fill="none" />
+          <path d="M105 66H174" stroke={lift > 0 ? T.hydraulic : FAINT} strokeWidth="3" strokeDasharray={lift > 0 ? undefined : "4 4"} />
+        </g>,
+        hero: lift > 0 ? `Open ${lift.toFixed(0)} %` : `${(prop(c, "setPressure") / 1e5).toFixed(1)} bar set`,
+        detail: started ? `${((s.multiphysics.discharged[c.id] ?? 0) * 1000).toFixed(2)} L discharged` : "Closed",
+        tone: lift > 0 ? "warning" : undefined,
       };
     }
     case "heatPump": {

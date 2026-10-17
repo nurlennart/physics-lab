@@ -6,6 +6,7 @@ export type Kind =
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
   | "electricBoiler" | "panelRadiator" | "heatPump"
+  | "storageTank" | "expansionVessel" | "safetyValve"
   | "source"
   | "source3"
   | "sourceAC"
@@ -93,6 +94,7 @@ export type Measurement =
   | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
   | "heatOutput" | "backupPower" | "environmentHeat" | "cop" | "compressorSpeed" | "evaporatingTemperature" | "condensingTemperature" | "frostMass" | "defrosting" | "targetTemperature" | "seasonalCop" | "heatEnergy" | "compressorStarts"
   | "supplyTemperature" | "excessTemperature" | "heatInput"
+  | "topTemperature" | "bottomTemperature" | "storedHeat" | "vesselWater" | "expansionVolume" | "dischargedVolume"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume" | "torque"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
@@ -277,6 +279,51 @@ export const definitions: Record<Kind, Definition> = {
       return { id, label: `Kermi Profil-K type ${m.type} · ${m.height} × ${m.length} mm`, cost: Math.round(160 * (m.output / 1666) ** 0.6), spec: `Type ${m.type} · ${m.height} × ${m.length} mm · ${m.output.toLocaleString("en-US")} W at 75/65/20 °C · ${m.water.toFixed(2)} L`,
         overrides: { ratedOutput: m.output, exponent: m.exponent, waterVolume: m.water, metalMass: m.mass, radiantShare: m.radiant, lossCoefficient: h.lossCoefficient, laminarK: h.laminarK } };
     }),
+  },
+  storageTank: {
+    label: "Storage tank (stratified)", category: "Thermal", prefix: "ST", cost: 620,
+    description: "Sealed vertical buffer or hot-water cylinder: water in layers with buoyancy mixing, four ports at set heights, optional internal coil, standby loss from the ErP rating. Bosch BH 120-5 1 B buffer reference; Stora WH 290 LP1 B cylinder variant.",
+    spec: "123 L buffer · 52 W standby · 4 ports · 3 bar",
+    ports: [
+      { id: "p1", domain: "hydraulic", label: "Port 1 (height in Inspector)" }, { id: "p2", domain: "hydraulic", label: "Port 2 (height in Inspector)" },
+      { id: "p3", domain: "hydraulic", label: "Port 3 (height in Inspector)", optional: true }, { id: "p4", domain: "hydraulic", label: "Port 4 (height in Inspector)", optional: true },
+      { id: "coilIn", domain: "hydraulic", label: "Coil flow (top of coil)", optional: true }, { id: "coilOut", domain: "hydraulic", label: "Coil return (bottom of coil)", optional: true },
+    ],
+    defaults: {
+      storageVolume: 122.9, tankHeight: 0.85, layers: 20, standbyHeatLoss: 52, loss: 52 / 45, effectiveConductivity: 1, vesselHeatCapacity: 16800,
+      p1Height: 92, p2Height: 8, p3Height: 92, p4Height: 8, sensorTopHeight: 75, sensorBottomHeight: 25,
+      diameter: 0.032, lossCoefficient: 1.5, laminarK: 160,
+      coil: false, coilVolume: 0, coilUA: 0, coilTop: 60, coilBottom: 15, coilDiameter: 0.0285, coilLossCoefficient: 30, coilLaminarK: 67000,
+      initialTemperature: 20, ambient: 20, elevation: 0, maxPressure: 300000, maxTemperature: 95,
+    },
+    variants: [
+      { id: "wh290", label: "Bosch Stora WH 290 LP1 B hot-water cylinder", cost: 1650, spec: "277 L · 3.2 m² coil · 11 kW at 55/45 °C · 67 W standby · 10 bar",
+        overrides: { storageVolume: 277, tankHeight: 1.15, standbyHeatLoss: 67, loss: 67 / 45, vesselHeatCapacity: 52800, p1Height: 4, p2Height: 96, p3Height: 65, p4Height: 50, sensorTopHeight: 75, sensorBottomHeight: 30,
+          diameter: 0.025, coil: true, coilVolume: 22, coilUA: 3418.8, coilTop: 61, coilBottom: 17, maxPressure: 1000000, maxTemperature: 95 } },
+    ],
+  },
+  expansionVessel: {
+    label: "Expansion vessel (membrane)", category: "Hydraulic", prefix: "EV", cost: 60,
+    description: "Membrane pressure vessel of a sealed circuit: a nitrogen cushion (precharge) is compressed as the circuit's water expands with temperature, so the system pressure rises from the fill pressure. Replaces the fixed fill-pressure stand-in of its circuit. Reflex N 25 reference.",
+    spec: "25 L · 1.5 bar precharge · 3 bar · 70 °C",
+    ports: [{ id: "fluid", domain: "hydraulic", label: "Water connection" }],
+    defaults: { nominalVolume: 25, precharge: 150000, fillPressure: 180000, initialTemperature: 20, elevation: 0, maxPressure: 300000, maxTemperature: 70 },
+    variants: [
+      { id: "bosch17", label: "Bosch CS6800iAW indoor-unit vessel 17 L", cost: 0, spec: "17 L · 0.75 bar precharge · 3 bar", overrides: { nominalVolume: 17, precharge: 75000, fillPressure: 130000 } },
+      { id: "generic12", label: "Membrane vessel 12 L (generic)", cost: 40, spec: "12 L · 1.5 bar precharge · 3 bar", overrides: { nominalVolume: 12 } },
+      { id: "generic50", label: "Membrane vessel 50 L (generic)", cost: 110, spec: "50 L · 1.5 bar precharge · 3 bar", overrides: { nominalVolume: 50 } },
+    ],
+  },
+  safetyValve: {
+    label: "Safety valve (spring)", category: "Hydraulic", prefix: "SV", cost: 18,
+    description: "Spring-loaded safety relief valve, TRD 721 type H for sealed heating circuits: opens at the set pressure, discharges water out of the system (open drain, or route it to a vented tank) and reseats after a blowdown. Needs an expansion vessel in its circuit.",
+    spec: "3 bar · DN 15 · H",
+    ports: [{ id: "inlet", domain: "hydraulic", label: "System connection" }, { id: "outlet", domain: "hydraulic", label: "Discharge (leave open for a drain)", optional: true }],
+    defaults: { setPressure: 300000, fullLiftOverpressure: 30000, blowdown: 20000, kvs: 1, diameter: 0.015, laminarK: 0, elevation: 0, maxPressure: 1000000 },
+    variants: [
+      { id: "dn20", label: "Heating safety valve DN 20 · 3 bar", cost: 28, spec: "3 bar · DN 20 · H (to 100 kW)", overrides: { kvs: 2, diameter: 0.02 } },
+      { id: "dhw6", label: "Drinking-water safety valve DN 20 · 6 bar", cost: 32, spec: "6 bar · DN 20 · cylinder", overrides: { setPressure: 600000, fullLiftOverpressure: 60000, blowdown: 40000, kvs: 2, diameter: 0.02 } },
+    ],
   },
   rigidBody: { label: 'Rigid body', category: 'Mechanical', description: 'Spatial rectangle, circle, convex polygon, beam, wheel or structural boundary; real mass, inertia and collision geometry', spec: 'SI geometry · static / dynamic / kinematic', cost: 25, prefix: 'RB', ports: [shaft], defaults: { forceX: 0, forceY: 0, appliedTorque: 0, brakeDamping: 0 } },
   positionSensor: { label: 'Position sensor', category: 'Sensors', description: 'Actual world position of the target body; selected x or y axis in metres', spec: 'm output', cost: 12, prefix: 'XS', ports: [output('number', 'm')], defaults: { ...sensing, axis: 'y', resolution: 0.00001 } },
@@ -1144,6 +1191,8 @@ export function connectionError(
     return "These terminals are already connected.";
   if (pa.domain === "hydraulic" && pa.id === "overflow" && pb.id === "overflow") return "Connect an overflow outlet to a receiving fluid inlet, not another overflow outlet.";
   if (pa.domain === "hydraulic" && a!.kind === "tank" && b!.kind === "tank") return "Insert a physical pipe between finite tanks, including overflow routes; an ideal wire cannot resolve their pressure difference.";
+  for (const [c, port] of [[a!, pa], [b!, pb]] as const)
+    if (c.kind === "storageTank" && (port.id === "coilIn" || port.id === "coilOut") && c.props.coil !== true) return `${c.name} has no internal coil: enable the coil (or choose a cylinder variant) before connecting its coil ports.`;
   if (pa.domain === "mechanical") {
     const motor = isMotor(a!) ? a! : isMotor(b!) ? b! : undefined;
     const load = motor?.id === a!.id ? b! : a!;

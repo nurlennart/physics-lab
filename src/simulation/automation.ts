@@ -14,7 +14,8 @@ export type FaultType =
   | "controlLost"
   | "disabled"
   | "coolingFailed"
-  | "coolingReduced";
+  | "coolingReduced"
+  | "gasLoss";
 export type Status =
   | "healthy"
   | "overloaded"
@@ -503,6 +504,9 @@ export function allowedFaults(c: Component): FaultType[] {
   if (c.kind === "motor" || c.kind === "inductionMotor") return ["powerLoss", "motorFailure", "controlLost"];
   if (["valve", "actuatedValve", "thermostaticValve", "checkValve", "pressureReducingValve"].includes(c.kind)) return ["stuckOpen", "stuckClosed", ...(c.kind === "actuatedValve" ? ["controlLost" as const] : [])];
   if (c.kind === "tank") return ["depleted"];
+  // Safety valve: seized shut (no protection) or held open (continuous discharge). Vessel: the nitrogen cushion leaks out.
+  if (c.kind === "safetyValve") return ["stuckClosed", "stuckOpen"];
+  if (c.kind === "expansionVessel") return ["gasLoss"];
   if (["sensor", "thermostat", "pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor"].includes(c.kind))
     return [
       "sensorFault",

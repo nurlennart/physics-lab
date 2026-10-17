@@ -1,7 +1,7 @@
 import type { Simulation } from './engine';
 import { isMotor, isThermalMass, perPoleKinds, portConductance, prop, type Component } from './model';
 import { bindSpaceTemperatures, effectiveAmbient, resolveAmbient } from './environment';
-import { elementKinds, transport, type HydraulicResult } from './hydraulic';
+import { elementKinds, transport, STAGNANT_FLOW, type HydraulicResult } from './hydraulic';
 import { panelExchange } from './panel-radiator';
 import type { ElectricalResult } from './electrical';
 import { solveLinear } from './linear-algebra';
@@ -21,7 +21,7 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   const assigned = (c: Component) => c.thermalSpaceId && resolveAmbient(p, c).source === 'space' ? spaces.findIndex(r => r.id === c.thermalSpaceId) : -1;
   const fixedPanel: Record<string, ReturnType<typeof panelExchange>> = {};
   for (const c of p.components.filter(c => c.kind === 'panelRadiator')) {
-    const branch = hydraulic.branches.find(b => b.component === c.id && Math.abs(b.flow) > 1e-14);
+    const branch = hydraulic.branches.find(b => b.component === c.id && Math.abs(b.flow) > STAGNANT_FLOW);
     const state = s.multiphysics.pipeCells[c.id];
     const flow = branch ? Math.abs(branch.flow) * WATER_RHO * WATER_CP : 0;
     const from = branch && (branch.flow > 0 ? branch.from : branch.to);
@@ -31,14 +31,14 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   const evaluate = (temperatures: Record<string, number>) => {
     bindSpaceTemperatures(p, temperatures);
     const tanks = structuredClone(s.multiphysics.tanks), cells = structuredClone(s.multiphysics.pipeCells), result = structuredClone(hydraulic);
-    const boilers = structuredClone(s.multiphysics.boilers), heatPumps = structuredClone(s.multiphysics.heatPumps);
-    const exchange = transport(p, tanks, result, h, cells, radiatorUA, { ...boilers, ...heatPumps }, power, fixedPanel);
-    return { tanks, cells, boilers, heatPumps, result, exchange };
+    const boilers = structuredClone(s.multiphysics.boilers), heatPumps = structuredClone(s.multiphysics.heatPumps), vessels = structuredClone(s.multiphysics.vessels);
+    const exchange = transport(p, tanks, result, h, cells, radiatorUA, { ...boilers, ...heatPumps }, power, fixedPanel, vessels);
+    return { tanks, cells, boilers, heatPumps, vessels, result, exchange };
   };
   let base: ReturnType<typeof evaluate>, responses: ReturnType<typeof evaluate>[];
   try {
     base = evaluate(oldRoom);
-    responses = spaces.map((r, i) => p.components.some(c => assigned(c) === i && (['pipe', 'panelRadiator', 'radiator'].includes(c.kind) || elementKinds.has(c.kind)))
+    responses = spaces.map((r, i) => p.components.some(c => assigned(c) === i && (['pipe', 'panelRadiator', 'radiator', 'storageTank'].includes(c.kind) || elementKinds.has(c.kind)))
       ? evaluate({ ...oldRoom, [r.id]: oldRoom[r.id] + 1 }) : base);
   } finally { bindSpaceTemperatures(p, s.spaceTemperatures); }
   const bodies = p.components.filter(c => isThermalMass(c) && (c.kind !== 'tank' || (base.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, 'vesselHeatCapacity') > 0));
@@ -86,7 +86,7 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   for (const c of p.components) {
     const r = electrical.readings[c.id], hr = hydraulic.readings[c.id];
     direct[c.id] = (directHeat[c.id] ?? 0) + (c.kind === 'electricBoiler' ? r?.auxiliaryPower ?? 0 : c.kind === 'radiator' ? r?.fanPower ?? 0 : c.kind === 'solarPanel' ? r?.heatPower ?? 0 : 0) + (r?.drive?.braking ?? 0);
-    if (hr && Math.abs(hr.flow) < 1e-14) direct[c.id] += Math.max(0, hr.shaftPower + (hr.motorLoss ?? 0));
+    if (hr && Math.abs(hr.flow) <= STAGNANT_FLOW) direct[c.id] += Math.max(0, hr.shaftPower + (hr.motorLoss ?? 0));
   }
   spaces.forEach((r, i) => {
     const q = hydraulicRoom(base, i) / h;
@@ -98,7 +98,7 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   let accepted: ReturnType<typeof evaluate>;
   try { accepted = evaluate(nextRoom); } finally { bindSpaceTemperatures(p, s.spaceTemperatures); }
   // Commit only after the complete system and conservative transport have succeeded.
-  Object.assign(s.multiphysics, { tanks: accepted.tanks, pipeCells: accepted.cells, boilers: accepted.boilers, heatPumps: accepted.heatPumps });
+  Object.assign(s.multiphysics, { tanks: accepted.tanks, pipeCells: accepted.cells, boilers: accepted.boilers, heatPumps: accepted.heatPumps, vessels: accepted.vessels });
   Object.assign(hydraulic, accepted.result);
   Object.assign(s.spaceTemperatures, nextRoom);
   const device: Record<string, Record<string, number>> = Object.fromEntries(spaces.map(r => [r.id, {}]));

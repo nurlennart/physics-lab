@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 95,
-    "coveredPresets": 95,
-    "scenarios": 139,
-    "passed": 139,
+    "presets": 101,
+    "coveredPresets": 101,
+    "scenarios": 145,
+    "passed": 145,
     "failed": 0
   },
   "reports": [
@@ -739,6 +739,216 @@
       "time": 1.0000000000000013,
       "energyResidual": -0.000011680748684739228,
       "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bosch BH 120-5 1 B buffer · 123 L",
+      "presets": [
+        "builtin:storageTank:Bosch BH 120-5 1 B buffer · 123 L"
+      ],
+      "checks": [
+        {
+          "label": "standby loss at 65/20 °C (W)",
+          "expected": 52,
+          "measured": 51.999932093014905,
+          "absoluteError": 0.00006790698509462345,
+          "tolerance": 0.10400001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bosch Stora WH 290 LP1 B hot-water cylinder · 277 L",
+      "presets": [
+        "builtin:storageTank:Bosch Stora WH 290 LP1 B hot-water cylinder · 277 L"
+      ],
+      "checks": [
+        {
+          "label": "standby loss at 65/20 °C (W)",
+          "expected": 67,
+          "measured": 66.99995117841324,
+          "absoluteError": 0.00004882158675911796,
+          "tolerance": 0.13400001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 1.0000000000000013,
+      "energyResidual": 0,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Reflex N 25 · 1.5 bar precharge",
+      "presets": [
+        "builtin:expansionVessel:Reflex N 25 · 1.5 bar precharge"
+      ],
+      "checks": [
+        {
+          "label": "cold fill pressure at the vessel (Pa)",
+          "expected": 180000,
+          "measured": 179999.99999999994,
+          "absoluteError": 5.820766091346741e-11,
+          "tolerance": 0.000181
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 3600,
+      "energyResidual": 0,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bosch indoor-unit vessel 17 L · 0.75 bar",
+      "presets": [
+        "builtin:expansionVessel:Bosch indoor-unit vessel 17 L · 0.75 bar"
+      ],
+      "checks": [
+        {
+          "label": "cold fill pressure at the vessel (Pa)",
+          "expected": 130000,
+          "measured": 130000,
+          "absoluteError": 0,
+          "tolerance": 0.000131
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 3600,
+      "energyResidual": 0,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Heating safety valve 3 bar · DN 15 (H)",
+      "presets": [
+        "builtin:safetyValve:Heating safety valve 3 bar · DN 15 (H)"
+      ],
+      "checks": [
+        {
+          "label": "discharged water = removed mass (kg)",
+          "expected": 0.6997202531087034,
+          "measured": 0.6997202531087023,
+          "absoluteError": 1.1102230246251565e-15,
+          "tolerance": 1.6997202531087036e-9
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 1.1102230246251565e-15,
+          "absoluteError": 1.1102230246251565e-15,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.811145011743065e-9,
+          "absoluteError": 1.811145011743065e-9,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 20.000000000000146,
+      "energyResidual": -1.811145011743065e-9,
+      "massResidual": 1.1102230246251565e-15,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Drinking-water safety valve 6 bar · DN 20",
+      "presets": [
+        "builtin:safetyValve:Drinking-water safety valve 6 bar · DN 20"
+      ],
+      "checks": [
+        {
+          "label": "discharged water = removed mass (kg)",
+          "expected": 0.6553802133460485,
+          "measured": 0.6553802133460482,
+          "absoluteError": 2.220446049250313e-16,
+          "tolerance": 1.6553802133460486e-9
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": -6.661338147750939e-16,
+          "absoluteError": 6.661338147750939e-16,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -1.0472831490915269e-9,
+          "absoluteError": 1.0472831490915269e-9,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 20.000000000000146,
+      "energyResidual": -1.0472831490915269e-9,
+      "massResidual": -6.661338147750939e-16,
       "violations": [],
       "failed": {}
     },

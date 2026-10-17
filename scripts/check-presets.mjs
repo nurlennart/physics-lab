@@ -151,6 +151,37 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       near(report, 'Kermi chart pressure drop (Pa)', group * (m * 36) ** 1.987, r.differentialPressure, 0.02);
       break;
     }
+    case 'storageTank': {
+      // ErP standby rating: at 65 °C in 20 °C air the loss is the published standby loss S.
+      c.props.initialTemperature = 65; b.p.environment = { ambient: 20 };
+      s = simulation(b); run(s);
+      near(report, 'standby loss at 65/20 °C (W)', v.standbyHeatLoss, s.ambientEnergy / s.time, 0.002);
+      break;
+    }
+    case 'expansionVessel': {
+      // Sealed 40 L pipe loop warmed from 20 to 60 °C ambient: the cushion starts at the fill pressure and rises.
+      const loop = [0, 1].map(() => b.add('pipe', { length: 10.19, diameter: 0.05, thermalUA: 2000, segments: 2, initialTemperature: 20 }));
+      b.wire(loop[0], 'outlet', loop[1], 'inlet'); b.wire(loop[1], 'outlet', loop[0], 'inlet'); b.wire(c, 'fluid', loop[0], 'inlet');
+      b.p.environment = { ambient: 60 }; s = simulation(b);
+      near(report, 'cold fill pressure at the vessel (Pa)', v.fillPressure, s.multiphysics.hydraulic.readings[c.id].pressure, 1e-9, 1e-6);
+      s.advanceAdaptive(3600); assert.equal(s.error, null);
+      assert(s.multiphysics.vessels[c.id].pressure > v.fillPressure + 5000, 'pressure rises with the expansion');
+      break;
+    }
+    case 'safetyValve': {
+      // A vessel filled above the set pressure: the valve lifts, discharges and holds the circuit between reseat and set.
+      const loop = [0, 1].map(() => b.add('pipe', { length: 5, diameter: 0.05, segments: 2 }));
+      const vessel = b.add('expansionVessel', { nominalVolume: 8, precharge: v.setPressure - 50000, fillPressure: v.setPressure + 20000, maxPressure: 2 * v.setPressure });
+      b.wire(loop[0], 'outlet', loop[1], 'inlet'); b.wire(loop[1], 'outlet', loop[0], 'inlet'); b.wire(vessel, 'fluid', loop[0], 'inlet'); b.wire(c, 'inlet', loop[1], 'inlet');
+      s = simulation(b); run(s, 20);
+      assert(s.multiphysics.discharged[c.id] > 0, 'discharges');
+      const p = s.multiphysics.vessels[vessel.id].pressure;
+      assert(p <= v.setPressure && p >= v.setPressure - v.blowdown - 1000, `held between reseat and set: ${p}`);
+      near(report, 'discharged water = removed mass (kg)', s.multiphysics.discharged[c.id] * 1000, s.multiphysics.removedMass, 1e-9, 1e-9);
+      // The fixture deliberately starts above the set pressure.
+      s.violations.splice(0);
+      break;
+    }
     case 'source': {
       const current = v.mode === 'cc' ? v.current : Math.min(v.maxCurrent / 4, 10);
       const r = v.voltage / (v.mode === 'cc' ? 2 * current : current);

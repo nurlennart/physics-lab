@@ -1,5 +1,5 @@
 {
-  "executedAt": "2026-10-13T14:30:35.708Z",
+  "executedAt": "2026-10-17T16:35:50.611Z",
   "timestepSeconds": 0.016666666666666666,
   "passed": 96,
   "total": 96,
@@ -491,11 +491,11 @@
     {
       "name": "Coupled energy balance at dt=0.008333333333333333",
       "domain": "multiphysics",
-      "measured": -0.0000011042213827749947,
+      "measured": -0.0000011043132701615832,
       "expected": 0,
       "tolerance": 0.1,
       "assumptions": "Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting",
-      "absoluteError": 0.0000011042213827749947,
+      "absoluteError": 0.0000011043132701615832,
       "relativeError": null,
       "pass": true
     },
@@ -513,11 +513,11 @@
     {
       "name": "Coupled energy balance at dt=0.004166666666666667",
       "domain": "multiphysics",
-      "measured": -6.630083646541607e-7,
+      "measured": -6.630084783409984e-7,
       "expected": 0,
       "tolerance": 0.1,
       "assumptions": "Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting",
-      "absoluteError": 6.630083646541607e-7,
+      "absoluteError": 6.630084783409984e-7,
       "relativeError": null,
       "pass": true
     },
@@ -535,11 +535,11 @@
     {
       "name": "Coupled energy balance at dt=0.0020833333333333333",
       "domain": "multiphysics",
-      "measured": 3.5057556146966817e-7,
+      "measured": 3.5057394143223064e-7,
       "expected": 0,
       "tolerance": 0.1,
       "assumptions": "Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting",
-      "absoluteError": 3.5057556146966817e-7,
+      "absoluteError": 3.5057394143223064e-7,
       "relativeError": null,
       "pass": true
     },
@@ -557,11 +557,11 @@
     {
       "name": "Coupled energy balance at dt=0.0010416666666666667",
       "domain": "multiphysics",
-      "measured": 0.000005078340393538383,
+      "measured": 0.000005078340336694964,
       "expected": 0,
       "tolerance": 0.1,
       "assumptions": "Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting",
-      "absoluteError": 0.000005078340393538383,
+      "absoluteError": 0.000005078340336694964,
       "relativeError": null,
       "pass": true
     },
@@ -612,12 +612,12 @@
     {
       "name": "Destination-volume convergence dt=0.008333333333333333",
       "domain": "multiphysics",
-      "measured": 0.0009514641322213016,
+      "measured": 0.0009514641322213014,
       "expected": 0.0009515240857247819,
       "tolerance": 0.000002,
       "assumptions": "2 s startup against dt=1/960 s reference; tolerance 2 mL",
-      "absoluteError": 5.995350348033529e-8,
-      "relativeError": 0.00006300786746209196,
+      "absoluteError": 5.995350348055213e-8,
+      "relativeError": 0.00006300786746231985,
       "pass": true
     },
     {
@@ -645,12 +645,12 @@
     {
       "name": "Fluid-temperature convergence dt=0.008333333333333333",
       "domain": "multiphysics",
-      "measured": 293.15125591141236,
+      "measured": 293.1512559114121,
       "expected": 293.15125399121774,
       "tolerance": 0.001,
       "assumptions": "Conservative zero-volume enthalpy transport plus backward-Euler tank loss; tolerance 1 mK",
-      "absoluteError": 0.000001920194620197435,
-      "relativeError": 6.5501838864893975e-9,
+      "absoluteError": 0.000001920194335980341,
+      "relativeError": 6.550182916965677e-9,
       "pass": true
     },
     {

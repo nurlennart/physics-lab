@@ -5,9 +5,16 @@ import { definitions, prop, textProp, terminalKey, type Component, type Project 
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
 import { viscosityK, inventoryVolume } from './water';
+import { STORAGE_PORTS, coilCellCapacity, coilLayers, hasCoil, layerCapacity, mixInversions, portLayer, storageEvaluate, storageHeight, storageLayers, storageResponse, storageWaterMass, type StorageResponse } from './storage-tank';
 
 /** vessel: wall heat capacity (J/K) lumped at the water temperature; it does not flow. */
 export interface TankState { volume: number; mass: number; temperature: number; vessel?: number }
+/**
+ * Water held in an expansion vessel's ledger: mass (kg, reference density) and enthalpy (J, c_p·T datum). It changes
+ * only when the circuit loses water (safety-valve discharge); thermal expansion of the circuit's inventories is a volume
+ * displaced into the vessel (see expansion.ts). Supplied water leaves at `temperature` (K).
+ */
+export interface VesselWater { mass: number; enthalpy: number; temperature: number }
 export interface HydraulicReading {
   flow: number; pressure: number; inletPressure: number; differentialPressure: number;
   velocity: number; reynolds: number; frictionFactor: number;
@@ -45,7 +52,7 @@ export interface HydraulicReading {
 export interface HydraulicResult {
   readings: Record<string, HydraulicReading>; potentials: Record<string, number>;
   residual: number; pressureResidual: number; iterations: number; converged: boolean; diagnostics: string[];
-  branches: { id: string; component: string; stream?: "hot" | "cold"; from: string; to: string; flow: number; loss: number; gain: number }[];
+  branches: { id: string; component: string; stream?: "hot" | "cold"; part?: string; from: string; to: string; flow: number; loss: number; gain: number }[];
   tankNodes: Record<string, string>; terminalNodes: Record<string, string>;
   /** Empty tanks whose node carries flow-through at or below the empty-tank head (continuity, no storage). */
   drained?: string[];
@@ -53,7 +60,17 @@ export interface HydraulicResult {
   nodeTemperatures: Record<string, number>;
   /** Weir overflow per tank: flow (m³/s), whether it is routed into the network, and the receiving node. */
   weir: Record<string, { flow: number; routed: boolean; node: string }>;
+  /** Expansion vessels: boundary node, and the water they supply to their circuit (m³/s, the safety-valve discharge). */
+  vessels?: Record<string, { node: string; supply: number }>;
+  /** Safety valves discharging to an open drain: their atmospheric outlet node. */
+  discharge?: Record<string, string>;
 }
+/**
+ * Below the network's continuity tolerance a branch flow is numerical residue, not transport: it moves no enthalpy, and
+ * its losses go to ambient as at zero flow. (A pressure boundary inside a closed loop, e.g. an expansion vessel, leaves
+ * residue of order 10⁻¹⁴ m³/s; attributing a standing pump's loss to it would heat that "flow" without bound.)
+ */
+export const STAGNANT_FLOW = 1e-12;
 /** Sharp-crested weir discharge coefficient (rectangular crest, free overfall). */
 export const WEIR_CD = 0.62;
 /** Free-overfall weir discharge Q = ⅔·C_d·√(2g)·L·h^1.5 for surcharge h above the rim (m³/s). */
@@ -61,7 +78,11 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve']);
+/** Internal node of a sealed storage tank: all its ports connect to it through short nozzle branches. */
+export const interiorNode = (c: Component) => `${c.id}:interior`;
+/** Key of a storage tank's coil cells in the cell store. */
+export const coilKey = (id: string) => `${id}#coil`;
 /** Branches with one fully mixed water cell and an implicit heated element node (boiler elements, heat-pump condenser). */
 export const elementKinds = new Set(['electricBoiler', 'heatPump']);
 /** State of an element node: temperature (K). */
@@ -70,7 +91,7 @@ export type ElementState = { elementTemperature: number };
 export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
 export const positionedValves = new Set(['actuatedValve', 'thermostaticValve', 'pressureReducingValve']);
-const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve']);
+const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve', 'safetyValve']);
 /** Parse "q:h; q:h" (L/min : m at rated speed) into SI points, or an error message. */
 export function parsePumpPoints(text: string): { q: number; h: number }[] | string {
   const parts = text.split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
@@ -252,9 +273,10 @@ class Union {
   find(x: string): string { if (!this.p.has(x)) this.p.set(x, x); const y = this.p.get(x)!; if (x !== y) this.p.set(x, this.find(y)); return this.p.get(x)!; }
   join(a: string, b: string) { this.p.set(this.find(a), this.find(b)); }
 }
-type Branch = { id: string; stream?: 'hot' | 'cold'; c: Component; a: string; b: string };
+type Branch = { id: string; stream?: 'hot' | 'cold'; part?: string; c: Component; a: string; b: string };
 interface HydraulicTopology {
   cs: Component[]; tanks: Component[]; terminalNodes: Record<string, string>;
+  /** Groups of nodes joined by branches. Safety valves do not join their discharge side: a sealed circuit keeps its own pressure reference. */
   nodes: string[]; branches: Branch[]; group: Map<string, string>;
 }
 /**
@@ -270,22 +292,31 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
   const uf = new Union();
   const cs = project.components.filter(c => definitions[c.kind].ports.some(p => p.domain === 'hydraulic'));
   for (const c of cs) for (const p of definitions[c.kind].ports.filter(p => p.domain === 'hydraulic')) uf.find(`${c.id}:${p.id}`);
+  for (const c of cs.filter(c => c.kind === 'storageTank')) uf.find(interiorNode(c));
   for (const w of project.connections.filter(w => w.domain === 'hydraulic' && !disconnected.has(w.id))) uf.join(terminalKey(w.from), terminalKey(w.to));
   const terminalNodes: Record<string, string> = {};
   for (const k of uf.p.keys()) terminalNodes[k] = uf.find(k);
   const node = (c: Component, port: string) => terminalNodes[`${c.id}:${port}`];
+  const terminals = new Map<string, number>();
+  for (const n of Object.values(terminalNodes)) terminals.set(n, (terminals.get(n) ?? 0) + 1);
+  // An unconnected storage port is a blank plug: no nozzle branch (a dead-end node adds nothing but conditioning).
+  const connected = (c: Component, port: string) => (terminals.get(node(c, port)) ?? 0) > 1;
   const branches = cs.filter(c => branchKinds.has(c.kind)).flatMap((c): Branch[] => c.kind === 'heatExchanger'
     ? [{ id: `${c.id}#hot`, stream: 'hot', c, a: node(c, 'hotIn'), b: node(c, 'hotOut') }, { id: `${c.id}#cold`, stream: 'cold', c, a: node(c, 'coldIn'), b: node(c, 'coldOut') }]
-    : [{ id: c.id, c, a: node(c, 'inlet'), b: node(c, 'outlet') }]);
+    : c.kind === 'storageTank'
+      // Port nozzles point into the tank; the coil is a separate branch through it.
+      ? [...STORAGE_PORTS.filter(port => connected(c, port)).map((port): Branch => ({ id: `${c.id}#${port}`, part: port, c, a: node(c, port), b: terminalNodes[interiorNode(c)] })),
+        ...(hasCoil(c) ? [{ id: coilKey(c.id), part: 'coil', c, a: node(c, 'coilIn'), b: node(c, 'coilOut') }] : [])]
+      : [{ id: c.id, c, a: node(c, 'inlet'), b: node(c, 'outlet') }]);
   const nodes = [...new Set(Object.values(terminalNodes))], groups = new Union();
   for (const n of nodes) groups.find(n);
-  for (const b of branches) groups.join(b.a, b.b);
+  for (const b of branches) if (b.c.kind !== 'safetyValve') groups.join(b.a, b.b);
   const group = new Map(nodes.map(n => [n, groups.find(n)]));
   const topology = { cs, tanks: cs.filter(c => c.kind === 'tank'), terminalNodes, nodes, branches, group };
   byProject.set(key, topology);
   return topology;
 }
-export function solveHydraulic(project: Project, tanks: Record<string, TankState>, speeds: Record<string, number> = {}, positions: Record<string, number> = {}, faults: Record<string, string> = {}, disconnected = new Set<string>(), previous?: HydraulicResult, cells: Record<string, number[]> = {}): HydraulicResult {
+export function solveHydraulic(project: Project, tanks: Record<string, TankState>, speeds: Record<string, number> = {}, positions: Record<string, number> = {}, faults: Record<string, string> = {}, disconnected = new Set<string>(), previous?: HydraulicResult, cells: Record<string, number[]> = {}, vesselPressures: Record<string, number> = {}): HydraulicResult {
   const result = emptyHydraulics();
   // Node temperatures persist until the next enthalpy transport replaces them.
   result.nodeTemperatures = { ...previous?.nodeTemperatures };
@@ -293,6 +324,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   if (!cs.length) return result;
   const node = (c: Component, port: string) => topology.terminalNodes[`${c.id}:${port}`];
   const groups = { find: (n: string) => topology.group.get(n) ?? n };
+  const kinds = new Map(cs.map(c => [c.id, c.kind])), byKind = (id: string) => kinds.get(id);
   result.terminalNodes = topology.terminalNodes;
   const boundaries: Record<string, number> = {}, boundaryTanks: Record<string, Component[]> = {};
   for (const c of topology.tanks) {
@@ -310,13 +342,38 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   const weirInjection = new Map<string, number>();
   if (branches.length > 120) throw Error('Hydraulic network exceeds 120 branches.');
   const tankGroups = new Set(Object.keys(boundaries).map(n => groups.find(n)));
-  const primed = new Set(tankGroups);
+  // Expansion vessels: the gas cushion sets the piezometric pressure of the vessel's connection. One vessel per sealed
+  // circuit; a circuit open to a vented tank already has its pressure reference (an open system has no membrane vessel).
+  const vesselGroups = new Map<string, Component>();
+  result.vessels = {};
+  for (const c of cs.filter(c => c.kind === 'expansionVessel')) {
+    const n = node(c, 'fluid'), group = groups.find(n);
+    if (boundaries[n] !== undefined) throw Error(`${c.name}: an expansion vessel cannot share an ideal node with a tank. Insert a pipe, or remove the vessel from the vented circuit.`);
+    if (tankGroups.has(group)) throw Error(`${c.name}: this circuit is open to a vented tank, which already sets its pressure. A membrane expansion vessel belongs to a sealed circuit.`);
+    const other = vesselGroups.get(group);
+    if (other) throw Error(`${c.name} and ${other.name}: one expansion vessel per sealed circuit is supported. Combine them into one vessel of the summed volume.`);
+    vesselGroups.set(group, c);
+    boundaries[n] = ((vesselPressures[c.id] ?? prop(c, 'fillPressure')) + RHO * G * prop(c, 'elevation')) / 1000;
+    result.vessels[c.id] = { node: n, supply: 0 };
+  }
+  // Safety valves: an unconnected outlet discharges to an open drain at atmospheric pressure (the water leaves the
+  // system). A piped outlet must lead to a vented tank (tundish or collecting vessel).
+  result.discharge = {};
+  const terminalCount = new Map<string, number>();
+  for (const n of Object.values(topology.terminalNodes)) terminalCount.set(n, (terminalCount.get(n) ?? 0) + 1);
+  for (const c of cs.filter(c => c.kind === 'safetyValve')) {
+    const inlet = groups.find(node(c, 'inlet')), outlet = node(c, 'outlet');
+    if (!tankGroups.has(inlet) && !vesselGroups.has(inlet)) throw Error(`${c.name}: a safety valve needs the circuit's water reserve. Add an expansion vessel to this sealed circuit (the fixed fill-pressure stand-in cannot supply discharged water).`);
+    if (terminalCount.get(outlet) === 1) { boundaries[outlet] = RHO * G * prop(c, 'elevation') / 1000; result.discharge[c.id] = outlet; }
+    else if (!tankGroups.has(groups.find(outlet))) throw Error(`${c.name}: route the discharge line to a vented tank, or leave the outlet unconnected (open drain).`);
+  }
+  const primed = new Set([...tankGroups, ...vesselGroups.keys(), ...Object.values(result.discharge).map(n => groups.find(n))]);
   // A filled sealed loop needs one pressure datum, not a pressure boundary at every node.
   // Fixing all its nodes to zero violates continuity (a pump discharges into nothing).
   // Finite branch inventory establishes a filled loop; its pressure datum represents an
   // externally maintained fill pressure with compliant expansion, not a mass source.
-  for (const c of cs.filter(c => pipeCells(c)).sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind)))) {
-    const n = node(c, 'inlet'), group = groups.find(n);
+  for (const c of cs.filter(c => pipeCells(c) || c.kind === 'storageTank').sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind)))) {
+    const n = c.kind === 'storageTank' ? topology.terminalNodes[interiorNode(c)] : node(c, 'inlet'), group = groups.find(n);
     if (!primed.has(group)) { boundaries[n] = prop(c, 'fillPressure') / 1000; primed.add(group); }
   }
   for (const n of nodes) if (!primed.has(groups.find(n))) boundaries[n] = 0;
@@ -349,12 +406,14 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    */
   const valveTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
-    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || elementKinds.has(c.kind) || c.kind === 'panelRadiator' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
-    const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
+    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || elementKinds.has(c.kind) || c.kind === 'panelRadiator' || c.kind === 'storageTank' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
+    // Storage tank: port nozzles (entry + exit loss) or the internal coil, each with its own bore and coefficients.
+    const coil = br.part === 'coil', key = (k: string) => coil ? `coil${k[0].toUpperCase()}${k.slice(1)}` : k;
+    const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, key('diameter')), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
-      linear: prop(c, 'laminarK') * mu / (2 * d * area) / fraction ** 2,
-      quadratic: c.kind === 'thermostaticValve' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, 'lossCoefficient') / fraction ** 2 * RHO / (2 * area ** 2),
+      linear: prop(c, key('laminarK')) * mu / (2 * d * area) / fraction ** 2,
+      quadratic: c.kind === 'thermostaticValve' || c.kind === 'safetyValve' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, key('lossCoefficient')) / fraction ** 2 * RHO / (2 * area ** 2),
       offset: c.kind === 'checkValve' && !stuckOpen ? prop(c, 'crackingPressure') : 0,
       mu,
     };
@@ -384,7 +443,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const fault = faults[c.id], opening = c.kind === 'heatExchanger' ? 100 : positions[c.id] ?? prop(c, 'opening');
     if (valveKinds.has(c.kind) && (fault === 'stuckClosed' || (opening === 0 && fault !== 'stuckOpen'))) return { q: 0, derivative: 0 };
     const actualLoss = (q: number) => loss(b, q);
-    const oneWay = c.kind === 'checkValve' || isPump(c) || c.kind === 'pressureReducingValve';
+    const oneWay = c.kind === 'checkValve' || isPump(c) || c.kind === 'pressureReducingValve' || c.kind === 'safetyValve';
     const allowPositive = !blocked.has(a), allowNegative = !oneWay && !blocked.has(to);
     const atZero = actualLoss(0);
     // Cavitating pumps (head depends on Q through NPSH3) use the bracketed numeric inverse.
@@ -538,9 +597,11 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       result.pressureResidual = Math.max(result.pressureResidual, Math.abs(dp - modeled));
     }
     // Pump's explicit small internal resistance is hydraulic dissipation too.
-    result.branches.push({ id: b.id, component: c.id, stream: b.stream, from: a, to, flow: q, loss: Math.max(0, dp * q + gain * q), gain });
+    result.branches.push({ id: b.id, component: c.id, stream: b.stream, part: b.part, from: a, to, flow: q, loss: Math.max(0, dp * q + gain * q), gain });
+    // Storage-tank nozzles sit at their port height; the coil is referenced to the tank base.
+    const elevation = c.kind === 'storageTank' && b.part && b.part !== 'coil' ? storageHeight(c, prop(c, `${b.part}Height`)) : prop(c, 'elevation');
     result.readings[b.id] = {
-      flow: q, pressure: p[to] * 1000 - RHO * G * prop(c, 'elevation'), inletPressure: p[a] * 1000 - RHO * G * prop(c, 'elevation'), differentialPressure: dp, ...pipe,
+      flow: q, pressure: p[to] * 1000 - RHO * G * elevation, inletPressure: p[a] * 1000 - RHO * G * elevation, differentialPressure: dp, ...pipe,
       hydraulicPower: curve ? curve.netHydraulicPower : 0, impellerPower: curve?.impellerPower ?? 0, shaftPower: curve?.shaftPower ?? 0, mechanicalLoss: curve?.mechanicalLoss ?? 0,
       hydraulicEfficiency: curve?.hydraulicEfficiency ?? null, efficiency: curve ? curve.efficiency : null, torque: curve?.torque ?? 0, temperature: 293.15,
       ...(curve ? { cavitation: curve.cavitation } : {}),
@@ -549,6 +610,18 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     if (isPump(c) && (!primed.has(groups.find(a)) || blocked.has(a))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
     if (b.stream === 'hot') result.readings[c.id] = result.readings[b.id];
   });
+  // Storage tank: throughput (sum of the inflows) and the gauge pressure at the tank base.
+  for (const c of cs.filter(c => c.kind === 'storageTank')) {
+    const n = topology.terminalNodes[interiorNode(c)], ports = result.branches.filter(b => b.component === c.id && b.part !== 'coil');
+    const base = p[n] * 1000 - RHO * G * prop(c, 'elevation');
+    result.readings[c.id] = { flow: ports.reduce((sum, b) => sum + Math.max(0, b.flow), 0), pressure: base, inletPressure: base, differentialPressure: 0, velocity: 0, reynolds: 0, frictionFactor: 0, hydraulicPower: 0, impellerPower: 0, shaftPower: 0, mechanicalLoss: 0, hydraulicEfficiency: null, efficiency: null, torque: 0, temperature: 293.15 };
+  }
+  // Each vessel supplies exactly what its circuit's safety valves discharge: the only sink of a sealed circuit.
+  // (Continuity residue of the network solve at the vessel boundary is not booked as mass.)
+  for (const [id, v] of Object.entries(result.vessels ?? {})) {
+    const group = groups.find(v.node);
+    v.supply = result.branches.reduce((sum, b) => sum + (b.component !== id && byKind(b.component) === 'safetyValve' && groups.find(b.from) === group ? Math.max(0, b.flow) : 0), 0);
+  }
   // Routed overflow appears as a pseudo-branch from the tank to its overflow node. Its "loss" is the
   // drop of piezometric energy from the free surface to the receiving node (crest head and free fall).
   for (const c of cs.filter(c => c.kind === 'tank')) {
@@ -591,13 +664,13 @@ export const cellCapacity = (c: Component, n: number) => elementKinds.has(c.kind
  * ε-NTU. Every outlet temperature is linear in upstream node temperatures, so the
  * whole network is one linear solve and energy is conserved exactly.
  */
-export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, ElementState> = {}, boilerPower: Record<string, number> = {}, fixedPanel?: Record<string, ReturnType<typeof panelExchange>>) {
+export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, ElementState> = {}, boilerPower: Record<string, number> = {}, fixedPanel?: Record<string, ReturnType<typeof panelExchange>>, vessels: Record<string, VesselWater> = {}) {
   const nodes = Object.keys(result.potentials), index = new Map(nodes.map((n, i) => [n, i]));
   const matrix = nodes.map(() => Array(nodes.length).fill(0)), rhs = nodes.map(() => 0), boundary = new Map<string, string>();
   // A drained (empty, flow-through) tank's node is an ordinary mixer: no storage, no enthalpy exchange.
   for (const [id, n] of Object.entries(result.tankNodes)) if (!result.drained?.includes(id)) boundary.set(n, id);
   const byId = new Map(project.components.map((c) => [c.id, c]));
-  const directed = result.branches.filter(b => Math.abs(b.flow) > 1e-14).map(b => ({ ...b, from: b.flow > 0 ? b.from : b.to, to: b.flow > 0 ? b.to : b.from, rate: Math.abs(b.flow) * RHO }));
+  const directed = result.branches.filter(b => Math.abs(b.flow) > STAGNANT_FLOW).map(b => ({ ...b, from: b.flow > 0 ? b.from : b.to, to: b.flow > 0 ? b.to : b.from, rate: Math.abs(b.flow) * RHO }));
   type Transfer = (typeof directed)[number] & { terms: { node: string; coeff: number }[]; offset: number; heat: number; ua: number; ambientK: number; attenuation: number; uaCell?: number; weight?: number };
   const transfers: Transfer[] = directed.map(b => {
     const c = byId.get(b.component)!, r = result.readings[b.id];
@@ -636,8 +709,36 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     cold.terms = [{ node: cold.from, coeff: 1 - k / cc }, { node: hot.from, coeff: k / cc }];
     duty[c.id] = { coefficient: k, hot: hot.from, cold: cold.from };
   }
+  // Storage tanks: one implicit layer/coil solve per tank, as an affine response to its inlet node temperatures.
+  // Outflowing nozzles and the coil outlet carry that response, so the tank is part of the single linear solve.
+  const storage = new Map<string, { c: Component; r: StorageResponse; ambientK: number }>(), interiors = new Set<string>(), interiorMean = new Map<string, number>();
+  for (const c of project.components.filter(c => c.kind === 'storageTank')) {
+    const inside = result.terminalNodes[interiorNode(c)];
+    if (inside === undefined) continue;
+    interiors.add(inside);
+    const own = transfers.filter(t => t.component === c.id), ambientK = U.celsiusToK(effectiveAmbient(project, c));
+    const ports = own.filter(t => t.part !== 'coil'), coil = own.find(t => t.part === 'coil');
+    const layers = cells[c.id] ?? Array(storageLayers(c)).fill(293.15), coilCells = cells[coilKey(c.id)] ?? Array(coilLayers(c).length).fill(293.15);
+    const r = storageResponse(c, layers, coilCells,
+      ports.filter(t => t.to === inside).map(t => ({ node: t.from, layer: portLayer(c, t.part!), rate: t.rate, heat: t.heat })),
+      ports.filter(t => t.from === inside).map(t => ({ layer: portLayer(c, t.part!), rate: t.rate })),
+      coil && { node: coil.from, rate: coil.rate, heat: coil.heat, forward: coil.flow > 0 }, ambientK, dt);
+    const affine = (index: number, extra = 0) => ({ terms: [...r.response].map(([node, v]) => ({ node, coeff: v[index] })), offset: r.base[index] + extra });
+    for (const t of ports.filter(t => t.from === inside)) Object.assign(t, affine(portLayer(c, t.part!), t.heat / (t.rate * CP)));
+    if (coil) {
+      const order = coil.flow > 0 ? [...r.coilCells.keys()] : [...r.coilCells.keys()].reverse();
+      Object.assign(coil, affine(r.n + order[order.length - 1]));
+    }
+    storage.set(c.id, { c, r, ambientK });
+    interiorMean.set(inside, layers.reduce((a, t) => a + t, 0) / layers.length);
+  }
+  // Water an expansion vessel supplies to its circuit (safety-valve discharge) enters at the vessel's water temperature.
+  const supply = new Map<string, { id: string; rate: number }>();
+  for (const [id, v] of Object.entries(result.vessels ?? {})) if (v.supply > 0 && vessels[id]) supply.set(v.node, { id, rate: v.supply * RHO });
   nodes.forEach((n, i) => {
-    const tank = boundary.get(n), incoming = transfers.filter(b => b.to === n), total = incoming.reduce((s, b) => s + b.rate, 0);
+    if (interiors.has(n)) { matrix[i][i] = 1; rhs[i] = interiorMean.get(n) ?? 293.15; return; }
+    const tank = boundary.get(n), incoming = transfers.filter(b => b.to === n), source = supply.get(n), total = incoming.reduce((s, b) => s + b.rate, 0) + (source?.rate ?? 0);
+    if (source) rhs[i] += source.rate / total * vessels[source.id].temperature;
     // A tank empty at the start of the interval has no stored water to supply: its outflow leaves at the
     // mixed inflow temperature, and the water it keeps is booked at that temperature.
     if (tank && (tanks[tank].mass > 1e-9 || !total)) { matrix[i][i] = 1; rhs[i] = tanks[tank].temperature; return; }
@@ -699,6 +800,31 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     if (result.readings[c.id]) { result.readings[c.id].temperature = mean; result.readings[c.id].temperatureValid = true; }
     if (c.kind === 'panelRadiator' && result.readings[c.id]) Object.assign(result.readings[c.id], { duty: output, heatInput: 0, excessTemperature: mean - ambientK });
   }
+  // Storage tanks: layers and coil from the same implicit response at the solved inlet temperatures; the same
+  // implicit wall loss is booked; then density inversions are mixed (conservative redistribution).
+  for (const { c, r, ambientK } of storage.values()) {
+    const y = storageEvaluate(r, at), layers = y.slice(0, r.n), coil = y.slice(r.n);
+    release(c.id, r.losses.reduce((sum, ua, k) => sum + ua * (layers[k] - ambientK), 0) * dt);
+    let coilDuty = 0;
+    if (r.m && dt > 0) {
+      const coilFlow = transfers.find(t => t.component === c.id && t.part === 'coil'), inlet = coilFlow ? at(coilFlow.from) : 0;
+      const order = coilFlow && coilFlow.flow < 0 ? [...r.coilCells.keys()].reverse() : [...r.coilCells.keys()];
+      order.forEach((j, position) => {
+        const upstream = position ? coil[order[position - 1]] : coilFlow ? inlet : coil[j];
+        coilDuty += r.coilG * (r.weight * upstream + (1 - r.weight) * coil[j] - layers[r.coilCells[j]]);
+      });
+    }
+    if (dt > 0) mixInversions(layers);
+    cells[c.id] = layers;
+    if (r.m) cells[coilKey(c.id)] = coil;
+    const reading = result.readings[c.id];
+    if (reading) Object.assign(reading, { temperature: layers.reduce((a, t) => a + t, 0) / layers.length, temperatureValid: true, duty: coilDuty });
+  }
+  // Vessel water supplied to the circuit leaves the vessel's ledger at its temperature.
+  for (const { id, rate } of supply.values()) {
+    const v = vessels[id];
+    v.mass -= rate * dt; v.enthalpy -= rate * CP * v.temperature * dt;
+  }
   for (const c of project.components.filter(c => elementKinds.has(c.kind))) {
     const state = boilers[c.id], power = boilerPower[c.id] ?? 0;
     state.elementTemperature = boilerExchange(c, state, power, dt).element(cells[c.id][0]);
@@ -719,6 +845,14 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   // enthalpy c_p·T (transport datum) and potential energy g·z_surface per kilogram (the derivative of
   // the tank potential ρg(zV + V²/2A)). Routed overflow is an ordinary transfer above.
   const spills: Record<string, { mass: number; enthalpy: number; potential: number }> = {};
+  // Safety-valve discharge to an open drain leaves the system: mass, enthalpy at the valve outlet temperature and the
+  // potential g·z of the outlet (its atmospheric boundary is at Π = ρ·g·z).
+  for (const [id, n] of Object.entries(result.discharge ?? {})) {
+    const t = transfers.find(b => b.component === id && b.to === n);
+    if (!t || dt === 0) continue;
+    const mass = t.rate * dt, outlet = t.terms.reduce((sum, term) => sum + term.coeff * at(term.node), t.offset);
+    spills[id] = { mass, enthalpy: mass * CP * outlet, potential: mass * G * prop(byId.get(id)!, 'elevation') };
+  }
   for (const [id, w] of Object.entries(result.weir)) {
     if (w.routed || w.flow <= 0 || !tanks[id]) continue;
     const c = byId.get(id)!, t = tanks[id], mass = w.flow * RHO * dt, surface = prop(c, 'elevation') + t.mass / RHO / prop(c, 'surfaceArea'); // dΦ/dm
@@ -740,9 +874,33 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   nodes.forEach((n, i) => (result.nodeTemperatures[n] = temperatures[i]));
   return { ambient, heat, spills, environmentExchange };
 }
-/** Enthalpy (J, relative to 0 K) of all pipe water cells. */
+/** Enthalpy (J, relative to 0 K) of all water cells: pipes, boilers, heat pumps, panel radiators, storage layers and coils. */
 export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) =>
-  project.components.reduce((sum, c) => sum + (cells[c.id] ? cells[c.id].reduce((s, t) => s + cellCapacity(c, cells[c.id].length) * t, 0) : 0), 0);
+  project.components.reduce((sum, c) => sum + (c.kind === 'storageTank'
+    ? (cells[c.id] ?? []).reduce((s, t) => s + layerCapacity(c) * t, 0) + (cells[coilKey(c.id)] ?? []).reduce((s, t) => s + coilCellCapacity(c) * t, 0)
+    : cells[c.id] ? cells[c.id].reduce((s, t) => s + cellCapacity(c, cells[c.id].length) * t, 0) : 0), 0);
+/**
+ * Fixed-mass water inventories (kg per cell, at the reference density) with the hydraulic node that places them in a
+ * circuit: pipe, boiler, heat-pump and radiator cells, storage-tank layers and coil cells. Used for thermal expansion.
+ */
+export function waterInventories(project: Project, disconnected = new Set<string>()) {
+  const topology = hydraulicTopology(project, disconnected), node = (c: Component, port: string) => topology.terminalNodes[`${c.id}:${port}`];
+  const group = (n: string) => topology.group.get(n) ?? n;
+  return project.components.flatMap(c => {
+    if (c.kind === 'storageTank') {
+      const layers = storageLayers(c), coil = coilLayers(c).length;
+      return [{ key: c.id, mass: storageWaterMass(c) / layers, group: group(topology.terminalNodes[interiorNode(c)]) },
+        ...(coil ? [{ key: coilKey(c.id), mass: prop(c, 'coilVolume') / 1000 * RHO / coil, group: group(node(c, 'coilIn')) }] : [])];
+    }
+    const n = pipeCells(c);
+    return n ? [{ key: c.id, mass: pipeWaterMass(c) / (elementKinds.has(c.kind) ? 1 : n), group: group(node(c, 'inlet')) }] : [];
+  });
+}
+/** Hydraulic circuit (sealed group) of a component port. */
+export const circuitOf = (project: Project, c: Component, port: string, disconnected = new Set<string>()) => {
+  const topology = hydraulicTopology(project, disconnected), n = topology.terminalNodes[`${c.id}:${port}`];
+  return topology.group.get(n) ?? n;
+};
 /** Volume band (m³) around a tank rim within which rim events are not located. */
 const RIM_TOLERANCE = 1e-9;
 export function boundaryTime(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, limit: number) {

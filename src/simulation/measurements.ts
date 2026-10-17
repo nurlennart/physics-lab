@@ -10,6 +10,7 @@ import {
   type Project,
 } from "./model";
 import { nodeVoltage } from "./electrical";
+import { sensorTemperature, storageEnthalpy } from "./storage-tank";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
   roomTemperature: "°C", envelopeLoss: "W", ventilationLoss: "W", netHeat: "W", storedThermalEnergy: "J", temperatureRate: "K/s", adjacentHeat: "W", effectiveHeatCapacity: "J/K", internalHeat: "W",
@@ -17,6 +18,7 @@ export const units: Record<Measurement, string> = {
   gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
+  topTemperature: "°C", bottomTemperature: "°C", storedHeat: "kWh", vesselWater: "L", expansionVolume: "L", dischargedVolume: "L",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
   heatOutput: "W", backupPower: "W", environmentHeat: "W", cop: "1", compressorSpeed: "%", evaporatingTemperature: "°C", condensingTemperature: "°C", frostMass: "kg", defrosting: "bool", targetTemperature: "°C", seasonalCop: "1", heatEnergy: "J", compressorStarts: "1",
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
@@ -158,6 +160,12 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "frictionFactor": return h?.frictionFactor ?? null;
     case "position": return s.multiphysics.positions[c.id] ?? null;
     case "heatDuty": return h?.duty ?? 0;
+    case "topTemperature": { const cells = s.multiphysics.pipeCells[c.id]; return cells?.length ? cells[cells.length - 1] - 273.15 : null; }
+    case "bottomTemperature": { const cells = s.multiphysics.pipeCells[c.id]; return cells?.length ? sensorTemperature(c, cells, prop(c, "sensorBottomHeight")) - 273.15 : null; }
+    case "storedHeat": { const cells = s.multiphysics.pipeCells[c.id]; return cells ? (storageEnthalpy(c, cells, s.multiphysics.pipeCells[`${c.id}#coil`]) - storageEnthalpy(c, cells.map(() => prop(c, "initialTemperature", 20) + 273.15), (s.multiphysics.pipeCells[`${c.id}#coil`] ?? []).map(() => prop(c, "initialTemperature", 20) + 273.15))) / 3.6e6 : null; }
+    case "vesselWater": { const v = s.multiphysics.vessels[c.id]; return v ? Math.max(0, v.water) * 1000 : null; }
+    case "expansionVolume": { const v = s.multiphysics.vessels[c.id]; return v ? v.expansion * 1000 : null; }
+    case "dischargedVolume": return (s.multiphysics.discharged[c.id] ?? 0) * 1000;
     case "npsh": return h?.npshAvailable ?? null;
     case "bodyTemperature": return s.temperatures[c.id] ?? null;
     case "temperature":

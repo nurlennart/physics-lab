@@ -265,6 +265,43 @@
     },
     {
       "id": "thermostaticRoom-component-12",
+      "kind": "expansionVessel",
+      "name": "Expansion vessel · 12 L",
+      "x": 640,
+      "y": 850,
+      "rotation": 0,
+      "variant": "generic12",
+      "props": {
+        "nominalVolume": 12,
+        "precharge": 150000,
+        "fillPressure": 180000,
+        "initialTemperature": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 70
+      }
+    },
+    {
+      "id": "thermostaticRoom-component-13",
+      "kind": "safetyValve",
+      "name": "Safety valve · 3 bar",
+      "x": 40,
+      "y": 520,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "setPressure": 300000,
+        "fullLiftOverpressure": 30000,
+        "blowdown": 20000,
+        "kvs": 1,
+        "diameter": 0.015,
+        "laminarK": 0,
+        "elevation": 0,
+        "maxPressure": 1000000
+      }
+    },
+    {
+      "id": "thermostaticRoom-component-14",
       "kind": "thermostaticValve",
       "name": "TRV-01",
       "x": 1120,
@@ -288,7 +325,7 @@
       "thermalSpacePinned": true
     },
     {
-      "id": "thermostaticRoom-component-13",
+      "id": "thermostaticRoom-component-15",
       "kind": "valve",
       "name": "Minimum-flow bypass",
       "x": 480,
@@ -492,19 +529,43 @@
       "id": "thermostaticRoom-connection-16",
       "domain": "hydraulic",
       "from": {
-        "component": "thermostaticRoom-component-8",
-        "port": "outlet"
+        "component": "thermostaticRoom-component-12",
+        "port": "fluid"
       },
       "to": {
-        "component": "thermostaticRoom-component-12",
-        "port": "inlet"
+        "component": "thermostaticRoom-component-11",
+        "port": "outlet"
       }
     },
     {
       "id": "thermostaticRoom-connection-17",
       "domain": "hydraulic",
       "from": {
-        "component": "thermostaticRoom-component-12",
+        "component": "thermostaticRoom-component-13",
+        "port": "inlet"
+      },
+      "to": {
+        "component": "thermostaticRoom-component-4",
+        "port": "outlet"
+      }
+    },
+    {
+      "id": "thermostaticRoom-connection-18",
+      "domain": "hydraulic",
+      "from": {
+        "component": "thermostaticRoom-component-8",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "thermostaticRoom-component-14",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "thermostaticRoom-connection-19",
+      "domain": "hydraulic",
+      "from": {
+        "component": "thermostaticRoom-component-14",
         "port": "outlet"
       },
       "to": {
@@ -513,22 +574,22 @@
       }
     },
     {
-      "id": "thermostaticRoom-connection-18",
+      "id": "thermostaticRoom-connection-20",
       "domain": "hydraulic",
       "from": {
         "component": "thermostaticRoom-component-4",
         "port": "outlet"
       },
       "to": {
-        "component": "thermostaticRoom-component-13",
+        "component": "thermostaticRoom-component-15",
         "port": "inlet"
       }
     },
     {
-      "id": "thermostaticRoom-connection-19",
+      "id": "thermostaticRoom-connection-21",
       "domain": "hydraulic",
       "from": {
-        "component": "thermostaticRoom-component-13",
+        "component": "thermostaticRoom-component-15",
         "port": "outlet"
       },
       "to": {
@@ -612,6 +673,14 @@
     },
     {
       "id": "thermostaticRoom-probe-10",
+      "component": "thermostaticRoom-component-12",
+      "measurement": "pressure",
+      "name": "System pressure",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "thermostaticRoom-probe-11",
       "component": "thermostaticRoom-component-4",
       "measurement": "energyResidual",
       "name": "Energy balance residual",
@@ -619,15 +688,15 @@
       "visible": true
     },
     {
-      "id": "thermostaticRoom-probe-11",
-      "component": "thermostaticRoom-component-12",
+      "id": "thermostaticRoom-probe-12",
+      "component": "thermostaticRoom-component-14",
       "measurement": "position",
       "name": "TRV effective opening",
       "visible": true,
       "color": "#9AA6B6"
     },
     {
-      "id": "thermostaticRoom-probe-12",
+      "id": "thermostaticRoom-probe-13",
       "name": "Room air",
       "component": "thermostaticRoom-space-1",
       "targetKind": "space",
@@ -636,7 +705,7 @@
       "color": "#C4CDD8"
     },
     {
-      "id": "thermostaticRoom-probe-13",
+      "id": "thermostaticRoom-probe-14",
       "name": "Room device gain",
       "component": "thermostaticRoom-space-1",
       "targetKind": "space",
@@ -645,7 +714,7 @@
       "color": "#F59B85"
     },
     {
-      "id": "thermostaticRoom-probe-14",
+      "id": "thermostaticRoom-probe-15",
       "name": "Envelope loss",
       "component": "thermostaticRoom-space-1",
       "targetKind": "space",
@@ -654,7 +723,7 @@
       "color": "#8CC6F8"
     },
     {
-      "id": "thermostaticRoom-probe-15",
+      "id": "thermostaticRoom-probe-16",
       "name": "Ventilation loss",
       "component": "thermostaticRoom-space-1",
       "targetKind": "space",
@@ -663,7 +732,7 @@
       "color": "#9AA6B6"
     },
     {
-      "id": "thermostaticRoom-probe-16",
+      "id": "thermostaticRoom-probe-17",
       "name": "Room stored energy Δ",
       "component": "thermostaticRoom-space-1",
       "targetKind": "space",

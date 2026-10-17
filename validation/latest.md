@@ -1,6 +1,6 @@
 # Executed physics validation
 
-Executed: 2026-10-13T14:30:35.708Z. 96/96 checks passed.
+Executed: 2026-10-17T16:35:50.611Z. 96/96 checks passed.
 
 | Experiment | Domain | Expected | Measured | Absolute error | Relative error | Tolerance | Result | Assumptions |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -48,21 +48,21 @@ Executed: 2026-10-13T14:30:35.708Z. 96/96 checks passed.
 | Coupled mass balance at dt=0.016666666666666666 | multiphysics | 0 | -1.836042429204099e-11 | 1.836e-11 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
 | Coupled energy balance at dt=0.016666666666666666 | multiphysics | 0 | -0.000004940078923709734 | 4.940e-6 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
 | Coupled mass balance at dt=0.008333333333333333 | multiphysics | 0 | -9.123368727159686e-12 | 9.123e-12 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
-| Coupled energy balance at dt=0.008333333333333333 | multiphysics | 0 | -0.0000011042213827749947 | 1.104e-6 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
+| Coupled energy balance at dt=0.008333333333333333 | multiphysics | 0 | -0.0000011043132701615832 | 1.104e-6 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
 | Coupled mass balance at dt=0.004166666666666667 | multiphysics | 0 | -4.376943252282217e-12 | 4.377e-12 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
-| Coupled energy balance at dt=0.004166666666666667 | multiphysics | 0 | -6.630083646541607e-7 | 6.630e-7 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
+| Coupled energy balance at dt=0.004166666666666667 | multiphysics | 0 | -6.630084783409984e-7 | 6.630e-7 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
 | Coupled mass balance at dt=0.0020833333333333333 | multiphysics | 0 | -1.5916157281026244e-12 | 1.592e-12 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
-| Coupled energy balance at dt=0.0020833333333333333 | multiphysics | 0 | 3.5057556146966817e-7 | 3.506e-7 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
+| Coupled energy balance at dt=0.0020833333333333333 | multiphysics | 0 | 3.5057394143223064e-7 | 3.506e-7 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
 | Coupled mass balance at dt=0.0010416666666666667 | multiphysics | 0 | -3.979039320256561e-13 | 3.979e-13 | — | 1e-7 | PASS | Finite tanks; nonlinear continuity tolerance 1e-12 m³/s; no post-integration volume clamp |
-| Coupled energy balance at dt=0.0010416666666666667 | multiphysics | 0 | 0.000005078340393538383 | 5.078e-6 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
+| Coupled energy balance at dt=0.0010416666666666667 | multiphysics | 0 | 0.000005078340336694964 | 5.078e-6 | — | 0.1 | PASS | Electrical supply = thermal + rotor + hydrostatic storage + ambient + shaft export; explicit storage-head splitting |
 | Destination-volume convergence dt=0.016666666666666666 | multiphysics | 0.0009515240857247819 | 0.0009514926962494671 | 3.139e-8 | 3.299e-5 | 0.000002 | PASS | 2 s startup against dt=1/960 s reference; tolerance 2 mL |
 | Motor-current convergence dt=0.016666666666666666 | multiphysics | 5.025546759819445 | 5.042078521959924 | 1.653e-2 | 3.290e-3 | 0.03 | PASS | 2 s startup; midpoint electrical/mechanical coupling; current tolerance 30 mA |
 | Motor-speed convergence dt=0.016666666666666666 | multiphysics | 224.63329963310383 | 224.63511552410398 | 1.816e-3 | 8.084e-6 | 0.01 | PASS | 2 s startup; speed tolerance 0.01 rad/s |
 | Fluid-temperature convergence dt=0.016666666666666666 | multiphysics | 293.15125399121774 | 293.15125797227597 | 3.981e-6 | 1.358e-8 | 0.001 | PASS | Conservative zero-volume enthalpy transport plus backward-Euler tank loss; tolerance 1 mK |
-| Destination-volume convergence dt=0.008333333333333333 | multiphysics | 0.0009515240857247819 | 0.0009514641322213016 | 5.995e-8 | 6.301e-5 | 0.000002 | PASS | 2 s startup against dt=1/960 s reference; tolerance 2 mL |
+| Destination-volume convergence dt=0.008333333333333333 | multiphysics | 0.0009515240857247819 | 0.0009514641322213014 | 5.995e-8 | 6.301e-5 | 0.000002 | PASS | 2 s startup against dt=1/960 s reference; tolerance 2 mL |
 | Motor-current convergence dt=0.008333333333333333 | multiphysics | 5.025546759819445 | 5.03323895860666 | 7.692e-3 | 1.531e-3 | 0.03 | PASS | 2 s startup; midpoint electrical/mechanical coupling; current tolerance 30 mA |
 | Motor-speed convergence dt=0.008333333333333333 | multiphysics | 224.63329963310383 | 224.63395360804034 | 6.540e-4 | 2.911e-6 | 0.01 | PASS | 2 s startup; speed tolerance 0.01 rad/s |
-| Fluid-temperature convergence dt=0.008333333333333333 | multiphysics | 293.15125399121774 | 293.15125591141236 | 1.920e-6 | 6.550e-9 | 0.001 | PASS | Conservative zero-volume enthalpy transport plus backward-Euler tank loss; tolerance 1 mK |
+| Fluid-temperature convergence dt=0.008333333333333333 | multiphysics | 293.15125399121774 | 293.1512559114121 | 1.920e-6 | 6.550e-9 | 0.001 | PASS | Conservative zero-volume enthalpy transport plus backward-Euler tank loss; tolerance 1 mK |
 | Destination-volume convergence dt=0.004166666666666667 | multiphysics | 0.0009515240857247819 | 0.0009515364548792159 | 1.237e-8 | 1.300e-5 | 0.000002 | PASS | 2 s startup against dt=1/960 s reference; tolerance 2 mL |
 | Motor-current convergence dt=0.004166666666666667 | multiphysics | 5.025546759819445 | 5.028851556632009 | 3.305e-3 | 6.576e-4 | 0.03 | PASS | 2 s startup; midpoint electrical/mechanical coupling; current tolerance 30 mA |
 | Motor-speed convergence dt=0.004166666666666667 | multiphysics | 224.63329963310383 | 224.63334456624662 | 4.493e-5 | 2.000e-7 | 0.01 | PASS | 2 s startup; speed tolerance 0.01 rad/s |

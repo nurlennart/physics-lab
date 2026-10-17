@@ -8,7 +8,9 @@ import { prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
 import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
-import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, isPump, elementKinds, type TankState } from './hydraulic';
+import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, isPump, elementKinds, waterInventories, circuitOf, coilKey, STAGNANT_FLOW, type TankState } from './hydraulic';
+import { coilLayers, storageLayers } from './storage-tank';
+import { cellDensities, fullLiftFlow, inventoryVolumeAt, newVessel, valveLift, valveSetPoints, vesselPressure, vesselStiffness, waterAtPressure, type VesselState } from './expansion';
 import { circulatorInput, circulatorKinetic, circulatorTarget, rampedSpeed, RESTART_MARGIN, type CirculatorPlan, type CirculatorState } from './circulator';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
@@ -42,6 +44,15 @@ export class Multiphysics {
   /** Plan of the substep being solved (fixed for all coupled iterations of that substep). */
   private heatPumpPlans: Record<string, HeatPumpPlan> = {};
   tanks: Record<string, TankState> = {};
+  /** Expansion vessels: ledger water, cushion state and the circuit's thermal expansion. */
+  vessels: Record<string, VesselState> = {};
+  /** Water density of each inventory cell at the fill state (kg/m³); thermal expansion is measured from it. */
+  fillDensity: Record<string, number[]> = {};
+  /** Work the vessels' gas cushions did on water leaving their circuits (J): Π·Q of the supplied water. */
+  cushionWork = 0;
+  /** Water discharged by each safety valve (m³, reference density) and the number of openings. */
+  discharged: Record<string, number> = {};
+  valveOpenings: Record<string, number> = {};
   motors: Record<string, MotorState> = {};
   positions: Record<string, number> = {};
   trvSensors: Record<string, number> = {};
@@ -62,6 +73,8 @@ export class Multiphysics {
   dryLoss = 0;
   /** Largest |dT/dt| (K/s) of any panel-radiator cell over the last advance; bounds adaptive steps. */
   panelRate = 0;
+  /** Largest |dT/dt| (K/s) of any storage-tank layer over the last advance (a moving thermocline, inversion mixing). */
+  storageRate = 0;
   removedMass = 0;
   removedEnergy = 0;
   /** Cumulative volume spilled over each tank rim (m³) and the rate over the last step (m³/s). */
@@ -88,6 +101,7 @@ export class Multiphysics {
       boilers: structuredClone(this.boilers), trvSensors: { ...this.trvSensors },
       heatPumps: structuredClone(this.heatPumps), heatPumpView: { ...this.heatPumpView }, heatPumpPlans: { ...this.heatPumpPlans },
       tanks: Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => [id, { ...t }])),
+      vessels: structuredClone(this.vessels), fillDensity: this.fillDensity, cushionWork: this.cushionWork, discharged: { ...this.discharged }, valveOpenings: { ...this.valveOpenings },
       motors: { ...this.motors }, circulators: { ...this.circulators }, circulatorView: { ...this.circulatorView }, positions: { ...this.positions },
       pipeCells: Object.fromEntries(Object.entries(this.pipeCells).map(([id, t]) => [id, [...t]])),
       overflowed: { ...this.overflowed }, overflowRate: { ...this.overflowRate }, removedMass: this.removedMass, removedEnergy: this.removedEnergy,
@@ -96,7 +110,7 @@ export class Multiphysics {
       starters: structuredClone(this.starters), drives: structuredClone(this.drives), shaftElements: structuredClone(this.shaftElements),
       drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
       acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
-      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate,
+      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, storageRate: this.storageRate,
     };
   }
   initialize(p: Project) {
@@ -119,10 +133,94 @@ export class Multiphysics {
       if (c.kind === 'circulator') this.circulators[c.id] = { omega: 0, lockedOut: false, restartIn: 0, angle: 0 };
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
+      if (c.kind === 'storageTank') {
+        this.pipeCells[c.id] = Array(storageLayers(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
+        if (coilLayers(c).length) this.pipeCells[coilKey(c.id)] = Array(coilLayers(c).length).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
+      }
+      if (c.kind === 'safetyValve') { this.positions[c.id] = 0; this.discharged[c.id] = 0; this.valveOpenings[c.id] = 0; }
+    }
+    // The fill state: every inventory's volume at its initial temperature, and each vessel's water side at the fill pressure.
+    const inventories = waterInventories(p);
+    for (const inv of inventories) this.fillDensity[inv.key] = cellDensities(this.pipeCells[inv.key] ?? []);
+    for (const c of p.components.filter(c => c.kind === 'expansionVessel')) {
+      const v = newVessel(c), group = circuitOf(p, c, 'fluid');
+      v.system = inventories.filter(i => i.group === group).reduce((sum, i) => sum + i.mass / RHO * (this.pipeCells[i.key]?.length ?? 0), 0);
+      v.fillWater = waterAtPressure(c, prop(c, 'fillPressure'), v.system);
+      v.mass = Math.max(0, v.fillWater) * RHO; v.enthalpy = v.mass * CP * v.temperature;
+      v.water = v.fillWater; v.pressure = vesselPressure(c, v.water, v.system);
+      this.vessels[c.id] = v;
+      this.initialMass += v.mass;
     }
     this.initialPotential = this.potential(p);
   }
-  get massResidual() { return Object.values(this.tanks).reduce((s, t) => s + t.mass, 0) + this.removedMass - this.initialMass; }
+  get massResidual() { return Object.values(this.tanks).reduce((s, t) => s + t.mass, 0) + Object.values(this.vessels).reduce((s, v) => s + v.mass, 0) + this.removedMass - this.initialMass; }
+  /**
+   * Update every vessel's water side and cushion pressure from the current cell temperatures: thermal expansion of
+   * its circuit's inventories since the fill state plus the change of its ledger water (discharge).
+   */
+  updateVessels(s: Simulation, h = 0) {
+    if (!Object.keys(this.vessels).length) return;
+    const inventories = waterInventories(s.project, s.disconnected);
+    for (const c of s.project.components.filter(c => c.kind === 'expansionVessel')) {
+      const v = this.vessels[c.id] ??= newVessel(c), group = circuitOf(s.project, c, 'fluid', s.disconnected);
+      let expansion = 0, system = 0;
+      for (const inv of inventories.filter(i => i.group === group)) {
+        const cells = this.pipeCells[inv.key] ?? [];
+        // An inventory added after the fill (live edit) is filled at its current state.
+        if (this.fillDensity[inv.key]?.length !== cells.length) this.fillDensity = { ...this.fillDensity, [inv.key]: cellDensities(cells) };
+        const volume = inventoryVolumeAt(inv.mass, cells, this.fillDensity[inv.key]), container = inv.mass / RHO * cells.length;
+        expansion += volume - container; system += volume;
+      }
+      if (v.fillWater === null) { v.fillWater = waterAtPressure(c, prop(c, 'fillPressure'), system); v.mass = Math.max(0, v.fillWater) * RHO; v.enthalpy = v.mass * CP * v.temperature; }
+      const before = v.pressure;
+      v.expansion = expansion; v.system = system;
+      v.water = v.fillWater + expansion + (v.mass - Math.max(0, v.fillWater) * RHO) / RHO;
+      // A lost cushion (gas escaped through the valve) leaves nitrogen at atmospheric pressure filling the nominal volume.
+      v.pressure = vesselPressure(s.faults[c.id] === 'gasLoss' ? { ...c, props: { ...c.props, precharge: 0 } } : c, v.water, system, v.temperature - 273.15);
+      if (h > 0) v.rate = (v.pressure - before) / h;
+    }
+  }
+  /** Gauge pressure of each vessel's cushion for the next hydraulic solve (Pa). */
+  vesselPressures() { return Object.fromEntries(Object.entries(this.vessels).map(([id, v]) => [id, v.pressure])); }
+  /**
+   * Safety valves after an accepted substep: the lift follows the solved differential pressure across the disc
+   * (sampled like a spring acting on the last pressure), with pop and blowdown.
+   */
+  private advanceSafetyValves(s: Simulation, h: number) {
+    for (const c of s.project.components.filter(c => c.kind === 'safetyValve')) {
+      const r = this.hydraulic.readings[c.id], fault = s.faults[c.id];
+      if (r) this.discharged[c.id] = (this.discharged[c.id] ?? 0) + Math.max(0, r.flow) * h;
+      if (fault === 'stuckClosed' || fault === 'stuckOpen') { this.positions[c.id] = fault === 'stuckOpen' ? 100 : 0; continue; }
+      const before = this.positions[c.id] ?? 0, lift = valveLift(c, r?.differentialPressure ?? 0, before);
+      this.positions[c.id] = lift;
+      if (before === 0 && lift > 0) {
+        this.valveOpenings[c.id] = (this.valveOpenings[c.id] ?? 0) + 1;
+        s.log(`${c.name}: opened at ${((r?.differentialPressure ?? 0) / 1e5).toFixed(2)} bar — discharging water.`, 'warning');
+      } else if (before > 0 && lift === 0) s.log(`${c.name}: reseated at ${((r?.differentialPressure ?? 0) / 1e5).toFixed(2)} bar; ${(U.m3ToLiters(this.discharged[c.id] ?? 0)).toFixed(2)} l discharged in total.`, 'info');
+    }
+  }
+  /**
+   * Step bound for the explicit vessel/valve coupling: an open safety valve and its vessel form a first-order system
+   * with τ = 1/(k_vessel·dQ/dp); substeps stay at a tenth of it. A closed valve approaching its set pressure ends the
+   * substep before the pressure can rise past it by more than a quarter of the remaining margin.
+   */
+  pressureStepLimit(s: Simulation) {
+    let limit = Infinity;
+    for (const c of s.project.components.filter(c => c.kind === 'safetyValve')) {
+      const vessel = Object.entries(this.vessels).find(([id]) => {
+        const v = s.project.components.find(x => x.id === id);
+        return v && circuitOf(s.project, v, 'fluid', s.disconnected) === circuitOf(s.project, c, 'inlet', s.disconnected);
+      });
+      if (!vessel) continue;
+      const [id, v] = vessel, vc = s.project.components.find(x => x.id === id)!, { set, full, reseat } = valveSetPoints(c);
+      const differential = this.hydraulic.readings[c.id]?.differentialPressure ?? v.pressure;
+      if ((this.positions[c.id] ?? 0) > 0) {
+        const slope = fullLiftFlow(c, Math.max(differential, reseat)) / (full - reseat);
+        limit = Math.min(limit, 0.1 / Math.max(1e-12, vesselStiffness(vc, v.water, v.system) * slope));
+      } else if (v.rate > 0 && differential < set) limit = Math.min(limit, Math.max(1 / 60, 0.25 * (set - differential) / v.rate));
+    }
+    return limit;
+  }
   get kinetic() { return this.kineticEnergy(this.lastProject); }
   private lastProject?: Project;
   kineticEnergy(p?: Project) {
@@ -323,7 +421,7 @@ export class Multiphysics {
     for (;;) {
       plan = this.planCirculators(s, h, unpowered);
       for (const c of circulators) speeds[c.id] = plan[c.id].mid;
-      hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells);
+      hydraulic = solveHydraulic(s.project, tanks, speeds, this.positions, s.faults, s.disconnected, this.hydraulic, this.pipeCells, this.vesselPressures());
       const demand = Object.fromEntries(circulators.filter(c => plan[c.id].powered).map(c => [c.id, plan[c.id].running ? circulatorInput(c, this.circulatorMechanical(c, plan[c.id], hydraulic.readings[c.id]?.shaftPower ?? 0, h)) : prop(c, 'standbyPower')]));
       electrical = solveElectrical(s.project, s.failed, {
         ...s.devices.runtime(h),
@@ -516,7 +614,7 @@ export class Multiphysics {
    * σ/(1 + (ωh/2)²) of its true rate (σ/1.4 at 1/240 s, σ/7.8 at 1/60 s).
    */
   private fixedStepLimit(s: Simulation) {
-    let limit = s.project.components.some(c => c.kind === 'inductionMotor') ? 1 / 240 : Infinity;
+    let limit = Math.min(s.project.components.some(c => c.kind === 'inductionMotor') ? 1 / 240 : Infinity, this.pressureStepLimit(s));
     for (const c of s.project.components) {
       if (c.kind !== 'tank') continue;
       const reading = this.hydraulic.readings[c.id], area = prop(c, 'surfaceArea'), q = Math.abs(reading?.flow ?? 0);
@@ -600,6 +698,7 @@ export class Multiphysics {
   }
   refresh(s: Simulation) {
     this.lastProject = s.project;
+    this.updateVessels(s);
     this.planHeatPumps(s, 0);
     this.circulatorCommands = this.circulatorControls(s);
     const ms = s.project.components.filter(isMotor);
@@ -610,13 +709,13 @@ export class Multiphysics {
     if (!Object.keys(r.hydraulic.nodeTemperatures).length && Object.keys(r.hydraulic.potentials).length) {
       // First solve: no transported temperatures yet. A zero-length transport mixes the current
       // inventories into node temperatures, then the network is re-solved with their viscosities.
-      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.elementStates(), this.elementPower(s, r.electrical));
+      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.elementStates(), this.elementPower(s, r.electrical), undefined, this.vessels);
       r = this.solve(s, speeds(), controls, this.tanks, loads);
       this.hydraulic = r.hydraulic;
     }
     // Re-solving hydraulics rebuilds readings. Resolve current fluid temperatures without
     // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
-    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.elementStates(), this.elementPower(s, r.electrical));
+    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.elementStates(), this.elementPower(s, r.electrical), undefined, this.vessels);
     this.updateNpsh(s, this.hydraulic);
     this.viewCirculators(s, r);
     for (const [id, b] of Object.entries(this.boilers)) if (b.fault) s.automation.status[id] = 'tripped';
@@ -640,6 +739,7 @@ export class Multiphysics {
     const elementBefore = Object.fromEntries(Object.entries(this.elementStates()).map(([id, b]) => [id, b.elementTemperature]));
     let heatPumpGain = 0;
     const panelBefore = s.project.components.filter(c => c.kind === 'panelRadiator' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
+    const storageBefore = s.project.components.filter(c => c.kind === 'storageTank' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
     const spilledThisStep: Record<string, number> = {};
@@ -821,13 +921,18 @@ export class Multiphysics {
         this.transferred[id] = (this.transferred[id] ?? 0) + Math.abs(reading.flow) * h;
         // Without flow, shaft power (and a circulator's motor loss) leaves as heat to ambient.
         const dry = reading.shaftPower + (reading.motorLoss ?? 0);
-        if (Math.abs(reading.flow) < 1e-14 && dry > 0) { this.dryLoss += dry * h; ambient += dry * h; }
+        if (Math.abs(reading.flow) <= STAGNANT_FLOW && dry > 0) { this.dryLoss += dry * h; ambient += dry * h; }
       }
       this.dissipation += r.hydraulic.branches.reduce((sum, b) => sum + b.loss, 0) * h;
       // Device storage must use the same start-temperature coefficients as its electrical stamp.
       const deviceTemperatures = s.project.thermalSpaces?.length && s.devices.active ? { ...s.temperatures } : s.temperatures;
       const radiatorConductance = Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)]));
-      const transported = s.project.thermalSpaces?.length ? advanceSpaceThermal(s, r.hydraulic, r.electrical, h, Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, (e - (heatBefore[id] ?? 0)) / h])), radiatorConductance, directHeat) : transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, radiatorConductance, this.elementStates(), this.elementPower(s, r.electrical));
+      const transported = s.project.thermalSpaces?.length ? advanceSpaceThermal(s, r.hydraulic, r.electrical, h, Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, (e - (heatBefore[id] ?? 0)) / h])), radiatorConductance, directHeat) : transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, radiatorConductance, this.elementStates(), this.elementPower(s, r.electrical), undefined, this.vessels);
+      // Work of the gas cushions on the water they supply (Π·Q at the vessel connection); then the cushions follow the
+      // new temperatures and the safety valves the solved pressures.
+      for (const v of Object.values(r.hydraulic.vessels ?? {})) this.cushionWork += (r.hydraulic.potentials[v.node] ?? 0) * v.supply * h;
+      this.updateVessels(s, h);
+      this.advanceSafetyValves(s, h);
       for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) {
         const b = this.boilers[c.id], reading = r.electrical.readings[c.id];
         ambient += (reading?.auxiliaryPower ?? 0) * h;
@@ -960,6 +1065,7 @@ export class Multiphysics {
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.panelRate = Math.max(0, ...panelBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
+    this.storageRate = Math.max(0, ...storageBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
     return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain, boilerElementGain: s.project.components.filter(c => elementKinds.has(c.kind)).reduce((sum, c) => sum + prop(c, 'heatCapacity') * (this.elementStates()[c.id].elementTemperature - elementBefore[c.id]), 0), heatPumpGain };
   }

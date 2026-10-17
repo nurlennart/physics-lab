@@ -9,7 +9,7 @@ import {
   Earth,
   Shield,
   Activity,
-  Box, Move, RotateCw, RefreshCw, Cable, Disc3, CircleGauge, Heater,
+  Box, Move, RotateCw, RefreshCw, Cable, Disc3, CircleGauge, Heater, Cylinder, Droplets,
   type LucideIcon,
 } from "lucide-react";
 import type { Kind } from "../simulation/model";
@@ -24,7 +24,7 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   resistor: Zap,
   lamp: Lightbulb,
   switch: ToggleRight,
-  heater: Flame, electricBoiler: Flame, panelRadiator: Heater, heatPump: Fan,
+  heater: Flame, electricBoiler: Flame, panelRadiator: Heater, heatPump: Fan, storageTank: Cylinder, expansionVessel: Gauge, safetyValve: Droplets,
   tank: Container,
   ground: Earth,
   fuse: Shield,

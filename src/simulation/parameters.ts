@@ -48,11 +48,35 @@ const temperature = (label: string, description: string, group: ParamGroup = "th
   label, description, unit: "°C", group, policy, domain: [ABSOLUTE_ZERO, 10000], limitReason: "Temperature must be above absolute zero.",
 });
 const base: Record<string, Base> = {
+  storageVolume: { label: "Storage volume", description: "Water held by the sealed tank (fixed inventory at the reference density).", unit: "L", group: "configuration", policy: "reset", domain: [1, 1e6], positive: true, limitReason: POSITIVE, typical: [20, 2000] },
+  tankHeight: { label: "Water column height", description: "Inner height of the vertical cylinder; with the volume it sets the cross-section, layer height and wall area. Inner dimensions are not published: an assumption from the outer height.", unit: "m", group: "configuration", policy: "reset", domain: [0.05, 50], positive: true, limitReason: POSITIVE },
+  layers: { label: "Layers", description: "Number of equal horizontal layers (numerical resolution of the stratification). The thermocline cannot be thinner than about one layer.", unit: "1", group: "advanced", policy: "reset", domain: [4, 60], limitReason: "4–60 layers: resolution versus a dense solve per step." },
+  standbyHeatLoss: { label: "Standby heat loss", description: "ErP standby loss S (EN 12897 / EN 15332): heat loss at 65 °C store in 20 °C air. The model uses UA = S/45 K.", unit: "W", group: "thermal", policy: "live", domain: [0, 1e6], limitReason: NUMERIC, typical: [20, 200] },
+  effectiveConductivity: { label: "Effective vertical conductivity", description: "Heat conduction between layers: water (0.64 W/(m·K)) plus conduction along the steel wall and mixing at the inlets. Assumption; raise it to model poorer stratification.", unit: "W/(m·K)", group: "advanced", policy: "live", domain: [0, 1e4], limitReason: NUMERIC, typical: [0.6, 5] },
+  p1Height: { label: "Port 1 height", description: "Height of port 1 in the water column. Inflow enters this layer; outflow is drawn from it.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  p2Height: { label: "Port 2 height", description: "Height of port 2 in the water column.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  p3Height: { label: "Port 3 height", description: "Height of port 3 in the water column.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  p4Height: { label: "Port 4 height", description: "Height of port 4 in the water column.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  sensorTopHeight: { label: "Upper sensor height", description: "Height of the upper temperature sensor pocket (top temperature reading).", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  sensorBottomHeight: { label: "Lower sensor height", description: "Height of the lower temperature sensor pocket (bottom temperature reading).", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  coil: { label: "Internal coil", description: "A heat-exchanger coil through the lower part of the tank (hot-water cylinder). Its water is a separate circuit from the stored water.", group: "configuration", policy: "reset" },
+  coilVolume: { label: "Coil water content", description: "Water inside the coil (fixed inventory, one cell per layer it crosses).", unit: "L", group: "configuration", policy: "reset", domain: [0, 1e4], limitReason: NUMERIC },
+  coilUA: { label: "Coil conductance UA", description: "Heat transfer coefficient × area of the coil, held constant.", unit: "W/K", group: "configuration", policy: "live", domain: [0, 1e7], limitReason: NUMERIC },
+  coilTop: { label: "Coil top", description: "Upper end of the coil, where its flow connection enters.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  coilBottom: { label: "Coil bottom", description: "Lower end of the coil, where its return leaves.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "A height within the water column (0 = base, 100 = top)." },
+  coilDiameter: { label: "Coil bore", description: "Inner diameter of the coil tube (velocity and two-K loss reference).", unit: "m", group: "configuration", policy: "live", domain: [0, 10], positive: true, limitReason: POSITIVE, display: { unit: "mm", scale: 1000 } },
+  coilLossCoefficient: { label: "Coil loss coefficient K∞", description: "Turbulent loss of the whole coil referenced to its bore velocity (friction f·L/D plus bends). Assumption.", unit: "1", group: "configuration", policy: "live", domain: [0, 1e7], positive: true, limitReason: POSITIVE },
+  coilLaminarK: { label: "Coil low-Re coefficient K₁", description: "Hooper two-K low-Reynolds term of the coil: 64·L/D for its tube (about 30 m of 28.5 mm bore for the 3.2 m² WH 290 coil: 67,000).", unit: "1", group: "configuration", policy: "live", domain: [0, 1e9], limitReason: NUMERIC },
+  nominalVolume: { label: "Nominal volume", description: "Total vessel volume: gas cushion plus water side.", unit: "L", group: "configuration", policy: "reset", domain: [0.1, 1e5], positive: true, limitReason: POSITIVE, typical: [8, 500] },
+  precharge: { label: "Gas precharge", description: "Nitrogen gauge pressure with the water side empty, set before filling. Rule (Bosch, EN 12828): static height above the vessel × 0.1 bar/m + 0.2 bar. 0 = a flat vessel.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "reset", domain: [0, 2e6], limitReason: NUMERIC },
+  setPressure: { label: "Set pressure", description: "Gauge pressure at which the valve responds. Sealed heating circuits: 3 bar (TRD 721 type H); drinking-water cylinders: 6, 8 or 10 bar.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [1e4, 5e7], positive: true, limitReason: POSITIVE },
+  fullLiftOverpressure: { label: "Overpressure to full lift", description: "Pressure rise above the set pressure at which the valve is fully open. TRD 721 allows at most 0.5 bar for 3 bar valves; 0.3 bar is an assumption.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [1000, 1e7], positive: true, limitReason: POSITIVE },
+  blowdown: { label: "Blowdown", description: "Pressure drop below the set pressure before the valve reseats. TRD 721: within 0.5 bar; 0.2 bar is an assumption.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [0, 1e7], limitReason: NUMERIC },
   dial: { label: "Thermostat dial", description: "RA 2910 reference scale: 0 = frost (7 °C), 1 = 13 °C, 2 = 17 °C, 3 = 20 °C, 4 = 23 °C, 5 = 26 °C. Fractional settings interpolate. At the nominal temperature Kv is 0.73 m³/h for the default body; closure is 2 K higher.", group: "operating", policy: "live", domain: [0, 5], limitReason: "Frost to maximum dial setting." },
   kvs: { label: "Maximum flow coefficient Kvs", description: "Water flow in m³/h at 1 bar differential, fully open. RA-FN 15: 0.90. Published partial-flow coefficients scale with this value.", unit: "m³/h", group: "configuration", policy: "live", domain: [0.001, 100], positive: true, limitReason: POSITIVE },
   sensorTimeConstant: { label: "Sensor time constant", description: "First-order response of the thermostatic head to surrounding air. Default 600 s is an editable modeling assumption, not a measured Danfoss response time.", unit: "s", group: "configuration", policy: "live", domain: [1, 1e5], limitReason: "Positive sensing timescale." },
   maxDifferentialPressure: { label: "Maximum regulating differential pressure", description: "RA-FN 15 published regulating limit 0.6 bar; quiet-operation recommendation is lower (30–35 kPa). Exceeding it reports an operating warning.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "ratings", policy: "live", domain: [0, 1e8], positive: true, limitReason: POSITIVE },
-  fillPressure: { label: "Closed-loop fill pressure", description: "Pressure datum at the boiler inlet for a sealed loop without a finite tank. Represents external precharge and compliant expansion; expansion pressure dynamics are not modeled.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [0, 300000], limitReason: NUMERIC },
+  fillPressure: { label: "Closed-loop fill pressure", description: "Pressure datum at the boiler inlet for a sealed loop without a finite tank or expansion vessel. Represents external precharge and compliant expansion (the pressure does not follow the temperature). Fit an expansion vessel to model the system pressure.", unit: "Pa", display: { unit: "bar", scale: 1e-5 }, group: "configuration", policy: "live", domain: [0, 300000], limitReason: NUMERIC },
   ratedOutput: { label: "Standard heat output Φ₅₀", description: "EN 442 heat output at 75/65 °C water and 20 °C air (log-mean excess 49.83 K). Kermi catalog sizes: registered φ_SL × length.", unit: "W", group: "configuration", policy: "live", domain: [0, 1e7], positive: true, limitReason: POSITIVE, typical: [100, 10000] },
   exponent: { label: "Radiator exponent n", description: "EN 442 characteristic Φ = Φ₅₀·(ΔT_ln/49.83 K)^n, registered per type and height. Steel panel radiators 1.24–1.34.", unit: "1", group: "configuration", policy: "live", domain: [1, 2], limitReason: "Power-law characteristic: n ≥ 1 keeps the conductance finite as the excess temperature goes to zero.", typical: [1.2, 1.45] },
   metalMass: { label: "Steel mass", description: "Radiator mass, lumped at the local water temperature. Kermi catalog weight (covers and side panels included).", unit: "kg", group: "thermal", policy: "reset", domain: [0, 1e5], limitReason: NUMERIC },
@@ -370,11 +394,36 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     loss: { label: "Casing loss (UA)", description: "Water-module heat loss to its surroundings. Assumption." },
     ambientMode: { label: "Air source", description: "Inherit the experiment environment as outdoor air, or set a local air temperature. Assigned to a Thermal Space, the unit draws its heat from that room's air." },
     ambient: { label: "Outdoor air temperature", description: "Local air temperature at the coil, used only with the local override." },
-    fillPressure: { description: "Pressure datum of a sealed loop without a tank, at the heat pump inlet (compliant expansion assumed)." },
+    fillPressure: { description: "Pressure datum of a sealed loop without a tank or expansion vessel, at the heat pump inlet (compliant expansion assumed). An expansion vessel in the circuit replaces it." },
     diameter: { label: "Connection bore", description: "Reference bore for velocity and the two-K loss (assumed 25 mm)." },
     lossCoefficient: { label: "Turbulent loss K∞", description: "Assumed: about 15 kPa at 20 l/min through condenser and internal piping (not published)." },
     maxPressure: { description: "Bosch: 3 bar maximum operating pressure. Exceeding it is reported." },
     maxTemperature: { label: "Maximum flow temperature", description: "Bosch: 75 °C (heat pump only, and with backup heater). Exceeding it is reported." },
+  },
+  storageTank: {
+    loss: { label: "Loss conductance (UA)", policy: "derived", derivedFrom: ["standbyHeatLoss"], description: "UA = standby loss / 45 K, split over the layers by wall area (side, lid, base)." },
+    vesselHeatCapacity: { label: "Steel heat capacity", description: "Vessel (and coil) steel lumped with the water of each layer. Assumption from the net weight less insulation, 480 J/(kg·K)." },
+    initialTemperature: { description: "Uniform temperature of all layers and the coil at reset." },
+    ambientMode: { label: "Surroundings", description: "Inherit the experiment ambient, set a local temperature, or assign the tank to a Thermal Space so its standby loss heats that room." },
+    ambient: { label: "Surrounding air temperature", description: "Local air temperature around the tank, used only with the local override." },
+    diameter: { label: "Port bore", description: "Bore of the four water connections (velocity and nozzle loss reference). Assumption." },
+    lossCoefficient: { label: "Port loss K", description: "Entry plus exit loss of a nozzle (0.5 + 1.0), referenced to the port bore." },
+    laminarK: { label: "Port low-Re coefficient K₁", description: "Hooper low-Reynolds term of a nozzle: 160 for a pipe entrance (Hooper 1981)." },
+    maxPressure: { description: "Maximum operating pressure of the vessel (buffer 3 bar assumed; Bosch WH 290: 10 bar drinking-water and coil side). Exceeding it is reported." },
+    maxTemperature: { label: "Maximum storage temperature", description: "Exceeding it is reported (the liquid-water model stops at 100 °C). Assumption: 95 °C." },
+  },
+  expansionVessel: {
+    fillPressure: { label: "Cold fill pressure", description: "Gauge pressure at the vessel when the circuit is filled, at the initial temperatures. Rule: 0.2–0.5 bar above the precharge (Bosch: at least 1.3–1.5 bar cold, at most 2.5 bar at maximum temperature). Below the precharge the water side is empty.", domain: [-90000, 2e6], policy: "reset" },
+    initialTemperature: { label: "Vessel water temperature", description: "Temperature of the water side (dead-leg connection, about room temperature). Water the vessel returns to the circuit enters at this temperature." },
+    maxPressure: { description: "Permissible operating pressure of the vessel (Reflex N 25 white: 3 bar). Exceeding it is reported." },
+    maxTemperature: { label: "Maximum membrane temperature", description: "Reflex: 70 °C at the membrane (system up to 120 °C). Informational: the vessel water stays at its fill temperature in this model.", simulated: false },
+    elevation: { description: "Height of the vessel connection; its gauge pressure is referenced here." },
+  },
+  safetyValve: {
+    kvs: { label: "Flow coefficient at full lift", description: "Water discharge in m³/h at 1 bar differential, fully lifted. Assumption: certified heating-valve capacities are rated as steam (TRD 721 Tafel 3: DN 15 to 50 kW)." },
+    diameter: { label: "Inlet bore", description: "Nominal inlet bore (velocity reference only)." },
+    laminarK: { label: "Low-Re coefficient K₁", description: "Hooper low-Reynolds term (0 = orifice law)." },
+    elevation: { description: "Height of the valve; its outlet discharges at atmospheric pressure here." },
   },
   panelRadiator: {
     waterVolume: { label: "Water content", description: "Kermi catalog water content (type 22, 600 × 1000 mm: 6.08 L). Fixed inventory at the reference density in 16 cells.", typical: [0.5, 50] },
@@ -594,6 +643,7 @@ export function applyDerived(kind: Kind, props: Record<string, Property>): Recor
     const tmax = num(p, "maxTemperature", 70), hot = (p.resistance as number) * (1 + m.alpha * (tmax - 20));
     p.loss = tmax > 30 ? num(p, "ratedCurrent") ** 2 * hot / (tmax - 30) : 0;
   }
+  if (kind === "storageTank") p.loss = num(p, "standbyHeatLoss") / 45;
   if (kind === "tank" && p.lossModel === "insulation") {
     const g = vesselGeometry(num(p, "capacity", 20), num(p, "surfaceArea", 0.1));
     const thickness = num(p, "insulationThickness"), k = num(p, "insulationConductivity", 0.04);

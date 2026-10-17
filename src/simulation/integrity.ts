@@ -109,7 +109,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump", "storageTank", "expansionVessel", "safetyValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -123,7 +123,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump", "storageTank", "expansionVessel", "safetyValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if ('ambient' in c.props && prop(c, 'ambient') !== rules.ambient)
@@ -179,6 +179,13 @@ export function componentError(c: Component): string | null {
     if (prop(c, 'curveDesignFlow') < prop(c, 'curveFootFlow')) return 'Heating curve: the design flow temperature must not be below the foot point.';
     if (prop(c, 'curveDesignOutdoor') >= 20) return 'Heating curve: the design outdoor temperature must be below 20 °C.';
   }
+  if (c.kind === 'storageTank') {
+    if (!Number.isInteger(prop(c, 'layers'))) return `${c.name}: the layer count must be an integer.`;
+    if (c.props.coil === true && !(prop(c, 'coilVolume') > 0)) return `${c.name}: a fitted coil needs a water content above zero.`;
+    if (c.props.coil === true && prop(c, 'coilTop') <= prop(c, 'coilBottom')) return `${c.name}: the coil top must lie above the coil bottom.`;
+  }
+  if (c.kind === 'expansionVessel' && prop(c, 'fillPressure') >= prop(c, 'maxPressure')) return `${c.name}: the fill pressure must be below the vessel's permissible operating pressure.`;
+  if (c.kind === 'safetyValve' && prop(c, 'blowdown') >= prop(c, 'setPressure')) return `${c.name}: the blowdown must be smaller than the set pressure.`;
   if (c.kind === 'electricBoiler') {
     if (!Number.isInteger(prop(c, 'maxStages'))) return 'Boiler stage limit must be an integer.';
     if (prop(c, 'resetTemperature') >= prop(c, 'tripTemperature')) return 'Boiler reset temperature must be below its trip temperature.';

@@ -262,6 +262,43 @@
         "initialTemperature": 20,
         "ambientMode": "inherit"
       }
+    },
+    {
+      "id": "livingRoom-component-12",
+      "kind": "expansionVessel",
+      "name": "Expansion vessel · 12 L",
+      "x": 640,
+      "y": 850,
+      "rotation": 0,
+      "variant": "generic12",
+      "props": {
+        "nominalVolume": 12,
+        "precharge": 150000,
+        "fillPressure": 180000,
+        "initialTemperature": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 70
+      }
+    },
+    {
+      "id": "livingRoom-component-13",
+      "kind": "safetyValve",
+      "name": "Safety valve · 3 bar",
+      "x": 40,
+      "y": 520,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "setPressure": 300000,
+        "fullLiftOverpressure": 30000,
+        "blowdown": 20000,
+        "kvs": 1,
+        "diameter": 0.015,
+        "laminarK": 0,
+        "elevation": 0,
+        "maxPressure": 1000000
+      }
     }
   ],
   "connections": [
@@ -456,6 +493,30 @@
         "component": "livingRoom-component-4",
         "port": "inlet"
       }
+    },
+    {
+      "id": "livingRoom-connection-17",
+      "domain": "hydraulic",
+      "from": {
+        "component": "livingRoom-component-12",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "livingRoom-component-11",
+        "port": "outlet"
+      }
+    },
+    {
+      "id": "livingRoom-connection-18",
+      "domain": "hydraulic",
+      "from": {
+        "component": "livingRoom-component-13",
+        "port": "inlet"
+      },
+      "to": {
+        "component": "livingRoom-component-4",
+        "port": "outlet"
+      }
     }
   ],
   "probes": [
@@ -533,6 +594,14 @@
     },
     {
       "id": "livingRoom-probe-10",
+      "component": "livingRoom-component-12",
+      "measurement": "pressure",
+      "name": "System pressure",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "livingRoom-probe-11",
       "component": "livingRoom-component-4",
       "measurement": "energyResidual",
       "name": "Energy balance residual",
@@ -540,7 +609,7 @@
       "visible": true
     },
     {
-      "id": "livingRoom-probe-11",
+      "id": "livingRoom-probe-12",
       "name": "Room air",
       "component": "livingRoom-space-1",
       "targetKind": "space",
@@ -549,7 +618,7 @@
       "color": "#C4CDD8"
     },
     {
-      "id": "livingRoom-probe-12",
+      "id": "livingRoom-probe-13",
       "name": "Room device gain",
       "component": "livingRoom-space-1",
       "targetKind": "space",
@@ -558,7 +627,7 @@
       "color": "#F59B85"
     },
     {
-      "id": "livingRoom-probe-13",
+      "id": "livingRoom-probe-14",
       "name": "Envelope loss",
       "component": "livingRoom-space-1",
       "targetKind": "space",
@@ -567,7 +636,7 @@
       "color": "#8CC6F8"
     },
     {
-      "id": "livingRoom-probe-14",
+      "id": "livingRoom-probe-15",
       "name": "Ventilation loss",
       "component": "livingRoom-space-1",
       "targetKind": "space",
@@ -576,7 +645,7 @@
       "color": "#9AA6B6"
     },
     {
-      "id": "livingRoom-probe-15",
+      "id": "livingRoom-probe-16",
       "name": "Room stored energy Δ",
       "component": "livingRoom-space-1",
       "targetKind": "space",

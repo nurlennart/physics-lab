@@ -265,6 +265,43 @@
     },
     {
       "id": "roomCooldown-component-12",
+      "kind": "expansionVessel",
+      "name": "Expansion vessel · 12 L",
+      "x": 640,
+      "y": 850,
+      "rotation": 0,
+      "variant": "generic12",
+      "props": {
+        "nominalVolume": 12,
+        "precharge": 150000,
+        "fillPressure": 180000,
+        "initialTemperature": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 70
+      }
+    },
+    {
+      "id": "roomCooldown-component-13",
+      "kind": "safetyValve",
+      "name": "Safety valve · 3 bar",
+      "x": 40,
+      "y": 520,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "setPressure": 300000,
+        "fullLiftOverpressure": 30000,
+        "blowdown": 20000,
+        "kvs": 1,
+        "diameter": 0.015,
+        "laminarK": 0,
+        "elevation": 0,
+        "maxPressure": 1000000
+      }
+    },
+    {
+      "id": "roomCooldown-component-14",
       "kind": "comparator",
       "name": "Heating start",
       "x": 40,
@@ -277,7 +314,7 @@
       }
     },
     {
-      "id": "roomCooldown-component-13",
+      "id": "roomCooldown-component-15",
       "kind": "timer",
       "name": "Heating for one hour",
       "x": 330,
@@ -485,33 +522,57 @@
     },
     {
       "id": "roomCooldown-connection-17",
-      "domain": "control",
+      "domain": "hydraulic",
       "from": {
-        "component": "roomCooldown-component-6",
-        "port": "out"
+        "component": "roomCooldown-component-12",
+        "port": "fluid"
       },
       "to": {
-        "component": "roomCooldown-component-12",
-        "port": "in"
+        "component": "roomCooldown-component-11",
+        "port": "outlet"
       }
     },
     {
       "id": "roomCooldown-connection-18",
-      "domain": "control",
+      "domain": "hydraulic",
       "from": {
-        "component": "roomCooldown-component-12",
-        "port": "out"
+        "component": "roomCooldown-component-13",
+        "port": "inlet"
       },
       "to": {
-        "component": "roomCooldown-component-13",
-        "port": "in"
+        "component": "roomCooldown-component-4",
+        "port": "outlet"
       }
     },
     {
       "id": "roomCooldown-connection-19",
       "domain": "control",
       "from": {
-        "component": "roomCooldown-component-13",
+        "component": "roomCooldown-component-6",
+        "port": "out"
+      },
+      "to": {
+        "component": "roomCooldown-component-14",
+        "port": "in"
+      }
+    },
+    {
+      "id": "roomCooldown-connection-20",
+      "domain": "control",
+      "from": {
+        "component": "roomCooldown-component-14",
+        "port": "out"
+      },
+      "to": {
+        "component": "roomCooldown-component-15",
+        "port": "in"
+      }
+    },
+    {
+      "id": "roomCooldown-connection-21",
+      "domain": "control",
+      "from": {
+        "component": "roomCooldown-component-15",
         "port": "out"
       },
       "to": {
@@ -595,6 +656,14 @@
     },
     {
       "id": "roomCooldown-probe-10",
+      "component": "roomCooldown-component-12",
+      "measurement": "pressure",
+      "name": "System pressure",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "roomCooldown-probe-11",
       "component": "roomCooldown-component-4",
       "measurement": "energyResidual",
       "name": "Energy balance residual",
@@ -602,7 +671,7 @@
       "visible": true
     },
     {
-      "id": "roomCooldown-probe-11",
+      "id": "roomCooldown-probe-12",
       "name": "Room air",
       "component": "roomCooldown-space-1",
       "targetKind": "space",
@@ -611,7 +680,7 @@
       "color": "#C4CDD8"
     },
     {
-      "id": "roomCooldown-probe-12",
+      "id": "roomCooldown-probe-13",
       "name": "Room device gain",
       "component": "roomCooldown-space-1",
       "targetKind": "space",
@@ -620,7 +689,7 @@
       "color": "#F59B85"
     },
     {
-      "id": "roomCooldown-probe-13",
+      "id": "roomCooldown-probe-14",
       "name": "Envelope loss",
       "component": "roomCooldown-space-1",
       "targetKind": "space",
@@ -629,7 +698,7 @@
       "color": "#8CC6F8"
     },
     {
-      "id": "roomCooldown-probe-14",
+      "id": "roomCooldown-probe-15",
       "name": "Ventilation loss",
       "component": "roomCooldown-space-1",
       "targetKind": "space",
@@ -638,7 +707,7 @@
       "color": "#9AA6B6"
     },
     {
-      "id": "roomCooldown-probe-15",
+      "id": "roomCooldown-probe-16",
       "name": "Room stored energy Δ",
       "component": "roomCooldown-space-1",
       "targetKind": "space",

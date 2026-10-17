@@ -1,0 +1,587 @@
+{
+  "version": 3,
+  "id": "example-sealedBoiler",
+  "name": "Sealed boiler circuit: expansion vessel and safety valve",
+  "components": [
+    {
+      "id": "sealedBoiler-component-1",
+      "kind": "sourceAC",
+      "name": "Mains L1 · 0°",
+      "x": 40,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "sealedBoiler-component-2",
+      "kind": "sourceAC",
+      "name": "Mains L2 · -120°",
+      "x": 320,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": -120,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "sealedBoiler-component-3",
+      "kind": "sourceAC",
+      "name": "Mains L3 · 120°",
+      "x": 600,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 120,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "sealedBoiler-component-4",
+      "kind": "electricBoiler",
+      "name": "Bosch TH3000 9 · 3.7 L",
+      "x": 330,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "ratedPower": 9000,
+        "ratedVoltage": 230,
+        "ratedCurrent": 13.1,
+        "waterVolume": 3.7,
+        "vesselHeatCapacity": 3500,
+        "heatCapacity": 1500,
+        "conductance": 1200,
+        "loss": 1.8,
+        "standbyPower": 3,
+        "initialTemperature": 20,
+        "ambient": 20,
+        "setpoint": 60,
+        "hysteresis": 7,
+        "stageDelay": 2,
+        "antiCycleTime": 10,
+        "maxStages": 3,
+        "enabled": true,
+        "tripTemperature": 95,
+        "resetTemperature": 70,
+        "fillPressure": 150000,
+        "flowInterlock": true,
+        "minFlow": 0.00003611111111111111,
+        "flowDelay": 5,
+        "minVoltage": 180,
+        "restartDelay": 2,
+        "diameter": 0.02,
+        "lossCoefficient": 8,
+        "laminarK": 1500,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 85,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "sealedBoiler-component-5",
+      "kind": "ground",
+      "name": "G-01",
+      "x": 900,
+      "y": 45,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {}
+    },
+    {
+      "id": "sealedBoiler-component-6",
+      "kind": "constant",
+      "name": "Supply target · °C",
+      "x": 40,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "value": 75
+      }
+    },
+    {
+      "id": "sealedBoiler-component-7",
+      "kind": "circulator",
+      "name": "ALPHA2 25-60 · PP 3 m",
+      "x": 330,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "mode": "proportionalPressure",
+        "headSetpoint": 3,
+        "speedSetting": 100,
+        "minSpeed": 25,
+        "enabled": true,
+        "ratedSpeed": 471.24,
+        "ratedFlow": 0.00055556,
+        "shutoffHead": 6,
+        "efficiency": 0.55,
+        "mechanicalLoss": 2,
+        "curvePoints": "",
+        "npshRequired": 0.5,
+        "ratedVoltage": 230,
+        "minVoltage": 180,
+        "ratedPower": 34,
+        "standbyPower": 2.2,
+        "motorEfficiency": 80,
+        "inertia": 0.00002,
+        "rampTime": 2,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "sealedBoiler-component-8",
+      "kind": "pipe",
+      "name": "Insulated flow · 6 m",
+      "x": 640,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 6,
+        "diameter": 0.022,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 1.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 3,
+        "initialTemperature": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "sealedBoiler-component-9",
+      "kind": "storageTank",
+      "name": "Bosch BH 120-5 · 123 L buffer",
+      "x": 930,
+      "y": 420,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "storageVolume": 122.9,
+        "tankHeight": 0.85,
+        "layers": 20,
+        "standbyHeatLoss": 52,
+        "loss": 1.1555555555555554,
+        "effectiveConductivity": 1,
+        "vesselHeatCapacity": 16800,
+        "p1Height": 92,
+        "p2Height": 8,
+        "p3Height": 92,
+        "p4Height": 8,
+        "sensorTopHeight": 75,
+        "sensorBottomHeight": 25,
+        "diameter": 0.032,
+        "lossCoefficient": 1.5,
+        "laminarK": 160,
+        "coil": false,
+        "coilVolume": 0,
+        "coilUA": 0,
+        "coilTop": 60,
+        "coilBottom": 15,
+        "coilDiameter": 0.0285,
+        "coilLossCoefficient": 30,
+        "coilLaminarK": 67000,
+        "initialTemperature": 20,
+        "ambient": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 95,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "sealedBoiler-component-10",
+      "kind": "pipe",
+      "name": "Insulated return · 6 m",
+      "x": 640,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 6,
+        "diameter": 0.022,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 1.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 3,
+        "initialTemperature": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "sealedBoiler-component-11",
+      "kind": "expansionVessel",
+      "name": "Reflex N 25 · 1.5 bar",
+      "x": 640,
+      "y": 850,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "nominalVolume": 25,
+        "precharge": 150000,
+        "fillPressure": 180000,
+        "initialTemperature": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 70
+      }
+    },
+    {
+      "id": "sealedBoiler-component-12",
+      "kind": "safetyValve",
+      "name": "Safety valve · 3 bar",
+      "x": 40,
+      "y": 520,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "setPressure": 300000,
+        "fullLiftOverpressure": 30000,
+        "blowdown": 20000,
+        "kvs": 1,
+        "diameter": 0.015,
+        "laminarK": 0,
+        "elevation": 0,
+        "maxPressure": 1000000
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "sealedBoiler-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "L1"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-2",
+        "port": "a"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "L2"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-3",
+        "port": "a"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "L3"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "N"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-5",
+        "port": "a"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "PE"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "sealedBoiler-component-7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-9",
+      "domain": "electrical",
+      "from": {
+        "component": "sealedBoiler-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "sealedBoiler-component-7",
+        "port": "b"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-10",
+      "domain": "control",
+      "from": {
+        "component": "sealedBoiler-component-6",
+        "port": "out"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "setpoint"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-11",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-4",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "sealedBoiler-component-8",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-12",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-8",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "sealedBoiler-component-9",
+        "port": "p1"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-13",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-9",
+        "port": "p2"
+      },
+      "to": {
+        "component": "sealedBoiler-component-10",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-14",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-10",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "sealedBoiler-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-15",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-16",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-11",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "sealedBoiler-component-10",
+        "port": "outlet"
+      }
+    },
+    {
+      "id": "sealedBoiler-connection-17",
+      "domain": "hydraulic",
+      "from": {
+        "component": "sealedBoiler-component-12",
+        "port": "inlet"
+      },
+      "to": {
+        "component": "sealedBoiler-component-4",
+        "port": "outlet"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "sealedBoiler-probe-1",
+      "component": "sealedBoiler-component-11",
+      "measurement": "pressure",
+      "name": "System pressure at the vessel",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-2",
+      "component": "sealedBoiler-component-4",
+      "measurement": "pressure",
+      "name": "Pressure at the boiler flow",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-3",
+      "component": "sealedBoiler-component-11",
+      "measurement": "expansionVolume",
+      "name": "Thermal expansion",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-4",
+      "component": "sealedBoiler-component-11",
+      "measurement": "vesselWater",
+      "name": "Water in the vessel",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-5",
+      "component": "sealedBoiler-component-12",
+      "measurement": "dischargedVolume",
+      "name": "Safety valve discharge",
+      "color": "#ef4444",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-6",
+      "component": "sealedBoiler-component-4",
+      "measurement": "fluidTemperature",
+      "name": "Boiler flow",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-7",
+      "component": "sealedBoiler-component-9",
+      "measurement": "topTemperature",
+      "name": "Buffer top",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-8",
+      "component": "sealedBoiler-component-9",
+      "measurement": "bottomTemperature",
+      "name": "Buffer lower sensor",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-9",
+      "component": "sealedBoiler-component-9",
+      "measurement": "storedHeat",
+      "name": "Stored heat",
+      "color": "#d2a8ff",
+      "visible": true
+    },
+    {
+      "id": "sealedBoiler-probe-10",
+      "component": "sealedBoiler-component-4",
+      "measurement": "energyResidual",
+      "name": "Energy balance residual",
+      "color": "#94a3b8",
+      "visible": true
+    }
+  ],
+  "assemblies": []
+}

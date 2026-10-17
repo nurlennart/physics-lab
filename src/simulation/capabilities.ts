@@ -19,6 +19,9 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.kind === "electricBoiler" ? ["returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "heatDuty"] as Measurement[] : []),
     ...(c.kind === "heatPump" ? ["targetTemperature", "returnTemperature", "heatOutput", "cop", "compressorSpeed", "evaporatingTemperature", "condensingTemperature", "environmentHeat", "frostMass", "defrosting", "backupPower", "elementTemperature", "heatDuty", "heatLoss", "seasonalCop", "heatEnergy", "compressorStarts"] as Measurement[] : []),
     ...(c.kind === "panelRadiator" ? ["supplyTemperature", "returnTemperature", "excessTemperature", "heatDuty", "heatInput"] as Measurement[] : []),
+    ...(c.kind === "storageTank" ? ["flow", "topTemperature", "bottomTemperature", "storedHeat", "heatDuty", "heatLoss"] as Measurement[] : []),
+    ...(c.kind === "expansionVessel" ? ["vesselWater", "expansionVolume"] as Measurement[] : []),
+    ...(c.kind === "safetyValve" ? ["differentialPressure", "position", "dischargedVolume"] as Measurement[] : []),
     ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
     ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
     ...(c.kind === "pump" || c.kind === "circulator" ? ["hydraulicPower", "impellerPower", "mechanicalLoss", "hydraulicEfficiency"] as Measurement[] : []),
@@ -93,6 +96,20 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   const three = c.kind === "source3" || c.kind === "inductionMotor";
   if (m === "bodyTemperature") return temperatureLabel(c);
   if (m === "temperature") return ["sensor", "thermostat", "safety"].includes(c.kind) ? "sensed temperature" : temperatureLabel(c);
+  if (c.kind === "storageTank") {
+    if (m === "fluidTemperature") return "water temperature at the upper sensor";
+    if (m === "bottomTemperature") return "water temperature at the lower sensor";
+    if (m === "topTemperature") return "top-layer water temperature";
+    if (m === "heatDuty") return "coil heat into the store";
+    if (m === "heatLoss") return "standby heat loss to the surroundings";
+    if (m === "flow") return "throughflow (sum of inflows)";
+    if (m === "pressure") return "gauge pressure at the tank base";
+  }
+  if (c.kind === "expansionVessel") {
+    if (m === "pressure") return "system gauge pressure at the vessel";
+    if (m === "fluidTemperature") return "vessel water temperature";
+  }
+  if (c.kind === "safetyValve" && m === "position") return "valve lift";
   if (c.kind === "heatPump") {
     if (m === "fluidTemperature") return "flow (outlet) water temperature";
     if (m === "returnTemperature") return "return (inlet) water temperature";
@@ -126,6 +143,7 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   return plainLabels[m] ?? m;
 }
 const plainLabels: Partial<Record<Measurement, string>> = {
+  storedHeat: "stored heat since reset", vesselWater: "water in the vessel", expansionVolume: "thermal expansion of the circuit since fill", dischargedVolume: "water discharged",
   acInputPower: 'AC grid-port power (+ into device)', acOutputPower: 'AC output power', converterLossEnergy: 'converter loss energy', transferLossEnergy: 'transfer contact loss energy', batteryHeatEnergy: 'battery heat generated',
   gridPower: 'grid power (+ import)', gridReactivePower: 'grid reactive power', gridImportPower: 'grid import', gridExportPower: 'grid export', gridImportEnergy: 'imported grid energy', gridExportEnergy: 'exported grid energy', gridVoltage: 'grid RMS voltage', gridFrequency: 'grid frequency', synchronized: 'grid synchronized and connected', backupAvailable: 'backup output available', dcPower: 'DC power (+ discharge)', acConversionPower: 'AC conversion (+ injection)',
   incidentEnergy: 'incident solar energy', inputPower: 'input power', outputPower: 'output power', conversionLoss: 'conversion loss / rejected sunlight', mppPower: 'available MPP power', mppVoltage: 'MPP voltage', mppCurrent: 'MPP current', trackingEfficiency: 'MPP tracking efficiency', incidentPower: 'incident sunlight', generatedEnergy: 'generated / input electrical energy', outputEnergy: 'output electrical energy', lostEnergy: 'dissipated / rejected energy',

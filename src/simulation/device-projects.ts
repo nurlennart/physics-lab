@@ -1,11 +1,19 @@
 import { applyDerived } from './parameters';
 import { connect, makeComponent, prop, uid, type Kind, type Component, type Project, type Property, type Measurement } from './model';
-export type DeviceMode = 'battery' | 'capacitor' | 'inductor' | 'contactor' | 'transformer' | 'radiator' | 'circulator' | 'boiler' | 'kermi';
+export type DeviceMode = 'battery' | 'capacitor' | 'inductor' | 'contactor' | 'transformer' | 'radiator' | 'circulator' | 'boiler' | 'kermi' | 'sealedBoiler';
 export function deviceStarter(mode: DeviceMode): Project {
-  let p: Project = { version: 3, id: uid(), name: ({ battery: 'Finite battery discharge', capacitor: 'Charging a capacitor', inductor: 'Switching an inductor', contactor: 'Powering a contactor', transformer: 'Isolated AC conversion', radiator: 'Cooling water with a fan', boiler: 'Bosch boiler and ALPHA2 heating loop', kermi: 'Bosch boiler, ALPHA2 and Kermi radiator', circulator: 'Circulating heat with an electric pump' })[mode], components: [], connections: [], probes: [], assemblies: [] };
+  let p: Project = { version: 3, id: uid(), name: ({ battery: 'Finite battery discharge', capacitor: 'Charging a capacitor', inductor: 'Switching an inductor', contactor: 'Powering a contactor', transformer: 'Isolated AC conversion', radiator: 'Cooling water with a fan', boiler: 'Bosch boiler and ALPHA2 heating loop', sealedBoiler: 'Sealed boiler circuit: expansion vessel and safety valve', kermi: 'Bosch boiler, ALPHA2 and Kermi radiator', circulator: 'Circulating heat with an electric pump' })[mode], components: [], connections: [], probes: [], assemblies: [] };
   const add = (kind: Kind, x: number, y: number, props: Record<string, Property> = {}) => { const c = makeComponent(kind, x, y, p.components); c.props = applyDerived(kind, { ...c.props, ...props }); p.components.push(c); return c; };
   const wire = (a: Component, ap: string, b: Component, bp: string) => { p = connect(p, { component: a.id, port: ap }, { component: b.id, port: bp }); };
   const trace = (c: Component, measurement: Measurement, name: string, color = '#22c55e') => p.probes!.push({ id: uid(), component: c.id, measurement, name, color, visible: true });
+  // Pressure equipment of a sealed boiler circuit (the TH3000 has none built in): a membrane vessel on the pump suction
+  // and a 3 bar safety valve at the boiler flow.
+  const pressureEquipment = (boiler: Component, suction: Component, liters = 12) => {
+    const vessel = add('expansionVessel', 640, 850, { nominalVolume: liters }); vessel.name = `Expansion vessel · ${liters} L`; if (liters === 12) vessel.variant = 'generic12';
+    const relief = add('safetyValve', 40, 520); relief.name = 'Safety valve · 3 bar';
+    wire(vessel, 'fluid', suction, 'outlet'); wire(relief, 'inlet', boiler, 'outlet');
+    return { vessel, relief };
+  };
   if (mode === 'boiler') {
     const phases = [0, -120, 120].map((phase, i) => {
       const c = add('sourceAC', 40 + i * 280, 45, { voltage: 230, phase, maxCurrent: 16, maxPower: 3680 }); c.name = `Mains L${i + 1} · ${phase}°`; return c;
@@ -28,6 +36,31 @@ export function deviceStarter(mode: DeviceMode): Project {
     trace(boiler, 'elementTemperature', 'Immersed elements', '#f59e0b'); trace(boiler, 'heatingPower', 'Element input', '#eab308');
     trace(boiler, 'heatingStages', 'Active stages', '#a78bfa'); trace(pump, 'flow', 'Loop flow', '#06b6d4');
     trace(pump, 'power', 'Circulator input', '#22c55e'); trace(radiator, 'heatDuty', 'Radiator heat output', '#f97316');
+    const { vessel } = pressureEquipment(boiler, back); trace(vessel, 'pressure', 'System pressure', '#8CC6F8');
+    trace(boiler, 'energyResidual', 'Energy balance residual', '#94a3b8');
+  } else if (mode === 'sealedBoiler') {
+    // The boiler charges a 123 L buffer to 75 °C. A Reflex N 25 holds the expansion (≈ 3 L) below 2.5 bar; with a
+    // 12 L vessel, a flat vessel or a lost cushion the 3 bar safety valve opens.
+    const phases = [0, -120, 120].map((phase, i) => {
+      const c = add('sourceAC', 40 + i * 280, 45, { voltage: 230, phase, maxCurrent: 16, maxPower: 3680 }); c.name = `Mains L${i + 1} · ${phase}°`; return c;
+    });
+    const boiler = add('electricBoiler', 330, 330, { flowInterlock: true }); boiler.name = 'Bosch TH3000 9 · 3.7 L';
+    const earth = add('ground', 900, 45), target = add('constant', 40, 330, { value: 75 }); target.name = 'Supply target · °C';
+    const pump = add('circulator', 330, 650, { headSetpoint: 3 }); pump.name = 'ALPHA2 25-60 · PP 3 m';
+    const supply = add('pipe', 640, 330, { diameter: 0.022, length: 6, thermalUA: 1.5, segments: 3 }); supply.name = 'Insulated flow · 6 m';
+    const buffer = add('storageTank', 930, 420); buffer.name = 'Bosch BH 120-5 · 123 L buffer';
+    const back = add('pipe', 640, 650, { diameter: 0.022, length: 6, thermalUA: 1.5, segments: 3 }); back.name = 'Insulated return · 6 m';
+    for (let i = 0; i < 3; i++) { wire(phases[i], 'a', boiler, `L${i + 1}`); wire(phases[i], 'b', boiler, 'N'); }
+    wire(earth, 'a', boiler, 'PE'); wire(phases[0], 'a', pump, 'a'); wire(phases[0], 'b', pump, 'b');
+    wire(target, 'out', boiler, 'setpoint');
+    wire(boiler, 'outlet', supply, 'inlet'); wire(supply, 'outlet', buffer, 'p1'); wire(buffer, 'p2', back, 'inlet'); wire(back, 'outlet', pump, 'inlet'); wire(pump, 'outlet', boiler, 'inlet');
+    const vessel = add('expansionVessel', 640, 850); vessel.name = 'Reflex N 25 · 1.5 bar';
+    const relief = add('safetyValve', 40, 520); relief.name = 'Safety valve · 3 bar';
+    wire(vessel, 'fluid', back, 'outlet'); wire(relief, 'inlet', boiler, 'outlet');
+    trace(vessel, 'pressure', 'System pressure at the vessel', '#8CC6F8'); trace(boiler, 'pressure', 'Pressure at the boiler flow', '#38bdf8');
+    trace(vessel, 'expansionVolume', 'Thermal expansion', '#a78bfa'); trace(vessel, 'vesselWater', 'Water in the vessel', '#06b6d4');
+    trace(relief, 'dischargedVolume', 'Safety valve discharge', '#ef4444'); trace(boiler, 'fluidTemperature', 'Boiler flow', '#f97316');
+    trace(buffer, 'topTemperature', 'Buffer top', '#f59e0b'); trace(buffer, 'bottomTemperature', 'Buffer lower sensor', '#38bdf8'); trace(buffer, 'storedHeat', 'Stored heat', '#d2a8ff');
     trace(boiler, 'energyResidual', 'Energy balance residual', '#94a3b8');
   } else if (mode === 'kermi') {
     // A one-radiator heating circuit: the boiler is limited to one 3 kW stage, the lockshield valve is preset for
@@ -52,6 +85,7 @@ export function deviceStarter(mode: DeviceMode): Project {
     trace(radiator, 'heatInput', 'Water heat input ṁ·c·ΔT', '#a78bfa'); trace(radiator, 'excessTemperature', 'Excess temperature ΔT', '#eab308');
     trace(radiator, 'flow', 'Radiator flow', '#06b6d4');
     trace(boiler, 'heatingPower', 'Boiler element input', '#facc15'); trace(pump, 'power', 'Circulator input', '#22c55e');
+    const { vessel: kv } = pressureEquipment(boiler, back); trace(kv, 'pressure', 'System pressure', '#8CC6F8');
     trace(boiler, 'energyResidual', 'Energy balance residual', '#94a3b8');
   } else if (mode === 'battery') {
     const battery = add('battery', 70, 130, { capacityAh: 0.2 }), load = add('resistor', 420, 130, { resistance: 6 });

@@ -725,6 +725,12 @@ export default function Workspace() {
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(simulation.multiphysics.hydraulic.readings[c.id]?.shaftPower ?? 0).toFixed(1)} W shaft`
                       : c.kind === "circulator"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ${(-(simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 9806.65).toFixed(2)} m head`
+                      : c.kind === "expansionVessel"
+                        ? `${((simulation.multiphysics.vessels[c.id]?.pressure ?? 0) / 100000).toFixed(3)} bar · expansion ${((simulation.multiphysics.vessels[c.id]?.expansion ?? 0) * 1000).toFixed(2)} L`
+                      : c.kind === "safetyValve"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar · ${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min discharge`
+                      : c.kind === "storageTank"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min through · coil ${((simulation.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / 1000).toFixed(2)} kW`
                       : c.kind === "panelRadiator"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · ΔT ${(simulation.multiphysics.hydraulic.readings[c.id]?.excessTemperature ?? 0).toFixed(1)} K`
                         : ["pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction"].includes(c.kind)

@@ -82,7 +82,7 @@ describe('resolved thermal boundaries and conservation', () => {
     expect(s.energyResidual).toBeCloseTo(0, 6);
   });
 
-  it.each(['tank', 'pipe', 'electricBoiler', 'panelRadiator'] as Kind[])('%s responds to a live global change, retains initial state, and conserves energy', kind => {
+  it.each(['tank', 'pipe', 'electricBoiler', 'panelRadiator', 'storageTank'] as Kind[])('%s responds to a live global change, retains initial state, and conserves energy', kind => {
     const b = new Builder(), c = b.add(kind, { initialTemperature: 60, ...(kind === 'pipe' ? { thermalUA: 10 } : {}) });
     const s = new Simulation(b.p);
     const temperature = () => kind === 'tank' ? s.temperatures[c.id] : s.multiphysics.pipeCells[c.id][0] - 273.15;
@@ -234,7 +234,7 @@ describe('global ambient propagation', () => {
   });
 
   it('every boundary component is covered by a behavioural test above', () => {
-    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve', 'heatPump']);
+    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve', 'heatPump', 'storageTank']);
     expect(boundaryKinds.filter(k => !covered.has(k))).toEqual([]);
   });
 

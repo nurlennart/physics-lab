@@ -221,6 +221,43 @@
         "initialTemperature": 25,
         "ambientMode": "inherit"
       }
+    },
+    {
+      "id": "heatPumpCold-component-8",
+      "kind": "expansionVessel",
+      "name": "Bosch indoor-unit vessel · 17 L",
+      "x": 640,
+      "y": 850,
+      "rotation": 0,
+      "variant": "bosch17",
+      "props": {
+        "nominalVolume": 17,
+        "precharge": 75000,
+        "fillPressure": 130000,
+        "initialTemperature": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 70
+      }
+    },
+    {
+      "id": "heatPumpCold-component-9",
+      "kind": "safetyValve",
+      "name": "Safety valve · 3 bar",
+      "x": 640,
+      "y": 170,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "setPressure": 300000,
+        "fullLiftOverpressure": 30000,
+        "blowdown": 20000,
+        "kvs": 1,
+        "diameter": 0.015,
+        "laminarK": 0,
+        "elevation": 0,
+        "maxPressure": 1000000
+      }
     }
   ],
   "connections": [
@@ -336,6 +373,18 @@
       "id": "heatPumpCold-connection-10",
       "domain": "hydraulic",
       "from": {
+        "component": "heatPumpCold-component-4",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpCold-component-3",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpCold-connection-11",
+      "domain": "hydraulic",
+      "from": {
         "component": "heatPumpCold-component-7",
         "port": "outlet"
       },
@@ -345,15 +394,27 @@
       }
     },
     {
-      "id": "heatPumpCold-connection-11",
+      "id": "heatPumpCold-connection-12",
       "domain": "hydraulic",
       "from": {
+        "component": "heatPumpCold-component-8",
+        "port": "fluid"
+      },
+      "to": {
         "component": "heatPumpCold-component-4",
-        "port": "outlet"
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpCold-connection-13",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpCold-component-9",
+        "port": "inlet"
       },
       "to": {
         "component": "heatPumpCold-component-3",
-        "port": "inlet"
+        "port": "outlet"
       }
     }
   ],
@@ -474,6 +535,14 @@
     },
     {
       "id": "heatPumpCold-probe-15",
+      "component": "heatPumpCold-component-8",
+      "measurement": "pressure",
+      "name": "System pressure",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "heatPumpCold-probe-16",
       "component": "heatPumpCold-component-3",
       "measurement": "energyResidual",
       "name": "Energy balance residual",

@@ -89,7 +89,7 @@ Limits common to both:
 
 A 60 s drip time follows, with compressor and fan off. When heating resumes, the warm coil gives its heat back to the refrigerant through 0.2·UA_e.
 
-The heat for defrosting comes from the water, so small systems lose flow temperature sharply. The backup heater assists while the water is below 20 °C. Bosch likewise draws defrost energy from the system water and buffer, and requires a minimum system volume.
+The heat for defrosting comes from the water, so small systems lose flow temperature sharply. The backup heater assists while the water is below 20 °C. Bosch likewise draws defrost energy from the system water and buffer, and requires a minimum system volume. The starter **Heat pump with a buffer tank** adds a 123 l Bosch BH 120-5 in series in the return: the lowest flow temperature during defrost rises by about 2 K (see [STORAGE-AND-PRESSURE.md](STORAGE-AND-PRESSURE.md)).
 
 ### Defrost calibration against field data
 
@@ -157,7 +157,7 @@ Faults: `failedOpen` (supply/inverter), `controlLost` and `coolingFailed` (outdo
   - L/N is the outdoor unit: a constant-power load (P_el planned per substep) solved by the existing constant-power iteration with its undervoltage lockout, like the circulators. A collapsed supply drops the unit and its condenser heat in the same substep.
   - BL/BN is the backup heater: real 3 kW resistances at 230 V, so their power follows V².
   - Both appear in one reading: `power` is the total, with `compressorPower` and `backupPower` separately.
-- **Hydraulic:** like the boiler, the component is a branch with one fully mixed water cell (3 L, plus 4 kJ/K wetted metal) and an implicit element node (6 kJ/K, 4 kW/K to the water) that receives Q_c plus the backup heater power. Its affine outlet relation enters the global enthalpy solve, so pipes, radiators, Thermal Spaces, reverse flow and mixing are solved together. Its pressure drop uses an assumed K = 65 (about 15 kPa at 20 l/min). As a filled loop's pressure datum it uses the 1.5 bar cold-fill pressure.
+- **Hydraulic:** like the boiler, the component is a branch with one fully mixed water cell (3 L, plus 4 kJ/K wetted metal) and an implicit element node (6 kJ/K, 4 kW/K to the water) that receives Q_c plus the backup heater power. Its affine outlet relation enters the global enthalpy solve, so pipes, radiators, Thermal Spaces, reverse flow and mixing are solved together. Its pressure drop uses an assumed K = 65 (about 15 kPa at 20 l/min). As a filled loop's pressure datum it uses the 1.5 bar cold-fill pressure, unless an expansion vessel is fitted. The starters include the indoor unit's 17 l vessel (0.75 bar precharge, filled to 1.3 bar) and its 3 bar safety valve, so the circuit pressure follows the water temperature.
 - **Air side:** the outdoor air is the component's resolved ambient: experiment environment, local override, or the Thermal Space it is assigned to. A unit assigned to a room draws its evaporator heat from that room's air (an air-source heat pump indoors cools the room).
 - **Time step:** the cycle is evaluated at most every 0.5 s and at every controller deadline (power-on check, minimum run/off, start budget, defrost limits, drip, backup delays, flow delay). Larger adaptive macro steps are split accordingly.
 - **Rollback:** all states (speed, PI integral, coil, frost, timers, counters, element temperature) are included in the coupled-step checkpoint and rollback, and in deterministic replay.
@@ -234,7 +234,7 @@ See *Defrost calibration against field data* above for the measured comparison a
 
 ## Limitations
 
-- Bosch's control firmware, low-noise modes, SG-Ready/EVU inputs, domestic hot water, cooling, and the indoor unit's pump and 3-way valve are not modelled.
+- Bosch's control firmware, low-noise modes, SG-Ready/EVU inputs, the hot-water mode's priority logic and 3-way diverting valve, cooling, and the indoor unit's pump are not modelled. A hot-water cylinder can be charged by its own circuit with a fixed 55 °C target (starter **Heat pump charging a hot-water cylinder**).
 - Also absent: the drip-tray heater, refrigerant charge migration and oil return, compressor and fan harmonics, and sound.
 - The cycle is quasi-steady per substep. Refrigerant-side dynamics are represented only by the condenser/heater node, the speed ramp and the coil's capacity.
 - Latent heat of condensation on a wet coil above 0 °C is not separated from the sensible duty. Frost has a uniform effect on the coil, with no distribution, density change or icing of the drain.

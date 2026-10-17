@@ -7,9 +7,11 @@ import {
 export function dimensions(c: Component) {
   return {
     w: c.kind === "tank" ? 202 : c.kind === "switch" ? 154 : 174,
-    h: c.kind === "tank" ? 170 : c.kind === "switch" ? 100 : 132,
+    h: c.kind === "tank" ? 170 : c.kind === "switch" ? 100 : c.kind === "storageTank" ? 220 : 132,
   };
 }
+/** Storage-tank face: the water column spans y = 26 (top) … 150 (base); terminals stay clear of the frame corners. */
+export const storageY = (percent: number) => Math.max(30, Math.min(146, 150 - 124 * percent / 100));
 export function portLocal(c: Component, port: string): Point {
   const { w, h } = dimensions(c);
   const p = definitions[c.kind].ports.find((p) => p.id === port);
@@ -21,6 +23,12 @@ export function portLocal(c: Component, port: string): Point {
   if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
     return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
   if (p?.domain === "hydraulic" && port === "overflow") return { x: w + 12, y: 28 };
+  // Storage tank: ports 1–2 on the left, 3–4 on the right, each at its height in the water column; the coil below.
+  if (p?.domain === "hydraulic" && c.kind === "storageTank") {
+    if (port === "coilIn" || port === "coilOut") return { x: port === "coilIn" ? w * 0.3 : w * 0.7, y: h + 12 };
+    const height = typeof c.props[`${port}Height`] === "number" ? c.props[`${port}Height`] as number : 50;
+    return { x: port === "p1" || port === "p2" ? -12 : w + 12, y: storageY(height) };
+  }
   if (p?.domain === "hydraulic") return { x: port === "inlet" ? -12 : port === "outlet" ? w + 12 : w / 2, y: port === "fluid" ? h + 12 : h / 2 };
   if (p?.domain === "mechanical") return { x: w / 2, y: -12 };
   if (p?.domain === "control") {

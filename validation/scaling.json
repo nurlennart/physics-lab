@@ -1,6 +1,6 @@
 {
-  "executedAt": "2026-10-17T14:01:48.941Z",
-  "wallSeconds": 19.25,
+  "executedAt": "2026-10-17T16:35:07.175Z",
+  "wallSeconds": 24.78,
   "passed": 124,
   "total": 124,
   "results": [
@@ -1350,8 +1350,8 @@
       "name": "Adaptive pumping station: relative energy residual",
       "domain": "multiphysics",
       "expected": 0,
-      "measured": 4.230653696263805e-8,
-      "absoluteError": 4.230653696263805e-8,
+      "measured": 4.2306536887606044e-8,
+      "absoluteError": 4.2306536887606044e-8,
       "relativeError": null,
       "tolerance": "±0.00001",
       "pass": true,
@@ -1366,7 +1366,7 @@
       "relativeError": null,
       "tolerance": "",
       "pass": true,
-      "assumptions": "1456 boundary cases across every component; none failed"
+      "assumptions": "1540 boundary cases across every component; none failed"
     }
   ]
 }

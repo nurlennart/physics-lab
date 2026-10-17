@@ -15,6 +15,7 @@
     "validate:boiler": "node scripts/check-boiler.mjs",
     "validate:heatpump": "node scripts/check-heat-pump.mjs",
     "validate:radiator": "node scripts/check-radiator.mjs",
+    "validate:storage": "node scripts/check-storage.mjs",
     "validate:coupled": "node scripts/check-coupled.mjs",
     "validate:physics": "node scripts/validate-physics.mjs",
     "validate:spatial": "node scripts/check-spatial.mjs",
