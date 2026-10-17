@@ -24,7 +24,7 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   resistor: Zap,
   lamp: Lightbulb,
   switch: ToggleRight,
-  heater: Flame, electricBoiler: Flame, panelRadiator: Heater,
+  heater: Flame, electricBoiler: Flame, panelRadiator: Heater, heatPump: Fan,
   tank: Container,
   ground: Earth,
   fuse: Shield,

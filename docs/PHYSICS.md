@@ -693,6 +693,20 @@ external electrical supply + signed external mechanical work
 
 The Bosch Tronic Heat 3000 9 reference uses the existing MNA solver for three independent resistive stages and the enthalpy solver for coupled element/water storage. See [ELECTRIC-BOILER.md](ELECTRIC-BOILER.md) for source specifications, equations, controller timing, protection, conservation, sealed-loop pressure references and limitations.
 
+### Air-to-water heat pump
+
+The Bosch Compress 6800i AW 7 OR-S reference is a quasi-steady R290 vapour-compression cycle. Its parts:
+
+- Evaporating and condensing temperatures follow from heat-exchanger conductances.
+- Compressor capacity follows from speed and suction density.
+- Compressor work is a fitted fraction of the reversed-Carnot COP.
+- Frost forms by ε-NTU mass transfer.
+- Reverse-cycle defrost draws heat from the water.
+- The controller is PI-modulated with the published start, envelope and protection limits.
+- The outdoor unit is a constant-power MNA load, the backup heater uses resistive stages, and the condenser couples implicitly into the enthalpy solve like the boiler element.
+
+Outdoor-air heat, meltwater and coil storage enter the energy ledger. See [HEAT-PUMP.md](HEAT-PUMP.md) for data provenance, fitting, assumptions, validation and limitations.
+
 ## Solar energy extension
 
 See [SOLAR-ENERGY.md](SOLAR-ENERGY.md) for the calibrated single-diode PV, averaged MPPT and inverter, LFP/BMS and independent distribution protection. Incident sunlight is an external input; rejected sunlight leaves to the prescribed cell-temperature reservoir. All converters and loads use the electrical solver.

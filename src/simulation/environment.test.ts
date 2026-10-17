@@ -214,8 +214,27 @@ describe('global ambient propagation', () => {
   });
   const thermalMasses = boundaryKinds.filter(k => isThermalMass(makeComponent(k, 0, 0)));
 
+  it('heatPump draws its evaporator heat at the resolved air temperature: inherited, overridden and live-edited', () => {
+    const rig = (props: Record<string, number | string>) => {
+      const b = new Builder(); b.p.environment = { ambient: 7 };
+      const hp = b.add('heatPump', props), mains = b.add('sourceAC', { voltage: 230, maxCurrent: 63, maxPower: 15000 }), pump = b.add('circulator', { headSetpoint: 4 });
+      const sink = b.add('radiator', { naturalUA: 400, forcedUA: 0, ambient: 20, ambientMode: 'override' }), pipe = b.add('pipe', { diameter: 0.028, length: 20, thermalUA: 0 });
+      b.wire(mains, 'a', hp, 'L'); b.wire(mains, 'b', hp, 'N'); b.wire(mains, 'a', pump, 'a'); b.wire(mains, 'b', pump, 'b');
+      b.wire(hp, 'outlet', pipe, 'inlet'); b.wire(pipe, 'outlet', sink, 'inlet'); b.wire(sink, 'outlet', pump, 'inlet'); b.wire(pump, 'outlet', hp, 'inlet');
+      const s = new Simulation(b.p); s.advanceAdaptive(400); expect(s.error).toBeNull(); return { s, hp };
+    };
+    const inherit = rig({}), cold = rig({ ambient: -5, ambientMode: 'override' });
+    expect(inherit.s.multiphysics.heatPumpView[inherit.hp.id].inputs.air).toBe(7);
+    expect(cold.s.multiphysics.heatPumpView[cold.hp.id].inputs.air).toBe(-5);
+    expect(cold.s.multiphysics.heatPumpView[cold.hp.id].plan.point.evaporating).toBeLessThan(inherit.s.multiphysics.heatPumpView[inherit.hp.id].plan.point.evaporating);
+    expect(inherit.s.refresh({ ...inherit.s.project, environment: { ambient: -2 } })).toBe(true);
+    inherit.s.advanceAdaptive(60);
+    expect(inherit.s.multiphysics.heatPumpView[inherit.hp.id].inputs.air).toBe(-2);
+    for (const { s } of [inherit, cold]) expect(Math.abs(s.energyResidual)).toBeLessThan(1e-4);
+  });
+
   it('every boundary component is covered by a behavioural test above', () => {
-    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve']);
+    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve', 'heatPump']);
     expect(boundaryKinds.filter(k => !covered.has(k))).toEqual([]);
   });
 

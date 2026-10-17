@@ -27,6 +27,7 @@ Physics Lab is a static single-page application (React 19, TypeScript, Vite). Th
 | `induction.ts`, `converters.ts` | Dynamic induction machine; star-delta and soft starters, variable-frequency drive |
 | `filament.ts` | Tungsten filament lamp |
 | `boiler.ts` | Bosch TH3000 reference boiler controller, safety latch and implicit element/water coupling (state in Multiphysics) |
+| `heat-pump.ts`, `heat-pump-data.ts`, `heat-pump-projects.ts` | Bosch Compress 6800i AW 7 OR-S: published data, fitted quasi-steady R290 cycle, frost and reverse-cycle defrost, controller and protections, backup heater, ledger terms and provenance listing (state in Multiphysics; water cell and condenser node in `hydraulic.ts` transport); heat-pump starters |
 | `panel-radiator.ts`, `panel-radiator-data.ts` | Kermi therm-x2 catalog data, EN 442 characteristic, exponentially fitted cell exchange, room-air boundary and provenance listing (cells in `hydraulic.ts` transport) |
 | `circulator.ts` | Electric circulator: control targets, input power and power limit, ramp, EEI and the model-basis listing |
 | `multiphysics.ts` | Coupled substeps: motor shafts, tanks, valves, midpoint Newton coupling of electrical, hydraulic and spatial loads |

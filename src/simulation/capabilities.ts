@@ -14,9 +14,10 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.spatial ? ['rpm', 'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce'] as Measurement[] : []),
     ...(c.kind === 'forceActuator' ? ['appliedForce', 'appliedTorque', 'energy'] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic") ? ["pressure", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
-    ...(["pipe", "valve", "actuatedValve", "thermostaticValve", "checkValve", "pump", "circulator", "pressureReducingValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
+    ...(["pipe", "valve", "actuatedValve", "thermostaticValve", "checkValve", "pump", "circulator", "pressureReducingValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
     ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic" && p.id === "inlet") || c.kind === "heatExchanger" ? ["flow", "inletPressure"] as Measurement[] : []),
     ...(c.kind === "electricBoiler" ? ["returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "heatDuty"] as Measurement[] : []),
+    ...(c.kind === "heatPump" ? ["targetTemperature", "returnTemperature", "heatOutput", "cop", "compressorSpeed", "evaporatingTemperature", "condensingTemperature", "environmentHeat", "frostMass", "defrosting", "backupPower", "elementTemperature", "heatDuty", "heatLoss", "seasonalCop", "heatEnergy", "compressorStarts"] as Measurement[] : []),
     ...(c.kind === "panelRadiator" ? ["supplyTemperature", "returnTemperature", "excessTemperature", "heatDuty", "heatInput"] as Measurement[] : []),
     ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
     ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
@@ -92,6 +93,15 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
   const three = c.kind === "source3" || c.kind === "inductionMotor";
   if (m === "bodyTemperature") return temperatureLabel(c);
   if (m === "temperature") return ["sensor", "thermostat", "safety"].includes(c.kind) ? "sensed temperature" : temperatureLabel(c);
+  if (c.kind === "heatPump") {
+    if (m === "fluidTemperature") return "flow (outlet) water temperature";
+    if (m === "returnTemperature") return "return (inlet) water temperature";
+    if (m === "heatDuty") return "heat delivered to the water flow, ṁ·c_p·(T_out − T_in)";
+    if (m === "heatLoss") return "water-module casing heat loss";
+    if (m === "elementTemperature") return "condenser / backup heater node temperature";
+    if (m === "power") return "electrical input (outdoor unit + backup heater)";
+    if (m === "current") return "outdoor-unit line current";
+  }
   if (c.kind === "panelRadiator") {
     if (m === "fluidTemperature") return "mean water temperature";
     if (m === "returnTemperature") return "return (outlet) water temperature";
@@ -120,6 +130,9 @@ const plainLabels: Partial<Record<Measurement, string>> = {
   gridPower: 'grid power (+ import)', gridReactivePower: 'grid reactive power', gridImportPower: 'grid import', gridExportPower: 'grid export', gridImportEnergy: 'imported grid energy', gridExportEnergy: 'exported grid energy', gridVoltage: 'grid RMS voltage', gridFrequency: 'grid frequency', synchronized: 'grid synchronized and connected', backupAvailable: 'backup output available', dcPower: 'DC power (+ discharge)', acConversionPower: 'AC conversion (+ injection)',
   incidentEnergy: 'incident solar energy', inputPower: 'input power', outputPower: 'output power', conversionLoss: 'conversion loss / rejected sunlight', mppPower: 'available MPP power', mppVoltage: 'MPP voltage', mppCurrent: 'MPP current', trackingEfficiency: 'MPP tracking efficiency', incidentPower: 'incident sunlight', generatedEnergy: 'generated / input electrical energy', outputEnergy: 'output electrical energy', lostEnergy: 'dissipated / rejected energy',
   supplyTemperature: "supply (inlet) water temperature", excessTemperature: "excess temperature over the air (EN 442 ΔT)", heatInput: "heat delivered by the water flow, ṁ·c_p·(T_in − T_out)",
+  heatOutput: "condenser heat output (negative while defrosting)", backupPower: "backup heater electrical power", environmentHeat: "heat drawn from the outdoor air", cop: "instantaneous COP (outdoor unit)", compressorSpeed: "compressor speed",
+  evaporatingTemperature: "evaporating temperature", condensingTemperature: "condensing temperature", frostMass: "frost on the outdoor coil", defrosting: "defrost active", targetTemperature: "effective flow target",
+  seasonalCop: "seasonal performance factor (net heat / outdoor-unit electricity)", heatEnergy: "net heat delivered by the compressor", compressorStarts: "compressor starts",
   returnTemperature: "return temperature", elementTemperature: "element temperature", heatingStages: "active heating stages", heatingPower: "element electrical power", heatLoss: "shell heat loss",
   stateOfCharge: "state of charge", chemicalEnergy: "stored chemical energy", polarizationVoltage: "polarization overpotential", chargeVoltage: "dielectric (charge) voltage", fieldEnergy: "stored field energy", coilVoltage: "DC coil voltage", coilCurrent: "DC coil current", secondaryVoltage: "secondary RMS voltage", secondaryCurrent: "secondary RMS current", fanPower: "fan electrical power",
   positionX: "position x", positionY: "position y", displacement: "displacement", linearSpeed: "speed", velocityX: "velocity x", velocityY: "velocity y",
@@ -152,6 +165,7 @@ export function inspectorMeasurements(c: Component, ac: boolean, hydraulicConnec
  */
 export const operatingMeasurements = new Set<Measurement>([
   'inputPower', 'outputPower', 'conversionLoss', 'trackingEfficiency',
+  "heatOutput", "backupPower", "environmentHeat", "cop", "compressorSpeed", "evaporatingTemperature", "condensingTemperature",
   "heatingPower", "heatingStages", "heatLoss", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower", "voltage", "current", "currentNC", "power", "reactivePower", "powerFactor", "energy", "nodeVoltage",
   "flow", "velocity", "reynolds", "frictionFactor", "differentialPressure", "inletPressure", "heatDuty", "heatInput", "npsh",
   "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "hydraulicPower", "shaftPower", "efficiency", "rpm",

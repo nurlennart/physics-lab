@@ -109,7 +109,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -123,7 +123,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if ('ambient' in c.props && prop(c, 'ambient') !== rules.ambient)
@@ -172,6 +172,11 @@ export function componentError(c: Component): string | null {
     if (typeof v === "number" && !Number.isFinite(v)) return `${c.name}: ${k} is out of range.`;
     const error = domainError(c.kind, k, v);
     if (error) return `${c.name}: ${error}`;
+  }
+  if (c.kind === 'heatPump') {
+    if (!Number.isInteger(prop(c, 'backupStages')) || !Number.isInteger(prop(c, 'maxStarts'))) return 'Backup heater stages and the start limit must be integers.';
+    if (prop(c, 'curveDesignFlow') < prop(c, 'curveFootFlow')) return 'Heating curve: the design flow temperature must not be below the foot point.';
+    if (prop(c, 'curveDesignOutdoor') >= 20) return 'Heating curve: the design outdoor temperature must be below 20 °C.';
   }
   if (c.kind === 'electricBoiler') {
     if (!Number.isInteger(prop(c, 'maxStages'))) return 'Boiler stage limit must be an integer.';

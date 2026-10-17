@@ -206,7 +206,7 @@ function Bar({ label, actual, rated, unit }: { label: string; actual: number; ra
 export function RatingIndicators({ c }: { c: Component }) {
   useLab();
   // Before the first Run there is no operation to compare with ratings; temperatures and pressures still are.
-  const original = simulation.time > 0 ? simulation.electrical.readings[c.id] : undefined, r = c.kind === "electricBoiler" && original ? { ...original, current: Math.max(0, ...(original.stageCurrents ?? [])) } : original, h = simulation.multiphysics.hydraulic.readings[c.id], t = c.kind === "electricBoiler" ? simulation.fluidTemperatureMeasurement(c.id) : simulation.temperatures[c.id];
+  const original = simulation.time > 0 ? simulation.electrical.readings[c.id] : undefined, r = c.kind === "electricBoiler" && original ? { ...original, current: Math.max(0, ...(original.stageCurrents ?? [])) } : original, h = simulation.multiphysics.hydraulic.readings[c.id], t = c.kind === "electricBoiler" || c.kind === "heatPump" ? simulation.fluidTemperatureMeasurement(c.id) : simulation.temperatures[c.id];
   const bars = [];
   if ((c.kind === "source3" || c.kind === "sourceAC") && r) {
     bars.push(<Bar key="i" label="Line current" actual={r.current} rated={prop(c, "maxCurrent")} unit="A" />);
@@ -219,12 +219,16 @@ export function RatingIndicators({ c }: { c: Component }) {
     bars.push(<Bar key="i" label="Output current" actual={d?.outputCurrent ?? 0} rated={prop(c, "ratedOutputCurrent")} unit="A" />);
     bars.push(<Bar key="p" label="Output power" actual={Math.max(0, d?.outputPower ?? 0)} rated={prop(c, "ratedPower")} unit="W" />);
     bars.push(<Bar key="v" label="Input line voltage RMS" actual={r.voltage * Math.sqrt(3)} rated={prop(c, "ratedVoltage")} unit="V" />);
+  } else if (c.kind === "heatPump" && r) {
+    bars.push(<Bar key="i" label="Outdoor-unit current" actual={Math.abs(r.current)} rated={prop(c, "maxCurrent")} unit="A" />);
+    bars.push(<Bar key="v" label="Supply voltage" actual={Math.abs(r.voltage)} rated={1.1 * prop(c, "ratedVoltage")} unit="V" />);
   } else if (r) {
     if ("ratedPower" in c.props) bars.push(<Bar key="p" label={isMotor(c) ? "Shaft power" : c.kind === "heater" ? "Power vs nominal" : "Power"} actual={isMotor(c) ? simulation.multiphysics.motors[c.id]?.shaftPower ?? 0 : r.power} rated={prop(c, "ratedPower")} unit="W" />);
     if ("ratedCurrent" in c.props) bars.push(<Bar key="i" label="Current" actual={r.contactCurrent ?? r.current} rated={prop(c, "ratedCurrent")} unit="A" />);
     if ("ratedVoltage" in c.props && c.kind !== "heater" && c.kind !== "motor") bars.push(<Bar key="v" label={c.kind === "inductionMotor" ? "Line voltage RMS" : c.kind === "starDeltaStarter" || c.kind === "softStarter" ? "Voltage across a pole" : "Voltage"} actual={c.kind === "inductionMotor" && r.phases === 3 ? r.voltage * Math.sqrt(3) : r.voltage} rated={prop(c, "ratedVoltage")} unit="V" />);
   }
-  if (t !== undefined && "maxTemperature" in c.props)
+  if (t !== undefined && c.kind === "heatPump") bars.push(<Bar key="t" label="Flow temperature" actual={t} rated={prop(c, "maxTemperature")} unit="°C" />);
+  else if (t !== undefined && "maxTemperature" in c.props)
     bars.push(<Bar key="t" label="Temperature rise" actual={t - effectiveAmbient(simulation.project, c)} rated={prop(c, "maxTemperature") - effectiveAmbient(simulation.project, c)} unit="K" />);
   if (h && "maxPressure" in c.props) bars.push(<Bar key="pr" label="Pressure" actual={Math.max(h.pressure, h.inletPressure) / 1e5} rated={prop(c, "maxPressure") / 1e5} unit="bar" />);
   if (!bars.some(Boolean)) return null;

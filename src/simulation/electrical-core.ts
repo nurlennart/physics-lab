@@ -17,6 +17,8 @@ export interface ElectricalReading {
   hybrid?: import("./hybrid").HybridReading;
   /** Multi-terminal loads: per-stage RMS readings and summed apparent power, rather than a balanced equivalent. */
   stageVoltages?: number[]; stageCurrents?: number[]; heatingPower?: number; auxiliaryPower?: number; apparentPower?: number;
+  /** Heat pump: outdoor-unit input, backup heater input and its supply (W, V, A). `heatingPower` is the heat into its water node. */
+  compressorPower?: number; backupPower?: number; backupVoltage?: number; backupCurrent?: number;
   solar?: { warm?: { demand?: number; inputLimit?: number; voltage?: number }; trackingActive?: boolean; achievablePower?: number; targetVoltage?: number; inputPower: number; outputPower: number; efficiency: number; mode: string; running: boolean; irradiation?: number; mppPower?: number; mppVoltage?: number; mppCurrent?: number; trackingEfficiency?: number; apparentPower?: number };
   inputPower?: number;
   /**
@@ -154,6 +156,8 @@ export interface ElectricalRuntime {
   circulators?: Record<string, number>;
   boilers?: Record<string, number>;
   boilerTrips?: Set<string>;
+  /** Heat pumps: outdoor-unit electrical demand (W; 0 = electronics off) and active 3 kW backup heater stages. */
+  heatPumps?: Record<string, { demand: number; backupStages: number }>;
   contacts?: Record<string, boolean>;
   faults?: Record<string, string>;
   disconnected?: Set<string>;

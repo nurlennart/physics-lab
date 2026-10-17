@@ -2,6 +2,7 @@ import { ThermalSpaceInspector } from './ThermalSpaceInspector';
 import { HybridInspector } from './HybridInspector';
 import { SolarInspector } from './SolarInspector';
 import { BoilerInspector } from './BoilerInspector';
+import { HeatPumpInspector } from "./HeatPumpInspector";
 import { PanelRadiatorInspector } from './PanelRadiatorInspector';
 import { T } from "../theme/tokens";
 import { inspectorMeasurements, measurementLabel, operatingMeasurements } from "../simulation/capabilities";
@@ -161,6 +162,7 @@ export default function Inspector() {
           <>
             <SolarInspector c={c} /><HybridInspector c={c} />
             {c.kind === "electricBoiler" && <BoilerInspector c={c} />}
+            {c.kind === "heatPump" && <HeatPumpInspector c={c} />}
             {c.kind === "panelRadiator" && <PanelRadiatorInspector c={c} />}
             <div className="inspector-section">
               <div className="section-label">

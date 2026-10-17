@@ -13,6 +13,7 @@
     "test:physics": "vitest run && node scripts/validate-physics.mjs",
     "validate:thermal-spaces": "node scripts/check-thermal-spaces.mjs",
     "validate:boiler": "node scripts/check-boiler.mjs",
+    "validate:heatpump": "node scripts/check-heat-pump.mjs",
     "validate:radiator": "node scripts/check-radiator.mjs",
     "validate:coupled": "node scripts/check-coupled.mjs",
     "validate:physics": "node scripts/validate-physics.mjs",

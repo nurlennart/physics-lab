@@ -4,6 +4,8 @@
 
 Open **File → Starters & examples** in the app for descriptions and suggested experiments. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
 
+- `heatPumpHouse`: Bosch Compress 6800i AW 7 OR-S heating a 120 m² house through an underfloor loop with a weather-compensated flow target at 2 °C / 85 % RH; frost build-up, reverse-cycle defrosts, COP and seasonal performance factor. See [model basis](../docs/HEAT-PUMP.md).
+- `heatPumpCold`: the same house at −15 °C: the compressor at its current limit, the 6 kW backup heater joining after its delay, cut-out below −23 °C.
 - `boiler`: Bosch TH3000 9 (no internal pump), ALPHA2-style external circulator, insulated pipes, balancing valve and panel radiator in a sealed loop; staged phase loading, supply/return and heat-flow measurements, optional flow protection. See [model basis](../docs/ELECTRIC-BOILER.md).
 - `kermi`: the Bosch boiler (one 3 kW stage) and ALPHA2-style circulator heating a Kermi therm-x2 Profil-K type 22, 600 × 1000 mm radiator through a preset lockshield valve; radiator supply/return/mean temperatures, output against water heat input, excess temperature and flow. See [model basis](../docs/PANEL-RADIATOR.md).
 - `livingRoom`: a 5 × 4 × 2.5 m room at 15 °C, 0 °C outdoors, with the same real hydronic circuit, insulated envelope, window, ventilation and effective thermal contents. See [Thermal Spaces](../docs/THERMAL-SPACES.md).

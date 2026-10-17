@@ -5,7 +5,7 @@ export type Kind =
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve" | "thermostaticValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
-  | "electricBoiler" | "panelRadiator"
+  | "electricBoiler" | "panelRadiator" | "heatPump"
   | "source"
   | "source3"
   | "sourceAC"
@@ -91,6 +91,7 @@ export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
   | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
+  | "heatOutput" | "backupPower" | "environmentHeat" | "cop" | "compressorSpeed" | "evaporatingTemperature" | "condensingTemperature" | "frostMass" | "defrosting" | "targetTemperature" | "seasonalCop" | "heatEnergy" | "compressorStarts"
   | "supplyTemperature" | "excessTemperature" | "heatInput"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume" | "torque"
@@ -242,6 +243,27 @@ export const definitions: Record<Kind, Definition> = {
       ...fluid, input("enable", "boolean", true), input("setpoint", "number", true), input("reset", "boolean", true),
     ],
     defaults: { ratedPower: 9000, ratedVoltage: 230, ratedCurrent: 13.1, waterVolume: 3.7, vesselHeatCapacity: 3500, heatCapacity: 1500, conductance: 1200, loss: 1.8, standbyPower: 3, initialTemperature: 20, ambient: 20, setpoint: 60, hysteresis: 7, stageDelay: 2, antiCycleTime: 10, maxStages: 3, enabled: true, tripTemperature: 95, resetTemperature: 70, fillPressure: 150000, flowInterlock: false, minFlow: 130 / 3600000, flowDelay: 5, minVoltage: 180, restartDelay: 2, diameter: 0.02, lossCoefficient: 8, laminarK: 1500, elevation: 0, maxPressure: 300000, maxTemperature: 85 },
+  },
+  heatPump: {
+    label: "Air-to-water heat pump", category: "Thermal", prefix: "HP", cost: 9800,
+    description: "Bosch Compress 6800i AW 7 OR-S reference (R290 monobloc): inverter compressor modulating 1.8–7.1 kW, COP from outdoor air, flow temperature and load, frost build-up with reverse-cycle defrost, start limits and pressure protection, optional 3/6 kW backup heater. External circulator required.",
+    spec: "R290 · 7 kW · A7/W35 COP 4.85 nominal · 230 V 13.1 A",
+    ports: [
+      { id: "L", domain: "electrical", label: "Outdoor unit line (230 V)" }, { id: "N", domain: "electrical", label: "Outdoor unit neutral" },
+      { id: "BL", domain: "electrical", label: "Backup heater line (230 V, 3/6 kW)" }, { id: "BN", domain: "electrical", label: "Backup heater neutral" },
+      { id: "inlet", domain: "hydraulic", label: "Return from the heating system" }, { id: "outlet", domain: "hydraulic", label: "Flow to the heating system" },
+      input("enable", "boolean", true), input("setpoint", "number", true), input("reset", "boolean", true), input("defrost", "boolean", true),
+    ],
+    defaults: {
+      enabled: true, targetMode: "fixed", setpoint: 35, curveDesignOutdoor: -10, curveDesignFlow: 45, curveFootFlow: 25,
+      startDifference: 2, stopDifference: 3, minRunTime: 300, minOffTime: 300, maxStarts: 6, proportionalGain: 0.1, integralTime: 600, rampTime: 120,
+      minFlow: 0.0001, flowDelay: 10, relativeHumidity: 85,
+      frostTrigger: 0.8, frostReference: 2, minDefrostInterval: 1200, maxDefrostTime: 600, defrostEndTemperature: 10, dripTime: 60, defrostSpeed: 40, coilHeatCapacity: 20000, crankcaseBelow: 10,
+      backupStages: 2, backupDelay: 1800, backupLimit: 88,
+      powerOnDelay: 120, ratedVoltage: 230, minVoltage: 195, maxCurrent: 13.1,
+      waterVolume: 3, vesselHeatCapacity: 4000, heatCapacity: 6000, conductance: 4000, loss: 2, initialTemperature: 20, ambient: 20,
+      fillPressure: 150000, diameter: 0.025, lossCoefficient: 65, laminarK: 1500, elevation: 0, maxPressure: 300000, maxTemperature: 75,
+    },
   },
   panelRadiator: {
     label: "Panel radiator (hydronic)", category: "Thermal", prefix: "PR", cost: 160,
@@ -1090,7 +1112,7 @@ export const isSource = (c: Component) => c.kind === "source" || c.kind === "sou
 /** Machines with a rotating shaft driven by the electrical network. */
 export const isMotor = (c: Component) => c.kind === "motor" || c.kind === "inductionMotor";
 export const isThermalMass = (c: Component) =>
-  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || c.kind === "lfpBattery" || (isElectrical(c) && c.kind !== "solarPanel" && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator" && c.kind !== "electricBoiler");
+  c.kind === "tank" || c.kind === "thermalMass" || c.kind === "battery" || c.kind === "lfpBattery" || (isElectrical(c) && c.kind !== "solarPanel" && !isSource(c) && c.kind !== "radiator" && c.kind !== "circulator" && c.kind !== "electricBoiler" && c.kind !== "heatPump");
 /** Components whose catalog data describe one pole/conductor; a three-phase island has three. */
 export const perPoleKinds = new Set<Kind>(["cable", "fuse", "breaker", "motorProtector", "switch", "relay", "safety", "meter", "inductor", "capacitor"]);
 /** Contact conductance of a thermal port (W/K); a well-mixed tank's own side is ideal. */

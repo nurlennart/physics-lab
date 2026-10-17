@@ -18,6 +18,7 @@ export const units: Record<Measurement, string> = {
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
+  heatOutput: "W", backupPower: "W", environmentHeat: "W", cop: "1", compressorSpeed: "%", evaporatingTemperature: "°C", condensingTemperature: "°C", frostMass: "kg", defrosting: "bool", targetTemperature: "°C", seasonalCop: "1", heatEnergy: "J", compressorStarts: "1",
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
   inletPressure: "bar", pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
@@ -76,7 +77,20 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "supplyTemperature": return h?.supplyTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.supplyTemperature - 273.15;
     case "excessTemperature": return h?.excessTemperature ?? null;
     case "heatInput": return h?.heatInput ?? 0;
-    case "elementTemperature": return (s.multiphysics.boilers[c.id]?.elementTemperature ?? 293.15) - 273.15;
+    case "elementTemperature": return (s.multiphysics.elementStates()[c.id]?.elementTemperature ?? 293.15) - 273.15;
+    case "heatOutput": return s.multiphysics.heatPumpView[c.id]?.heatOutput ?? 0;
+    case "backupPower": return r?.backupPower ?? 0;
+    case "environmentHeat": { const v = s.multiphysics.heatPumpView[c.id]; return v ? v.plan.air : 0; }
+    case "cop": return s.multiphysics.heatPumpView[c.id]?.cop ?? null;
+    case "compressorSpeed": return (s.multiphysics.heatPumps[c.id]?.speed ?? 0) * 100;
+    case "evaporatingTemperature": { const v = s.multiphysics.heatPumpView[c.id]; return v && v.plan.mode !== 'off' && v.plan.mode !== 'drip' ? v.plan.point.evaporating : null; }
+    case "condensingTemperature": { const v = s.multiphysics.heatPumpView[c.id]; return v && v.plan.mode !== 'off' && v.plan.mode !== 'drip' ? v.plan.point.condensing : null; }
+    case "frostMass": return s.multiphysics.heatPumps[c.id]?.frost ?? 0;
+    case "defrosting": return Number(s.multiphysics.heatPumps[c.id]?.mode === 'defrost');
+    case "targetTemperature": return s.multiphysics.heatPumps[c.id]?.target ?? null;
+    case "seasonalCop": { const st = s.multiphysics.heatPumps[c.id]; return st && st.electricity > 0 ? (st.heat - st.defrostHeat) / st.electricity : null; }
+    case "heatEnergy": { const st = s.multiphysics.heatPumps[c.id]; return st ? st.heat - st.defrostHeat : 0; }
+    case "compressorStarts": return s.multiphysics.heatPumps[c.id]?.startCount ?? 0;
     case "heatingStages": return s.multiphysics.boilers[c.id]?.stages ?? 0;
     case "heatingPower": return r?.heatingPower ?? 0;
     case "heatLoss": return prop(c, 'loss') * ((s.fluidTemperatureMeasurement(c.id) ?? effectiveAmbient(s.project, c)) - effectiveAmbient(s.project, c));
@@ -159,6 +173,7 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "state": {
       if (r?.solar) return Number(r.solar.running);
       if (c.kind === "electricBoiler") return Number((s.multiphysics.boilers[c.id]?.stages ?? 0) > 0 && !s.multiphysics.boilers[c.id]?.fault);
+      if (c.kind === "heatPump") { const st = s.multiphysics.heatPumps[c.id]; return Number(!!st && (st.mode === "heating" || st.mode === "defrost" || st.backupStages > 0)); }
       if (c.kind === "contactor") return s.failed[c.id] ? 0 : s.faults[c.id] === "stuckClosed" ? 1 : s.faults[c.id] === "stuckOpen" ? 0 : Number(s.devices.contactors[c.id]?.closed ?? false);
       if (c.kind === "checkValve") return h ? Number(h.flow > 1e-12) : null;
       if (["valve", "actuatedValve", "thermostaticValve"].includes(c.kind)) return Number((s.faults[c.id] === "stuckClosed" ? 0 : s.faults[c.id] === "stuckOpen" ? 100 : s.multiphysics.positions[c.id] ?? Number(c.props.opening)) > 0);

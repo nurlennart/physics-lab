@@ -10,7 +10,7 @@ export interface BoilerState {
 export const newBoiler = (c: Component): BoilerState => ({ elementTemperature: prop(c, 'initialTemperature') + 273.15, stages: 0, demand: false, switchedAt: -Infinity, offAt: -Infinity, lowFlowTime: 0, restartAt: 0, resetPrevious: false, fault: '', status: 'Ready', setpoint: prop(c, 'setpoint'), switches: 0 });
 export const boilerWaterCapacity = (c: Component) => prop(c, 'waterVolume') * WATER_CP + prop(c, 'vesselHeatCapacity');
 /** Eliminate the implicit element node from the water equation; no explicit temperature/energy injection. */
-export function boilerExchange(c: Component, state: BoilerState, power: number, h: number) {
+export function boilerExchange(c: Component, state: { elementTemperature: number }, power: number, h: number) {
   const ce = prop(c, 'heatCapacity'), g = prop(c, 'conductance'), den = ce + h * g;
   return { sink: g * ce / den, source: g * (ce * state.elementTemperature + h * power) / den,
     element: (water: number) => h === 0 ? state.elementTemperature : (ce * state.elementTemperature + h * g * water + h * power) / den };

@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 93,
-    "coveredPresets": 93,
-    "scenarios": 137,
-    "passed": 137,
+    "presets": 95,
+    "coveredPresets": 95,
+    "scenarios": 139,
+    "passed": 139,
     "failed": 0
   },
   "reports": [
@@ -619,6 +619,90 @@
       "pass": true,
       "time": 5.999999999999984,
       "energyResidual": -6.585310075024609e-11,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bosch CS6800iAW 7 OR-S · 6 kW backup",
+      "presets": [
+        "builtin:heatPump:Bosch CS6800iAW 7 OR-S · 6 kW backup"
+      ],
+      "checks": [
+        {
+          "label": "standby + crankcase input during the power-on check (W)",
+          "expected": 47,
+          "measured": 47,
+          "absoluteError": 0,
+          "tolerance": 5.700000000000001e-8
+        },
+        {
+          "label": "first law: condenser heat − outdoor-unit input − air heat (W)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.0050971632757921e-7,
+          "absoluteError": 1.0050971632757921e-7,
+          "tolerance": 2034.7353937072278
+        }
+      ],
+      "pass": true,
+      "time": 600,
+      "energyResidual": 1.0050971632757921e-7,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "Bosch CS6800iAW 7 OR-S · without backup",
+      "presets": [
+        "builtin:heatPump:Bosch CS6800iAW 7 OR-S · without backup"
+      ],
+      "checks": [
+        {
+          "label": "standby + crankcase input during the power-on check (W)",
+          "expected": 47,
+          "measured": 47,
+          "absoluteError": 0,
+          "tolerance": 5.700000000000001e-8
+        },
+        {
+          "label": "first law: condenser heat − outdoor-unit input − air heat (W)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 1.0050971632757921e-7,
+          "absoluteError": 1.0050971632757921e-7,
+          "tolerance": 2034.7353937072278
+        }
+      ],
+      "pass": true,
+      "time": 600,
+      "energyResidual": 1.0050971632757921e-7,
       "massResidual": 0,
       "violations": [],
       "failed": {}

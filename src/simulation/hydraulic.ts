@@ -1,5 +1,5 @@
 import { effectiveAmbient } from "./environment";
-import { boilerExchange, boilerWaterCapacity, type BoilerState } from './boiler';
+import { boilerExchange, boilerWaterCapacity } from './boiler';
 import { PANEL_CELLS, panelCellCapacity, panelExchange } from './panel-radiator';
 import { definitions, prop, textProp, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
@@ -61,7 +61,11 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump']);
+/** Branches with one fully mixed water cell and an implicit heated element node (boiler elements, heat-pump condenser). */
+export const elementKinds = new Set(['electricBoiler', 'heatPump']);
+/** State of an element node: temperature (K). */
+export type ElementState = { elementTemperature: number };
 /** Centrifugal pump branches: shaft-driven pumps and electric circulators share the curve model. */
 export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
@@ -311,7 +315,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   // Fixing all its nodes to zero violates continuity (a pump discharges into nothing).
   // Finite branch inventory establishes a filled loop; its pressure datum represents an
   // externally maintained fill pressure with compliant expansion, not a mass source.
-  for (const c of cs.filter(c => pipeCells(c)).sort((a, b) => Number(b.kind === 'electricBoiler') - Number(a.kind === 'electricBoiler'))) {
+  for (const c of cs.filter(c => pipeCells(c)).sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind)))) {
     const n = node(c, 'inlet'), group = groups.find(n);
     if (!primed.has(group)) { boundaries[n] = prop(c, 'fillPressure') / 1000; primed.add(group); }
   }
@@ -345,7 +349,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    */
   const valveTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
-    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || c.kind === 'electricBoiler' || c.kind === 'panelRadiator' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
+    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || elementKinds.has(c.kind) || c.kind === 'panelRadiator' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
     const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, 'diameter'), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
@@ -575,10 +579,10 @@ export function effectiveness(ntu: number, cr: number, arrangement: string) {
   return (1 - e) / (1 - cr * e);
 }
 /** Finite branch inventory cells: pipe chain, one boiler mixing cell, a panel radiator chain, or zero-volume branch. */
-export const pipeCells = (c: Component) => c.kind === 'electricBoiler' ? 1 : c.kind === 'panelRadiator' ? PANEL_CELLS : (c.kind === 'pipe' && c.props.inventory !== false ? Math.max(1, Math.round(prop(c, 'segments', 4))) : 0);
-export const pipeWaterMass = (c: Component) => c.kind === 'electricBoiler' || c.kind === 'panelRadiator' ? prop(c, 'waterVolume') : RHO * Math.PI * prop(c, 'diameter') ** 2 / 4 * prop(c, 'length');
+export const pipeCells = (c: Component) => elementKinds.has(c.kind) ? 1 : c.kind === 'panelRadiator' ? PANEL_CELLS : (c.kind === 'pipe' && c.props.inventory !== false ? Math.max(1, Math.round(prop(c, 'segments', 4))) : 0);
+export const pipeWaterMass = (c: Component) => elementKinds.has(c.kind) || c.kind === 'panelRadiator' ? prop(c, 'waterVolume') : RHO * Math.PI * prop(c, 'diameter') ** 2 / 4 * prop(c, 'length');
 /** Heat capacity (J/K) of one inventory cell; boiler and radiator metal is lumped with the water. */
-export const cellCapacity = (c: Component, n: number) => c.kind === 'electricBoiler' ? boilerWaterCapacity(c) : c.kind === 'panelRadiator' ? panelCellCapacity(c) : pipeWaterMass(c) / n * CP;
+export const cellCapacity = (c: Component, n: number) => elementKinds.has(c.kind) ? boilerWaterCapacity(c) : c.kind === 'panelRadiator' ? panelCellCapacity(c) : pipeWaterMass(c) / n * CP;
 /**
  * Conservative upwind enthalpy transport. Junctions are ideal mixers. Zero-volume
  * branches carry their dissipation and exponential UA loss into the outgoing
@@ -587,7 +591,7 @@ export const cellCapacity = (c: Component, n: number) => c.kind === 'electricBoi
  * ε-NTU. Every outlet temperature is linear in upstream node temperatures, so the
  * whole network is one linear solve and energy is conserved exactly.
  */
-export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, BoilerState> = {}, boilerPower: Record<string, number> = {}, fixedPanel?: Record<string, ReturnType<typeof panelExchange>>) {
+export function transport(project: Project, tanks: Record<string, TankState>, result: HydraulicResult, dt: number, cells: Record<string, number[]> = {}, radiatorConductance: Record<string, number> = {}, boilers: Record<string, ElementState> = {}, boilerPower: Record<string, number> = {}, fixedPanel?: Record<string, ReturnType<typeof panelExchange>>) {
   const nodes = Object.keys(result.potentials), index = new Map(nodes.map((n, i) => [n, i]));
   const matrix = nodes.map(() => Array(nodes.length).fill(0)), rhs = nodes.map(() => 0), boundary = new Map<string, string>();
   // A drained (empty, flow-through) tank's node is an ordinary mixer: no storage, no enthalpy exchange.
@@ -601,11 +605,11 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     // for a pump this totals P_shaft − P_net, each loss counted once.
     // An electric circulator's motor and electronics losses are cooled by the pumped water (wet rotor).
     const heat = b.loss + Math.max(0, r.shaftPower - r.impellerPower) + (r.motorLoss ?? 0), ambientK = U.celsiusToK(effectiveAmbient(project, c));
-    const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
+    const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     const n = pipeCells(c), state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? state : [...state].reverse();
     // Panel radiator: EN 442 conductance per cell from the interval's start state (inlet: last transported node temperature).
     const panel = c.kind === 'panelRadiator' ? fixedPanel?.[c.id] ?? panelExchange(c, order, result.nodeTemperatures[b.from], ambientK, b.rate * CP) : undefined;
-    const ua = panel ? panel.g * n : c.kind === 'electricBoiler' ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0;
+    const ua = panel ? panel.g * n : elementKinds.has(c.kind) ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0;
     if (n) {
       // Implicit cell chain with exchange temperature w·T_{k−1}' + (1 − w)·T_k' (w = 0 except in panel radiators):
       // T_k' = (m c T_k + h (ṁ c − g w) T_{k−1}' + h g T_amb + h Q/N)/(m c + h ṁ c + h g (1 − w)), g = UA/N.
@@ -656,7 +660,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     if (destination) { massRate[destination] = (massRate[destination] ?? 0) + b.rate; energyRate[destination] = (energyRate[destination] ?? 0) + b.rate * CP * outlet; }
     const c = byId.get(b.component)!, n = pipeCells(c);
     if (n) {
-      const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
+      const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
       const mc = cellCapacity(c, n), uaCell = b.uaCell ?? b.ua / n, w = b.weight ?? 0, flowTerm = dt * b.rate * CP;
       const state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? [...state] : [...state].reverse();
       let upstream = inlet, output = 0, excess = 0;
@@ -672,7 +676,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
       if (c.kind === 'panelRadiator') Object.assign(result.readings[b.id], { duty: output, supplyTemperature: inlet, returnTemperature: outlet, heatInput: b.rate * CP * (inlet - outlet), excessTemperature: excess });
     } else release(c.id, b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK) * dt);
     heat += b.heat * dt;
-    if (c.kind === 'electricBoiler') {
+    if (elementKinds.has(c.kind)) {
       result.readings[b.id].duty = b.rate * CP * (outlet - inlet);
       result.readings[b.id].returnTemperature = inlet;
     }
@@ -683,8 +687,8 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   // Stagnant pipes keep their water and exchange heat with ambient only.
   for (const c of project.components.filter(c => pipeCells(c) && !transfers.some(t => t.component === c.id))) {
     const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = U.celsiusToK(effectiveAmbient(project, c));
-    const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : prop(c, c.kind === 'electricBoiler' ? 'loss' : 'thermalUA') / n;
-    const exchange = c.kind === 'electricBoiler' ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
+    const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : prop(c, elementKinds.has(c.kind) ? 'loss' : 'thermalUA') / n;
+    const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
     let output = 0;
     cells[c.id] = before.map(old => {
       const next = dt === 0 ? old : (mc * old + dt * uaCell * ambientK + dt * (exchange?.source ?? 0)) / (mc + dt * (uaCell + (exchange?.sink ?? 0)));
@@ -695,7 +699,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     if (result.readings[c.id]) { result.readings[c.id].temperature = mean; result.readings[c.id].temperatureValid = true; }
     if (c.kind === 'panelRadiator' && result.readings[c.id]) Object.assign(result.readings[c.id], { duty: output, heatInput: 0, excessTemperature: mean - ambientK });
   }
-  for (const c of project.components.filter(c => c.kind === 'electricBoiler')) {
+  for (const c of project.components.filter(c => elementKinds.has(c.kind))) {
     const state = boilers[c.id], power = boilerPower[c.id] ?? 0;
     state.elementTemperature = boilerExchange(c, state, power, dt).element(cells[c.id][0]);
     heat += power * dt;

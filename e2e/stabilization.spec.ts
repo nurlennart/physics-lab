@@ -29,10 +29,12 @@ for (const example of examples) test(`UI starter: ${example.title} runs, resets 
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
   if (example.mode === 'automated') { await advance(page, 600); await advance(page, 600); await advance(page, 600); }
   else if (example.mode === 'circulation' || example.mode === 'pressure') { for (let i = 0; i < (example.mode === 'circulation' ? 5 : 3); i++) await advance(page); }
-  else await advance(page, example.mode === 'supply' ? 600 : 60);
+  // Heat pumps: past the 2-minute power-on check, so the compressor runs and its COP is defined.
+  else await advance(page, example.mode === 'supply' || example.mode.startsWith('heatPump') ? 600 : 60);
   await page.getByRole('button', { name: 'Live telemetry', exact: true }).click();
   await expect(page.locator('.trace-readouts')).not.toContainText('invalid');
   const expected = {
+    heatPumpHouse: ['Heat output', 3000, 7500], heatPumpCold: ['Heat output', 3000, 7000],
     thermostaticRoom: ['Room air', 19.95, 20.05], livingRoom: ['Room air', 14.95, 15.05], roomCooldown: ['Room air', 14.95, 15.05],
     gridSolar: ['AC solar injection', 400, 450], hybridStorage: ['Protected AC consumption', 199, 201], zeroExport: ['Protected AC consumption', 199, 201], gridBackup: ['Protected AC consumption', 199, 201], multipleSolar: ['Protected AC consumption', 199, 201],
     solarCharging: ['Charger output', 260, 280], solarOffGrid: ['AC useful load', 99, 101], solarCirculation: ['Circulation flow', 12, 12.5], solarExperiment: ['PV generated power', 449, 451],

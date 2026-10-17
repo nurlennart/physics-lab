@@ -15,6 +15,9 @@ export function portLocal(c: Component, port: string): Point {
   const p = definitions[c.kind].ports.find((p) => p.id === port);
   if (c.kind === 'electricBoiler' && p?.domain === 'electrical') return { x: 22 + ['L1', 'L2', 'L3', 'N', 'PE'].indexOf(port) * 32, y: -12 };
   if (c.kind === 'electricBoiler' && p?.domain === 'control') return { x: 30 + ['enable', 'setpoint', 'reset'].indexOf(port) * 56, y: h + 12 };
+  // Heat pump: outdoor-unit and backup-heater supplies on top, controls below, water through the sides.
+  if (c.kind === 'heatPump' && p?.domain === 'electrical') return { x: [24, 58, 116, 150][['L', 'N', 'BL', 'BN'].indexOf(port)], y: -12 };
+  if (c.kind === 'heatPump' && p?.domain === 'control') return { x: 26 + ['enable', 'setpoint', 'reset', 'defrost'].indexOf(port) * 41, y: h + 12 };
   if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
     return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
   if (p?.domain === "hydraulic" && port === "overflow") return { x: w + 12, y: 28 };

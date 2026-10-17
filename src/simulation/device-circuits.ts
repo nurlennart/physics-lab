@@ -7,9 +7,11 @@ import { definitions, prop, type Component, type Project } from './model';
 import { solveElectricalCore, WarmStartUnconverged, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { batteryAverageOCV, batteryChargeStep, batteryEnergy, batteryEnergyChange, batteryOCV, batteryResistanceFactor, polarizationBranch, selfDischargeCurrent } from './devices';
 
-type Expansion = { project: Project; coils: Map<string, string>; boilers: Map<string, string[]> };
+type Expansion = { project: Project; coils: Map<string, string>; boilers: Map<string, string[]>; backups: Map<string, string> };
 const cache = new WeakMap<Project, Expansion>();
-const special = (c: Component) => ['battery', 'contactor', 'radiator', 'circulator', 'electricBoiler'].includes(c.kind);
+const special = (c: Component) => ['battery', 'contactor', 'radiator', 'circulator', 'electricBoiler', 'heatPump'].includes(c.kind);
+/** Constant-power electronics: circulators and the heat pump's outdoor unit (inverter, fan, controls). */
+const constantPowerKinds = new Set(['circulator', 'heatPump']);
 function expand(project: Project): Expansion {
   const cached = cache.get(project);
   if (cached) return cached;
@@ -27,7 +29,19 @@ function expand(project: Project): Expansion {
       ids.add(id); return id;
     }));
   }
+  // Heat pump: the outdoor unit is a constant-power load on L/N (its own id); the backup heater stages are a
+  // resistance on BL/BN, set per solve from the stage count (real V²/R heating).
+  const backups = new Map<string, string>();
+  for (const c of project.components.filter(c => c.kind === 'heatPump')) {
+    let id = `${c.id}#backup`;
+    while (ids.has(id)) id += '#';
+    ids.add(id); backups.set(c.id, id);
+  }
   const components = project.components.flatMap((c): Component[] => {
+    if (c.kind === 'heatPump') return [
+      { ...c, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'ratedVoltage') ** 2 / 3000, tempCoefficient: 0, tolerance: 0 } },
+      { ...c, id: backups.get(c.id)!, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'ratedVoltage') ** 2 / 3000, tempCoefficient: 0, tolerance: 0 } },
+    ];
     if (c.kind === 'electricBoiler') return boilers.get(c.id)!.map((id, i) => i === 4
       ? { ...c, id, kind: 'junction', props: {} }
       : { ...c, id, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'ratedVoltage') ** 2 / (i === 3 ? prop(c, 'standbyPower') : prop(c, 'ratedPower') / 3), tempCoefficient: 0, tolerance: 0 } });
@@ -41,11 +55,11 @@ function expand(project: Project): Expansion {
     if (c.kind === 'circulator') return [{ ...c, kind: 'resistor', props: { ...definitions.resistor.defaults, resistance: prop(c, 'ratedVoltage') ** 2 / prop(c, 'ratedPower'), tempCoefficient: 0, tolerance: 0 } }];
     return [c];
   });
-  const map = (t: { component: string; port: string }) => boilers.has(t.component) && ['L1', 'L2', 'L3', 'N', 'PE'].includes(t.port) ? { component: boilers.get(t.component)![t.port === 'PE' ? 4 : t.port === 'N' ? 0 : Number(t.port.slice(1)) - 1], port: t.port === 'N' ? 'b' : 'a' } : t.port === 'ca' || t.port === 'cb' ? { component: coils.get(t.component)!, port: t.port === 'ca' ? 'a' : 'b' } : t;
+  const map = (t: { component: string; port: string }) => backups.has(t.component) && ['L', 'N', 'BL', 'BN'].includes(t.port) ? { component: t.port.startsWith('B') ? backups.get(t.component)! : t.component, port: t.port.endsWith('L') ? 'a' : 'b' } : boilers.has(t.component) && ['L1', 'L2', 'L3', 'N', 'PE'].includes(t.port) ? { component: boilers.get(t.component)![t.port === 'PE' ? 4 : t.port === 'N' ? 0 : Number(t.port.slice(1)) - 1], port: t.port === 'N' ? 'b' : 'a' } : t.port === 'ca' || t.port === 'cb' ? { component: coils.get(t.component)!, port: t.port === 'ca' ? 'a' : 'b' } : t;
   const expanded = { ...project, components, connections: project.connections.map(w => ({ ...w, from: map(w.from), to: map(w.to) })) };
   for (const ids of boilers.values()) for (const i of [1, 2, 3]) expanded.connections.push({ id: `${ids[i]}#neutral`, domain: 'electrical', from: { component: ids[0], port: 'b' }, to: { component: ids[i], port: 'b' } });
   for (const ids of boilers.values()) expanded.connections.push({ id: `${ids[3]}#live`, domain: 'electrical', from: { component: ids[0], port: 'a' }, to: { component: ids[3], port: 'a' } });
-  const expansion = { project: expanded, coils, boilers };
+  const expansion = { project: expanded, coils, boilers, backups };
   cache.set(project, expansion);
   return expansion;
 }
@@ -69,8 +83,8 @@ function solveConstantPower(project: Project, expanded: Project, failures: Recor
   return constantPowerIteration(project, expanded, failures, runtime).result;
 }
 function constantPowerIteration(project: Project, expanded: Project, failures: Record<string, boolean>, runtime: ElectricalRuntime, start?: NonNullable<ElectricalRuntime['constantPowerWarm']>) {
-  const units = project.components.filter(c => c.kind === 'circulator');
-  const demand = (c: Component) => runtime.circulators?.[c.id] ?? 0;
+  const units = project.components.filter(c => constantPowerKinds.has(c.kind));
+  const demand = (c: Component) => (c.kind === 'heatPump' ? runtime.heatPumps?.[c.id]?.demand : runtime.circulators?.[c.id]) ?? 0;
   for (const c of units) if (!(demand(c) > 0)) failures[c.id] = true;
   const loads: Record<string, number> = { ...runtime.loadResistances }, undervoltage = new Set<string>();
   for (const c of units) if (!failures[c.id]) loads[c.id] = start?.[c.id]?.demand === demand(c) ? start[c.id].resistance : prop(c, 'ratedVoltage') ** 2 / demand(c);
@@ -80,7 +94,8 @@ function constantPowerIteration(project: Project, expanded: Project, failures: R
     let change = 0, dropped = false;
     for (const c of units.filter(c => loads[c.id] !== undefined)) {
       const r = result.readings[c.id], v = Math.abs(r?.voltage ?? 0);
-      if (r?.phases === 3) throw Error(`${c.name}: a single-phase circulator cannot sit in a balanced three-phase network; supply it from a single-phase AC or DC source.`);
+      if (r?.phases === 3) throw Error(`${c.name}: single-phase electronics cannot sit in a balanced three-phase network; supply it from a single-phase AC or DC source.`);
+      if (c.kind === 'heatPump' && !r?.ac && v > 1) throw Error(`${c.name}: the outdoor unit requires 230 V 50 Hz AC mains.`);
       // Collapse below half the lockout cannot recover; the lockout itself is checked on the converged voltage.
       if (r?.voltageValid === false || v < 0.5 * prop(c, 'minVoltage') || !(v > 0)) { off(c); dropped = true; continue; }
       const next = v * v / demand(c);
@@ -124,6 +139,13 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
     }
     if (c.kind === 'radiator' && runtime.faults?.[c.id] === 'coolingFailed') failures[c.id] = true;
   }
+  const backupLoads: Record<string, number> = {};
+  for (const c of project.components.filter(c => c.kind === 'heatPump')) {
+    const id = expanded.backups.get(c.id)!, stages = runtime.heatPumps?.[c.id]?.backupStages ?? 0;
+    failures[id] = !!failed[c.id] || runtime.faults?.[c.id] === 'failedOpen' || !(stages > 0);
+    if (stages > 0) backupLoads[id] = prop(c, 'ratedVoltage') ** 2 / (stages * 3000);
+  }
+  if (Object.keys(backupLoads).length) runtime = { ...runtime, loadResistances: { ...runtime.loadResistances, ...backupLoads } };
   for (const c of project.components.filter(c => c.kind === 'electricBoiler')) {
     const ids = expanded.boilers.get(c.id)!;
     for (let i = 0; i < 4; i++) failures[ids[i]] = !!failed[c.id] || runtime.boilerTrips?.has(c.id) || runtime.faults?.[c.id] === 'failedOpen' || (i < 3 && i >= (runtime.boilers?.[c.id] ?? 0));
@@ -189,6 +211,20 @@ function solveDevices(project: Project, failed: Record<string, boolean> = {}, ru
       for (const id of ids) for (const port of ['a', 'b']) delete values[`${id}:${port}`];
     }
     ids.forEach(id => delete result.readings[id]);
+  }
+  for (const c of project.components.filter(c => c.kind === 'heatPump')) {
+    const id = expanded.backups.get(c.id)!, unit = result.readings[c.id], backup = result.readings[id];
+    if (backup?.phases === 3) throw Error(`${c.name}: the 3/6 kW backup heater needs a single-phase 230 V supply on BL/BN.`);
+    if (backup && !backup.ac && Math.abs(backup.voltage) > 1) throw Error(`${c.name}: the backup heater requires 230 V 50 Hz AC mains.`);
+    const compressorPower = unit?.power ?? 0, backupPower = backup?.power ?? 0;
+    result.readings[c.id] = { ...unit, voltage: unit?.voltage ?? 0, current: unit?.current ?? 0, power: compressorPower + backupPower, compressorPower, backupPower,
+      backupVoltage: backup?.voltageValid === false ? 0 : Math.abs(backup?.voltage ?? 0), backupCurrent: Math.abs(backup?.current ?? 0), currentPhasor: undefined, peakCurrent: undefined, reactivePower: 0, powerFactor: compressorPower + backupPower > 1e-12 ? 1 : null };
+    for (const field of ['nodes', 'nodeIds', 'nodeIslands', 'phasors'] as const) {
+      const values = result[field]; if (!values) continue;
+      for (const [from, to] of [[`${c.id}:a`, `${c.id}:L`], [`${c.id}:b`, `${c.id}:N`], [`${id}:a`, `${c.id}:BL`], [`${id}:b`, `${c.id}:BN`]] as const)
+        if (from in values) { (values as Record<string, unknown>)[to] = values[from]; delete values[from]; }
+    }
+    delete result.readings[id];
   }
   let chemical = 0;
   for (const c of project.components) {

@@ -52,6 +52,8 @@ export const builtinPresets: ComponentPreset[] = [
   preset("contactor", "General-purpose", "24 V DC coil · 25 A contact", {}),
   preset("transformer", "Laboratory", "230 / 24 V · 250 VA", {}),
   preset("electricBoiler", "General-purpose", "Bosch TH3000 9 · external pump", {}, "Three 3 kW stages; 3.7 L water. External circulator required. See model basis for control and thermal assumptions."),
+  preset("heatPump", "General-purpose", "Bosch CS6800iAW 7 OR-S · 6 kW backup", {}, "R290 monobloc, 1.8–7.1 kW at A2/W35, COP from air, water and load; frost and reverse-cycle defrost; 2 × 3 kW backup on BL/BN. External circulator required. See model basis for fitted and assumed data."),
+  preset("heatPump", "General-purpose", "Bosch CS6800iAW 7 OR-S · without backup", { backupStages: 0 }, "Heat pump only: no electric backup heater stages; below −23 °C or above the envelope it cannot heat."),
   preset("radiator", "Laboratory", "24 V fan · 100 W/K radiator", {}),
   preset("panelRadiator", "General-purpose", "Kermi therm-x2 Profil-K 22 · 600 × 1000 · 1,666 W", {}, "Registered EN 442 data (Kermi Technik 2018): Φ₅₀ 1,666 W, n 1.2930, 6.08 L, 29.63 kg."),
   preset("panelRadiator", "General-purpose", "Kermi therm-x2 Profil-K 11 · 600 × 1000 · 979 W", {}, "Single panel with one convector: Φ₅₀ 979 W, n 1.2721, 3.04 L.", "type11"),

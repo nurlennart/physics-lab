@@ -2,6 +2,7 @@ import { thermalStarter } from './thermal-projects';
 import { roomMeasurements } from './thermal-spaces';
 import { hybridStarter, hybridTitles, type HybridMode } from './hybrid-projects';
 import { solarStarter, solarTitles, type SolarMode } from './solar-projects';
+import { heatPumpStarter, heatPumpTitles, type HeatPumpMode } from './heat-pump-projects';
 import { deviceStarter, type DeviceMode } from "./device-projects";
 import { compatibleTarget, legacyUnavailableMeasurement } from "./capabilities";
 import { hydraulicStarter, industrialStarter, heatExchangerStarter, type HydraulicMode } from "./hydraulic-projects";
@@ -19,12 +20,13 @@ import {
   type Measurement,
 } from "./model";
 export function starter(
-  mode: "thermostaticRoom" | "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode = "heat",
+  mode: "thermostaticRoom" | "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode | HeatPumpMode = "heat",
   challenge = false,
 ): Project {
   if (mode === "livingRoom" || mode === "roomCooldown" || mode === "thermostaticRoom") return thermalStarter(mode);
   if (mode in hybridTitles) return hybridStarter(mode as HybridMode);
   if (mode in solarTitles) return solarStarter(mode as SolarMode);
+  if (mode in heatPumpTitles) return heatPumpStarter(mode as HeatPumpMode);
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
   if (mode === "exchanger") return heatExchangerStarter();
@@ -446,6 +448,7 @@ export function validateProbes(p: Project) {
     if (
       ![
         "returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "supplyTemperature", "excessTemperature", "heatInput",
+        "heatOutput", "backupPower", "environmentHeat", "cop", "compressorSpeed", "evaporatingTemperature", "condensingTemperature", "frostMass", "defrosting", "targetTemperature", "seasonalCop", "heatEnergy", "compressorStarts",
         "pressure", "inletPressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "torque", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
         'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',
         "voltage",

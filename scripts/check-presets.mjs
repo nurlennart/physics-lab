@@ -119,6 +119,24 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       assert(s.fluidTemperatureMeasurement(c.id) > 20);
       break;
     }
+    case 'heatPump': {
+      // Outdoor unit and backup heater on 230 V; closed loop through an external circulator and a 20 °C room radiator.
+      b.p.environment = { ambient: 7 };
+      const mains = b.add('sourceAC', { voltage: 230, maxCurrent: 40, maxPower: 9200 }), pump = b.add('circulator', { headSetpoint: 4 });
+      const sink = b.add('radiator', { naturalUA: 300, forcedUA: 0, ambient: 20, ambientMode: 'override' }), pipe = b.add('pipe', { diameter: 0.025, length: 8, thermalUA: 0 });
+      b.wire(mains, 'a', c, 'L'); b.wire(mains, 'b', c, 'N'); b.wire(mains, 'a', c, 'BL'); b.wire(mains, 'b', c, 'BN'); b.wire(mains, 'a', pump, 'a'); b.wire(mains, 'b', pump, 'b');
+      b.wire(c, 'outlet', pipe, 'inlet'); b.wire(pipe, 'outlet', sink, 'inlet'); b.wire(sink, 'outlet', pump, 'inlet'); b.wire(pump, 'outlet', c, 'inlet');
+      s = simulation(b); s.advanceAdaptive(60); assert.equal(s.error, null);
+      // Bosch ErP: 15 W standby plus the 32 W crankcase heater below its threshold during the 2-minute power-on check.
+      near(report, 'standby + crankcase input during the power-on check (W)', 47, s.electrical.readings[c.id].compressorPower, 1e-9);
+      s.advanceAdaptive(540); assert.equal(s.error, null);
+      const st = s.multiphysics.heatPumps[c.id], view = s.multiphysics.heatPumpView[c.id];
+      assert.equal(st.mode, 'heating'); assert.equal(st.startCount, 1);
+      assert(Math.abs(s.electrical.readings[c.id].current) <= v.maxCurrent * (1 + 1e-9), 'Bosch 13.1 A maximum current');
+      assert(view.cop > 2 && view.cop < 7, `plausible COP ${view.cop}`);
+      near(report, 'first law: condenser heat − outdoor-unit input − air heat (W)', 0, view.heatOutput - (view.electrical - view.plan.fan - view.plan.controls) - view.plan.point.evaporator, 0, 1e-6);
+      break;
+    }
     case 'panelRadiator': {
       // Gravity-fed from a 75 °C tank: after 1 h the output equals the EN 442 characteristic at the measured
       // flow (independent bisection for the return temperature), and Δp follows the Kermi chart line.

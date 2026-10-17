@@ -33,6 +33,9 @@ export function moduleStatus(c: Component): { tone: Tone; text: string } | null 
   if (s.failed[c.id]) return { tone: "fault", text: s.tripped[c.id] ? "Protection tripped" : "Failed" };
   if (s.breakers[c.id]?.tripped) return { tone: "fault", text: "Tripped" };
   if (boiler?.fault) return { tone: "fault", text: boiler.fault === "flow" ? "Flow interlock" : "Overtemperature cutout" };
+  const hp = s.multiphysics.heatPumps[c.id];
+  if (hp?.fault || hp?.backupFault) return { tone: "fault", text: hp.fault ? `Locked out: ${hp.fault}` : "Backup heater overheat" };
+  if (hp && hasStarted() && hp.mode === "defrost") return { tone: "warning", text: "Defrosting" };
   if (hybrid?.fault) return { tone: "fault", text: hybrid.fault };
   if (status === "tripped" || s.automation.memory[c.id]?.tripped) return { tone: "fault", text: "Tripped / latched" };
   if (fault) return { tone: "fault", text: `Injected fault: ${fault}` };
@@ -503,6 +506,28 @@ function face(c: Component): Face {
         hero: flowing && hr?.supplyTemperature !== undefined && hr.returnTemperature !== undefined ? `${(hr.supplyTemperature - 273.15).toFixed(1)} → ${(hr.returnTemperature - 273.15).toFixed(1)} °C` : celsius(mean),
         detail: started ? `${watts(hr?.duty ?? 0)} to room` : `Φ₅₀ ${prop(c, "ratedOutput").toFixed(0)} W`,
         tone: "thermal",
+      };
+    }
+    case "heatPump": {
+      const st = s.multiphysics.heatPumps[c.id], view = s.multiphysics.heatPumpView[c.id], water = s.fluidTemperatureMeasurement(c.id) ?? prop(c, "initialTemperature");
+      const running = started && (st?.mode === "heating" || st?.mode === "defrost"), defrost = started && st?.mode === "defrost";
+      const frost = started ? Math.min(1, (st?.frost ?? 0) / Math.max(1e-6, prop(c, "frostTrigger"))) : 0;
+      return {
+        symbol: <g>
+          <path d="M0 66H44M130 66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
+          <rect x="44" y="42" width="86" height="44" rx="4" fill={T.n4} stroke={st?.fault || st?.backupFault ? T.faultText : INK} strokeWidth={SW} />
+          <circle cx="68" cy="64" r="15" fill="none" stroke={defrost ? T.hydraulic : INK} strokeWidth="1.5" />
+          {[0, 120, 240].map((a) => <path key={a} d="M68 64l0 -12" stroke={running ? T.thermalText : FAINT} strokeWidth="2" transform={`rotate(${a + (running ? (st?.speed ?? 0) * 40 : 0)} 68 64)`} />)}
+          {/* Frost on the coil: the hatched bar fills toward the defrost trigger. */}
+          <rect x="94" y="48" width="28" height="32" rx="2" fill="none" stroke={FAINT} strokeWidth="1" />
+          <rect x="94" y={80 - 32 * frost} width="28" height={32 * frost} fill={T.hydraulic} opacity="0.35" />
+          {[0, 1, 2].map((i) => <path key={i} d={`M98 ${56 + i * 8}h20`} stroke={FAINT} strokeWidth="0.75" />)}
+        </g>,
+        hero: celsius(water),
+        detail: st?.fault ? "Locked out" : !started ? `Target ${prop(c, "setpoint")} °C` : defrost ? `Defrost · ${watts(-(view?.heatOutput ?? 0))} from water` : st?.mode === "heating" ? `${watts(view?.heatOutput ?? 0)} · COP ${view?.cop?.toFixed(2) ?? "—"}${st.backupStages ? ` · +${st.backupStages * 3} kW` : ""}` : st?.backupStages ? `Backup ${st.backupStages * 3} kW` : st?.mode === "drip" ? "Drip time" : "Standby",
+        title: started ? st?.status : undefined,
+        tone: st?.fault || st?.backupFault ? "fault" : "thermal",
+        pins: { labels: { L: "L", N: "N", BL: "BL", BN: "BN", enable: "EN", setpoint: "SET", reset: "RST", defrost: "DEF" } },
       };
     }
     case "electricBoiler": {

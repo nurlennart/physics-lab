@@ -2,12 +2,13 @@ import { advanceSpaceThermal } from './thermal-coupling';
 import { effectiveAmbient } from './environment';
 import { trvPosition, trvSensorStep } from './thermostatic-valve';
 import { controlBoiler, newBoiler, type BoilerState } from './boiler';
+import { advanceHeatPump, controlHeatPump, newHeatPump, planHeatPump, type HeatPumpInputs, type HeatPumpPlan, type HeatPumpState } from './heat-pump';
 import { radiatorUA } from './devices';
 import { prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
 import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
-import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, isPump, type TankState } from './hydraulic';
+import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, isPump, elementKinds, type TankState } from './hydraulic';
 import { circulatorInput, circulatorKinetic, circulatorTarget, rampedSpeed, RESTART_MARGIN, type CirculatorPlan, type CirculatorState } from './circulator';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
 import { kellDensity, inventoryVolume } from './water';
@@ -30,8 +31,16 @@ const OMEGA_REST = 1e-9;
 export const CIRCULATOR_RESTART_DELAY = 1;
 /** Circulator operating figures of the last solve (W, rad/s), for readings and the Inspector. */
 export interface CirculatorView { omega: number; target: number; powered: boolean; running: boolean; lockedOut: boolean; inputPower: number; motorLoss: number }
+/** Heat pump operating figures of the last solve, for readings, probes and the Inspector. */
+export interface HeatPumpView { plan: HeatPumpPlan; inputs: HeatPumpInputs; heatOutput: number; electrical: number; backup: number; cop: number | null }
+const OFF_PLAN = (plan: HeatPumpPlan): HeatPumpPlan => ({ ...plan, mode: 'off', speed1: 0, electrical: 0, compressor: 0, fan: 0, controls: 0, crankcase: 0, condenser: 0, release: 0, air: 0, coilHeat: 0, frostRate: 0 });
 export class Multiphysics {
   boilers: Record<string, BoilerState> = {};
+  /** Heat pumps: controller, compressor, coil and frost state; `heatPumpView` holds the last solve's figures. */
+  heatPumps: Record<string, HeatPumpState> = {};
+  heatPumpView: Record<string, HeatPumpView> = {};
+  /** Plan of the substep being solved (fixed for all coupled iterations of that substep). */
+  private heatPumpPlans: Record<string, HeatPumpPlan> = {};
   tanks: Record<string, TankState> = {};
   motors: Record<string, MotorState> = {};
   positions: Record<string, number> = {};
@@ -77,6 +86,7 @@ export class Multiphysics {
   checkpoint() {
     return {
       boilers: structuredClone(this.boilers), trvSensors: { ...this.trvSensors },
+      heatPumps: structuredClone(this.heatPumps), heatPumpView: { ...this.heatPumpView }, heatPumpPlans: { ...this.heatPumpPlans },
       tanks: Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => [id, { ...t }])),
       motors: { ...this.motors }, circulators: { ...this.circulators }, circulatorView: { ...this.circulatorView }, positions: { ...this.positions },
       pipeCells: Object.fromEntries(Object.entries(this.pipeCells).map(([id, t]) => [id, [...t]])),
@@ -92,6 +102,7 @@ export class Multiphysics {
   initialize(p: Project) {
     for (const c of p.components) {
       if (c.kind === 'electricBoiler') this.boilers[c.id] = newBoiler(c);
+      if (c.kind === 'heatPump') this.heatPumps[c.id] = newHeatPump(c, effectiveAmbient(p, c));
       if (c.kind === 'tank') {
         // The configured initial volume is measured at the initial temperature (Kell density).
         const volume = U.litersToM3(prop(c, 'volume')), temperature = U.celsiusToK(prop(c, 'initialTemperature', 20));
@@ -323,7 +334,14 @@ export class Multiphysics {
         circulators: demand,
         boilers: Object.fromEntries(Object.entries(this.boilers).map(([id, b]) => [id, boilerOff.has(id) ? 0 : b.stages])),
         boilerTrips: new Set(Object.entries(this.boilers).filter(([, b]) => b.fault).map(([id]) => id)),
+        heatPumps: Object.fromEntries(Object.entries(this.heatPumpPlans).map(([id, plan]) => [id, { demand: plan.electrical, backupStages: plan.backupStages }])),
       });
+      // Heat into each heat pump's water node: the planned condenser heat (none if the outdoor unit could not be
+      // supplied) plus the backup heater's actual V²/R power.
+      for (const [id, plan] of Object.entries(this.heatPumpPlans)) {
+        const reading = electrical.readings[id];
+        if (reading) reading.heatingPower = (reading.undervoltage || !((reading.compressorPower ?? 0) > 0) ? 0 : plan.condenser) + (reading.backupPower ?? 0);
+      }
       const dropped = circulators.filter(c => plan[c.id].powered && electrical.readings[c.id]?.undervoltage);
       const droppedBoilers = s.project.components.filter(c => c.kind === 'electricBoiler' && this.boilers[c.id].stages > 0 && !boilerOff.has(c.id) && electrical.readings[c.id]?.stageVoltages?.some(v => v < prop(c, 'minVoltage')));
       droppedBoilers.forEach(c => boilerOff.add(c.id));
@@ -515,6 +533,15 @@ export class Multiphysics {
     }, 0) ?? 0;
   }
   /** Readings of a circulator's operating state from a solve (the state itself advances only on accepted substeps). */
+  private viewHeatPumps(s: Simulation, electrical: ElectricalResult) {
+    for (const c of s.project.components.filter(c => c.kind === 'heatPump')) {
+      const plan = this.heatPumpPlans[c.id], reading = electrical.readings[c.id];
+      if (!plan) continue;
+      const supplied = !reading?.undervoltage && (reading?.compressorPower ?? 0) > 0, used = supplied ? plan : OFF_PLAN(plan);
+      const input = reading?.compressorPower ?? 0, heat = used.condenser;
+      this.heatPumpView[c.id] = { plan: used, inputs: this.heatPumpInputs(s, c), heatOutput: heat, electrical: input, backup: reading?.backupPower ?? 0, cop: used.mode === 'heating' && input > 1 ? heat / input : null };
+    }
+  }
   private viewCirculators(s: Simulation, r: ReturnType<Multiphysics['solve']>) {
     for (const c of s.project.components.filter(c => c.kind === 'circulator')) {
       const plan = r.circulators[c.id];
@@ -542,8 +569,38 @@ export class Multiphysics {
     }
     this.circulators[c.id] = { omega: plan.omega1, lockedOut, restartIn, angle: state.angle + plan.mid * h };
   }
+  /** Element nodes of the hydraulic transport: boiler elements and heat-pump condensers. */
+  elementStates(): Record<string, { elementTemperature: number }> { return { ...this.boilers, ...this.heatPumps }; }
+  /** Heat into each element node (W): boiler stage power, heat-pump condenser heat plus backup heater power. */
+  elementPower(s: Simulation, electrical: ElectricalResult) {
+    return Object.fromEntries(s.project.components.filter(c => elementKinds.has(c.kind)).map(c => [c.id, electrical.readings[c.id]?.heatingPower ?? 0]));
+  }
+  /** Measured inputs of a heat pump's controller from the last accepted state. */
+  heatPumpInputs(s: Simulation, c: Component): HeatPumpInputs {
+    const r = s.electrical.readings[c.id], view = this.heatPumpView[c.id];
+    const voltage = r && r.voltageValid !== false ? Math.abs(r.voltage) : 0;
+    return { water: (this.pipeCells[c.id]?.[0] ?? 293.15) - 273.15, air: effectiveAmbient(s.project, c), flow: Math.abs(this.hydraulic.readings[c.id]?.flow ?? 0),
+      voltage: voltage || (s.time === 0 && !r ? prop(c, 'ratedVoltage') : 0), powered: !s.failed[c.id] && !r?.undervoltage && (voltage >= prop(c, 'minVoltage') || s.time === 0 && !r),
+      backupVoltage: r?.backupVoltage ?? 0, condensing: view?.plan.point.condensing ?? -Infinity, evaporating: view?.plan.point.evaporating ?? Infinity, fanFailed: s.faults[c.id] === 'coolingFailed' };
+  }
+  /** Plan every heat pump's substep of length h from its current state. */
+  private planHeatPumps(s: Simulation, h: number) {
+    for (const c of s.project.components.filter(c => c.kind === 'heatPump')) this.heatPumpPlans[c.id] = planHeatPump(c, this.heatPumps[c.id], this.heatPumpInputs(s, c), h);
+  }
+  /** Next controller deadline of any heat pump after `now` (s); the substep ends there. */
+  private heatPumpEvent(s: Simulation, now: number) {
+    let t = Infinity;
+    for (const c of s.project.components.filter(c => c.kind === 'heatPump')) {
+      const st = this.heatPumps[c.id];
+      for (const e of [st.restartAt, st.dripUntil, st.stoppedAt + prop(c, 'minOffTime'), st.startedAt + prop(c, 'minRunTime'), st.startedAt + 120, st.defrostStart + prop(c, 'maxDefrostTime'),
+        (st.starts[0] ?? -Infinity) + 3600, st.lastDefrostEnd + prop(c, 'minDefrostInterval'), st.lowFlowSince + prop(c, 'flowDelay'), st.shortfallSince + prop(c, 'backupDelay'), st.shortfallSince + 2 * prop(c, 'backupDelay')])
+        if (e > now + 1e-9 && e < t) t = e;
+    }
+    return t;
+  }
   refresh(s: Simulation) {
     this.lastProject = s.project;
+    this.planHeatPumps(s, 0);
     this.circulatorCommands = this.circulatorControls(s);
     const ms = s.project.components.filter(isMotor);
     const speeds = () => ms.map(c => { const body = shaftBody(s.project, c.id); return body ? s.spatial.readings[body]?.omega ?? 0 : this.motors[c.id]?.omega ?? 0; });
@@ -553,16 +610,17 @@ export class Multiphysics {
     if (!Object.keys(r.hydraulic.nodeTemperatures).length && Object.keys(r.hydraulic.potentials).length) {
       // First solve: no transported temperatures yet. A zero-length transport mixes the current
       // inventories into node temperatures, then the network is re-solved with their viscosities.
-      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === 'electricBoiler').map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
+      transport(s.project, this.tanks, r.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.elementStates(), this.elementPower(s, r.electrical));
       r = this.solve(s, speeds(), controls, this.tanks, loads);
       this.hydraulic = r.hydraulic;
     }
     // Re-solving hydraulics rebuilds readings. Resolve current fluid temperatures without
     // moving mass/heat so paused edits and fault recovery cannot erase valid measurements.
-    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === 'electricBoiler').map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
+    transport(s.project, this.tanks, this.hydraulic, 0, this.pipeCells, Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)])), this.elementStates(), this.elementPower(s, r.electrical));
     this.updateNpsh(s, this.hydraulic);
     this.viewCirculators(s, r);
     for (const [id, b] of Object.entries(this.boilers)) if (b.fault) s.automation.status[id] = 'tripped';
+    this.viewHeatPumps(s, r.electrical);
     this.lastElectrical = r.electrical;
     ms.forEach((c, i) => {
       const m = r.state[i];
@@ -574,12 +632,13 @@ export class Multiphysics {
     });
     return r.electrical;
   }
-  advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number; boilerElementGain: number } {
+  advance(s: Simulation, dt: number): { electrical: ElectricalResult; heatPower: Record<string, number>; ambient: number; thermalGain: number; boilerElementGain: number; heatPumpGain: number } {
     s.spatial.stepMs = 0;
     this.lastProject = s.project;
     const motors = s.project.components.filter(isMotor), controls = this.controls(s), heatEnergy: Record<string, number> = {}, commands = this.converterCommands(s);
     this.circulatorCommands = this.circulatorControls(s);
-    const elementBefore = Object.fromEntries(Object.entries(this.boilers).map(([id, b]) => [id, b.elementTemperature]));
+    const elementBefore = Object.fromEntries(Object.entries(this.elementStates()).map(([id, b]) => [id, b.elementTemperature]));
+    let heatPumpGain = 0;
     const panelBefore = s.project.components.filter(c => c.kind === 'panelRadiator' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
@@ -592,6 +651,7 @@ export class Multiphysics {
       // Adaptive macro steps (no rigid bodies) are already bounded by engine.adaptiveLimit; rigid bodies keep
       // their contact/gravity substep; other fixed steps are bounded by the storage time scales.
       for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) controlBoiler(s, c, this.boilers[c.id], s.time + dt - remaining);
+      for (const c of s.project.components.filter(c => c.kind === 'heatPump')) controlHeatPump(s, c, this.heatPumps[c.id], s.time + dt - remaining, this.heatPumpInputs(s, c));
       this.applyCommands(s, commands);
       let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s), s.devices.eventLimit(s.project));
       if (Object.keys(this.boilers).length) {
@@ -600,6 +660,12 @@ export class Multiphysics {
           const b = this.boilers[c.id], now = s.time + dt - remaining;
           for (const event of [b.switchedAt + prop(c, 'stageDelay'), b.offAt + prop(c, 'antiCycleTime'), b.restartAt]) if (event > now + 1e-9) h = Math.min(h, event - now);
         }
+      }
+      if (Object.keys(this.heatPumps).length) {
+        // Quasi-steady cycle evaluated per substep: at most 0.5 s, ending at controller deadlines.
+        const now = s.time + dt - remaining;
+        h = Math.min(h, 0.5, this.heatPumpEvent(s, now) - now);
+        this.planHeatPumps(s, h);
       }
       const old = motors.map(c => this.motors[c.id].omega);
       const linked = motors.map(c => shaftBody(s.project, c.id));
@@ -701,6 +767,24 @@ export class Multiphysics {
       this.hydraulic = r.hydraulic;
       const directHeat: Record<string, number> = {};
       const heatBefore = s.project.thermalSpaces?.length ? { ...heatEnergy } : {};
+      // Heat pumps: coil, frost, controller and counters. Their outdoor-air exchange (fan, controls, crankcase heat out;
+      // evaporator heat in; defrost meltwater and coil losses out) goes to ambient or to their Thermal Space.
+      for (const c of s.project.components.filter(c => c.kind === 'heatPump')) {
+        const st = this.heatPumps[c.id], reading = r.electrical.readings[c.id], now = s.time + dt - remaining;
+        let plan = this.heatPumpPlans[c.id];
+        if (reading?.undervoltage || !((reading?.compressorPower ?? 0) > 0)) {
+          plan = OFF_PLAN(plan);
+          if (st.mode !== 'off' || now >= st.restartAt) { if (st.mode !== 'off') st.stoppedAt = now + h; st.mode = 'off'; st.speed = 0; st.command = 0; st.status = 'Undervoltage / no supply'; }
+          st.restartAt = now + h + prop(c, 'powerOnDelay');
+        }
+        const result = advanceHeatPump(c, st, plan, this.heatPumpInputs(s, c), h, reading?.compressorPower ?? 0, reading?.backupPower ?? 0);
+        ambient += result.environment; directHeat[c.id] = (directHeat[c.id] ?? 0) + result.environment / h;
+        heatPumpGain += result.stored;
+        if (st.elementTemperature - 273.15 >= prop(c, 'backupLimit') && st.backupStages > 0 && !st.backupFault) {
+          st.backupFault = true; st.backupStages = 0; s.automation.status[c.id] = 'tripped';
+          s.log(`${c.name}: backup heater overheat protection opened above ${prop(c, 'backupLimit')} °C — manual reset required.`, 'error');
+        }
+      }
       motors.forEach((c, i) => {
         const m = r.state[i];
         let next = linked[i] ? s.spatial.readings[linked[i]!].omega : held[i] ? 0 : 2 * midpoint[i] - old[i];
@@ -730,6 +814,7 @@ export class Multiphysics {
       });
       for (const c of s.project.components.filter(c => c.kind === 'circulator')) this.advanceCirculator(s, c, r, h);
       this.viewCirculators(s, r);
+      this.viewHeatPumps(s, r.electrical);
       for (const [id, reading] of Object.entries(r.hydraulic.readings)) {
         this.pumpWork += reading.shaftPower * h;
         this.hydraulicWork += reading.hydraulicPower * h;
@@ -742,7 +827,7 @@ export class Multiphysics {
       // Device storage must use the same start-temperature coefficients as its electrical stamp.
       const deviceTemperatures = s.project.thermalSpaces?.length && s.devices.active ? { ...s.temperatures } : s.temperatures;
       const radiatorConductance = Object.fromEntries(s.project.components.filter(c => c.kind === "radiator").map(c => [c.id, radiatorUA(c, r.electrical)]));
-      const transported = s.project.thermalSpaces?.length ? advanceSpaceThermal(s, r.hydraulic, r.electrical, h, Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, (e - (heatBefore[id] ?? 0)) / h])), radiatorConductance, directHeat) : transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, radiatorConductance, this.boilers, Object.fromEntries(s.project.components.filter(c => c.kind === "electricBoiler").map(c => [c.id, r.electrical.readings[c.id]?.heatingPower ?? 0])));
+      const transported = s.project.thermalSpaces?.length ? advanceSpaceThermal(s, r.hydraulic, r.electrical, h, Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, (e - (heatBefore[id] ?? 0)) / h])), radiatorConductance, directHeat) : transport(s.project, this.tanks, r.hydraulic, h, this.pipeCells, radiatorConductance, this.elementStates(), this.elementPower(s, r.electrical));
       for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) {
         const b = this.boilers[c.id], reading = r.electrical.readings[c.id];
         ambient += (reading?.auxiliaryPower ?? 0) * h;
@@ -876,6 +961,6 @@ export class Multiphysics {
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.panelRate = Math.max(0, ...panelBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
-    return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain, boilerElementGain: s.project.components.filter(c => c.kind === 'electricBoiler').reduce((sum, c) => sum + prop(c, 'heatCapacity') * (this.boilers[c.id].elementTemperature - elementBefore[c.id]), 0) };
+    return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain, boilerElementGain: s.project.components.filter(c => elementKinds.has(c.kind)).reduce((sum, c) => sum + prop(c, 'heatCapacity') * (this.elementStates()[c.id].elementTemperature - elementBefore[c.id]), 0), heatPumpGain };
   }
 }

@@ -1,6 +1,7 @@
 import { type SpaceReading } from "./thermal-spaces";
 import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
 import { resetBoiler } from './boiler';
+import { resetHeatPump } from './heat-pump';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
@@ -110,6 +111,8 @@ export interface Sample {
   energy: number;
   values: Record<string, number | null>;
   boilerTemperatures?: Record<string, { supply: number; element: number; target: number }>;
+  /** Heat pumps: flow and return (°C), effective target (°C), heat output and electrical input (W), frost (kg), mode. */
+  heatPumps?: Record<string, { flow: number; ret: number; target: number; heat: number; electrical: number; backup: number; frost: number; mode: string }>;
   /** Panel radiators: inlet (null without flow), outlet cell, mean water and air temperature (°C). */
   panelTemperatures?: Record<string, { supply: number | null; ret: number; mean: number; air: number }>;
   kinetic: number;
@@ -445,6 +448,8 @@ export class Simulation {
       if (c.kind === "thermostaticValve") limit = Math.min(limit, 5, prop(c, "sensorTimeConstant") / 20);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
       if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
+      // Heat pumps: quasi-steady cycle per substep (≤ 0.5 s, split at controller deadlines inside the coupled step).
+      if (c.kind === "heatPump") limit = Math.min(limit, 0.5);
       // Panel radiators: water and steel cells change by at most the thermal tolerance per step (as lumped masses).
       if (c.kind === "panelRadiator" && this.multiphysics.panelRate > 0) limit = Math.min(limit, tolerance / this.multiphysics.panelRate);
       if (c.kind === "circulator") {
@@ -470,6 +475,7 @@ export class Simulation {
       Object.values(this.electrical.readings).map((r) => r.regulation ?? ""),
       Object.values(this.multiphysics.circulators).map((c) => c.lockedOut),
       Object.values(this.multiphysics.boilers).map(b => [b.stages, b.fault, b.demand]),
+      Object.values(this.multiphysics.heatPumps).map(h => [h.mode, h.backupStages, h.fault, h.backupFault]),
     ]);
   }
   /** Advance a fixed simulated duration with the adaptive integrator (blocking). */
@@ -479,7 +485,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -616,6 +622,11 @@ export class Simulation {
       if (!error) this.solve(true, 0);
       return error;
     }
+    if (kind === 'heatPump') {
+      const error = resetHeatPump(this, component!, this.multiphysics.heatPumps[id]);
+      if (!error) this.solve(true, 0);
+      return error;
+    }
     if (kind === "breaker" || kind === "motorProtector") {
       const error = this.resetBreaker(id);
       if (!error) this.solve(true, 0);
@@ -680,7 +691,7 @@ export class Simulation {
         coupled = this.multiphysics.advance(this, dt);
         this.electrical = coupled.electrical;
         this.ambientEnergy += coupled.ambient;
-        this.storedEnergy += coupled.thermalGain;
+        this.storedEnergy += coupled.thermalGain + coupled.heatPumpGain;
         this.waterStored += coupled.thermalGain - coupled.boilerElementGain;
         this.heaterStored += coupled.boilerElementGain;
       } catch (e) {
@@ -794,7 +805,7 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "pressureReducingValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
         if (r && c.kind === "thermostaticValve" && Math.abs(r.differentialPressure) > prop(c, "maxDifferentialPressure")) this.violation(`${c.name}: thermostatic regulating differential pressure exceeded.`);
@@ -869,7 +880,12 @@ export class Simulation {
       // Circulator electronics accept their nominal voltage ±10 % (datasheet supply tolerance); the input power limit is regulated, not a rating.
       if (c.kind === "circulator" && r && r.voltageValid !== false && Math.abs(r.voltage) > 1.1 * prop(c, "ratedVoltage") + 1e-9)
         this.violation(`${c.name}: supply voltage above its nominal ${prop(c, "ratedVoltage")} V + 10 % tolerance.`);
-      if (c.kind === 'electricBoiler') {
+      if (c.kind === 'heatPump' && r) {
+        // Bosch: 13.1 A maximum current (the inverter limits its own input); 230 V supply, ±10 % assumed tolerance.
+        if (Math.abs(r.current) > prop(c, 'maxCurrent') * 1.001) this.violation(`${c.name}: outdoor-unit current above its ${prop(c, 'maxCurrent')} A maximum.`);
+        if (r.voltageValid !== false && Math.abs(r.voltage) > 1.1 * prop(c, 'ratedVoltage')) this.violation(`${c.name}: supply voltage above ${prop(c, 'ratedVoltage')} V + 10 %.`);
+      }
+      if (c.kind === 'electricBoiler' || c.kind === 'heatPump') {
         const water = this.fluidTemperatureMeasurement(c.id) ?? 20;
         if (water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
         if (water >= 100 || water < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
@@ -893,7 +909,7 @@ export class Simulation {
         changed = true;
       }
       if (c.kind === "battery" && temp > prop(c, "maxTemperature") && !this.failed[c.id]) { this.fail(c.id, `${c.name}: battery overtemperature; protection disconnected the pack.`); changed = true; }
-      if (r && !isSource(c)) {
+      if (r && !isSource(c) && c.kind !== 'heatPump') {
         // Ratings: protective devices act on them; other elements report operation
         // outside rating and fail only through their modelled temperature.
         // A lamp's rating is its filament temperature at rated power: the cold-filament switch-on surge is not an overload.
@@ -1012,6 +1028,10 @@ export class Simulation {
         (this.project.probes ?? []).map((p) => [p.id, readProbe(p, this)]),
       ),
       boilerTemperatures: Object.fromEntries(Object.entries(this.multiphysics.boilers).map(([id, b]) => [id, { supply: (this.multiphysics.pipeCells[id]?.[0] ?? 293.15) - 273.15, element: b.elementTemperature - 273.15, target: b.setpoint }])),
+      heatPumps: Object.fromEntries(Object.entries(this.multiphysics.heatPumps).map(([id, h]) => {
+        const view = this.multiphysics.heatPumpView[id], r = this.multiphysics.hydraulic.readings[id], flow = (this.multiphysics.pipeCells[id]?.[0] ?? 293.15) - 273.15;
+        return [id, { flow, ret: r?.returnTemperature !== undefined && Math.abs(r.flow) > 1e-12 ? r.returnTemperature - 273.15 : flow, target: h.target, heat: view?.heatOutput ?? 0, electrical: view?.electrical ?? 0, backup: view?.backup ?? 0, frost: h.frost, mode: h.mode }];
+      })),
       panelTemperatures: Object.fromEntries(this.project.components.filter(c => c.kind === "panelRadiator" && this.multiphysics.pipeCells[c.id]).map(c => {
         const cells = this.multiphysics.pipeCells[c.id], r = this.multiphysics.hydraulic.readings[c.id], flowing = Math.abs(r?.flow ?? 0) >= 1e-12;
         return [c.id, { supply: flowing && r?.supplyTemperature !== undefined ? r.supplyTemperature - 273.15 : null, ret: (r && (r.flow ?? 0) < 0 ? cells[0] : cells[cells.length - 1]) - 273.15, mean: cells.reduce((a, t) => a + t, 0) / cells.length - 273.15, air: effectiveAmbient(this.project, c) }];

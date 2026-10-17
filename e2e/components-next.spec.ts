@@ -36,6 +36,7 @@ for (const [kind, title, label] of [
   ['batteryProtection', 'Off-grid solar system', 'conducting'],
   ['electricBoiler', 'Bosch boiler and ALPHA2 heating loop', 'Manufacturer specifications'],
   ['panelRadiator', 'Bosch boiler, ALPHA2 and Kermi radiator', 'Manufacturer data (Kermi Technik)'],
+  ['heatPump', 'Heat pump and underfloor heating', 'Bosch Compress 6800i AW 7 OR-S'],
   ['battery', 'Finite battery discharge', 'state of charge'],
   ['capacitor', 'Charging a capacitor', 'stored field energy'],
   ['inductor', 'Switching an inductor', 'stored field energy'],
@@ -55,6 +56,18 @@ for (const [kind, title, label] of [
   expect(state.error).toBeNull(); expect(state.time).toBeCloseTo(1, 8);
   const readings = Object.values(state.readings) as any[];
   if (kind === 'electricBoiler') { await expect(page.getByTestId('boiler-status')).toContainText('Heating'); await expect(page.getByRole('img', { name: 'Boiler water, element and target temperature history' })).toBeVisible(); expect(readings.some(r => r.heatingPower > 2999)).toBe(true); }
+  // Bosch: 2-minute power-on check; meanwhile 15 W controls and the 32 W crankcase heater at 2 °C outdoors (ErP).
+  if (kind === 'heatPump') {
+    await expect(page.getByTestId('heat-pump-status')).toContainText('Power-on check');
+    await expect(page.getByRole('img', { name: /Heat pump flow, return and target temperature/ })).toBeVisible();
+    await expect(page.getByTestId('heat-pump-section')).toContainText('Model basis');
+    // Collapsed panels mount (and compute) nothing; opening mounts the cached tables, closing unmounts them again.
+    await expect(page.getByTestId('heat-pump-reference')).toHaveCount(0); await expect(page.getByTestId('heat-pump-characteristic')).toHaveCount(0);
+    await page.getByTestId('heat-pump-basis-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-reference')).toContainText('A7/W35 maximum');
+    await page.getByTestId('heat-pump-characteristic-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-characteristic')).toContainText('A-7');
+    await page.getByTestId('heat-pump-basis-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-reference')).toHaveCount(0);
+    expect(readings.some(r => Math.abs(r.compressorPower - 47) < 1e-6)).toBe(true);
+  }
   if (kind === 'panelRadiator') {
     await expect(page.getByTestId('panel-status')).toContainText('Heating the room');
     await expect(page.getByRole('img', { name: /EN 442 characteristic/ })).toBeVisible();

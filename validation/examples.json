@@ -1368,6 +1368,298 @@
     ]
   },
   {
+    "mode": "heatPumpHouse",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 4818.94076432006,
+    "energyResidual": -0.0000022718855001713223,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Flow temperature",
+        "value": 24.585234336616963
+      },
+      {
+        "name": "Return temperature",
+        "value": 24.460689977404968
+      },
+      {
+        "name": "Flow target",
+        "value": 31
+      },
+      {
+        "name": "Heat output",
+        "value": 0
+      },
+      {
+        "name": "Electrical input",
+        "value": 47
+      },
+      {
+        "name": "COP",
+        "value": null
+      },
+      {
+        "name": "Compressor speed",
+        "value": 0
+      },
+      {
+        "name": "Frost on coil",
+        "value": 0
+      },
+      {
+        "name": "Defrost active",
+        "value": 0
+      },
+      {
+        "name": "Backup heater",
+        "value": 0
+      },
+      {
+        "name": "Heat from outdoor air",
+        "value": 0
+      },
+      {
+        "name": "Seasonal performance factor",
+        "value": 0
+      },
+      {
+        "name": "House air",
+        "value": 19.99441206809308
+      },
+      {
+        "name": "House heat loss",
+        "value": 2501.2232774649383
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -0.0000022718855001713223
+      }
+    ]
+  },
+  {
+    "mode": "heatPumpHouse",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 4818.94076432006,
+    "energyResidual": -0.0000022718855001713223,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Flow temperature",
+        "value": 24.585234336616963
+      },
+      {
+        "name": "Return temperature",
+        "value": 24.460689977404968
+      },
+      {
+        "name": "Flow target",
+        "value": 31
+      },
+      {
+        "name": "Heat output",
+        "value": 0
+      },
+      {
+        "name": "Electrical input",
+        "value": 47
+      },
+      {
+        "name": "COP",
+        "value": null
+      },
+      {
+        "name": "Compressor speed",
+        "value": 0
+      },
+      {
+        "name": "Frost on coil",
+        "value": 0
+      },
+      {
+        "name": "Defrost active",
+        "value": 0
+      },
+      {
+        "name": "Backup heater",
+        "value": 0
+      },
+      {
+        "name": "Heat from outdoor air",
+        "value": 0
+      },
+      {
+        "name": "Seasonal performance factor",
+        "value": 0
+      },
+      {
+        "name": "House air",
+        "value": 19.99441206809308
+      },
+      {
+        "name": "House heat loss",
+        "value": 2501.2232774649383
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -0.0000022718855001713223
+      }
+    ]
+  },
+  {
+    "mode": "heatPumpCold",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 4818.9407806676545,
+    "energyResidual": -7.924759093391742e-8,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Flow temperature",
+        "value": 24.476767479021646
+      },
+      {
+        "name": "Return temperature",
+        "value": 24.342103766356672
+      },
+      {
+        "name": "Flow target",
+        "value": 35
+      },
+      {
+        "name": "Heat output",
+        "value": 0
+      },
+      {
+        "name": "Electrical input",
+        "value": 47
+      },
+      {
+        "name": "COP",
+        "value": null
+      },
+      {
+        "name": "Compressor speed",
+        "value": 0
+      },
+      {
+        "name": "Frost on coil",
+        "value": 0
+      },
+      {
+        "name": "Defrost active",
+        "value": 0
+      },
+      {
+        "name": "Backup heater",
+        "value": 0
+      },
+      {
+        "name": "Heat from outdoor air",
+        "value": 0
+      },
+      {
+        "name": "Seasonal performance factor",
+        "value": 0
+      },
+      {
+        "name": "House air",
+        "value": 18.981311782786744
+      },
+      {
+        "name": "House heat loss",
+        "value": 4723.402337807358
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -7.924759093391742e-8
+      }
+    ]
+  },
+  {
+    "mode": "heatPumpCold",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 4818.9407806676545,
+    "energyResidual": -7.924759093391742e-8,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Flow temperature",
+        "value": 24.476767479021646
+      },
+      {
+        "name": "Return temperature",
+        "value": 24.342103766356672
+      },
+      {
+        "name": "Flow target",
+        "value": 35
+      },
+      {
+        "name": "Heat output",
+        "value": 0
+      },
+      {
+        "name": "Electrical input",
+        "value": 47
+      },
+      {
+        "name": "COP",
+        "value": null
+      },
+      {
+        "name": "Compressor speed",
+        "value": 0
+      },
+      {
+        "name": "Frost on coil",
+        "value": 0
+      },
+      {
+        "name": "Defrost active",
+        "value": 0
+      },
+      {
+        "name": "Backup heater",
+        "value": 0
+      },
+      {
+        "name": "Heat from outdoor air",
+        "value": 0
+      },
+      {
+        "name": "Seasonal performance factor",
+        "value": 0
+      },
+      {
+        "name": "House air",
+        "value": 18.981311782786744
+      },
+      {
+        "name": "House heat loss",
+        "value": 4723.402337807358
+      },
+      {
+        "name": "Energy balance residual",
+        "value": -7.924759093391742e-8
+      }
+    ]
+  },
+  {
     "mode": "boiler",
     "source": "generated",
     "simulatedSeconds": 60,
