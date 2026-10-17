@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { T } from "../theme/tokens";
 import { definitions, prop, textProp, type Component } from "../simulation/model";
 import { simulation } from "../editor/store";
-import { dimensions, portLocal, storageY } from "../editor/geometry";
+import { dimensions, portLocal, storageY, STORAGE_BASE, STORAGE_TOP } from "../editor/geometry";
 import { coilLayers, layerAt, storageLayers } from "../simulation/storage-tank";
 import { effectiveAmbient } from "../simulation/environment";
 import { trvSetpoint, trvTemperatureLabel } from "../simulation/thermostatic-valve";
@@ -515,17 +515,17 @@ function face(c: Component): Face {
     }
     case "storageTank": {
       const n = storageLayers(c), cells = (s.multiphysics.pipeCells[c.id] ?? Array(n).fill(prop(c, "initialTemperature") + 273.15)).map((t) => t - 273.15);
-      const lo = Math.min(20, ...cells), band = 124 / n, coil = coilLayers(c);
+      const lo = Math.min(20, ...cells), column = STORAGE_BASE - STORAGE_TOP, band = column / n, coil = coilLayers(c), y0 = STORAGE_TOP - 4, y1 = STORAGE_BASE + 4;
       const port = (id: string, left: boolean) => { const y = storageY(prop(c, `${id}Height`)); return <path key={id} d={left ? `M0 ${y}H58` : `M116 ${y}H174`} stroke={T.hydraulic} strokeWidth="3" />; };
       const top = cells[n - 1] ?? 20, bottom = cells[layerAt(c, prop(c, "sensorBottomHeight"))] ?? 20;
       return {
         symbol: <g>
           {port("p1", true)}{port("p2", true)}{port("p3", false)}{port("p4", false)}
-          <rect x="58" y="22" width="58" height="132" rx="12" fill={T.n4} />
-          {cells.map((t, k) => <rect key={k} x="58" y={150 - (k + 1) * band} width="58" height={band + 0.3} fill={T.thermal} fillOpacity={Math.max(0.04, Math.min(0.85, (t - lo) / 55))} />)}
-          {coil.length > 0 && <path d={`M70 ${150 - (coil[0] + 1) * band + 3}${coil.map((k, i) => ` L${i % 2 ? 70 : 104} ${150 - k * band - 2}`).join("")}`} fill="none" stroke={T.hydraulicText} strokeWidth="1.5" />}
-          {coil.length > 0 && <path d={`M${174 * 0.3} 220V200H64M${174 * 0.7} 220V200H110`} fill="none" stroke={T.hydraulic} strokeWidth="2" opacity="0.6" />}
-          <rect x="58" y="22" width="58" height="132" rx="12" fill="none" stroke={INK} strokeWidth={SW} />
+          <clipPath id={`st-${c.id}`}><rect x="58" y={y0} width="58" height={y1 - y0} rx="10" /></clipPath>
+          <rect x="58" y={y0} width="58" height={y1 - y0} rx="10" fill={T.n4} />
+          <g clipPath={`url(#st-${c.id})`}>{cells.map((t, k) => <rect key={k} x="58" y={STORAGE_BASE - (k + 1) * band - (k === n - 1 ? 4 : 0)} width="58" height={band + 0.3 + (k === n - 1 || k === 0 ? 4 : 0)} fill={T.thermal} fillOpacity={Math.max(0.04, Math.min(0.85, (t - lo) / 55))} />)}</g>
+          {coil.length > 0 && <path d={`M68 ${STORAGE_BASE - (coil[0] + 1) * band + 2}${coil.map((k, i) => ` L${i % 2 ? 68 : 106} ${STORAGE_BASE - k * band - 1}`).join("")}`} fill="none" stroke={T.hydraulicText} strokeWidth="1.5" />}
+          <rect x="58" y={y0} width="58" height={y1 - y0} rx="10" fill="none" stroke={INK} strokeWidth={SW} />
         </g>,
         hero: `${top.toFixed(1)} / ${bottom.toFixed(1)} °C`,
         detail: started ? (coil.length ? `Coil ${watts(hr?.duty ?? 0)}` : lpm(hr?.flow ?? 0)) : `${prop(c, "storageVolume").toFixed(0)} L · ${n} layers`,
@@ -535,15 +535,18 @@ function face(c: Component): Face {
       };
     }
     case "expansionVessel": {
-      const v = s.multiphysics.vessels[c.id], share = v ? Math.max(0, Math.min(1, v.water / (prop(c, "nominalVolume") / 1000))) : 0, membrane = 104 - 52 * share;
+      const v = s.multiphysics.vessels[c.id], share = v ? Math.max(0, Math.min(1, v.water / (prop(c, "nominalVolume") / 1000))) : 0;
+      // Horizontal capsule: water enters from the left, the membrane moves right as the nitrogen (right) is compressed.
+      const membrane = 56 + 70 * share;
       return {
         symbol: <g>
-          <path d="M87 104V132" stroke={T.hydraulic} strokeWidth="3" />
-          <rect x="60" y="40" width="54" height="64" rx="24" fill={T.n4} />
-          <path d={`M61 ${membrane}H113V90Q113 104 99 104H75Q61 104 61 90Z`} fill={T.hydraulicDeep} opacity={share > 0 ? 1 : 0} />
-          <path d={`M61 ${membrane}H113`} stroke={T.hydraulicText} strokeWidth="1.5" />
-          <path d="M87 40V32M81 32h12" stroke={INK} strokeWidth="1.5" />
-          <rect x="60" y="40" width="54" height="64" rx="24" fill="none" stroke={s.faults[c.id] === "gasLoss" ? T.faultText : INK} strokeWidth={SW} />
+          <clipPath id={`ev-${c.id}`}><rect x="54" y="42" width="74" height="44" rx="22" /></clipPath>
+          <rect x="54" y="42" width="74" height="44" rx="22" fill={T.n4} />
+          <rect x="54" y="42" width={membrane - 54} height="44" fill={T.hydraulicDeep} clipPath={`url(#ev-${c.id})`} opacity={share > 0 ? 1 : 0} />
+          <path d={`M${membrane} 43V85`} stroke={T.hydraulicText} strokeWidth="1.5" />
+          <path d="M0 64H54" stroke={T.hydraulic} strokeWidth="3" />
+          <path d="M128 64H138M138 59v10" stroke={INK} strokeWidth="1.5" />
+          <rect x="54" y="42" width="74" height="44" rx="22" fill="none" stroke={s.faults[c.id] === "gasLoss" ? T.faultText : INK} strokeWidth={SW} />
         </g>,
         hero: `${((v?.pressure ?? prop(c, "fillPressure")) / 1e5).toFixed(2)} bar`,
         detail: started && v ? `${(Math.max(0, v.water) * 1000).toFixed(2)} L water` : `${prop(c, "nominalVolume")} L · ${(prop(c, "precharge") / 1e5).toFixed(2)} bar gas`,
@@ -556,7 +559,7 @@ function face(c: Component): Face {
         symbol: <g>
           <Leads x0={69} x1={105} color={T.hydraulic} width={3} />
           <ValveBody opening={lift} />
-          <path d="M87 54V48M81 48h12M83 46l8-3M83 42l8-3M83 38l8-3M83 34l8-3" stroke={INK} strokeWidth="1.25" fill="none" />
+          <path d="M87 54V49M81 49h12M83 47l8-3M83 43l8-3M83 39l8-3" stroke={INK} strokeWidth="1.25" fill="none" />
           <path d="M105 66H174" stroke={lift > 0 ? T.hydraulic : FAINT} strokeWidth="3" strokeDasharray={lift > 0 ? undefined : "4 4"} />
         </g>,
         hero: lift > 0 ? `Open ${lift.toFixed(0)} %` : `${(prop(c, "setPressure") / 1e5).toFixed(1)} bar set`,

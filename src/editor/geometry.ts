@@ -10,8 +10,9 @@ export function dimensions(c: Component) {
     h: c.kind === "tank" ? 170 : c.kind === "switch" ? 100 : c.kind === "storageTank" ? 220 : 132,
   };
 }
-/** Storage-tank face: the water column spans y = 26 (top) … 150 (base); terminals stay clear of the frame corners. */
-export const storageY = (percent: number) => Math.max(30, Math.min(146, 150 - 124 * percent / 100));
+/** Storage-tank face: the water column spans y = 44 (top) … 160 (base), below the 31 px name band and above the readouts. */
+export const STORAGE_TOP = 44, STORAGE_BASE = 160;
+export const storageY = (percent: number) => Math.max(STORAGE_TOP + 4, Math.min(STORAGE_BASE - 4, STORAGE_BASE - (STORAGE_BASE - STORAGE_TOP) * percent / 100));
 export function portLocal(c: Component, port: string): Point {
   const { w, h } = dimensions(c);
   const p = definitions[c.kind].ports.find((p) => p.id === port);
@@ -23,6 +24,8 @@ export function portLocal(c: Component, port: string): Point {
   if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
     return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
   if (p?.domain === "hydraulic" && port === "overflow") return { x: w + 12, y: 28 };
+  // Expansion vessel: water connection on the symbol axis, clear of the readout rows.
+  if (p?.domain === "hydraulic" && c.kind === "expansionVessel") return { x: -12, y: 64 };
   // Storage tank: ports 1–2 on the left, 3–4 on the right, each at its height in the water column; the coil below.
   if (p?.domain === "hydraulic" && c.kind === "storageTank") {
     if (port === "coilIn" || port === "coilOut") return { x: port === "coilIn" ? w * 0.3 : w * 0.7, y: h + 12 };
