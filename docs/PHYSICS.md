@@ -27,6 +27,7 @@ Most catalog coefficients are illustrative engineering values. The electric boil
 - Some editor fields keep engineering units for compatibility: tank volumes in litres, flows displayed in L/min, pressures in bar, speeds in RPM. `units.ts` holds the conversions, and controls exchange SI values (Pa, m³/s).
 - Schematic coordinates are pixels and carry no physics. Spatial coordinates are metres with y upward; angles are radians.
 - Sources report delivered power as negative (source convention); passive elements report absorbed power as positive.
+  The canvas readout under a module flips this for sources, batteries and solar panels so that delivered power reads positive; probes and charts keep the solver sign.
 - AC quantities are RMS phasors unless stated otherwise.
 
 ## Time integration

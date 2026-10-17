@@ -53,6 +53,8 @@ function wireFlow(w: Connection) {
   return portFlow(w.from.component, w.from.port) ?? -(portFlow(w.to.component, w.to.port) ?? 0);
 }
 /** Physical domain that colours a component's identifier (control and sensors stay neutral). */
+/** Readout sign: sources, batteries and solar panels show delivered power as positive (solver keeps the load convention). */
+const delivered = (c: Component) => (isSource(c) || c.kind === "solarPanel" ? -1 : 1);
 const domainOf = (c: Component) => ({ Electrical: "electrical", Thermal: "thermal", Hydraulic: "hydraulic", Mechanical: "mechanical" } as Record<string, string>)[definitions[c.kind].category] ?? "control";
 /** Readable number of significant digits for live chips. */
 const chipNumber = (v: number) => { const a = Math.abs(v); return a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2); };
@@ -739,9 +741,9 @@ export default function Workspace() {
                         : c.kind === "inductionMotor"
                           ? `${(simulation.multiphysics.motors[c.id]?.current ?? 0).toFixed(2)} A line · slip ${((simulation.electrical.readings[c.id]?.machine?.slip ?? 1) * 100).toFixed(1)} % · ${(simulation.multiphysics.motors[c.id]?.shaftPower ?? 0).toFixed(0)} W shaft`
                         : simulation.electrical.readings[c.id]?.ac
-                          ? `${(simulation.electrical.readings[c.id]?.voltage ?? 0).toFixed(1)} V~ · ${((isSource(c) ? -1 : 1) * (simulation.electrical.readings[c.id]?.power ?? 0)).toFixed(0)} W · ${((isSource(c) ? -1 : 1) * (simulation.electrical.readings[c.id]?.reactivePower ?? 0)).toFixed(0)} var`
+                          ? `${(simulation.electrical.readings[c.id]?.voltage ?? 0).toFixed(1)} V~ · ${(delivered(c) * (simulation.electrical.readings[c.id]?.power ?? 0)).toFixed(0)} W · ${(delivered(c) * (simulation.electrical.readings[c.id]?.reactivePower ?? 0)).toFixed(0)} var`
                       : c.kind === "source"
-                        ? `${Math.abs(r?.current ?? 0).toFixed(2)} A  ·  ${Math.abs(r?.power ?? 0).toFixed(1)} W`
+                        ? `${Math.abs(r?.current ?? 0).toFixed(2)} A  ·  ${(-(r?.power ?? 0)).toFixed(1)} W`
                         : c.kind === "switch"
                           ? "Double-click to toggle"
                           : simulation.automation.status[c.id] &&
@@ -749,7 +751,7 @@ export default function Workspace() {
                                 (p) => p.domain === "control",
                               )
                             ? simulation.automation.status[c.id].toUpperCase()
-                            : `${(r?.voltage ?? 0).toFixed(2)} V  ·  ${(r?.power ?? 0).toFixed(1)} W`}
+                            : `${(r?.voltage ?? 0).toFixed(2)} V  ·  ${(delivered(c) * (r?.power ?? 0)).toFixed(1)} W`}
                   </text>
                 )}
               </g>
