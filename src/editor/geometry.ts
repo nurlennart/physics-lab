@@ -20,10 +20,14 @@ export function portLocal(c: Component, port: string): Point {
   if (c.kind === 'electricBoiler' && p?.domain === 'control') return { x: 30 + ['enable', 'setpoint', 'reset'].indexOf(port) * 56, y: h + 12 };
   // Heat pump: outdoor-unit and backup-heater supplies on top, controls below, water through the sides.
   if (c.kind === 'heatPump' && p?.domain === 'electrical') return { x: [24, 58, 116, 150][['L', 'N', 'BL', 'BN'].indexOf(port)], y: -12 };
-  if (c.kind === 'heatPump' && p?.domain === 'control') return { x: 26 + ['enable', 'setpoint', 'reset', 'defrost'].indexOf(port) * 41, y: h + 12 };
+  // Heat pump: control inputs below (the cylinder sensor TW1 last), the hot-water valve command VW1 on top between the supplies.
+  if (c.kind === 'heatPump' && port === 'dhw') return { x: 87, y: -12 };
+  if (c.kind === 'heatPump' && p?.domain === 'control') return { x: 20 + ['enable', 'setpoint', 'reset', 'defrost', 'dhwSensor'].indexOf(port) * 33.5, y: h + 12 };
   if (p?.domain === "hydraulic" && c.kind === "heatExchanger")
     return { x: port === "hotIn" || port === "coldOut" ? -12 : w + 12, y: port.startsWith("hot") ? h * 0.3 : h * 0.75 };
   if (p?.domain === "hydraulic" && port === "overflow") return { x: w + 12, y: 28 };
+  // Diverting valve: AB from the left, A to the right on the axis, B down at the right; its command input below at the left.
+  if (p?.domain === "hydraulic" && c.kind === "divertingValve") return port === "inlet" ? { x: -12, y: h / 2 } : port === "outletA" ? { x: w + 12, y: h / 2 } : { x: w * 0.7, y: h + 12 };
   // Expansion vessel: water connection on the symbol axis, clear of the readout rows.
   if (p?.domain === "hydraulic" && c.kind === "expansionVessel") return { x: -12, y: 64 };
   // Storage tank: ports 1–2 on the left, 3–4 on the right, each at its height in the water column; the coil below.
@@ -35,7 +39,7 @@ export function portLocal(c: Component, port: string): Point {
   if (p?.domain === "hydraulic") return { x: port === "inlet" ? -12 : port === "outlet" ? w + 12 : w / 2, y: port === "fluid" ? h + 12 : h / 2 };
   if (p?.domain === "mechanical") return { x: w / 2, y: -12 };
   if (p?.domain === "control") {
-    if (["relay", "safety", "cooler", "motor", "circulator", "actuatedValve", "breaker", "motorProtector", "starDeltaStarter", "softStarter", "vfd"].includes(c.kind))
+    if (["relay", "safety", "cooler", "motor", "circulator", "actuatedValve", "divertingValve", "breaker", "motorProtector", "starDeltaStarter", "softStarter", "vfd"].includes(c.kind))
       return { x: ["in", "enable", "position", "run", "start"].includes(port) ? w * 0.3 : w * 0.7, y: h + 12 };
     if (p.direction === "out") return { x: w + 12, y: h / 2 };
     const inputs = definitions[c.kind].ports.filter(

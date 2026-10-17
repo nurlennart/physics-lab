@@ -63,7 +63,8 @@ async function scenario(label, mode, hours, environment, check, floorUA) {
   const st = s.multiphysics.heatPumps[hp.id];
   const row = { scenario: label, outdoor: p.environment.ambient, hours, wallSeconds: (performance.now() - t0) / 1000, energyResidual: s.energyResidual, supplied: s.suppliedEnergy, heat: st.heat - st.defrostHeat, compressorElectricity: st.electricity, backupHeat: st.backupHeat, spf: (st.heat - st.defrostHeat) / st.electricity, defrosts: st.defrosts, starts: st.startCount, maxStartsPerHour, minRun: Number.isFinite(minRun) ? minRun : null, room: s.spaceTemperatures[room], violations: s.violations.length };
   report.scenarios.push(row);
-  if (Math.abs(s.energyResidual) > 1e-3 || s.violations.length || maxStartsPerHour > 6) throw Error(`${label}: ${JSON.stringify(row)}`);
+  // Round-off of the absolute (c_p·T in K) enthalpies accumulates over many steps: 1e-10 of the supplied energy, at least 1 mJ.
+  if (Math.abs(s.energyResidual) > Math.max(1e-3, 1e-10 * s.suppliedEnergy) || s.violations.length || maxStartsPerHour > 6) throw Error(`${label}: ${JSON.stringify(row)}`);
   check?.(row);
 }
 await scenario('House, 2 °C / 85 % RH (defrost)', 'heatPumpHouse', 6, undefined, r => { if (r.defrosts < 2) throw Error('expected defrosts'); });

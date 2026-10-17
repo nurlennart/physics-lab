@@ -129,9 +129,9 @@ Residuals stay at 10⁻⁷–10⁻⁴ J over hours (see the report).
 ## Starters
 
 - **Heat pump with a buffer tank** (`heatPumpBuffer`): the heat-pump house with a BH 120-5 buffer in series in the return. The defrost draws on 123 l of stored water: the lowest flow temperature during defrost is about 2 K higher than without buffer.
-- **Heat pump charging a hot-water cylinder** (`heatPumpHotWater`): a fixed 55 °C flow target charging the WH 290 LP1 through its coil at A7, as in hot-water mode (with its own circuit instead of Bosch's 3-way valve). COP 3.03 at 35 °C flow, 2.65 at 50 °C, both near full speed (Bosch EN 14511 at maximum output: 3.07 at A7/W35, 2.64 at A7/W55). The water below the coil stays cold; above it the store heats nearly uniformly by inversion mixing.
+- **Hot water in the heat-pump examples:** every heat-pump example charges a WH 290 LP1 through its coil via the 3-way valve VW1 (see [HEAT-PUMP.md § Hot-water mode](HEAT-PUMP.md#hot-water-mode-and-the-3-way-valve-vw1)). The charge runs at a visibly lower COP than heating (performance factor about 2.6 against about 4.0 at 2 °C; Bosch EN 14511 at maximum output: 3.07 at A7/W35, 2.64 at A7/W55). The water below the coil stays cold; above it the store heats nearly uniformly by inversion mixing.
 - **Sealed boiler circuit** (`sealedBoiler`): the Bosch boiler charges the buffer to 75 °C; the circuit expands by about 3 l, the Reflex N 25 holds it at about 2.2 bar. A 12 l vessel, a flat vessel or a gas loss opens the 3 bar valve.
-- The heat-pump starters now include the indoor unit's 17 l vessel and 3 bar valve; the boiler and Kermi starters a 12 l vessel and a 3 bar valve.
+- The heat-pump starters include the indoor unit's 17 l vessel and 3 bar valve; the boiler and Kermi starters a 12 l vessel and a 3 bar valve.
 
 ## Validation
 

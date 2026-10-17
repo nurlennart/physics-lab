@@ -355,6 +355,7 @@ For a purely quadratic restriction (K₁ = 0), the inverse slope is bounded near
 
 - **Check valve:** forward cracking pressure, no reverse flow.
 - **Actuated valve:** moves at 100/responseTime percentage points per second toward a numeric percent command; an invalid command selects the fail position. Actuator power is not modelled.
+- **3-way diverting valve:** two branches from the common port AB with complementary openings, φ_A = 1 − x and φ_B = x (Kvs per path); the plug travels at 100 %/running time toward a Boolean command (B when true) and returns to A on a lost signal. It is the heat pump's hot-water valve VW1 ([HEAT-PUMP.md](HEAT-PUMP.md#hot-water-mode-and-the-3-way-valve-vw1)).
 - **Pressure-reducing valve:** forward-only valve with integral pilot action on its outlet gauge pressure and a stroke-rate limit.
 - Stuck-open and stuck-closed faults impose the corresponding restriction.
 

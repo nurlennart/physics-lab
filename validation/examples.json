@@ -1398,41 +1398,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 571669.2631994786,
-    "energyResidual": -0.0000069148094044013675,
+    "suppliedEnergy": 842482.0418241723,
+    "energyResidual": -0.000016381952717026138,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 28.868197063688967
+        "value": 43.52539933773477
       },
       {
         "name": "Return temperature",
-        "value": 25.92324014682066
+        "value": 39.6462883626167
       },
       {
         "name": "Flow target",
-        "value": 31
+        "value": 46.64
       },
       {
         "name": "Heat output",
-        "value": 5122.466844287358
+        "value": 6633.610516569261
       },
       {
         "name": "Electrical input",
-        "value": 1226.962474367083
+        "value": 2354.7308044975894
       },
       {
         "name": "COP",
-        "value": 4.174917286634813
+        "value": 2.817141774294927
       },
       {
         "name": "Compressor speed",
-        "value": 79.57262881664538
+        "value": 88.3702980965171
       },
       {
         "name": "Frost on coil",
-        "value": 0.06879571735200996
+        "value": 0.0675678941443086
       },
       {
         "name": "Defrost active",
@@ -1444,27 +1444,47 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 3907.2778914784585
+        "value": 4237.485325453597
       },
       {
         "name": "Seasonal performance factor",
-        "value": 4.166883424525165
+        "value": 3.1180368836346117
       },
       {
         "name": "House air",
-        "value": 19.957353307976515
+        "value": 19.89266045373408
       },
       {
         "name": "House heat loss",
-        "value": 2496.0721098087356
+        "value": 2487.079803069037
       },
       {
         "name": "System pressure",
-        "value": 1.3068416699622372
+        "value": 1.304167387942368
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 1
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 39.64046192462973
+      },
+      {
+        "name": "Cylinder top",
+        "value": 39.64046192462973
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 5646.803717467267
+      },
+      {
+        "name": "Hot-water performance factor",
+        "value": 3.1180368836346117
       },
       {
         "name": "Energy balance residual",
-        "value": -0.0000069148094044013675
+        "value": -0.000016381952717026138
       }
     ]
   },
@@ -1475,41 +1495,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 571669.2631994786,
-    "energyResidual": -0.0000069148094044013675,
+    "suppliedEnergy": 842482.0418241723,
+    "energyResidual": -0.000016381952717026138,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 28.868197063688967
+        "value": 43.52539933773477
       },
       {
         "name": "Return temperature",
-        "value": 25.92324014682066
+        "value": 39.6462883626167
       },
       {
         "name": "Flow target",
-        "value": 31
+        "value": 46.64
       },
       {
         "name": "Heat output",
-        "value": 5122.466844287358
+        "value": 6633.610516569261
       },
       {
         "name": "Electrical input",
-        "value": 1226.962474367083
+        "value": 2354.7308044975894
       },
       {
         "name": "COP",
-        "value": 4.174917286634813
+        "value": 2.817141774294927
       },
       {
         "name": "Compressor speed",
-        "value": 79.57262881664538
+        "value": 88.3702980965171
       },
       {
         "name": "Frost on coil",
-        "value": 0.06879571735200996
+        "value": 0.0675678941443086
       },
       {
         "name": "Defrost active",
@@ -1521,27 +1541,47 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 3907.2778914784585
+        "value": 4237.485325453597
       },
       {
         "name": "Seasonal performance factor",
-        "value": 4.166883424525165
+        "value": 3.1180368836346117
       },
       {
         "name": "House air",
-        "value": 19.957353307976515
+        "value": 19.89266045373408
       },
       {
         "name": "House heat loss",
-        "value": 2496.0721098087356
+        "value": 2487.079803069037
       },
       {
         "name": "System pressure",
-        "value": 1.3068416699622372
+        "value": 1.304167387942368
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 1
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 39.64046192462973
+      },
+      {
+        "name": "Cylinder top",
+        "value": 39.64046192462973
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 5646.803717467267
+      },
+      {
+        "name": "Hot-water performance factor",
+        "value": 3.1180368836346117
       },
       {
         "name": "Energy balance residual",
-        "value": -0.0000069148094044013675
+        "value": -0.000016381952717026138
       }
     ]
   },
@@ -1552,17 +1592,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 816783.8698130199,
-    "energyResidual": 0.00000812869284305684,
+    "suppliedEnergy": 819792.6996805684,
+    "energyResidual": -0.000033711132076730266,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 27.421433869784835
+        "value": 27.532092755022745
       },
       {
         "name": "Return temperature",
-        "value": 24.59660975963135
+        "value": 24.537735536576122
       },
       {
         "name": "Flow target",
@@ -1570,15 +1610,15 @@
       },
       {
         "name": "Heat output",
-        "value": 4946.796119656022
+        "value": 4955.301365536851
       },
       {
         "name": "Electrical input",
-        "value": 2016.4272408958361
+        "value": 2024.9321898006904
       },
       {
         "name": "COP",
-        "value": 2.4532480117945212
+        "value": 2.447144349077976
       },
       {
         "name": "Compressor speed",
@@ -1586,7 +1626,7 @@
       },
       {
         "name": "Frost on coil",
-        "value": 0.029105367531161486
+        "value": 0.029105425881466432
       },
       {
         "name": "Defrost active",
@@ -1598,27 +1638,43 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 2939.3507378629834
+        "value": 2939.349216141808
       },
       {
         "name": "Seasonal performance factor",
-        "value": 2.5573777497522996
+        "value": 2.5515168389759277
       },
       {
         "name": "House air",
-        "value": 18.810075251182585
+        "value": 18.8119727504517
       },
       {
         "name": "House heat loss",
-        "value": 4699.600459914379
+        "value": 4699.864212312787
       },
       {
         "name": "System pressure",
-        "value": 1.3025412380604107
+        "value": 1.30230101088691
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 0
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 46.982485024714435
+      },
+      {
+        "name": "Cylinder top",
+        "value": 46.982485024714435
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 2.6874507559495164
       },
       {
         "name": "Energy balance residual",
-        "value": 0.00000812869284305684
+        "value": -0.000033711132076730266
       }
     ]
   },
@@ -1629,17 +1685,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 816783.8698130199,
-    "energyResidual": 0.00000812869284305684,
+    "suppliedEnergy": 819792.6996805684,
+    "energyResidual": -0.000033711132076730266,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 27.421433869784835
+        "value": 27.532092755022745
       },
       {
         "name": "Return temperature",
-        "value": 24.59660975963135
+        "value": 24.537735536576122
       },
       {
         "name": "Flow target",
@@ -1647,15 +1703,15 @@
       },
       {
         "name": "Heat output",
-        "value": 4946.796119656022
+        "value": 4955.301365536851
       },
       {
         "name": "Electrical input",
-        "value": 2016.4272408958361
+        "value": 2024.9321898006904
       },
       {
         "name": "COP",
-        "value": 2.4532480117945212
+        "value": 2.447144349077976
       },
       {
         "name": "Compressor speed",
@@ -1663,7 +1719,7 @@
       },
       {
         "name": "Frost on coil",
-        "value": 0.029105367531161486
+        "value": 0.029105425881466432
       },
       {
         "name": "Defrost active",
@@ -1675,27 +1731,43 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 2939.3507378629834
+        "value": 2939.349216141808
       },
       {
         "name": "Seasonal performance factor",
-        "value": 2.5573777497522996
+        "value": 2.5515168389759277
       },
       {
         "name": "House air",
-        "value": 18.810075251182585
+        "value": 18.8119727504517
       },
       {
         "name": "House heat loss",
-        "value": 4699.600459914379
+        "value": 4699.864212312787
       },
       {
         "name": "System pressure",
-        "value": 1.3025412380604107
+        "value": 1.30230101088691
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 0
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 46.982485024714435
+      },
+      {
+        "name": "Cylinder top",
+        "value": 46.982485024714435
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 2.6874507559495164
       },
       {
         "name": "Energy balance residual",
-        "value": 0.00000812869284305684
+        "value": -0.000033711132076730266
       }
     ]
   },
@@ -1706,41 +1778,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 561752.0911842333,
-    "energyResidual": -0.000005887445159835636,
+    "suppliedEnergy": 842475.135739862,
+    "energyResidual": -0.00008961941375495996,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 27.965814735679714
+        "value": 43.52541999387
       },
       {
         "name": "Return temperature",
-        "value": 24.64879655828014
+        "value": 39.646338875729555
       },
       {
         "name": "Flow target",
-        "value": 31
+        "value": 46.64
       },
       {
         "name": "Heat output",
-        "value": 5724.039705939181
+        "value": 6633.560286851653
       },
       {
         "name": "Electrical input",
-        "value": 1473.226740988397
+        "value": 2354.700324369454
       },
       {
         "name": "COP",
-        "value": 3.885375921223699
+        "value": 2.8171569087578052
       },
       {
         "name": "Compressor speed",
-        "value": 87.71716054858297
+        "value": 88.36983156330255
       },
       {
         "name": "Frost on coil",
-        "value": 0.06561721216460771
+        "value": 0.06756703690019568
       },
       {
         "name": "Defrost active",
@@ -1752,35 +1824,55 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 4212.845622004161
+        "value": 4237.466666945718
       },
       {
         "name": "Seasonal performance factor",
-        "value": 4.188072959791754
+        "value": 3.1180458832683082
       },
       {
         "name": "House air",
-        "value": 19.963094188049155
+        "value": 19.892939523703493
       },
       {
         "name": "House heat loss",
-        "value": 2496.8700921388327
+        "value": 2487.1185937947857
       },
       {
         "name": "System pressure",
-        "value": 1.305643615916805
+        "value": 1.3041296032455998
       },
       {
         "name": "Buffer top",
-        "value": 25.503837319746594
+        "value": 24.993817016863034
       },
       {
         "name": "Buffer lower sensor",
-        "value": 24.945506189506716
+        "value": 24.993817016863034
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 1
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 39.64050049576639
+      },
+      {
+        "name": "Cylinder top",
+        "value": 39.64050049576639
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 5646.768374713616
+      },
+      {
+        "name": "Hot-water performance factor",
+        "value": 3.1180458832683082
       },
       {
         "name": "Energy balance residual",
-        "value": -0.000005887445159835636
+        "value": -0.00008961941375495996
       }
     ]
   },
@@ -1791,41 +1883,41 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 561752.0911842333,
-    "energyResidual": -0.000005887445159835636,
+    "suppliedEnergy": 842475.135739862,
+    "energyResidual": -0.00008961941375495996,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 27.965814735679714
+        "value": 43.52541999387
       },
       {
         "name": "Return temperature",
-        "value": 24.64879655828014
+        "value": 39.646338875729555
       },
       {
         "name": "Flow target",
-        "value": 31
+        "value": 46.64
       },
       {
         "name": "Heat output",
-        "value": 5724.039705939181
+        "value": 6633.560286851653
       },
       {
         "name": "Electrical input",
-        "value": 1473.226740988397
+        "value": 2354.700324369454
       },
       {
         "name": "COP",
-        "value": 3.885375921223699
+        "value": 2.8171569087578052
       },
       {
         "name": "Compressor speed",
-        "value": 87.71716054858297
+        "value": 88.36983156330255
       },
       {
         "name": "Frost on coil",
-        "value": 0.06561721216460771
+        "value": 0.06756703690019568
       },
       {
         "name": "Defrost active",
@@ -1837,181 +1929,55 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 4212.845622004161
+        "value": 4237.466666945718
       },
       {
         "name": "Seasonal performance factor",
-        "value": 4.188072959791754
+        "value": 3.1180458832683082
       },
       {
         "name": "House air",
-        "value": 19.963094188049155
+        "value": 19.892939523703493
       },
       {
         "name": "House heat loss",
-        "value": 2496.8700921388327
+        "value": 2487.1185937947857
       },
       {
         "name": "System pressure",
-        "value": 1.305643615916805
+        "value": 1.3041296032455998
       },
       {
         "name": "Buffer top",
-        "value": 25.503837319746594
+        "value": 24.993817016863034
       },
       {
         "name": "Buffer lower sensor",
-        "value": 24.945506189506716
+        "value": 24.993817016863034
       },
       {
-        "name": "Energy balance residual",
-        "value": -0.000005887445159835636
-      }
-    ]
-  },
-  {
-    "mode": "heatPumpHotWater",
-    "source": "generated",
-    "simulatedSeconds": 600,
-    "error": null,
-    "violations": [],
-    "failed": {},
-    "suppliedEnergy": 719456.8659722043,
-    "energyResidual": 3.282348615130104e-9,
-    "massResidual": 0,
-    "probes": [
-      {
-        "name": "Flow temperature",
-        "value": 21.551225744848068
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 1
       },
       {
-        "name": "Return temperature",
-        "value": 17.49132830521137
-      },
-      {
-        "name": "Heat output",
-        "value": 7151.382600909819
-      },
-      {
-        "name": "Electrical input",
-        "value": 1794.8791010766151
-      },
-      {
-        "name": "COP",
-        "value": 3.984325516197851
-      },
-      {
-        "name": "Condensing temperature",
-        "value": 25.126272120234148
-      },
-      {
-        "name": "Compressor speed",
-        "value": 100
+        "name": "Cylinder sensor TW1",
+        "value": 39.64050049576639
       },
       {
         "name": "Cylinder top",
-        "value": 17.346288624548606
+        "value": 39.64050049576639
       },
       {
-        "name": "Cylinder upper sensor",
-        "value": 17.346288624548606
+        "name": "Coil heat into the cylinder",
+        "value": 5646.768374713616
       },
       {
-        "name": "Cylinder lower sensor",
-        "value": 17.26972089643067
-      },
-      {
-        "name": "Coil heat into the store",
-        "value": 6262.617205785386
-      },
-      {
-        "name": "Stored heat",
-        "value": 0.7430441301781104
-      },
-      {
-        "name": "Performance factor so far",
-        "value": 4.250641938159158
-      },
-      {
-        "name": "System pressure",
-        "value": 1.3043671316783734
+        "name": "Hot-water performance factor",
+        "value": 3.1180458832683082
       },
       {
         "name": "Energy balance residual",
-        "value": 3.282348615130104e-9
-      }
-    ]
-  },
-  {
-    "mode": "heatPumpHotWater",
-    "source": "file",
-    "simulatedSeconds": 600,
-    "error": null,
-    "violations": [],
-    "failed": {},
-    "suppliedEnergy": 719456.8659722043,
-    "energyResidual": 3.282348615130104e-9,
-    "massResidual": 0,
-    "probes": [
-      {
-        "name": "Flow temperature",
-        "value": 21.551225744848068
-      },
-      {
-        "name": "Return temperature",
-        "value": 17.49132830521137
-      },
-      {
-        "name": "Heat output",
-        "value": 7151.382600909819
-      },
-      {
-        "name": "Electrical input",
-        "value": 1794.8791010766151
-      },
-      {
-        "name": "COP",
-        "value": 3.984325516197851
-      },
-      {
-        "name": "Condensing temperature",
-        "value": 25.126272120234148
-      },
-      {
-        "name": "Compressor speed",
-        "value": 100
-      },
-      {
-        "name": "Cylinder top",
-        "value": 17.346288624548606
-      },
-      {
-        "name": "Cylinder upper sensor",
-        "value": 17.346288624548606
-      },
-      {
-        "name": "Cylinder lower sensor",
-        "value": 17.26972089643067
-      },
-      {
-        "name": "Coil heat into the store",
-        "value": 6262.617205785386
-      },
-      {
-        "name": "Stored heat",
-        "value": 0.7430441301781104
-      },
-      {
-        "name": "Performance factor so far",
-        "value": 4.250641938159158
-      },
-      {
-        "name": "System pressure",
-        "value": 1.3043671316783734
-      },
-      {
-        "name": "Energy balance residual",
-        "value": 3.282348615130104e-9
+        "value": -0.00008961941375495996
       }
     ]
   },

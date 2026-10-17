@@ -195,6 +195,9 @@ export interface HeatPumpState {
   target: number; requested: number; status: string;
   /** Cumulative energies (J) and counters. */
   heat: number; defrostHeat: number; electricity: number; backupHeat: number; environment: number; defrosts: number; startCount: number;
+  /** Hot-water mode: charging the cylinder (VW1 to B), since when, blocked until (after a time-out), cylinder sensor (°C),
+   *  charges started, and heat/electricity while charging (J). */
+  dhw: boolean; dhwSince: number; dhwBlockedUntil: number; dhwTank: number; dhwCharges: number; dhwHeat: number; dhwElectricity: number;
 }
 export const newHeatPump = (c: Component, air: number): HeatPumpState => ({
   mode: 'off', speed: 0, command: 0, integral: 0, elementTemperature: kelvin(prop(c, 'initialTemperature')), coilTemperature: air, frost: 0, residualIce: 0, meltedThisDefrost: 0, film: 0, intensive: false, shellTemperature: air, crankcaseOn: false,
@@ -202,6 +205,7 @@ export const newHeatPump = (c: Component, air: number): HeatPumpState => ({
   lowFlowSince: Infinity, shortfallSince: Infinity, backupStages: 0, backupFault: false, fault: '', trips: [], ambientLock: false, demand: false, frostProtection: false,
   resetPrevious: false, defrostPrevious: false, manualDefrost: false, target: prop(c, 'setpoint'), requested: prop(c, 'setpoint'), status: 'Power-on check',
   heat: 0, defrostHeat: 0, electricity: 0, backupHeat: 0, environment: 0, defrosts: 0, startCount: 0,
+  dhw: false, dhwSince: -Infinity, dhwBlockedUntil: -Infinity, dhwTank: NaN, dhwCharges: 0, dhwHeat: 0, dhwElectricity: 0,
 });
 /** Flow target (°C): fixed setpoint, or the linear heating curve through (20 °C, foot point) and (design outdoor, design flow). */
 export function heatPumpTarget(c: Component, air: number, wired?: number) {
@@ -233,7 +237,27 @@ export function controlHeatPump(s: Simulation, c: Component, st: HeatPumpState, 
   if (x.air <= bosch.cutout.low || x.air >= bosch.cutout.high) st.ambientLock = true;
   else if (st.ambientLock && x.air > bosch.cutout.lowRestart && x.air < bosch.cutout.highRestart) st.ambientLock = false;
   const envelope = envelopeMaxFlow(x.air);
-  const requestedTarget = Math.max(10, Math.min(bosch.maxFlow, heatPumpTarget(c, x.air, wired('setpoint') && validTarget ? Number(set.value) : undefined)));
+  // Hot-water mode [OWN]: a charge starts when the cylinder sensor falls to the start temperature and ends at the stop
+  // temperature; meanwhile VW1 diverts the flow to the cylinder and the flow target is the cylinder temperature plus the
+  // charging differential (Ladedelta). Hot water has priority over heating; a charge longer than the maximum time ends
+  // and blocks hot water for the same time so the house recovers (assumption).
+  const tankInput = s.automation.input(c, 'dhwSensor', s);
+  const tank = wired('dhwSensor') && tankInput.valid && typeof tankInput.value === 'number' ? tankInput.value : NaN;
+  st.dhwTank = tank;
+  const dhwAllowed = c.props.hotWater === true && Number.isFinite(tank) && fault !== 'controlLost' && !st.fault;
+  if (st.dhw) {
+    const timedOut = now - st.dhwSince >= prop(c, 'dhwMaxTime') - 1e-9;
+    if (!dhwAllowed || tank >= prop(c, 'dhwStop') || timedOut) {
+      st.dhw = false;
+      if (timedOut && dhwAllowed && tank < prop(c, 'dhwStop')) { st.dhwBlockedUntil = now + prop(c, 'dhwMaxTime'); s.log(`${c.name}: hot-water charge ended at its ${(prop(c, 'dhwMaxTime') / 60).toFixed(0)} min limit (cylinder ${tank.toFixed(1)} °C) — heating has priority for the same time.`, 'warning'); }
+      else s.log(`${c.name}: hot water ${Number.isFinite(tank) && tank >= prop(c, 'dhwStop') ? `charged to ${tank.toFixed(1)} °C` : 'charge cancelled'} — valve back to heating.`, 'info');
+    }
+  } else if (dhwAllowed && tank <= prop(c, 'dhwStart') && now >= st.dhwBlockedUntil - 1e-9 && st.mode !== 'defrost' && st.mode !== 'drip') {
+    st.dhw = true; st.dhwSince = now; st.dhwCharges++;
+    s.log(`${c.name}: hot-water demand (cylinder ${tank.toFixed(1)} °C ≤ ${prop(c, 'dhwStart')} °C) — valve to the cylinder.`, 'info');
+  }
+  const dhwTarget = Math.min(bosch.maxFlow, tank + prop(c, 'dhwDelta'));
+  const requestedTarget = st.dhw ? dhwTarget : Math.max(10, Math.min(bosch.maxFlow, heatPumpTarget(c, x.air, wired('setpoint') && validTarget ? Number(set.value) : undefined)));
   st.requested = requestedTarget;
   // Frost protection of the water circuit (assumption: start below 5 °C, hold until 15 °C).
   if (x.water < 5) st.frostProtection = true; else if (x.water > 15) st.frostProtection = false;
@@ -242,7 +266,7 @@ export function controlHeatPump(s: Simulation, c: Component, st: HeatPumpState, 
   st.target = compressorTarget;
   const running = st.mode === 'heating' || st.mode === 'defrost';
   const supply = x.powered && now >= st.restartAt && fault !== 'failedOpen';
-  const enabled = (requested || st.frostProtection) && validTarget && fault !== 'controlLost';
+  const enabled = (requested || st.frostProtection || st.dhw) && (validTarget || st.dhw) && fault !== 'controlLost';
   // Heating request with start/stop hysteresis; the stop also waits for minimum speed and the minimum run time.
   if (!running && st.mode !== 'drip') st.demand = x.water <= compressorTarget - prop(c, 'startDifference');
   else if (st.mode === 'heating' && x.water >= compressorTarget + prop(c, 'stopDifference') && st.command <= MIN_SPEED + 1e-9 && now - st.startedAt >= prop(c, 'minRunTime') - 1e-9) st.demand = false;
@@ -452,6 +476,7 @@ export function advanceHeatPump(c: Component, st: HeatPumpState, plan: HeatPumpP
   }
   st.speed = plan.mode === 'heating' || plan.mode === 'defrost' ? plan.speed1 : 0;
   st.heat += Math.max(0, plan.condenser) * h; st.electricity += electricalInput * h; st.backupHeat += backupInput * h;
+  if (st.dhw) { st.dhwHeat += plan.condenser * h; st.dhwElectricity += electricalInput * h; }
   st.environment += (plan.mode === 'heating' ? plan.air : 0) * h;
   return { environment, stored: C * (st.coilTemperature - coilBefore) };
 }

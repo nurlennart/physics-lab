@@ -40,6 +40,7 @@ for (const [kind, title, label] of [
   ['storageTank', 'Sealed boiler circuit: expansion vessel and safety valve', 'Stratified storage tank'],
   ['expansionVessel', 'Sealed boiler circuit: expansion vessel and safety valve', 'Membrane expansion vessel'],
   ['safetyValve', 'Sealed boiler circuit: expansion vessel and safety valve', 'Safety valve · 3.0 bar'],
+  ['divertingValve', 'Heat pump and underfloor heating', 'position (0 % = A, 100 % = B)'],
   ['battery', 'Finite battery discharge', 'state of charge'],
   ['capacitor', 'Charging a capacitor', 'stored field energy'],
   ['inductor', 'Switching an inductor', 'stored field energy'],

@@ -6,7 +6,7 @@ export type Kind =
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
   | "electricBoiler" | "panelRadiator" | "heatPump"
-  | "storageTank" | "expansionVessel" | "safetyValve"
+  | "storageTank" | "expansionVessel" | "safetyValve" | "divertingValve"
   | "source"
   | "source3"
   | "sourceAC"
@@ -94,7 +94,7 @@ export type Measurement =
   | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
   | "heatOutput" | "backupPower" | "environmentHeat" | "cop" | "compressorSpeed" | "evaporatingTemperature" | "condensingTemperature" | "frostMass" | "defrosting" | "targetTemperature" | "seasonalCop" | "heatEnergy" | "compressorStarts"
   | "supplyTemperature" | "excessTemperature" | "heatInput"
-  | "topTemperature" | "bottomTemperature" | "storedHeat" | "vesselWater" | "expansionVolume" | "dischargedVolume"
+  | "topTemperature" | "bottomTemperature" | "storedHeat" | "vesselWater" | "expansionVolume" | "dischargedVolume" | "hotWater" | "hotWaterCop"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
   | "rpm" | "shaftPower" | "hydraulicPower" | "efficiency" | "transferredVolume" | "torque"
   | "massResidual" | "energyResidual" | "velocity" | "reynolds" | "frictionFactor" | "position"
@@ -255,9 +255,11 @@ export const definitions: Record<Kind, Definition> = {
       { id: "BL", domain: "electrical", label: "Backup heater line (230 V, 3/6 kW)" }, { id: "BN", domain: "electrical", label: "Backup heater neutral" },
       { id: "inlet", domain: "hydraulic", label: "Return from the heating system" }, { id: "outlet", domain: "hydraulic", label: "Flow to the heating system" },
       input("enable", "boolean", true), input("setpoint", "number", true), input("reset", "boolean", true), input("defrost", "boolean", true),
+      { ...input("dhwSensor", "number", true), unit: "°C", label: "Hot-water cylinder sensor TW1 (°C)" },
+      { id: "dhw", domain: "control", label: "Hot-water valve command VW1 (true = cylinder)", direction: "out", signalType: "boolean", unit: "bool" },
     ],
     defaults: {
-      enabled: true, targetMode: "fixed", setpoint: 35, curveDesignOutdoor: -10, curveDesignFlow: 45, curveFootFlow: 25,
+      enabled: true, hotWater: false, dhwStart: 40, dhwStop: 48, dhwDelta: 7, dhwMaxTime: 3600, targetMode: "fixed", setpoint: 35, curveDesignOutdoor: -10, curveDesignFlow: 45, curveFootFlow: 25,
       startDifference: 2, stopDifference: 3, minRunTime: 300, minOffTime: 300, maxStarts: 6, proportionalGain: 0.1, integralTime: 600, rampTime: 120,
       minFlow: 0.0001, flowDelay: 10, relativeHumidity: 85,
       frostTrigger: 2, frostReference: 5, minDefrostInterval: 1200, maxDefrostTime: 600, defrostEndTemperature: 10, dripTime: 60, defrostSpeed: 40, coilHeatCapacity: 25000, residualIceShare: 0.3,
@@ -313,6 +315,16 @@ export const definitions: Record<Kind, Definition> = {
       { id: "generic12", label: "Membrane vessel 12 L (generic)", cost: 40, spec: "12 L · 1.5 bar precharge · 3 bar", overrides: { nominalVolume: 12 } },
       { id: "generic50", label: "Membrane vessel 50 L (generic)", cost: 110, spec: "50 L · 1.5 bar precharge · 3 bar", overrides: { nominalVolume: 50 } },
     ],
+  },
+  divertingValve: {
+    label: "3-way diverting valve", category: "Hydraulic", prefix: "VW", cost: 140,
+    description: "Motorised 3-way diverting valve (port AB in, A or B out), as the heating/hot-water valve VW1 of a heat pump: the plug travels from A to B at a fixed running time; spring return to A without a command. A wired Boolean command switches it (true = B), as the heat pump's VW1 output does.",
+    spec: "DN 25 · Kvs 6 · 15 s · AB→A / AB→B",
+    ports: [
+      { id: "inlet", domain: "hydraulic", label: "AB common port (in)" }, { id: "outletA", domain: "hydraulic", label: "Port A (heating)" }, { id: "outletB", domain: "hydraulic", label: "Port B (hot water)" },
+      { ...input("position", "boolean", true), label: "Switch to B (hot water)" },
+    ],
+    defaults: { position: 0, kvs: 6, responseTime: 15, diameter: 0.025, laminarK: 0, maxPressure: 1000000, elevation: 0 },
   },
   safetyValve: {
     label: "Safety valve (spring)", category: "Hydraulic", prefix: "SV", cost: 18,

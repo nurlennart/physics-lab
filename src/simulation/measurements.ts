@@ -18,7 +18,7 @@ export const units: Record<Measurement, string> = {
   gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
-  topTemperature: "°C", bottomTemperature: "°C", storedHeat: "kWh", vesselWater: "L", expansionVolume: "L", dischargedVolume: "L",
+  topTemperature: "°C", bottomTemperature: "°C", storedHeat: "kWh", vesselWater: "L", expansionVolume: "L", dischargedVolume: "L", hotWater: "bool", hotWaterCop: "1",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
   heatOutput: "W", backupPower: "W", environmentHeat: "W", cop: "1", compressorSpeed: "%", evaporatingTemperature: "°C", condensingTemperature: "°C", frostMass: "kg", defrosting: "bool", targetTemperature: "°C", seasonalCop: "1", heatEnergy: "J", compressorStarts: "1",
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
@@ -165,6 +165,8 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "storedHeat": { const cells = s.multiphysics.pipeCells[c.id]; return cells ? (storageEnthalpy(c, cells, s.multiphysics.pipeCells[`${c.id}#coil`]) - storageEnthalpy(c, cells.map(() => prop(c, "initialTemperature", 20) + 273.15), (s.multiphysics.pipeCells[`${c.id}#coil`] ?? []).map(() => prop(c, "initialTemperature", 20) + 273.15))) / 3.6e6 : null; }
     case "vesselWater": { const v = s.multiphysics.vessels[c.id]; return v ? Math.max(0, v.water) * 1000 : null; }
     case "expansionVolume": { const v = s.multiphysics.vessels[c.id]; return v ? v.expansion * 1000 : null; }
+    case "hotWater": return Number(s.multiphysics.heatPumps[c.id]?.dhw ?? false);
+    case "hotWaterCop": { const st = s.multiphysics.heatPumps[c.id]; return st && st.dhwElectricity > 0 ? st.dhwHeat / st.dhwElectricity : null; }
     case "dischargedVolume": return (s.multiphysics.discharged[c.id] ?? 0) * 1000;
     case "npsh": return h?.npshAvailable ?? null;
     case "bodyTemperature": return s.temperatures[c.id] ?? null;

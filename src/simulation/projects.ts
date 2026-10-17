@@ -448,7 +448,7 @@ export function validateProbes(p: Project) {
     if (
       ![
         "returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "supplyTemperature", "excessTemperature", "heatInput",
-        "topTemperature", "bottomTemperature", "storedHeat", "vesselWater", "expansionVolume", "dischargedVolume",
+        "topTemperature", "bottomTemperature", "storedHeat", "vesselWater", "expansionVolume", "dischargedVolume", "hotWater", "hotWaterCop",
         "heatOutput", "backupPower", "environmentHeat", "cop", "compressorSpeed", "evaporatingTemperature", "condensingTemperature", "frostMass", "defrosting", "targetTemperature", "seasonalCop", "heatEnergy", "compressorStarts",
         "pressure", "inletPressure", "differentialPressure", "flow", "level", "fluidTemperature", "heatDuty", "npsh", "reactivePower", "powerFactor", "impellerPower", "mechanicalLoss", "hydraulicEfficiency", "overflow", "overflowVolume", "rpm", "shaftPower", "hydraulicPower", "efficiency", "transferredVolume", "torque", "massResidual", "energyResidual", "velocity", "reynolds", "frictionFactor", "position",
         'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce',

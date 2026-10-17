@@ -48,6 +48,12 @@ const temperature = (label: string, description: string, group: ParamGroup = "th
   label, description, unit: "°C", group, policy, domain: [ABSOLUTE_ZERO, 10000], limitReason: "Temperature must be above absolute zero.",
 });
 const base: Record<string, Base> = {
+  hotWater: { label: "Hot-water mode", description: "Charge a hot-water cylinder through the 3-way valve VW1: wire the cylinder sensor to TW1 and the DHW output to a diverting valve. Hot water has priority over heating and also runs with heating disabled (summer).", group: "operating", policy: "live" },
+  dhwStart: { label: "Hot-water start temperature", description: "A charge starts when the cylinder sensor falls to this temperature. Bosch ranges [owners' documentation]: Comfort ≥ 40 °C, Eco ≥ 35 °C, Eco+ ≥ 30 °C; default 40 °C from its example (not a stated Bosch default).", unit: "°C", group: "operating", policy: "live", domain: [20, 65], limitReason: "Bosch hot-water modes span 30–65 °C." },
+  dhwStop: { label: "Hot-water stop temperature", description: "The charge ends when the cylinder sensor reaches this temperature. Bosch ranges: Comfort ≤ 65 °C, Eco ≤ 60 °C, Eco+ ≤ 55 °C; default 48 °C from the owners' documentation example.", unit: "°C", group: "operating", policy: "live", domain: [25, 70], limitReason: "Bosch hot-water modes span up to 70 °C (extra hot water)." },
+  dhwDelta: { label: "Charging differential (Ladedelta)", description: "During a charge the flow target is the cylinder temperature plus this difference: larger heats faster but lowers the COP. Bosch range 4–18 K; default 7 K from the owners' documentation example.", unit: "K", group: "operating", policy: "live", domain: [2, 25], limitReason: "Bosch range 4–18 K (wider for experiments)." },
+  dhwMaxTime: { label: "Maximum hot-water time", description: "A charge still running after this time ends and hot water waits the same time, so the heating recovers. Assumption (not published for the 6800i): 60 min.", unit: "s", group: "operating", policy: "live", domain: [60, 86400], limitReason: "1 min to 24 h.", display: { unit: "min", scale: 1 / 60 } },
+  position: { label: "Position (no command)", description: "Plug position without a wired command: 0 % = all flow AB→A, 100 % = AB→B. A wired Boolean command selects B when true and A when false; an invalid command returns to A (spring return).", unit: "%", group: "operating", policy: "live", domain: [0, 100], limitReason: "A travel." },
   storageVolume: { label: "Storage volume", description: "Water held by the sealed tank (fixed inventory at the reference density).", unit: "L", group: "configuration", policy: "reset", domain: [1, 1e6], positive: true, limitReason: POSITIVE, typical: [20, 2000] },
   tankHeight: { label: "Water column height", description: "Inner height of the vertical cylinder; with the volume it sets the cross-section, layer height and wall area. Inner dimensions are not published: an assumption from the outer height.", unit: "m", group: "configuration", policy: "reset", domain: [0.05, 50], positive: true, limitReason: POSITIVE },
   layers: { label: "Layers", description: "Number of equal horizontal layers (numerical resolution of the stratification). The thermocline cannot be thinner than about one layer.", unit: "1", group: "advanced", policy: "reset", domain: [4, 60], limitReason: "4–60 layers: resolution versus a dense solve per step." },
@@ -418,6 +424,11 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     maxPressure: { description: "Permissible operating pressure of the vessel (Reflex N 25 white: 3 bar). Exceeding it is reported." },
     maxTemperature: { label: "Maximum membrane temperature", description: "Reflex: 70 °C at the membrane (system up to 120 °C). Informational: the vessel water stays at its fill temperature in this model.", simulated: false },
     elevation: { description: "Height of the vessel connection; its gauge pressure is referenced here." },
+  },
+  divertingValve: {
+    kvs: { label: "Kvs per path", description: "Flow coefficient of each path when fully open (m³/h at 1 bar). Bosch does not publish VW1 data: Kvs 6 (DN 25) is an assumption." },
+    responseTime: { label: "Running time A → B", description: "Actuator running time for the full travel. Assumption: 15 s (motorised changeover valves 10–60 s)." },
+    diameter: { label: "Connection bore", description: "Nominal bore (velocity reference only)." },
   },
   safetyValve: {
     kvs: { label: "Flow coefficient at full lift", description: "Water discharge in m³/h at 1 bar differential, fully lifted. Assumption: certified heating-valve capacities are rated as steam (TRD 721 Tafel 3: DN 15 to 50 kW)." },

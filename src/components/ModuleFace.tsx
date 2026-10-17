@@ -53,7 +53,8 @@ export function moduleStatus(c: Component): { tone: Tone; text: string } | null 
 /** Whether a module is doing work: power, flow, rotation, a true control output. */
 function active(c: Component) {
   const s = simulation, r = s.electrical.readings[c.id], h = s.multiphysics.hydraulic.readings[c.id], v = s.automation.signals[c.id];
-  if (v) return v.valid && (typeof v.value === "boolean" ? v.value : true);
+  // A heat pump's control output is its hot-water valve command, not its operating state.
+  if (v && c.kind !== "heatPump") return v.valid && (typeof v.value === "boolean" ? v.value : true);
   if (s.multiphysics.motors[c.id]) return Math.abs(s.multiphysics.motors[c.id].omega) > 0.5;
   if (s.multiphysics.shaftElements[c.id]) return Math.abs(s.multiphysics.shaftElements[c.id].omega) > 0.5;
   if (c.kind === "switch") return c.props.closed === true;
@@ -553,6 +554,26 @@ function face(c: Component): Face {
         title: "Gauge pressure at the vessel; water held on the water side",
       };
     }
+    case "divertingValve": {
+      const x = (s.multiphysics.positions[c.id] ?? prop(c, "position")) / 100, open = (share: number) => share > 0.02 ? T.hydraulic : FAINT;
+      return {
+        // Two triangles toward A (right) and B (down) from the common port; each path is drawn by its opening.
+        symbol: <g>
+          <path d="M0 66H70" stroke={T.hydraulic} strokeWidth="3" />
+          <path d="M104 66H174" stroke={open(1 - x)} strokeWidth="3" />
+          <path d="M122 66V83" stroke={open(x)} strokeWidth="3" />
+          <path d="M70 54L87 66L70 78Z" fill={T.n4} stroke={INK} strokeWidth="1.25" />
+          <path d="M104 54L87 66L104 78Z" fill={1 - x > 0.02 ? T.hydraulicDeep : T.n4} stroke={INK} strokeWidth="1.25" />
+          <path d="M75 83L87 66L99 83Z" fill={x > 0.02 ? T.hydraulicDeep : T.n4} stroke={INK} strokeWidth="1.25" />
+          <path d="M99 83H122" stroke={open(x)} strokeWidth="3" />
+          <path d="M87 66V48M78 36h18v12H78Z" stroke={INK} strokeWidth="1.25" fill={T.n4} />
+          <Glyph x={87} y={46} size={12} mono>M</Glyph>
+        </g>,
+        hero: x <= 0.005 ? "A · heating" : x >= 0.995 ? "B · hot water" : `${(x * 100).toFixed(0)} % to B`,
+        detail: started ? lpm(hr?.flow ?? 0) : `Kvs ${prop(c, "kvs")} · ${prop(c, "responseTime")} s`,
+        pins: { labels: { inlet: "AB", outletA: "A", outletB: "B", position: "POS" } },
+      };
+    }
     case "safetyValve": {
       const lift = started ? s.multiphysics.positions[c.id] ?? 0 : 0;
       return {
@@ -583,10 +604,10 @@ function face(c: Component): Face {
           {[0, 1, 2].map((i) => <path key={i} d={`M98 ${56 + i * 8}h20`} stroke={FAINT} strokeWidth="0.75" />)}
         </g>,
         hero: celsius(water),
-        detail: st?.fault ? "Locked out" : !started ? `Target ${prop(c, "setpoint")} °C` : defrost ? `Defrost · ${watts(-(view?.heatOutput ?? 0))} from water` : st?.mode === "heating" ? `${watts(view?.heatOutput ?? 0)} · COP ${view?.cop?.toFixed(2) ?? "—"}${st.backupStages ? ` · +${st.backupStages * 3} kW` : ""}` : st?.backupStages ? `Backup ${st.backupStages * 3} kW` : st?.mode === "drip" ? "Drip time" : "Standby",
+        detail: st?.fault ? "Locked out" : !started ? `Target ${prop(c, "setpoint")} °C` : st?.dhw && st.mode === "heating" ? `Hot water · ${watts(view?.heatOutput ?? 0)} · COP ${view?.cop?.toFixed(2) ?? "—"}` : defrost ? `Defrost · ${watts(-(view?.heatOutput ?? 0))} from water` : st?.mode === "heating" ? `${watts(view?.heatOutput ?? 0)} · COP ${view?.cop?.toFixed(2) ?? "—"}${st.backupStages ? ` · +${st.backupStages * 3} kW` : ""}` : st?.backupStages ? `Backup ${st.backupStages * 3} kW` : st?.mode === "drip" ? "Drip time" : "Standby",
         title: started ? st?.status : undefined,
         tone: st?.fault || st?.backupFault ? "fault" : "thermal",
-        pins: { labels: { L: "L", N: "N", BL: "BL", BN: "BN", enable: "EN", setpoint: "SET", reset: "RST", defrost: "DEF" } },
+        pins: { labels: { L: "L", N: "N", BL: "BL", BN: "BN", enable: "EN", setpoint: "SET", reset: "RST", defrost: "DEF", dhwSensor: "TW1", dhw: "VW1" } },
       };
     }
     case "electricBoiler": {

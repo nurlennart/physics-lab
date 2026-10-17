@@ -75,6 +75,8 @@ export class Multiphysics {
   panelRate = 0;
   /** Largest |dT/dt| (K/s) of any storage-tank layer over the last advance (a moving thermocline, inversion mixing). */
   storageRate = 0;
+  /** Diverting valves still travelling toward their command (they bound the step only while moving). */
+  valveTravel: Record<string, boolean> = {};
   removedMass = 0;
   removedEnergy = 0;
   /** Cumulative volume spilled over each tank rim (m³) and the rate over the last step (m³/s). */
@@ -110,7 +112,7 @@ export class Multiphysics {
       starters: structuredClone(this.starters), drives: structuredClone(this.drives), shaftElements: structuredClone(this.shaftElements),
       drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
       acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
-      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, storageRate: this.storageRate,
+      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, storageRate: this.storageRate, valveTravel: { ...this.valveTravel },
     };
   }
   initialize(p: Project) {
@@ -126,6 +128,7 @@ export class Multiphysics {
       }
       if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
+      if (c.kind === 'divertingValve') this.positions[c.id] = prop(c, 'position');
       if (c.kind === 'thermostaticValve') {
         this.trvSensors[c.id] = effectiveAmbient(p, c);
         this.positions[c.id] = trvPosition(c, this.trvSensors[c.id]);
@@ -691,7 +694,7 @@ export class Multiphysics {
     for (const c of s.project.components.filter(c => c.kind === 'heatPump')) {
       const st = this.heatPumps[c.id];
       for (const e of [st.restartAt, st.dripUntil, st.stoppedAt + prop(c, 'minOffTime'), st.startedAt + prop(c, 'minRunTime'), st.startedAt + 120, st.defrostStart + prop(c, 'maxDefrostTime'),
-        (st.starts[0] ?? -Infinity) + 3600, st.lastDefrostEnd + prop(c, 'minDefrostInterval'), st.lowFlowSince + prop(c, 'flowDelay'), st.shortfallSince + prop(c, 'backupDelay'), st.shortfallSince + 2 * prop(c, 'backupDelay')])
+        (st.starts[0] ?? -Infinity) + 3600, st.lastDefrostEnd + prop(c, 'minDefrostInterval'), st.lowFlowSince + prop(c, 'flowDelay'), st.shortfallSince + prop(c, 'backupDelay'), st.shortfallSince + 2 * prop(c, 'backupDelay'), st.dhw ? st.dhwSince + prop(c, 'dhwMaxTime') : st.dhwBlockedUntil])
         if (e > now + 1e-9 && e < t) t = e;
     }
     return t;
@@ -972,6 +975,16 @@ export class Multiphysics {
         const outlet = r.hydraulic.readings[c.id]?.pressure ?? 0;
         const demand = Math.max(-1, Math.min(1, (prop(c, 'pressureSetpoint') - outlet) / prop(c, 'proportionalBand')));
         this.positions[c.id] = Math.max(0, Math.min(100, this.positions[c.id] + demand * 100 * h / prop(c, 'responseTime')));
+      }
+      // Diverting valve: a wired Boolean selects B (true) or A; an invalid command or a lost control signal returns the
+      // spring to A. The plug runs at 100 %/running time.
+      for (const c of s.project.components.filter(c => c.kind === 'divertingValve')) {
+        const wired = s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === 'position');
+        const input = s.automation.input(c, 'position', s);
+        const command = s.faults[c.id] === 'controlLost' ? 0 : !wired ? prop(c, 'position') : !input.valid ? 0 : typeof input.value === 'boolean' ? (input.value ? 100 : 0) : Math.max(0, Math.min(100, Number(input.value)));
+        const step = 100 * h / prop(c, 'responseTime');
+        this.positions[c.id] = Math.max(this.positions[c.id] - step, Math.min(this.positions[c.id] + step, command));
+        this.valveTravel[c.id] = this.positions[c.id] !== command;
       }
       for (const c of s.project.components.filter(c => c.kind === 'actuatedValve')) {
         let target = prop(c, 'opening');

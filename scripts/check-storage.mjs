@@ -109,17 +109,13 @@ const house = defrostDip('heatPumpHouse'), buffered = defrostDip('heatPumpBuffer
 rows.push({ section: 'Heat pump', name: `Lowest flow temperature during defrost (°C): ${house.low.toFixed(2)} without buffer (≈ 60 L circuit), ${buffered.low.toFixed(2)} with the 123 L series buffer`, reference: house.low, modeled: buffered.low, error: buffered.low - house.low, tolerance: 0, pass: buffered.low > house.low, basis: `${house.defrosts} / ${buffered.defrosts} defrosts in 6 h; performance factor ${house.cop.toFixed(2)} / ${buffered.cop.toFixed(2)}. Bosch: defrost energy comes from the buffer and system water. Predicted, unvalidated` });
 row('Conservation', 'Heat pump with buffer, 6 h: energy residual (J)', 0, buffered.residual, 0.01, 'Ledger closure');
 {
-  const p = m.starter('heatPumpHotWater'), s = new m.Simulation(p), hp = p.components.find(c => c.kind === 'heatPump');
-  // COP as the flow temperature passes 35 and 50 °C while the compressor charges at full speed.
-  const at = {};
-  for (let t = 0; t < 2 * 3600; t += 30) {
-    advance(s, 30, 30);
-    const v = s.multiphysics.heatPumpView[hp.id], flow = s.fluidTemperatureMeasurement(hp.id), speed = s.multiphysics.heatPumps[hp.id].speed;
-    for (const mark of [35, 50]) if (!at[mark] && flow >= mark && v?.cop) at[mark] = { cop: v.cop, speed, output: v.heatOutput };
-  }
-  const st = s.multiphysics.heatPumps[hp.id], spf = (st.heat - st.defrostHeat) / st.electricity;
-  rows.push({ section: 'Heat pump', name: `Hot-water charge at A7: COP ${at[35].cop.toFixed(2)} at 35 °C flow (${(at[35].speed * 100).toFixed(0)} % speed, ${(at[35].output / 1000).toFixed(2)} kW) → ${at[50].cop.toFixed(2)} at 50 °C (${(at[50].speed * 100).toFixed(0)} %, ${(at[50].output / 1000).toFixed(2)} kW); 2 h performance factor ${spf.toFixed(2)}`, reference: 3.07 - 2.64, modeled: at[35].cop - at[50].cop, error: Math.abs(at[35].cop - at[50].cop - (3.07 - 2.64)), tolerance: 0, pass: at[50].cop < at[35].cop - 0.3, basis: 'Bosch EN 14511 at maximum output: A7/W35 COP 3.07, A7/W55 COP 2.64 (difference 0.43); the model passes 50 °C, not 55 °C, while charging' });
-  row('Conservation', 'Hot-water charge, 2 h: energy residual (J)', 0, s.energyResidual, 0.01, 'Ledger closure');
+  // Hot-water priority in the house example: the cylinder starts at 38 °C, so the first charge runs at once through VW1.
+  const p = m.starter('heatPumpHouse'), s = new m.Simulation(p), hp = p.components.find(c => c.kind === 'heatPump');
+  let charged = NaN;
+  for (let t = 0; t < 2 * 3600; t += 60) { advance(s, 60, 60); if (Number.isNaN(charged) && !s.multiphysics.heatPumps[hp.id].dhw && s.time > 600) charged = s.time; }
+  const st = s.multiphysics.heatPumps[hp.id], dhwFactor = st.dhwHeat / st.dhwElectricity, heating = s.multiphysics.heatPumpView[hp.id].cop;
+  rows.push({ section: 'Heat pump', name: `Hot-water priority at 2 °C (cylinder 38 → ${m.prop(hp, 'dhwStop')} °C in ${(charged / 60).toFixed(0)} min, flow target cylinder + ${m.prop(hp, 'dhwDelta')} K): performance factor ${dhwFactor.toFixed(2)} while charging, COP ${heating.toFixed(2)} heating afterwards`, reference: 3.07 - 2.64, modeled: heating - dhwFactor, error: 0, tolerance: 0, pass: dhwFactor < heating - 0.5 && st.dhwCharges >= 1, basis: 'Bosch EN 14511 at maximum output: A7/W35 COP 3.07, A7/W55 COP 2.64; start/stop/Ladedelta from the owners\' documentation example' });
+  row('Conservation', 'Hot-water priority, 2 h: energy residual (J)', 0, s.energyResidual, 0.01, 'Ledger closure');
 }
 
 const pass = rows.every(r => r.pass);

@@ -48,6 +48,8 @@ export interface ControlMemory {
 export interface ControlWorld {
   mechanicalMeasurement?: (id: string, metric: string) => number | undefined;
   fluidTemperatureMeasurement?: (id: string) => number | undefined;
+  /** Heat pump's hot-water valve command (true while charging the cylinder). */
+  heatPumpHotWater?: (id: string) => boolean;
   hydraulicMeasurement?: (id: string, metric: string) => number | undefined;
   project: Project;
   time: number;
@@ -425,6 +427,10 @@ export class Automation {
           out = signal(!tripped && c.props.closed !== false && fault !== "failedOpen" && !w.failed[c.id]);
           break;
         }
+        case "heatPump":
+          // VW1 command: true while the heat pump charges the hot-water cylinder (diverting valve to B).
+          out = signal(w.heatPumpHotWater?.(c.id) ?? false);
+          break;
         case "safety": {
           const measured = this.sense(c, w, dt);
           this.sensors[c.id] = measured;
@@ -507,6 +513,8 @@ export function allowedFaults(c: Component): FaultType[] {
   // Safety valve: seized shut (no protection) or held open (continuous discharge). Vessel: the nitrogen cushion leaks out.
   if (c.kind === "safetyValve") return ["stuckClosed", "stuckOpen"];
   if (c.kind === "expansionVessel") return ["gasLoss"];
+  // Diverting valve: actuator signal lost — the spring returns the plug to A.
+  if (c.kind === "divertingValve") return ["controlLost"];
   if (["sensor", "thermostat", "pressureSensor", "flowSensor", "levelSensor", "positionSensor", "speedSensor"].includes(c.kind))
     return [
       "sensorFault",

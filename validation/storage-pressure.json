@@ -152,9 +152,9 @@
   {
     "section": "Expansion vessel",
     "name": "Expansion of 50.0 L from 10 to 70.00 °C (L)",
-    "reference": 1.1212195799209386,
-    "modeled": 1.1212195799245457,
-    "error": 3.6071146070071336e-12,
+    "reference": 1.1212195799257563,
+    "modeled": 1.121219579925746,
+    "error": 1.021405182655144e-14,
     "tolerance": 0.000001,
     "pass": true,
     "basis": "Kell (1975) densities at fixed mass"
@@ -162,9 +162,9 @@
   {
     "section": "Expansion vessel",
     "name": "Reflex N 25 (1.5 bar precharge, 1.8 bar fill): pressure (bar)",
-    "reference": 1.9486964150954509,
-    "modeled": 1.948696415095938,
-    "error": 4.871658632055187e-13,
+    "reference": 1.948696415096124,
+    "modeled": 1.9486964150961226,
+    "error": 1.3322676295501878e-15,
     "tolerance": 0.00001,
     "pass": true,
     "basis": "Isothermal gas law p₀·V_n/(V_n − V_w)"
@@ -183,8 +183,8 @@
     "section": "Safety valve",
     "name": "Peak pressure at the valve (bar), TRD 721 limit set + 0.5 bar",
     "reference": 3,
-    "modeled": 2.9974954081176537,
-    "error": 0.0025045918823463076,
+    "modeled": 2.997495408126536,
+    "error": 0.0025045918734640793,
     "tolerance": 0.5,
     "pass": true,
     "basis": "Must not exceed 3.5 bar; sampled every 5 s"
@@ -193,8 +193,8 @@
     "section": "Safety valve",
     "name": "Pressure after heating (bar), between reseat and set",
     "reference": 2.9,
-    "modeled": 2.8051630007068353,
-    "error": 0.09483699929316458,
+    "modeled": 2.805163000707032,
+    "error": 0.09483699929296785,
     "tolerance": 0.11,
     "pass": true,
     "basis": "Simmering at the reseat pressure"
@@ -202,9 +202,9 @@
   {
     "section": "Safety valve",
     "name": "Discharged water = expansion − growth of the vessel water side (L)",
-    "reference": 2.6974799963285907,
-    "modeled": 2.697479996328515,
-    "error": 7.549516567451064e-14,
+    "reference": 2.6974799963283194,
+    "modeled": 2.6974799963283367,
+    "error": 1.7319479184152442e-14,
     "tolerance": 0.000001,
     "pass": true,
     "basis": "Volume balance of the sealed circuit"
@@ -213,8 +213,8 @@
     "section": "Conservation",
     "name": "Safety valve: mass residual (kg)",
     "reference": 0,
-    "modeled": 4.440892098500626e-14,
-    "error": 4.440892098500626e-14,
+    "modeled": 1.2878587085651816e-14,
+    "error": 1.2878587085651816e-14,
     "tolerance": 1e-9,
     "pass": true,
     "basis": "Discharged mass leaves through the ledger"
@@ -223,8 +223,8 @@
     "section": "Conservation",
     "name": "Safety valve: energy residual (J)",
     "reference": 0,
-    "modeled": 7.538442332588602e-7,
-    "error": 7.538442332588602e-7,
+    "modeled": -0.000001797554432414472,
+    "error": 0.000001797554432414472,
     "tolerance": 0.01,
     "pass": true,
     "basis": "Cushion work Π·Q on the discharged water booked"
@@ -241,40 +241,40 @@
   },
   {
     "section": "Heat pump",
-    "name": "Lowest flow temperature during defrost (°C): 23.10 without buffer (≈ 60 L circuit), 25.41 with the 123 L series buffer",
-    "reference": 23.10402459040671,
-    "modeled": 25.40547109174895,
-    "error": 2.301446501342241,
+    "name": "Lowest flow temperature during defrost (°C): 22.56 without buffer (≈ 60 L circuit), 25.17 with the 123 L series buffer",
+    "reference": 22.56389386573892,
+    "modeled": 25.168070465328867,
+    "error": 2.604176599589948,
     "tolerance": 0,
     "pass": true,
-    "basis": "2 / 2 defrosts in 6 h; performance factor 4.03 / 3.97. Bosch: defrost energy comes from the buffer and system water. Predicted, unvalidated"
+    "basis": "2 / 2 defrosts in 6 h; performance factor 3.71 / 3.64. Bosch: defrost energy comes from the buffer and system water. Predicted, unvalidated"
   },
   {
     "section": "Conservation",
     "name": "Heat pump with buffer, 6 h: energy residual (J)",
     "reference": 0,
-    "modeled": -0.00016571550200450424,
-    "error": 0.00016571550200450424,
+    "modeled": -0.0019436751112351658,
+    "error": 0.0019436751112351658,
     "tolerance": 0.01,
     "pass": true,
     "basis": "Ledger closure"
   },
   {
     "section": "Heat pump",
-    "name": "Hot-water charge at A7: COP 3.03 at 35 °C flow (100 % speed, 7.97 kW) → 2.65 at 50 °C (91 %, 7.90 kW); 2 h performance factor 3.02",
+    "name": "Hot-water priority at 2 °C (cylinder 38 → 48 °C in 33 min, flow target cylinder + 7 K): performance factor 2.59 while charging, COP 3.98 heating afterwards",
     "reference": 0.4299999999999997,
-    "modeled": 0.3811074218640771,
-    "error": 0.048892578135922626,
+    "modeled": 1.3900235782842794,
+    "error": 0,
     "tolerance": 0,
     "pass": true,
-    "basis": "Bosch EN 14511 at maximum output: A7/W35 COP 3.07, A7/W55 COP 2.64 (difference 0.43); the model passes 50 °C, not 55 °C, while charging"
+    "basis": "Bosch EN 14511 at maximum output: A7/W35 COP 3.07, A7/W55 COP 2.64; start/stop/Ladedelta from the owners' documentation example"
   },
   {
     "section": "Conservation",
-    "name": "Hot-water charge, 2 h: energy residual (J)",
+    "name": "Hot-water priority, 2 h: energy residual (J)",
     "reference": 0,
-    "modeled": 1.2693618600678747e-8,
-    "error": 1.2693618600678747e-8,
+    "modeled": -0.00046991672209384383,
+    "error": 0.00046991672209384383,
     "tolerance": 0.01,
     "pass": true,
     "basis": "Ledger closure"

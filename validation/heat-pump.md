@@ -38,13 +38,13 @@ Production controller, water outlet held, air at the EN 14511 humidity, fixed co
 
 | Scenario | Outdoor (°C) | Hours | Net heat (kWh) | Outdoor-unit electricity (kWh) | Backup heat (kWh) | SPF | Defrosts | Starts | Max starts / h | Shortest run (s) | House air (°C) | Energy residual (J) | Wall time (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| House, 2 °C / 85 % RH (defrost) | 2 | 6 | 26.51 | 6.58 | 0.00 | 4.03 | 2 | 1 | 1 | — | 21.03 | -1.88e-4 | 66.9 |
-| Cold snap, −15 °C (backup heater) | -15 | 3 | 14.96 | 6.60 | 2.71 | 2.27 | 0 | 1 | 1 | — | 18.12 | 1.34e-4 | 34.6 |
-| Mild day, 12 °C, one underfloor zone open (60 W/K): low-load cycling | 12 | 3 | 1.86 | 0.33 | 0.00 | 5.55 | 0 | 4 | 2 | 740 | 19.12 | -9.48e-5 | 33.5 |
+| House, 2 °C / 85 % RH (defrost) | 2 | 6 | 27.97 | 7.54 | 0.04 | 3.71 | 2 | 2 | 2 | 1840 | 20.72 | -1.55e-3 | 239.6 |
+| Cold snap, −15 °C (backup heater) | -15 | 3 | 14.94 | 6.59 | 2.62 | 2.27 | 0 | 1 | 1 | — | 18.12 | -5.72e-4 | 130.5 |
+| Mild day, 12 °C, one underfloor zone open (60 W/K): low-load cycling | 12 | 3 | 4.83 | 1.34 | 0.00 | 3.60 | 0 | 4 | 2 | 740 | 19.12 | -8.70e-4 | 136.2 |
 
 ## 4. Timestep
 
-Fixed 0.1 s steps against adaptive 30 s macro steps (0.5 s heat-pump substeps), 10 min warm-up at 7 °C: flow temperature 27.9313 vs 27.9323 °C, compressor heat 2.0156 vs 2.0162 MJ.
+Fixed 0.1 s steps against adaptive 30 s macro steps (0.5 s heat-pump substeps), 10 min warm-up at 7 °C: flow temperature 43.7690 vs 43.7687 °C, compressor heat 2.6843 vs 2.6846 MJ.
 
 
 ## 5. Field comparison: measured Bosch Compress 5800i (4 kW), Zagreb
@@ -65,6 +65,6 @@ Source: heatpumpmonitor.org #920, Bosch Compress 5800i AW 4 kW (R290), Zagreb, r
 | COP over 48 h incl. defrost | 3.58 | 2.97 | — | extrapolated (lab-calibrated cycle) |
 | Mean heat (W) | 2337 | 2313 | — | imposed (load) |
 
-Energy residual of the replay: 1.20e-6 J (wall time 253 s).
+Energy residual of the replay: 1.20e-6 J (wall time 276 s).
 
 Wall times are measured on the machine that ran this report, not a performance guarantee.

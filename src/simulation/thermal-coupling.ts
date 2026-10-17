@@ -1,7 +1,7 @@
 import type { Simulation } from './engine';
 import { isMotor, isThermalMass, perPoleKinds, portConductance, prop, type Component } from './model';
 import { bindSpaceTemperatures, effectiveAmbient, resolveAmbient } from './environment';
-import { elementKinds, transport, STAGNANT_FLOW, type HydraulicResult } from './hydraulic';
+import { elementKinds, transport, transportCopy, STAGNANT_FLOW, type HydraulicResult } from './hydraulic';
 import { panelExchange } from './panel-radiator';
 import type { ElectricalResult } from './electrical';
 import { solveLinear } from './linear-algebra';
@@ -30,8 +30,10 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   const power = s.multiphysics.elementPower(s, electrical);
   const evaluate = (temperatures: Record<string, number>) => {
     bindSpaceTemperatures(p, temperatures);
-    const tanks = structuredClone(s.multiphysics.tanks), cells = structuredClone(s.multiphysics.pipeCells), result = structuredClone(hydraulic);
-    const boilers = structuredClone(s.multiphysics.boilers), heatPumps = structuredClone(s.multiphysics.heatPumps), vessels = structuredClone(s.multiphysics.vessels);
+    // Trial copies of everything the transport writes (cell arrays are replaced, tank and element states mutated).
+    const copy = <T extends object>(r: Record<string, T>) => Object.fromEntries(Object.entries(r).map(([id, v]) => [id, { ...v }])) as Record<string, T>;
+    const tanks = copy(s.multiphysics.tanks), cells = { ...s.multiphysics.pipeCells }, result = transportCopy(hydraulic);
+    const boilers = copy(s.multiphysics.boilers), heatPumps = copy(s.multiphysics.heatPumps), vessels = copy(s.multiphysics.vessels);
     const exchange = transport(p, tanks, result, h, cells, radiatorUA, { ...boilers, ...heatPumps }, power, fixedPanel, vessels);
     return { tanks, cells, boilers, heatPumps, vessels, result, exchange };
   };

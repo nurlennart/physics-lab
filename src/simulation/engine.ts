@@ -446,6 +446,8 @@ export class Simulation {
         if ((reading?.surcharge ?? 0) > 1e-9 && (reading?.overflow ?? 0) > 0) limit = Math.min(limit, 0.3 * area / (1.5 * reading!.overflow! / reading!.surcharge!));
       }
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
+      // A diverting valve resolves its changeover; standing at A or B it bounds nothing (a new command ends the step first).
+      if (c.kind === "divertingValve" && this.multiphysics.valveTravel[c.id]) limit = Math.min(limit, prop(c, "responseTime") / 50);
       if (c.kind === "thermostaticValve") limit = Math.min(limit, 5, prop(c, "sensorTimeConstant") / 20);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
       if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
@@ -490,7 +492,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -537,6 +539,7 @@ export class Simulation {
     if (!error) { this.log(`External impulse to ${id}: ${impulse.x}, ${impulse.y} N·s; ${angular} N·m·s.`); this.solve(true, 0); }
     return error;
   }
+  heatPumpHotWater = (id: string) => this.multiphysics.heatPumps[id]?.dhw ?? false;
   fluidTemperatureMeasurement = (id: string): number | undefined => {
     const t = this.multiphysics.tanks[id], r = this.multiphysics.hydraulic.readings[id], cells = this.multiphysics.pipeCells[id];
     const own = this.project.components.find(c => c.id === id);
@@ -814,7 +817,7 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
         if (r && c.kind === "thermostaticValve" && Math.abs(r.differentialPressure) > prop(c, "maxDifferentialPressure")) this.violation(`${c.name}: thermostatic regulating differential pressure exceeded.`);

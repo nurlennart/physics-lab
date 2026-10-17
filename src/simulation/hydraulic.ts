@@ -78,7 +78,7 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve', 'divertingValve']);
 /** Internal node of a sealed storage tank: all its ports connect to it through short nozzle branches. */
 export const interiorNode = (c: Component) => `${c.id}:interior`;
 /** Key of a storage tank's coil cells in the cell store. */
@@ -91,7 +91,12 @@ export type ElementState = { elementTemperature: number };
 export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
 export const positionedValves = new Set(['actuatedValve', 'thermostaticValve', 'pressureReducingValve']);
-const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve', 'safetyValve']);
+const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve', 'safetyValve', 'divertingValve']);
+/** Opening (%) of one branch: a diverting valve's position is the share of path B; path A has the complement. */
+const branchOpening = (c: Component, part: string | undefined, positions: Record<string, number>) => {
+  const position = positions[c.id] ?? prop(c, c.kind === 'divertingValve' ? 'position' : 'opening');
+  return c.kind === 'divertingValve' ? (part === 'a' ? 100 - position : position) : position;
+};
 /** Parse "q:h; q:h" (L/min : m at rated speed) into SI points, or an error message. */
 export function parsePumpPoints(text: string): { q: number; h: number }[] | string {
   const parts = text.split(/[;\n]/).map((x) => x.trim()).filter(Boolean);
@@ -303,6 +308,8 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
   const connected = (c: Component, port: string) => (terminals.get(node(c, port)) ?? 0) > 1;
   const branches = cs.filter(c => branchKinds.has(c.kind)).flatMap((c): Branch[] => c.kind === 'heatExchanger'
     ? [{ id: `${c.id}#hot`, stream: 'hot', c, a: node(c, 'hotIn'), b: node(c, 'hotOut') }, { id: `${c.id}#cold`, stream: 'cold', c, a: node(c, 'coldIn'), b: node(c, 'coldOut') }]
+    : c.kind === 'divertingValve'
+      ? [{ id: `${c.id}#a`, part: 'a', c, a: node(c, 'inlet'), b: node(c, 'outletA') }, { id: `${c.id}#b`, part: 'b', c, a: node(c, 'inlet'), b: node(c, 'outletB') }]
     : c.kind === 'storageTank'
       // Port nozzles point into the tank; the coil is a separate branch through it.
       ? [...STORAGE_PORTS.filter(port => connected(c, port)).map((port): Branch => ({ id: `${c.id}#${port}`, part: port, c, a: node(c, port), b: terminalNodes[interiorNode(c)] })),
@@ -406,14 +413,14 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    */
   const valveTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
-    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || elementKinds.has(c.kind) || c.kind === 'panelRadiator' || c.kind === 'storageTank' || stuckOpen ? 100 : positions[c.id] ?? prop(c, 'opening');
+    const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || elementKinds.has(c.kind) || c.kind === 'panelRadiator' || c.kind === 'storageTank' || stuckOpen ? 100 : branchOpening(c, br.part, positions);
     // Storage tank: port nozzles (entry + exit loss) or the internal coil, each with its own bore and coefficients.
     const coil = br.part === 'coil', key = (k: string) => coil ? `coil${k[0].toUpperCase()}${k.slice(1)}` : k;
     const fraction = Math.max(0.00001, relativeFlowCoefficient(c, opening)), d = prop(c, key('diameter')), area = Math.PI * d * d / 4;
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
       linear: prop(c, key('laminarK')) * mu / (2 * d * area) / fraction ** 2,
-      quadratic: c.kind === 'thermostaticValve' || c.kind === 'safetyValve' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, key('lossCoefficient')) / fraction ** 2 * RHO / (2 * area ** 2),
+      quadratic: c.kind === 'thermostaticValve' || c.kind === 'safetyValve' || c.kind === 'divertingValve' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, key('lossCoefficient')) / fraction ** 2 * RHO / (2 * area ** 2),
       offset: c.kind === 'checkValve' && !stuckOpen ? prop(c, 'crackingPressure') : 0,
       mu,
     };
@@ -440,7 +447,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   const inverse = (b: typeof branches[number], dp: number) => {
     const { c, a, b: to } = b;
     if (!primed.has(groups.find(a))) return { q: 0, derivative: 0 };
-    const fault = faults[c.id], opening = c.kind === 'heatExchanger' ? 100 : positions[c.id] ?? prop(c, 'opening');
+    const fault = faults[c.id], opening = c.kind === 'heatExchanger' ? 100 : branchOpening(c, b.part, positions);
     if (valveKinds.has(c.kind) && (fault === 'stuckClosed' || (opening === 0 && fault !== 'stuckOpen'))) return { q: 0, derivative: 0 };
     const actualLoss = (q: number) => loss(b, q);
     const oneWay = c.kind === 'checkValve' || isPump(c) || c.kind === 'pressureReducingValve' || c.kind === 'safetyValve';
@@ -610,6 +617,11 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     if (isPump(c) && (!primed.has(groups.find(a)) || blocked.has(a))) result.diagnostics.push(`${c.name}: dry-run / unprimed inlet; no fluid supplied.`);
     if (b.stream === 'hot') result.readings[c.id] = result.readings[b.id];
   });
+  // Diverting valve: total flow through the common port AB, its pressure, and the drop to the open path.
+  for (const c of cs.filter(c => c.kind === 'divertingValve')) {
+    const [a, b] = ['a', 'b'].map(part => result.readings[`${c.id}#${part}`]);
+    if (a && b) result.readings[c.id] = { ...(Math.abs(b.flow) > Math.abs(a.flow) ? b : a), flow: a.flow + b.flow, hydraulicPower: 0 };
+  }
   // Storage tank: throughput (sum of the inflows) and the gauge pressure at the tank base.
   for (const c of cs.filter(c => c.kind === 'storageTank')) {
     const n = topology.terminalNodes[interiorNode(c)], ports = result.branches.filter(b => b.component === c.id && b.part !== 'coil');
@@ -834,6 +846,11 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const q = d.coefficient * (at(d.hot) - at(d.cold));
     for (const key of [id, `${id}#hot`, `${id}#cold`]) if (result.readings[key]) result.readings[key].duty = q;
   }
+  // Diverting valve: water temperature at its common port.
+  for (const c of project.components.filter(c => c.kind === 'divertingValve')) {
+    const i = index.get(result.terminalNodes[`${c.id}:inlet`]);
+    if (i !== undefined && result.readings[c.id] && transfers.some(b => b.component === c.id)) Object.assign(result.readings[c.id], { temperature: temperatures[i], temperatureValid: true });
+  }
   for (const c of project.components.filter(c => c.kind === 'fluidJunction')) {
     const n = result.terminalNodes[`${c.id}:fluid`], i = index.get(n);
     if (i !== undefined && transfers.some(b => b.to === n)) {
@@ -874,6 +891,13 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   nodes.forEach((n, i) => (result.nodeTemperatures[n] = temperatures[i]));
   return { ambient, heat, spills, environmentExchange };
 }
+/**
+ * Copy of a solve result that a trial transport may mutate: it writes readings (temperatures, duties) and node
+ * temperatures only; topology, branches and pressures are read. Cheaper than a deep clone on every trial.
+ */
+export const transportCopy = (r: HydraulicResult): HydraulicResult => ({
+  ...r, readings: Object.fromEntries(Object.entries(r.readings).map(([id, v]) => [id, { ...v }])), nodeTemperatures: { ...r.nodeTemperatures },
+});
 /** Enthalpy (J, relative to 0 K) of all water cells: pipes, boilers, heat pumps, panel radiators, storage layers and coils. */
 export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) =>
   project.components.reduce((sum, c) => sum + (c.kind === 'storageTank'

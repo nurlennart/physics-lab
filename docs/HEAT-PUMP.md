@@ -178,6 +178,21 @@ The terms enter the existing ledger as follows:
 
 Frost holds no separate energy. Its latent heat of deposition is part of the evaporator duty, and melting returns L_f·m to the environment with the meltwater. Coupled runs close the global energy residual to about 10⁻⁴ J over hours ([report](../validation/heat-pump.md)).
 
+### Hot-water mode and the 3-way valve VW1
+
+The indoor unit switches between heating and a hot-water cylinder with its motorised 3-way diverting valve VW1 and decides by the cylinder sensor TW1. In the lab, wire a temperature sensor on the cylinder to the heat pump's **TW1** input and its **VW1** output to a `divertingValve` (AB from the heat pump, A to the heating, B to the cylinder coil), and enable *Hot-water mode*.
+
+- **Start and stop:** a charge starts when TW1 falls to the start temperature and ends at the stop temperature. Bosch ranges [OWN]: Comfort start ≥ 40 °C / stop ≤ 65 °C, Eco 35/60 °C, Eco+ 30/55 °C. The defaults (start 40 °C, stop 48 °C) are the owners' documentation's example, not a stated Bosch default.
+- **Flow target:** the cylinder temperature plus the charging differential (*Ladedelta*, Bosch range 4–18 K, default 7 K) [OWN], so the flow and condensing temperatures rise with the cylinder, and the COP falls. Envelope and 75 °C limits apply; the backup heater can join as in heating.
+- **Priority:** hot water before heating; the heating gets no flow while VW1 is at B. A charge also runs with heating disabled (summer).
+- **Time limit (assumption):** a charge still running after the maximum hot-water time (60 min) ends and waits the same time, so the house recovers. Bosch's own limit is not published for the 6800i.
+- **Defrost:** a defrost during a charge keeps VW1 at B and draws its heat from the cylinder, as Bosch describes for small systems.
+- **Valve:** the plug travels at a fixed running time (assumed 15 s for the full stroke, Kvs 6 per path), springs back to A on a lost signal, and a lost VW1 command (controller fault) returns it to A.
+
+The flow, start and stop logic of the compressor are unchanged; hot water only changes the target and the demand. Measurements: `hotWater` (VW1 at B) and `hotWaterCop` (heat over electricity while charging).
+
+In the house example at 2 °C the cylinder starts at 38 °C: the charge to 48 °C takes about 33 minutes with a performance factor of about 2.6, against a heating COP of about 4.0 afterwards; the house cools by about 0.6 K meanwhile and recovers.
+
 ## Telemetry and Inspector
 
 Measurements (also chartable as probes):
@@ -201,6 +216,7 @@ The Inspector adds:
 
 ## Examples
 
+- All heat-pump examples include the 3-way valve VW1, a Bosch WH 290 cylinder with its TW1 sensor, the indoor unit's 17 l expansion vessel and its 3 bar safety valve. The house and buffer examples start with the cylinder at 38 °C (an immediate hot-water charge); the cold snap starts it charged.
 - **Heat pump and underfloor heating** (`heatPumpHouse`): 120 m² single-zone house (envelope ≈ 200 W/K, about 6 kW at −10 °C), underfloor loop as an equivalent 60 m × 32 mm pipe emitting 520 W/K into the room, heating curve 25 → 35 °C, 2 °C outdoors at 85 % RH. The coil frosts and defrosts about every 3 hours (every 5th an intensive cycle); seasonal performance factor about 4.0. Set the environment to 12 °C and close the zone (lower the underfloor loop's thermal UA) to see low-load cycling; drop to −20 °C to meet the envelope.
 - **Heat pump in a cold snap** (`heatPumpCold`): the same house at −15 °C. The compressor runs at its current limit (about 5.2 kW, COP about 2.2) and the 6 kW backup heater joins after its delay. Lower the outdoor temperature below −23 °C for the cut-out, or inject an outdoor fan failure.
 
@@ -234,7 +250,7 @@ See *Defrost calibration against field data* above for the measured comparison a
 
 ## Limitations
 
-- Bosch's control firmware, low-noise modes, SG-Ready/EVU inputs, the hot-water mode's priority logic and 3-way diverting valve, cooling, and the indoor unit's pump are not modelled. A hot-water cylinder can be charged by its own circuit with a fixed 55 °C target (starter **Heat pump charging a hot-water cylinder**).
+- Bosch's control firmware, low-noise modes, SG-Ready/EVU inputs, hot-water time programmes, extra hot water, thermal disinfection, cooling, and the indoor unit's pump are not modelled. Hot-water mode follows the published start/stop/charging-differential logic; its time limit is an assumption.
 - Also absent: the drip-tray heater, refrigerant charge migration and oil return, compressor and fan harmonics, and sound.
 - The cycle is quasi-steady per substep. Refrigerant-side dynamics are represented only by the condenser/heater node, the speed ramp and the coil's capacity.
 - Latent heat of condensation on a wet coil above 0 °C is not separated from the sensible duty. Frost has a uniform effect on the coil, with no distribution, density change or icing of the drain.

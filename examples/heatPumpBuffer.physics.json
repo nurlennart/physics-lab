@@ -57,6 +57,11 @@
       "variant": "standard",
       "props": {
         "enabled": true,
+        "hotWater": true,
+        "dhwStart": 40,
+        "dhwStop": 48,
+        "dhwDelta": 7,
+        "dhwMaxTime": 3600,
         "targetMode": "curve",
         "setpoint": 35,
         "curveDesignOutdoor": -10,
@@ -149,7 +154,7 @@
       "id": "heatPumpBuffer-component-5",
       "kind": "pipe",
       "name": "Insulated flow · 10 m",
-      "x": 640,
+      "x": 950,
       "y": 330,
       "rotation": 0,
       "variant": "standard",
@@ -224,6 +229,24 @@
     },
     {
       "id": "heatPumpBuffer-component-8",
+      "kind": "divertingValve",
+      "name": "VW1 · heating / hot water",
+      "x": 640,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "position": 0,
+        "kvs": 6,
+        "responseTime": 15,
+        "diameter": 0.025,
+        "laminarK": 0,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-9",
       "kind": "storageTank",
       "name": "Bosch BH 120-5 · series buffer",
       "x": 980,
@@ -266,7 +289,243 @@
       "thermalSpacePinned": true
     },
     {
-      "id": "heatPumpBuffer-component-9",
+      "id": "heatPumpBuffer-component-10",
+      "kind": "pipe",
+      "name": "Flow to coil · 4 m",
+      "x": 1300,
+      "y": 760,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 4,
+        "diameter": 0.028,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 25,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-11",
+      "kind": "pipe",
+      "name": "Return from coil · 4 m",
+      "x": 640,
+      "y": 1100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 4,
+        "diameter": 0.028,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 25,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-12",
+      "kind": "storageTank",
+      "name": "Bosch Stora WH 290 LP1 B",
+      "x": 980,
+      "y": 1060,
+      "rotation": 0,
+      "variant": "wh290",
+      "props": {
+        "storageVolume": 277,
+        "tankHeight": 1.15,
+        "layers": 20,
+        "standbyHeatLoss": 67,
+        "loss": 1.488888888888889,
+        "effectiveConductivity": 1,
+        "vesselHeatCapacity": 52800,
+        "p1Height": 4,
+        "p2Height": 96,
+        "p3Height": 65,
+        "p4Height": 50,
+        "sensorTopHeight": 75,
+        "sensorBottomHeight": 30,
+        "diameter": 0.025,
+        "lossCoefficient": 1.5,
+        "laminarK": 160,
+        "coil": true,
+        "coilVolume": 22,
+        "coilUA": 3418.8,
+        "coilTop": 61,
+        "coilBottom": 17,
+        "coilDiameter": 0.0285,
+        "coilLossCoefficient": 30,
+        "coilLaminarK": 67000,
+        "initialTemperature": 38,
+        "ambient": 20,
+        "elevation": 0,
+        "maxPressure": 1000000,
+        "maxTemperature": 95,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpBuffer-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpBuffer-component-13",
+      "kind": "sensor",
+      "name": "TW1 · cylinder sensor",
+      "x": 330,
+      "y": 1000,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "heatPumpBuffer-component-12",
+        "quantity": "fluidTemperature",
+        "stream": "hot",
+        "minRange": 0,
+        "maxRange": 120,
+        "resolution": 0.01,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-14",
+      "kind": "tank",
+      "name": "Cold mains (header tank, 10 °C)",
+      "x": 1600,
+      "y": 740,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 6,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 800,
+        "capacity": 1000,
+        "initialTemperature": 10,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-15",
+      "kind": "pipe",
+      "name": "Cold feed · 8 m",
+      "x": 1300,
+      "y": 1150,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 8,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 10,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-16",
+      "kind": "pipe",
+      "name": "Hot draw-off · 8 m",
+      "x": 1600,
+      "y": 1000,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 8,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 38,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-17",
+      "kind": "valve",
+      "name": "Hot tap (closed)",
+      "x": 1600,
+      "y": 1250,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 0,
+        "diameter": 0.015,
+        "lossCoefficient": 5,
+        "laminarK": 500,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-18",
+      "kind": "tank",
+      "name": "Bath / drain",
+      "x": 1600,
+      "y": 1480,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 2000,
+        "initialTemperature": 20,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-component-19",
       "kind": "expansionVessel",
       "name": "Bosch indoor-unit vessel · 17 L",
       "x": 640,
@@ -284,7 +543,7 @@
       }
     },
     {
-      "id": "heatPumpBuffer-component-10",
+      "id": "heatPumpBuffer-component-20",
       "kind": "safetyValve",
       "name": "Safety valve · 3 bar",
       "x": 640,
@@ -384,12 +643,24 @@
         "port": "outlet"
       },
       "to": {
-        "component": "heatPumpBuffer-component-5",
+        "component": "heatPumpBuffer-component-8",
         "port": "inlet"
       }
     },
     {
       "id": "heatPumpBuffer-connection-8",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-8",
+        "port": "outletA"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-5",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-9",
       "domain": "hydraulic",
       "from": {
         "component": "heatPumpBuffer-component-5",
@@ -401,7 +672,7 @@
       }
     },
     {
-      "id": "heatPumpBuffer-connection-9",
+      "id": "heatPumpBuffer-connection-10",
       "domain": "hydraulic",
       "from": {
         "component": "heatPumpBuffer-component-6",
@@ -413,7 +684,7 @@
       }
     },
     {
-      "id": "heatPumpBuffer-connection-10",
+      "id": "heatPumpBuffer-connection-11",
       "domain": "hydraulic",
       "from": {
         "component": "heatPumpBuffer-component-4",
@@ -425,27 +696,15 @@
       }
     },
     {
-      "id": "heatPumpBuffer-connection-11",
+      "id": "heatPumpBuffer-connection-12",
       "domain": "hydraulic",
       "from": {
         "component": "heatPumpBuffer-component-7",
         "port": "outlet"
       },
       "to": {
-        "component": "heatPumpBuffer-component-8",
+        "component": "heatPumpBuffer-component-9",
         "port": "p1"
-      }
-    },
-    {
-      "id": "heatPumpBuffer-connection-12",
-      "domain": "hydraulic",
-      "from": {
-        "component": "heatPumpBuffer-component-8",
-        "port": "p2"
-      },
-      "to": {
-        "component": "heatPumpBuffer-component-4",
-        "port": "inlet"
       }
     },
     {
@@ -453,7 +712,7 @@
       "domain": "hydraulic",
       "from": {
         "component": "heatPumpBuffer-component-9",
-        "port": "fluid"
+        "port": "p2"
       },
       "to": {
         "component": "heatPumpBuffer-component-4",
@@ -464,7 +723,151 @@
       "id": "heatPumpBuffer-connection-14",
       "domain": "hydraulic",
       "from": {
+        "component": "heatPumpBuffer-component-8",
+        "port": "outletB"
+      },
+      "to": {
         "component": "heatPumpBuffer-component-10",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-15",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-10",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-12",
+        "port": "coilIn"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-16",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-12",
+        "port": "coilOut"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-11",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-17",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-11",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-18",
+      "domain": "control",
+      "from": {
+        "component": "heatPumpBuffer-component-13",
+        "port": "out"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-3",
+        "port": "dhwSensor"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-19",
+      "domain": "control",
+      "from": {
+        "component": "heatPumpBuffer-component-3",
+        "port": "dhw"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-8",
+        "port": "position"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-20",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-14",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-15",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-21",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-15",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-12",
+        "port": "p1"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-22",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-12",
+        "port": "p2"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-16",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-23",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-16",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-17",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-24",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-17",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-18",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-25",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-19",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "heatPumpBuffer-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpBuffer-connection-26",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpBuffer-component-20",
         "port": "inlet"
       },
       "to": {
@@ -590,7 +993,7 @@
     },
     {
       "id": "heatPumpBuffer-probe-15",
-      "component": "heatPumpBuffer-component-9",
+      "component": "heatPumpBuffer-component-19",
       "measurement": "pressure",
       "name": "System pressure",
       "color": "#8CC6F8",
@@ -598,7 +1001,7 @@
     },
     {
       "id": "heatPumpBuffer-probe-16",
-      "component": "heatPumpBuffer-component-8",
+      "component": "heatPumpBuffer-component-9",
       "measurement": "topTemperature",
       "name": "Buffer top",
       "color": "#F59B85",
@@ -606,7 +1009,7 @@
     },
     {
       "id": "heatPumpBuffer-probe-17",
-      "component": "heatPumpBuffer-component-8",
+      "component": "heatPumpBuffer-component-9",
       "measurement": "bottomTemperature",
       "name": "Buffer lower sensor",
       "color": "#8CC6F8",
@@ -614,6 +1017,46 @@
     },
     {
       "id": "heatPumpBuffer-probe-18",
+      "component": "heatPumpBuffer-component-3",
+      "measurement": "hotWater",
+      "name": "Hot-water mode (VW1 → B)",
+      "color": "#F5A524",
+      "visible": true
+    },
+    {
+      "id": "heatPumpBuffer-probe-19",
+      "component": "heatPumpBuffer-component-12",
+      "measurement": "fluidTemperature",
+      "name": "Cylinder sensor TW1",
+      "color": "#FF7B72",
+      "visible": true
+    },
+    {
+      "id": "heatPumpBuffer-probe-20",
+      "component": "heatPumpBuffer-component-12",
+      "measurement": "topTemperature",
+      "name": "Cylinder top",
+      "color": "#F59B85",
+      "visible": true
+    },
+    {
+      "id": "heatPumpBuffer-probe-21",
+      "component": "heatPumpBuffer-component-12",
+      "measurement": "heatDuty",
+      "name": "Coil heat into the cylinder",
+      "color": "#E5C07B",
+      "visible": true
+    },
+    {
+      "id": "heatPumpBuffer-probe-22",
+      "component": "heatPumpBuffer-component-3",
+      "measurement": "hotWaterCop",
+      "name": "Hot-water performance factor",
+      "color": "#9BE9A8",
+      "visible": true
+    },
+    {
+      "id": "heatPumpBuffer-probe-23",
       "component": "heatPumpBuffer-component-3",
       "measurement": "energyResidual",
       "name": "Energy balance residual",
