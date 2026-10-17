@@ -12,7 +12,7 @@
  * then removes density inversions by mixing adjacent unstable layers (capacity-weighted, energy exact). Every
  * outlet temperature is affine in the inlet node temperatures, so the tank enters the global enthalpy solve.
  */
-import { prop, type Component } from './model';
+import { derived, prop, type Component } from './model';
 import { exchangeWeight } from './panel-radiator';
 import { WATER_CP as CP, WATER_RHO as RHO } from './units';
 import { kellDensity } from './water';
@@ -31,21 +31,27 @@ export const layerCapacity = (c: Component) => (storageWaterMass(c) * CP + prop(
 export const layerAt = (c: Component, percent: number) => Math.max(0, Math.min(storageLayers(c) - 1, Math.floor(percent / 100 * storageLayers(c))));
 export const portLayer = (c: Component, port: string) => layerAt(c, prop(c, `${port}Height`, 50));
 /** Coil cells: one per layer covered, in forward flow order from the top (coil inlet) to the bottom (coil outlet). */
-export function coilLayers(c: Component) {
-  if (!hasCoil(c)) return [];
-  const top = layerAt(c, Math.max(prop(c, 'coilTop'), prop(c, 'coilBottom'))), bottom = layerAt(c, Math.min(prop(c, 'coilTop'), prop(c, 'coilBottom')));
-  return Array.from({ length: top - bottom + 1 }, (_, i) => top - i);
+export function coilLayers(c: Component): readonly number[] {
+  return derived(c, 'coilLayers', () => {
+    if (!hasCoil(c)) return [];
+    const top = layerAt(c, Math.max(prop(c, 'coilTop'), prop(c, 'coilBottom'))), bottom = layerAt(c, Math.min(prop(c, 'coilTop'), prop(c, 'coilBottom')));
+    return Array.from({ length: top - bottom + 1 }, (_, i) => top - i);
+  });
 }
 export const coilCellCapacity = (c: Component) => prop(c, 'coilVolume') / 1000 * RHO * CP / Math.max(1, coilLayers(c).length);
 /** Cylinder geometry of the water column. */
 export function storageGeometry(c: Component) {
-  const height = prop(c, 'tankHeight', 1), volume = prop(c, 'storageVolume') / 1000, area = volume / height, radius = Math.sqrt(area / Math.PI);
-  return { height, area, radius, layerHeight: height / storageLayers(c), side: 2 * Math.PI * radius * height };
+  return derived(c, 'storageGeometry', () => {
+    const height = prop(c, 'tankHeight', 1), volume = prop(c, 'storageVolume') / 1000, area = volume / height, radius = Math.sqrt(area / Math.PI);
+    return { height, area, radius, layerHeight: height / storageLayers(c), side: 2 * Math.PI * radius * height };
+  });
 }
 /** Loss conductance of each layer: the total UA split by surface (side wall per layer, lid on the top, base on the bottom). */
-export function layerLoss(c: Component) {
-  const n = storageLayers(c), g = storageGeometry(c), total = g.side + 2 * g.area, ua = prop(c, 'loss');
-  return Array.from({ length: n }, (_, k) => ua * (g.side / n + (k === 0 ? g.area : 0) + (k === n - 1 ? g.area : 0)) / total);
+export function layerLoss(c: Component): readonly number[] {
+  return derived(c, 'layerLoss', () => {
+    const n = storageLayers(c), g = storageGeometry(c), total = g.side + 2 * g.area, ua = prop(c, 'loss');
+    return Array.from({ length: n }, (_, k) => ua * (g.side / n + (k === 0 ? g.area : 0) + (k === n - 1 ? g.area : 0)) / total);
+  });
 }
 /** Conductance between adjacent layers from the effective vertical conductivity (water, wall and internal mixing). */
 export const layerConductance = (c: Component) => { const g = storageGeometry(c); return prop(c, 'effectiveConductivity', 1) * g.area / g.layerHeight; };
@@ -61,23 +67,60 @@ export interface StorageCoilFlow { node: string; rate: number; heat: number; for
  * y = base + Σ_node response[node]·T_node. `inputs` are the inflow streams (rate kg/s at its port layer; `heat`
  * W is branch dissipation carried by the stream), `outputs` the outflow rates per layer.
  */
-export interface StorageResponse { base: number[]; response: Map<string, number[]>; n: number; m: number; losses: number[]; coilG: number; weight: number; coilCells: number[] }
+export interface StorageResponse { base: number[]; response: Map<string, number[]>; n: number; m: number; losses: readonly number[]; coilG: number; weight: number; coilCells: readonly number[] }
 export function storageResponse(c: Component, layers: readonly number[], coil: readonly number[], inputs: StorageStream[], outputs: { layer: number; rate: number }[], coilFlow: StorageCoilFlow | undefined, ambientK: number, dt: number): StorageResponse {
   const n = layers.length, cells = coilLayers(c), m = cells.length, size = n + m;
-  const a = Array.from({ length: size }, () => new Float64Array(size)), b0 = new Float64Array(size);
-  const columns = new Map<string, Float64Array>();
-  const column = (node: string) => { let v = columns.get(node); if (!v) { v = new Float64Array(size); columns.set(node, v); } return v; };
-  const cap = layerCapacity(c), losses = layerLoss(c), gv = layerConductance(c);
+  const cap = layerCapacity(c), losses = layerLoss(c);
+  // The matrix and the node response columns depend on the flows and the step only; the temperatures, the ambient and
+  // the stream heat enter the base right-hand side. Trial evaluations of one substep reuse the solved columns.
+  const key = responseKey(dt, n, inputs, outputs, coilFlow), frozen = Object.isFrozen(c) && Object.isFrozen(c.props);
+  const slots = frozen ? responseCache.get(c) ?? responseCache.set(c, [undefined, undefined]).get(c)! : undefined, slot = dt === 0 ? 0 : 1;
+  let system = slots?.[slot];
+  if (!system || !sameKey(system.key, key)) {
+    system = layerSystem(c, n, cells, inputs, outputs, coilFlow, dt, cap, losses);
+    system.key = key;
+    if (slots) slots[slot] = system;
+  }
+  const b0 = new Float64Array(size);
   if (dt === 0) {
     // A zero-length step only resolves outlet temperatures: every unknown keeps its stored value.
-    for (let i = 0; i < size; i++) { a[i][i] = 1; b0[i] = i < n ? layers[i] : coil[i - n]; }
+    for (let i = 0; i < size; i++) b0[i] = i < n ? layers[i] : coil[i - n];
+  } else {
+    for (let k = 0; k < n; k++) b0[k] += cap / dt * layers[k] + losses[k] * ambientK;
+    for (const s of inputs) b0[s.layer] += s.heat;
+    if (m && dt > 0) {
+      const cc = coilCellCapacity(c), order = coilFlow && !coilFlow.forward ? [...cells.keys()].reverse() : [...cells.keys()];
+      for (const j of order) b0[n + j] += cc / dt * coil[j] + (coilFlow?.heat ?? 0) / m;
+    }
+  }
+  return { base: layerSolve(system.factor, b0), response: system.response, n, m, losses, coilG: system.coilG, weight: system.weight, coilCells: cells };
+}
+interface LayerSystem { key: (string | number | boolean)[]; factor: LayerFactor; response: Map<string, number[]>; coilG: number; weight: number }
+/** Last layer system of each (frozen) storage tank for a zero-length and a finite step, with the inputs it was built from. */
+const responseCache = new WeakMap<Component, (LayerSystem | undefined)[]>();
+const responseKey = (dt: number, n: number, inputs: StorageStream[], outputs: { layer: number; rate: number }[], coilFlow: StorageCoilFlow | undefined) => {
+  // A zero-length step is the identity on every unknown, whatever the flows.
+  if (dt === 0) return [dt, n];
+  const key: (string | number | boolean)[] = [dt, n, inputs.length];
+  for (const s of inputs) key.push(s.node, s.layer, s.rate);
+  key.push(outputs.length);
+  for (const o of outputs) key.push(o.layer, o.rate);
+  if (coilFlow) key.push(coilFlow.node, coilFlow.rate, coilFlow.forward);
+  return key;
+};
+const sameKey = (a: (string | number | boolean)[], b: (string | number | boolean)[]) => a.length === b.length && a.every((v, i) => Object.is(v, b[i]));
+/** Implicit layer and coil matrix of one step, its elimination and the solved response columns of the inlet nodes. */
+function layerSystem(c: Component, n: number, cells: readonly number[], inputs: StorageStream[], outputs: { layer: number; rate: number }[], coilFlow: StorageCoilFlow | undefined, dt: number, cap: number, losses: readonly number[]): LayerSystem {
+  const m = cells.length, size = n + m, gv = layerConductance(c);
+  const a = Array.from({ length: size }, () => new Float64Array(size));
+  const columns = new Map<string, Float64Array>();
+  const column = (node: string) => { let v = columns.get(node); if (!v) { v = new Float64Array(size); columns.set(node, v); } return v; };
+  if (dt === 0) {
+    for (let i = 0; i < size; i++) a[i][i] = 1;
   } else {
     const net = new Float64Array(n);
-    for (let k = 0; k < n; k++) {
-      a[k][k] += cap / dt + losses[k];
-      b0[k] += cap / dt * layers[k] + losses[k] * ambientK;
-    }
-    for (const s of inputs) { net[s.layer] += s.rate; column(s.node)[s.layer] += s.rate * CP; b0[s.layer] += s.heat; }
+    for (let k = 0; k < n; k++) a[k][k] += cap / dt + losses[k];
+    for (const s of inputs) { net[s.layer] += s.rate; column(s.node)[s.layer] += s.rate * CP; }
     for (const o of outputs) { net[o.layer] -= o.rate; a[o.layer][o.layer] += o.rate * CP; }
     // Vertical flow through interface k|k+1 from continuity of the layers below (positive upward), upwind.
     let lift = 0;
@@ -98,7 +141,6 @@ export function storageResponse(c: Component, layers: readonly number[], coil: r
     order.forEach((j, position) => {
       const i = n + j, k = cells[j], upstream = position ? n + order[position - 1] : -1;
       a[i][i] += cc / dt + rate * CP + coilG * (1 - weight);
-      b0[i] += cc / dt * coil[j] + (coilFlow?.heat ?? 0) / m;
       a[i][k] -= coilG;
       a[k][k] += coilG; a[k][i] -= coilG * (1 - weight);
       if (rate > 0) {
@@ -108,9 +150,8 @@ export function storageResponse(c: Component, layers: readonly number[], coil: r
       }
     });
   }
-  const keys = [...columns.keys()];
-  const solved = solveMany(a, [b0, ...keys.map(k => columns.get(k)!)]);
-  return { base: solved[0], response: new Map(keys.map((k, i) => [k, solved[i + 1]])), n, m, losses, coilG, weight, coilCells: cells };
+  const factor = layerFactor(a);
+  return { key: [], factor, response: new Map([...columns].map(([node, v]) => [node, layerSolve(factor, v)])), coilG, weight };
 }
 /** Evaluate a response at solved node temperatures. */
 export const storageEvaluate = (r: StorageResponse, at: (node: string) => number) => {
@@ -124,42 +165,58 @@ export const storageEvaluate = (r: StorageResponse, at: (node: string) => number
  * captures the inversion below 4 °C. Energy Σ C·T is conserved exactly.
  */
 export function mixInversions(layers: number[]) {
-  const groups: { t: number; w: number; count: number }[] = [];
+  // Each group keeps the density of its temperature (recomputed when a merge changes it).
+  const groups: { t: number; w: number; count: number; density: number }[] = [];
   const density = (k: number) => kellDensity(Math.max(0, Math.min(100, k - 273.15)));
   for (const t of layers) {
-    groups.push({ t, w: 1, count: 1 });
+    groups.push({ t, w: 1, count: 1, density: density(t) });
     while (groups.length > 1) {
       const top = groups[groups.length - 1], below = groups[groups.length - 2];
-      if (density(below.t) >= density(top.t) - 1e-9) break;
+      if (below.density >= top.density - 1e-9) break;
       groups.pop();
-      below.t = (below.t * below.w + top.t * top.w) / (below.w + top.w); below.w += top.w; below.count += top.count;
+      below.t = (below.t * below.w + top.t * top.w) / (below.w + top.w); below.w += top.w; below.count += top.count; below.density = density(below.t);
     }
   }
   let k = 0, mixed = false;
   for (const g of groups) { if (g.count > 1) mixed = true; for (let i = 0; i < g.count; i++) layers[k++] = g.t; }
   return mixed;
 }
-/** Dense Gaussian elimination with partial pivoting for several right-hand sides. */
-function solveMany(a: Float64Array[], rhs: Float64Array[]): number[][] {
-  const n = a.length, b = rhs.map(r => Float64Array.from(r)), m = a.map(r => Float64Array.from(r));
+/**
+ * Dense Gaussian elimination with partial pivoting. The elimination of the matrix (its pivots and nonzero multipliers)
+ * is recorded and replayed on each right-hand side, which performs exactly the operations of eliminating them together.
+ */
+interface LayerFactor { n: number; m: Float64Array[]; pivots: number[]; multipliers: number[][] }
+/** Eliminates `a` in place. */
+function layerFactor(a: Float64Array[]): LayerFactor {
+  const n = a.length, m = a, pivots: number[] = [], multipliers: number[][] = [];
   for (let col = 0; col < n; col++) {
     let pivot = col;
     for (let r = col + 1; r < n; r++) if (Math.abs(m[r][col]) > Math.abs(m[pivot][col])) pivot = r;
     if (!(Math.abs(m[pivot][col]) > 0)) throw Error('Storage tank: singular layer system.');
-    if (pivot !== col) { [m[pivot], m[col]] = [m[col], m[pivot]]; for (const v of b) [v[pivot], v[col]] = [v[col], v[pivot]]; }
-    const p = m[col][col];
+    if (pivot !== col) [m[pivot], m[col]] = [m[col], m[pivot]];
+    pivots.push(pivot);
+    const p = m[col][col], top = m[col], steps: number[] = [];
     for (let r = col + 1; r < n; r++) {
-      const f = m[r][col] / p;
+      const row = m[r], f = row[col] / p;
       if (f === 0) continue;
-      for (let j = col; j < n; j++) m[r][j] -= f * m[col][j];
-      for (const v of b) v[r] -= f * v[col];
+      for (let j = col; j < n; j++) row[j] -= f * top[j];
+      steps.push(r, f);
     }
+    multipliers.push(steps);
   }
-  return b.map(v => {
-    const x = new Array<number>(n).fill(0);
-    for (let r = n - 1; r >= 0; r--) { let s = v[r]; for (let j = r + 1; j < n; j++) s -= m[r][j] * x[j]; x[r] = s / m[r][r]; }
-    return x;
-  });
+  return { n, m, pivots, multipliers };
+}
+/** Solves for one right-hand side (`v` is overwritten). */
+function layerSolve({ n, m, pivots, multipliers }: LayerFactor, v: Float64Array): number[] {
+  for (let col = 0; col < n; col++) {
+    const pivot = pivots[col];
+    if (pivot !== col) [v[pivot], v[col]] = [v[col], v[pivot]];
+    const top = v[col], steps = multipliers[col];
+    for (let s = 0; s < steps.length; s += 2) v[steps[s]] -= steps[s + 1] * top;
+  }
+  const x = new Array<number>(n).fill(0);
+  for (let r = n - 1; r >= 0; r--) { let s = v[r]; for (let j = r + 1; j < n; j++) s -= m[r][j] * x[j]; x[r] = s / m[r][r]; }
+  return x;
 }
 /** Stored enthalpy (J, relative to 0 K) of layers and coil. */
 export const storageEnthalpy = (c: Component, layers: readonly number[], coil: readonly number[] = []) =>

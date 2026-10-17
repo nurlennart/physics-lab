@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from "react";
-import { actions, getState } from "../editor/store";
+import { actions, getState, useLab } from "../editor/store";
 
 /**
  * Keeps a rendering error in one pane from unmounting the whole application. The project, the
@@ -11,6 +11,8 @@ import { actions, getState } from "../editor/store";
  */
 declare global { interface Window { __physicsLabRenderFault?: string } }
 function FaultProbe({ area }: { area: string }) {
+  // Renders with every store update, like the panes themselves (the shell no longer re-renders them on each refresh).
+  useLab();
   // Cleared in componentDidCatch, not here: React retries a failed render once before giving up.
   if (typeof window !== "undefined" && window.__physicsLabRenderFault === area) throw new Error(`Injected rendering fault in ${area}`);
   return null;

@@ -2,6 +2,8 @@ import { ThermalRegions } from './ThermalRegions';
 import { THERMAL_PLAN_SCALE } from '../simulation/thermal-spaces';
 import { T } from "../theme/tokens";
 import {
+  memo,
+  useCallback,
   useState,
   useRef,
   useEffect,
@@ -89,6 +91,131 @@ function chipAnchor(points: { x: number; y: number }[]) {
   }
   return best.length > 40 ? best : null;
 }
+/**
+ * Terminals and terminal labels of one module. They change only with the configuration, the wire being drawn and the
+ * node-measurement mode, so they are kept out of the instrument refresh while running (`live` changes only while
+ * node voltages are shown).
+ */
+const ModuleTerminals = memo(function ModuleTerminals({ c, w, h, connections, pendingPort, nodeMode, reference, onPort }: {
+  c: Component; w: number; h: number; connections: Connection[]; pendingPort: string | null; nodeMode: boolean; reference: Terminal | null; live: number; onPort: (t: Terminal) => void;
+}) {
+  const pins = modulePins(c);
+  return (
+    <>
+      {definitions[c.kind].ports.map((p) => {
+        const { x, y } = portLocal(c, p.id);
+        const branches = connections.filter(
+          (w) =>
+            w.domain === "electrical" &&
+            ((w.from.component === c.id && w.from.port === p.id) ||
+              (w.to.component === c.id && w.to.port === p.id)),
+        ).length;
+        const potential =
+          nodeMode && p.domain === "electrical"
+            ? nodeVoltage(
+                simulation.electrical,
+                `${c.id}:${p.id}`,
+                reference
+                  ? `${reference.component}:${reference.port}`
+                  : undefined,
+              )
+            : null;
+        const isPending =
+          pendingPort === p.id;
+        return (
+          <g
+            key={p.id}
+            className={`terminal ${p.domain} ${isPending ? "pending" : ""}`}
+            data-port={`${c.name}:${p.id}`}
+            aria-label={`${c.name} ${p.label}`}
+            role="button"
+            tabIndex={0}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPort({ component: c.id, port: p.id });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onPort({ component: c.id, port: p.id });
+              }
+            }}
+          >
+            <title>{p.label}</title>
+            {branches > 1 && (
+              <circle cx={x} cy={y} r="8" fill={T.electricalText} />
+            )}
+            {nodeMode && p.domain === "electrical" && (
+              <text
+                x={x}
+                y={y - 17}
+                className="node-reading"
+                textAnchor="middle"
+              >
+                {potential === null
+                  ? "undefined"
+                  : potential.toFixed(2) + " V"}
+              </text>
+            )}
+            {/* Stub from the terminal straight to the module edge it faces. */}
+            <path
+              d={x < 0 ? `M${x} ${y}H0` : x > w ? `M${x} ${y}H${w}` : y < 0 ? `M${x} ${y}V0` : `M${x} ${y}V${h}`}
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <circle cx={x} cy={y} r="13" fill="transparent" />
+            <circle cx={x} cy={y} r="5" className="port-circle" />
+            {p.domain === "thermal" && (
+              <circle cx={x} cy={y} r="2" fill="currentColor" />
+            )}
+          </g>
+        );
+      })}
+      {pins && (
+        // Terminal labels: a separate, non-interactive layer, so each terminal's hit area stays its port.
+        // On the body: on the terminal line at the edge of a terminal strip, above a lead that runs on
+        // into the symbol, or above a terminal entering from below; a terminal entering from above is
+        // labelled beside its stub (the name band is above it inside).
+        <g className="pin-labels">
+          {Object.entries(pins.labels).map(([id, text]) => {
+            const { x, y } = portLocal(c, id), domain = definitions[c.kind].ports.find((p) => p.id === id)?.domain;
+            const at: { x: number; y: number; a: "start" | "middle" | "end" } = x < 0 ? (pins.strip ? { x: 12, y: y + 4.5, a: "start" } : { x: 7, y: y - 7, a: "start" })
+              : x > w ? (pins.strip ? { x: w - 12, y: y + 4.5, a: "end" } : { x: w - 7, y: y - 7, a: "end" })
+              : y < 0 ? { x: x + 8, y: -5, a: "start" } : { x, y: h - 5, a: "middle" };
+            return (
+              <g key={id} className={`terminal-label ${domain}`}>
+                {pins.strip && (x < 0 || x > w) && <path d={`M${x < 0 ? 0 : w} ${y}h${x < 0 ? 7 : -7}`} stroke="currentColor" strokeWidth="2" />}
+                <text x={at.x} y={at.y} textAnchor={at.a} className={`pin-label${y < 0 ? " outside" : ""}`}>{text}</text>
+              </g>
+            );
+          })}
+        </g>
+      )}
+    </>
+  );
+});
+/** Wires drawn again, clipped to the module bodies; configuration only. */
+const WireOverlay = memo(function WireOverlay({ components, connections, selectedWire, disconnected }: { components: Component[]; connections: Connection[]; selectedWire: string | null; disconnected: string }) {
+  void disconnected;
+  return (
+    <>
+      <clipPath id="module-bodies">
+        {components.map((c) => {
+          const { w, h } = dimensions(c);
+          return <rect key={c.id} x={c.x} y={c.y} width={w} height={h} transform={`rotate(${c.rotation},${c.x + w / 2},${c.y + h / 2})`} />;
+        })}
+      </clipPath>
+      <g clipPath="url(#module-bodies)" pointerEvents="none" className="wire-overlay">
+        {connections.map((w) => (
+          <g key={w.id} className={`connection ${w.domain} ${selectedWire === w.id ? "selected-wire" : ""}`}>
+            <path d={wirePath(w, components, connections)} className="wire-line" opacity={simulation.disconnected.has(w.id) ? 0.25 : 1} />
+          </g>
+        ))}
+      </g>
+    </>
+  );
+});
 export default function Workspace() {
   const state = useLab(),
     { project, selected, tool, grid, overlay } = state;
@@ -321,6 +448,10 @@ export default function Workspace() {
       return { z, x: x - ((x - c.x) * z) / c.z, y: y - ((y - c.y) * z) / c.z };
     });
   }
+  // A stable handler for the memoised terminals; it always runs the current click logic.
+  const portClickRef = useRef<(t: Terminal) => void>(() => {});
+  portClickRef.current = portClick;
+  const onPort = useCallback((t: Terminal) => portClickRef.current(t), []);
   function portClick(t: Terminal) {
     if (state.nodeMode) {
       const c = project.components.find((c) => c.id === t.component)!;
@@ -565,7 +696,6 @@ export default function Workspace() {
               sel = selected.includes(c.id),
               r = simulation.electrical.readings[c.id],
               status = moduleStatus(c),
-              pins = modulePins(c),
               // The name runs from x = 12 to the status lamp; terminals on the right edge inside the name band (grid side of
               // inverters, tank overflow) take the end of the band.
               nameWidth = definitions[c.kind].ports.some((p) => { const q = portLocal(c, p.id); return q.x > w && q.y < 31; }) ? w - 68 : w - 35;
@@ -609,96 +739,8 @@ export default function Workspace() {
                     </g>
                   )}
                   <ModuleFace c={c} />
-                  {definitions[c.kind].ports.map((p) => {
-                    const { x, y } = portLocal(c, p.id);
-                    const branches = project.connections.filter(
-                      (w) =>
-                        w.domain === "electrical" &&
-                        ((w.from.component === c.id && w.from.port === p.id) ||
-                          (w.to.component === c.id && w.to.port === p.id)),
-                    ).length;
-                    const potential =
-                      state.nodeMode && p.domain === "electrical"
-                        ? nodeVoltage(
-                            simulation.electrical,
-                            `${c.id}:${p.id}`,
-                            state.reference
-                              ? `${state.reference.component}:${state.reference.port}`
-                              : undefined,
-                          )
-                        : null;
-                    const isPending =
-                      pending?.component === c.id && pending.port === p.id;
-                    return (
-                      <g
-                        key={p.id}
-                        className={`terminal ${p.domain} ${isPending ? "pending" : ""}`}
-                        data-port={`${c.name}:${p.id}`}
-                        aria-label={`${c.name} ${p.label}`}
-                        role="button"
-                        tabIndex={0}
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          portClick({ component: c.id, port: p.id });
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            portClick({ component: c.id, port: p.id });
-                          }
-                        }}
-                      >
-                        <title>{p.label}</title>
-                        {branches > 1 && (
-                          <circle cx={x} cy={y} r="8" fill={T.electricalText} />
-                        )}
-                        {state.nodeMode && p.domain === "electrical" && (
-                          <text
-                            x={x}
-                            y={y - 17}
-                            className="node-reading"
-                            textAnchor="middle"
-                          >
-                            {potential === null
-                              ? "undefined"
-                              : potential.toFixed(2) + " V"}
-                          </text>
-                        )}
-                        {/* Stub from the terminal straight to the module edge it faces. */}
-                        <path
-                          d={x < 0 ? `M${x} ${y}H0` : x > w ? `M${x} ${y}H${w}` : y < 0 ? `M${x} ${y}V0` : `M${x} ${y}V${h}`}
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <circle cx={x} cy={y} r="13" fill="transparent" />
-                        <circle cx={x} cy={y} r="5" className="port-circle" />
-                        {p.domain === "thermal" && (
-                          <circle cx={x} cy={y} r="2" fill="currentColor" />
-                        )}
-                      </g>
-                    );
-                  })}
-                  {pins && (
-                    // Terminal labels: a separate, non-interactive layer, so each terminal's hit area stays its port.
-                    // On the body: on the terminal line at the edge of a terminal strip, above a lead that runs on
-                    // into the symbol, or above a terminal entering from below; a terminal entering from above is
-                    // labelled beside its stub (the name band is above it inside).
-                    <g className="pin-labels">
-                      {Object.entries(pins.labels).map(([id, text]) => {
-                        const { x, y } = portLocal(c, id), domain = definitions[c.kind].ports.find((p) => p.id === id)?.domain;
-                        const at: { x: number; y: number; a: "start" | "middle" | "end" } = x < 0 ? (pins.strip ? { x: 12, y: y + 4.5, a: "start" } : { x: 7, y: y - 7, a: "start" })
-                          : x > w ? (pins.strip ? { x: w - 12, y: y + 4.5, a: "end" } : { x: w - 7, y: y - 7, a: "end" })
-                          : y < 0 ? { x: x + 8, y: -5, a: "start" } : { x, y: h - 5, a: "middle" };
-                        return (
-                          <g key={id} className={`terminal-label ${domain}`}>
-                            {pins.strip && (x < 0 || x > w) && <path d={`M${x < 0 ? 0 : w} ${y}h${x < 0 ? 7 : -7}`} stroke="currentColor" strokeWidth="2" />}
-                            <text x={at.x} y={at.y} textAnchor={at.a} className={`pin-label${y < 0 ? " outside" : ""}`}>{text}</text>
-                          </g>
-                        );
-                      })}
-                    </g>
-                  )}
+                  <ModuleTerminals c={c} w={w} h={h} connections={project.connections} pendingPort={pending?.component === c.id ? pending.port : null}
+                    nodeMode={state.nodeMode} reference={state.reference} live={state.nodeMode ? state.revision : 0} onPort={onPort} />
                 </g>
                 <text
                   x={w / 2}
@@ -766,19 +808,7 @@ export default function Workspace() {
           })}
           {/* Wires drawn again, clipped to the module bodies: a wire that still crosses a module (hand-placed bends,
               or no free route) stays visible instead of disappearing behind it. */}
-          <clipPath id="module-bodies">
-            {project.components.map((c) => {
-              const { w, h } = dimensions(c);
-              return <rect key={c.id} x={c.x} y={c.y} width={w} height={h} transform={`rotate(${c.rotation},${c.x + w / 2},${c.y + h / 2})`} />;
-            })}
-          </clipPath>
-          <g clipPath="url(#module-bodies)" pointerEvents="none" className="wire-overlay">
-            {project.connections.map((w) => (
-              <g key={w.id} className={`connection ${w.domain} ${state.selectedWire === w.id ? "selected-wire" : ""}`}>
-                <path d={wirePath(w, project.components, project.connections)} className="wire-line" opacity={simulation.disconnected.has(w.id) ? 0.25 : 1} />
-              </g>
-            ))}
-          </g>
+          <WireOverlay components={project.components} connections={project.connections} selectedWire={state.selectedWire} disconnected={[...simulation.disconnected].join(",")} />
           {camera.z >= 0.5 && hasStarted() && project.connections.map((w) => {
             const value = wireValue(w, project, wireFlow(w)), at = value && chipAnchor(routePoints(w, project.components, project.connections));
             if (!value || !at) return null;

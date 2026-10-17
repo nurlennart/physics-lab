@@ -39,7 +39,7 @@ import Telemetry, { formatTime } from "./components/Telemetry";
 import Challenges, { ChallengeStrip } from "./components/Challenges";
 import Models from "./components/Models";
 import PhysicalView, { PhysicalTools, PhysicalInspector } from './components/PhysicalView';
-import { actions, simulation, useLab, toast, getState } from "./editor/store";
+import { actions, simulation, useLab, useLabSelect, toast, getState } from "./editor/store";
 import { evaluateChallenge } from "./simulation/challenges";
 import { projectCost } from "./simulation/model";
 import { registerLabTools } from "./editor/webmcp";
@@ -61,16 +61,82 @@ function importPresetFile() {
   };
   input.click();
 }
+/** Simulated time, refreshed with the instruments. */
+function SimulationClock() {
+  useLab();
+  return (
+    <span className="simulation-clock">
+      t <strong>{formatTime(simulation.time)}</strong>
+    </span>
+  );
+}
+/** Run state, solver figures and frame rate, refreshed with the instruments. */
+function StatusFooter() {
+  const s = useLab();
+  const result = evaluateChallenge(s.project, simulation);
+  const warnings = simulation.error ? 1 : simulation.violations.length;
+  return (
+      <footer className="status-footer">
+        <div>
+          <div className="simulation-caption">
+            <span className={s.running ? "status-dot running" : "status-dot"} />
+            <strong>
+              {s.busy
+                ? simulation.adaptiveUnavailable() ? "Advancing fixed steps" : "Advancing adaptively"
+                : s.running
+                  ? "Simulation running"
+                  : result?.complete
+                    ? "Challenge complete"
+                    : simulation.time <= 0 ? "Ready to run" : "Simulation paused"}
+            </strong>
+          </div>
+          <span className="engine-status">
+            <i />
+            {simulation.error ? "Engine halted" : "Engine ready"}
+          </span>
+          <span>{s.project.components.length} components</span>
+          <span>{s.project.connections.length} connections</span>
+          <span>€{projectCost(s.project).toFixed(0)} {s.project.challenge ? "total" : "est. total"}</span>
+        </div>
+        <div>
+          <div className={`solver-status ${simulation.solverMs > 1000 / 60 ? "over-budget" : ""}`} title={simulation.solverMs > 1000 / 60 ? "Physics exceeds the 60 Hz frame budget. The fixed-step clock slows; reduce active bodies or constraints." : "Fixed-step simulation independent of rendering"}>
+            <span>FIXED STEP</span>
+            <strong>1 / 60 s</strong>
+            <i />
+            <span>SOLVER</span>
+            <strong>{simulation.solverMs.toFixed(2)} ms</strong>
+          </div>
+          <button
+            className={`warning-count ${warnings ? "has-warning" : ""}`}
+            onClick={() => actions.set({ panel: "events" })}
+          >
+            <TriangleAlert size={14} />
+            {warnings} <span>warnings</span>
+          </button>
+          <span>
+            KCL residual {simulation.electrical.residual.toExponential(1)}
+          </span>
+          <span>{s.fps} FPS</span>
+          <button onClick={() => actions.set({ view: "models" })}>
+            <Keyboard size={12} />
+            Keyboard shortcuts
+          </button>
+        </div>
+      </footer>
+  );
+}
 export default function App() {
-  const s = useLab(),
+  // The application shell re-renders on editor changes only; the clock and the status footer follow the instruments.
+  const s = useLabSelect((s) => ({
+      project: s.project, running: s.running, busy: s.busy, dirty: s.dirty, speed: s.speed, progress: s.progress, toast: s.toast,
+      view: s.view, workspaceView: s.workspaceView, adaptiveUnavailable: simulation.adaptiveUnavailable(), error: simulation.error,
+    })),
     fileInput = useRef<HTMLInputElement>(null),
     [renaming, setRenaming] = useState(false),
     [name, setName] = useState(s.project.name),
     [mobileLibrary, setMobileLibrary] = useState(false),
     [mobileInspector, setMobileInspector] = useState(false);
   useEffect(registerLabTools, []);
-  const result = evaluateChallenge(s.project, simulation);
-  const warnings = simulation.error ? 1 : simulation.violations.length;
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -287,14 +353,14 @@ export default function App() {
                 <button
                   className="advance-button"
                   aria-label="Advance 60 s"
-                  title={simulation.adaptiveUnavailable() ? "Execute 3,600 fixed steps while paused" : "Advance 60 s with event-aware adaptive steps"}
+                  title={s.adaptiveUnavailable ? "Execute 3,600 fixed steps while paused" : "Advance 60 s with event-aware adaptive steps"}
                   disabled={s.running || s.busy}
                   onClick={() => actions.advance(60)}
                 >
                   <ChevronsRight size={16} />
                   <span>60 s</span>
                 </button>
-                <label className="advance-control" title={simulation.adaptiveUnavailable() ?? "Thermal/electrical/control experiment: event-aware adaptive steps (switching and trips resolved at 1/60 s)"}>
+                <label className="advance-control" title={s.adaptiveUnavailable ?? "Thermal/electrical/control experiment: event-aware adaptive steps (switching and trips resolved at 1/60 s)"}>
                   <select
                     aria-label="Advance by"
                     value=""
@@ -306,14 +372,12 @@ export default function App() {
                       <option key={v} value={v}>{label}</option>
                     ))}
                   </select>
-                  <span className="advance-mode">{simulation.adaptiveUnavailable() ? "FIXED" : "ADAPTIVE"}</span>
+                  <span className="advance-mode">{s.adaptiveUnavailable ? "FIXED" : "ADAPTIVE"}</span>
                 </label>
               </>
             )}
           </div>
-          <span className="simulation-clock">
-            t <strong>{formatTime(simulation.time)}</strong>
-          </span>
+          <SimulationClock />
         </div>
         <div className="header-actions">
         <button
@@ -387,10 +451,10 @@ export default function App() {
         <main className="engineering-area">
           <ChallengeStrip />
           <ErrorBoundary area="workspace" label="The workspace">{s.workspaceView === 'physical' ? <PhysicalView /> : <Workspace />}</ErrorBoundary>
-          {simulation.error && (
+          {s.error && (
             <div className="solver-error" role="alert">
               <TriangleAlert size={16} />
-              <span>{simulation.error}</span>
+              <span>{s.error}</span>
               <button
                 aria-label="View error log"
                 onClick={() => actions.set({ panel: "events" })}
@@ -404,53 +468,7 @@ export default function App() {
         <ErrorBoundary area="telemetry" label="Telemetry"><Telemetry /></ErrorBoundary>
       </div>
       </div>
-      <footer className="status-footer">
-        <div>
-          <div className="simulation-caption">
-            <span className={s.running ? "status-dot running" : "status-dot"} />
-            <strong>
-              {s.busy
-                ? simulation.adaptiveUnavailable() ? "Advancing fixed steps" : "Advancing adaptively"
-                : s.running
-                  ? "Simulation running"
-                  : result?.complete
-                    ? "Challenge complete"
-                    : simulation.time <= 0 ? "Ready to run" : "Simulation paused"}
-            </strong>
-          </div>
-          <span className="engine-status">
-            <i />
-            {simulation.error ? "Engine halted" : "Engine ready"}
-          </span>
-          <span>{s.project.components.length} components</span>
-          <span>{s.project.connections.length} connections</span>
-          <span>€{projectCost(s.project).toFixed(0)} {s.project.challenge ? "total" : "est. total"}</span>
-        </div>
-        <div>
-          <div className={`solver-status ${simulation.solverMs > 1000 / 60 ? "over-budget" : ""}`} title={simulation.solverMs > 1000 / 60 ? "Physics exceeds the 60 Hz frame budget. The fixed-step clock slows; reduce active bodies or constraints." : "Fixed-step simulation independent of rendering"}>
-            <span>FIXED STEP</span>
-            <strong>1 / 60 s</strong>
-            <i />
-            <span>SOLVER</span>
-            <strong>{simulation.solverMs.toFixed(2)} ms</strong>
-          </div>
-          <button
-            className={`warning-count ${warnings ? "has-warning" : ""}`}
-            onClick={() => actions.set({ panel: "events" })}
-          >
-            <TriangleAlert size={14} />
-            {warnings} <span>warnings</span>
-          </button>
-          <span>
-            KCL residual {simulation.electrical.residual.toExponential(1)}
-          </span>
-          <span>{s.fps} FPS</span>
-          <button onClick={() => actions.set({ view: "models" })}>
-            <Keyboard size={12} />
-            Keyboard shortcuts
-          </button>
-        </div>
-      </footer>
+      <StatusFooter />
       <ErrorBoundary area="dialog" label="This view">
         {s.view === "challenges" && <Challenges />}
         {s.view === "models" && <Models />}

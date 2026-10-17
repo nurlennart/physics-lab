@@ -1012,10 +1012,11 @@ export class Simulation {
         `Challenge constraint exceeded: Supply voltage at most ${limits.voltage} V.`,
       );
     if (coupled) {
-      this.multiphysics.residual = this.energyResidual;
+      const residual = this.energyResidual;
+      this.multiphysics.residual = residual;
       if (Math.abs(this.multiphysics.massResidual) > 1e-6) this.violation("Mass conservation residual exceeds 1 mg.", "error");
       const mechanicalScale = this.spatial.count ? Math.abs(this.spatial.initialEnergy) + Math.abs(this.spatial.externalWork) : 0;
-      if (Math.abs(this.energyResidual) > Math.max(0.5, (Math.abs(this.suppliedEnergy) + mechanicalScale) * 0.005)) this.violation("Energy conservation residual exceeds 0.5 J / 0.5% of supplied and initial mechanical energy tolerance.", "error");
+      if (Math.abs(residual) > Math.max(0.5, (Math.abs(this.suppliedEnergy) + mechanicalScale) * 0.005)) this.violation("Energy conservation residual exceeds 0.5 J / 0.5% of supplied and initial mechanical energy tolerance.", "error");
     }
     if (p.challenge) challengeDefinition(p.challenge).update?.(this, this.challengeState, dt);
     if (this.time - this.lastSample >= this.sampleInterval - 1e-9) this.sample();

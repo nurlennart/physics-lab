@@ -194,7 +194,61 @@ export const sourceMode = (c: Component) => (typeof c.props.mode === "string" ? 
 /** Current limit of a regulating source, or Infinity for ideal / internal-resistance sources. */
 export const sourceLimit = (c: Component) => sourceMode(c) === "cc" ? prop(c, "current") : sourceMode(c) === "cvcc" ? prop(c, "maxCurrent") : Infinity;
 /** Wire connectivity depends only on the immutable project and disconnected wires; it is cached. */
-type ElectricalTopology = { cs: Component[]; grounds: Component[]; root: Map<string, string>; ports: Map<string, Record<string, string>>; terminals: string[] };
+type ElectricalTopology = { cs: Component[]; grounds: Component[]; root: Map<string, string>; ports: Map<string, Record<string, string>>; terminals: string[]; rootEntries: [string, string][]; islandCache: Map<string, IslandStructure> };
+type Finder = { find: (n: string) => string };
+/**
+ * Islands for one set of conducting elements: the networks joined by conducting elements, transformers and drive DC
+ * links; the galvanic groups; the node groups in solve order (drive outputs first) with each island's elements; and
+ * each terminal's node and island. They depend only on the topology and the conducting set (relays by their
+ * conducting end), so they are cached per topology. The unions are joined in the same order as a fresh build, so
+ * every representative is the same.
+ */
+interface IslandStructure { islands: Finder; galvanic: Finder; groups: Map<string, string[]>; ordered: [string, string[]][]; inIsland: Map<string, Set<string>>; members: Map<string, Component[]>; nodeIds: Record<string, string>; nodeIslands: Record<string, string> }
+function islandStructure(topology: ElectricalTopology, active: Component[], node: (id: string, p: string) => string, end: (c: Component) => string): IslandStructure {
+  const key = active.map((c) => c.kind === "relay" ? `${c.id}\u0001${end(c)}` : c.id).join("\u0000");
+  const cached = topology.islandCache.get(key);
+  if (cached) return cached;
+  const islands = new Union();
+  for (const n of topology.terminals) islands.find(n);
+  const galvanic = new Union();
+  for (const c of active) {
+    islands.join(node(c.id, "a"), node(c.id, end(c)));
+    galvanic.join(node(c.id, "a"), node(c.id, end(c)));
+    if (c.kind === "transformer") {
+      islands.join(node(c.id, "a"), node(c.id, "sa")); islands.join(node(c.id, "a"), node(c.id, "sb"));
+      galvanic.join(node(c.id, "sa"), node(c.id, "sb"));
+    }
+  }
+  // A drive couples its input and output networks only through its DC link (power, not node voltages).
+  for (const c of active.filter((c) => c.kind === "vfd")) islands.join(node(c.id, "oa"), node(c.id, "ob"));
+  const islandOf = new Map<string, string>(), galvanicOf = new Map<string, string>();
+  for (const k of islands.p.keys()) islandOf.set(k, islands.find(k));
+  for (const k of galvanic.p.keys()) galvanicOf.set(k, galvanic.find(k));
+  const islandFinder = { find: (n: string) => islandOf.get(n) ?? n }, galvanicFinder = { find: (n: string) => galvanicOf.get(n) ?? n };
+  const groups = new Map<string, string[]>();
+  for (const n of new Set(topology.rootEntries.map(([, n]) => n))) {
+    const key = islandFinder.find(n);
+    const group = groups.get(key);
+    if (group) group.push(n); else groups.set(key, [n]);
+  }
+  const driveAt = (ns: Set<string>) => active.filter((c) => c.kind === "vfd" && ns.has(node(c.id, "oa")));
+  const inIsland = new Map([...groups].map(([island, ns]) => [island, new Set(ns)]));
+  const drivesFed = new Map([...groups].map(([island]) => [island, driveAt(inIsland.get(island)!).length]));
+  const ordered = [...groups].sort(([x], [y]) => drivesFed.get(y)! - drivesFed.get(x)!);
+  const members = new Map(ordered.map(([island]) => [island, active.filter((c) => inIsland.get(island)!.has(node(c.id, "a")))]));
+  const nodeIds: Record<string, string> = {}, nodeIslands: Record<string, string> = {};
+  const transformers = active.some(c => c.kind === "transformer"), islandAt = new Map<string, string>();
+  for (const [k, n] of topology.rootEntries) {
+    nodeIds[k] = n;
+    let island = islandAt.get(n);
+    if (island === undefined) islandAt.set(n, island = transformers ? galvanicFinder.find(n) : islandFinder.find(n));
+    nodeIslands[k] = island;
+  }
+  const structure = { islands: islandFinder, galvanic: galvanicFinder, groups, ordered, inIsland, members, nodeIds, nodeIslands };
+  if (topology.islandCache.size >= 256) topology.islandCache.clear();
+  topology.islandCache.set(key, structure);
+  return structure;
+}
 const electricalCache = new WeakMap<Project, Map<string, ElectricalTopology>>();
 function electricalTopology(project: Project, disconnected: Set<string>): ElectricalTopology {
   const key = [...disconnected].sort().join(","), byProject = electricalCache.get(project) ?? new Map<string, ElectricalTopology>();
@@ -215,7 +269,7 @@ function electricalTopology(project: Project, disconnected: Set<string>): Electr
     for (const p of definitions[c.kind].ports.filter((p) => p.domain === "electrical")) terminals.push(byPort[p.id] = root.get(`${c.id}:${p.id}`)!);
     ports.set(c.id, byPort);
   }
-  const topology = { cs, grounds, root, ports, terminals };
+  const topology = { cs, grounds, root, ports, terminals, rootEntries: [...root], islandCache: new Map<string, IslandStructure>() };
   byProject.set(key, topology);
   return topology;
 }
@@ -248,25 +302,7 @@ export function solveElectricalCore(
       !(c.kind === "switch" && !c.props.closed) &&
       !(c.kind === "safety" && !contact(c)),
   );
-  const islands = new Union();
-  for (const n of topology.terminals) islands.find(n);
-  const galvanic = new Union();
-  for (const c of active) {
-    islands.join(node(c.id, "a"), node(c.id, end(c)));
-    galvanic.join(node(c.id, "a"), node(c.id, end(c)));
-    if (c.kind === "transformer") {
-      islands.join(node(c.id, "a"), node(c.id, "sa")); islands.join(node(c.id, "a"), node(c.id, "sb"));
-      galvanic.join(node(c.id, "sa"), node(c.id, "sb"));
-    }
-  }
-  // A drive couples its input and output networks only through its DC link (power, not node voltages).
-  for (const c of active.filter((c) => c.kind === "vfd")) islands.join(node(c.id, "oa"), node(c.id, "ob"));
-  const groups = new Map<string, string[]>();
-  for (const n of new Set([...uf.p.keys()].map((k) => uf.find(k)))) {
-    const key = islands.find(n);
-    const group = groups.get(key);
-    if (group) group.push(n); else groups.set(key, [n]);
-  }
+  const structure = islandStructure(topology, active, node, end), { islands, galvanic, groups } = structure;
   const voltages: Record<string, number> = {},
     sourceI: Record<string, number> = {},
     regulation: Record<string, "cv" | "cc"> = {},
@@ -657,11 +693,9 @@ export function solveElectricalCore(
     return { input: Math.max(0, net), output, losses, braking: Math.max(0, -net) };
   };
   // Drive output networks first: their power is the demand of the drives' supply networks.
-  const inIsland = new Map([...groups].map(([island, ns]) => [island, new Set(ns)]));
-  const drivesFed = new Map([...groups].map(([island]) => [island, driveAt(inIsland.get(island)!).length]));
-  const ordered = [...groups].sort(([x], [y]) => drivesFed.get(y)! - drivesFed.get(x)!);
+  const { inIsland, ordered } = structure;
   for (const [island, ns] of ordered) {
-    const members = active.filter((c) => inIsland.get(island)!.has(node(c.id, "a"))),
+    const members = structure.members.get(island)!,
       sources = members.filter(c => isSource(c) && !runtime.acInjections?.[c.id]);
     const fed = driveAt(inIsland.get(island)!);
     if (fed.length > 1) throw Error(`${fed[1].name}: two drive outputs cannot share one network.`);
@@ -1140,16 +1174,11 @@ export function solveElectricalCore(
     if (c && perPoleKinds.has(c.kind) && readings[id]) readings[id].conductors = lead.conductors;
   }
   const nodes: Record<string, number> = {},
-    nodeIds: Record<string, string> = {},
-    nodeIslands: Record<string, string> = {};
-  const transformers = active.some(c => c.kind === "transformer"), islandOf = new Map<string, string>();
-  for (const [k, n] of root) {
+    nodeIds: Record<string, string> = { ...structure.nodeIds },
+    nodeIslands: Record<string, string> = { ...structure.nodeIslands };
+  for (const [k, n] of topology.rootEntries) {
     const phasor = phasors[n];
     nodes[k] = phasor ? cabs(phasor) : voltages[n] ?? 0;
-    nodeIds[k] = n;
-    let island = islandOf.get(n);
-    if (island === undefined) islandOf.set(n, island = transformers ? galvanic.find(n) : islands.find(n));
-    nodeIslands[k] = island;
   }
   return {
     readings,
@@ -1163,7 +1192,7 @@ export function solveElectricalCore(
     storedPower,
     powerResidual: sourcePower - dissipatedPower - storedPower,
     islands: groups.size,
-    ...(Object.keys(phasors).length ? { phasors: Object.fromEntries([...root].filter(([, n]) => phasors[n]).map(([k, n]) => [k, phasors[n]])) } : {}),
+    ...(Object.keys(phasors).length ? { phasors: Object.fromEntries(topology.rootEntries.filter(([, n]) => phasors[n]).map(([k, n]) => [k, phasors[n]])) } : {}),
   };
 }
 export function nodeVoltage(

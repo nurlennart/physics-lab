@@ -1,6 +1,6 @@
 import { advanceHybrid, hybridEventLimit, hybridKinds, initialHybridState, type HybridState } from './hybrid';
 import { advanceSolar, initialSolarState, solarKinds, type SolarState } from './solar';
-import { prop, type Component, type Project } from './model';
+import { cloneState, prop, type Component, type Project } from './model';
 import type { ElectricalResult, ElectricalRuntime } from './electrical';
 
 /** A paused solve previews the average over the next fixed step (the engine's DT), as every step reading is an average. */
@@ -39,7 +39,7 @@ export class Devices {
     return { devices: { hybrid: this.hybrid, solar: this.solar, batteries: this.batteries, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, h: h > 0 ? h : PREVIEW_STEP } };
   }
   checkpoint() {
-    return structuredClone({ hybrid: this.hybrid, solar: this.solar, batteries: this.batteries, batteryHeat: this.batteryHeat, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
+    return cloneState({ hybrid: this.hybrid, solar: this.solar, batteries: this.batteries, batteryHeat: this.batteryHeat, polarization: this.polarization, capacitors: this.capacitors, inductors: this.inductors, contactors: this.contactors, storedChange: this.storedChange });
   }
   boundaryTime(project: Project, electrical: ElectricalResult, h: number) {
     if (!this.active) return h;

@@ -1,7 +1,7 @@
 import { effectiveAmbient } from "./environment";
 import { boilerExchange, boilerWaterCapacity } from './boiler';
 import { PANEL_CELLS, panelCellCapacity, panelExchange } from './panel-radiator';
-import { definitions, prop, textProp, terminalKey, type Component, type Project } from './model';
+import { definitions, derived, prop, textProp, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
 import { viscosityK, inventoryVolume } from './water';
@@ -114,11 +114,13 @@ export function parsePumpPoints(text: string): { q: number; h: number }[] | stri
 }
 const pointCache = new Map<string, { q: number; h: number }[]>();
 function pumpPoints(c: Component) {
-  const text = typeof c.props.curvePoints === 'string' ? c.props.curvePoints.trim() : '';
-  if (!text) return null;
-  let pts = pointCache.get(text);
-  if (!pts) { const parsed = parsePumpPoints(text); if (typeof parsed === 'string') return null; pts = parsed; pointCache.set(text, pts); }
-  return pts;
+  return derived(c, 'pumpPoints', () => {
+    const text = typeof c.props.curvePoints === 'string' ? c.props.curvePoints.trim() : '';
+    if (!text) return null;
+    let pts = pointCache.get(text);
+    if (!pts) { const parsed = parsePumpPoints(text); if (typeof parsed === 'string') return null; pts = parsed; pointCache.set(text, pts); }
+    return pts;
+  });
 }
 /** Head at rated speed from data points; beyond the last point a falling quadratic continuation (finite resistance at rest). */
 function pointHead(pts: { q: number; h: number }[], q: number) {
@@ -143,8 +145,8 @@ export const vaporPressure = (celsius: number) => 611.21 * Math.exp((18.678 - ce
 export function frictionFactor(re: number, relativeRoughness: number) {
   if (re <= 0) return 0;
   const laminar = 64 / re;
-  const turbulent = 0.25 / Math.log10(relativeRoughness / 3.7 + 5.74 / Math.max(re, 2300) ** 0.9) ** 2;
   if (re <= 2300) return laminar;
+  const turbulent = 0.25 / Math.log10(relativeRoughness / 3.7 + 5.74 / Math.max(re, 2300) ** 0.9) ** 2;
   if (re >= 4000) return turbulent;
   // Continuous linear blend through the uncertain transitional regime.
   const t = (re - 2300) / 1700;
@@ -171,6 +173,27 @@ export function pipeLoss(c: Component, q: number, temperatures: readonly number[
     reynolds += re * count / n; friction += f * count / n; viscosity += mu * count / n;
   }
   return { dp, velocity: v, reynolds, frictionFactor: friction, viscosity };
+}
+/**
+ * The pressure drop of `pipeLoss` as a function of flow for fixed segment temperatures, with the per-temperature
+ * viscosities resolved once. The network solve evaluates a branch many times at the same temperatures; the
+ * arithmetic is that of `pipeLoss`, so the results are identical.
+ */
+export function pipeLossModel(c: Component, temperatures: readonly number[]) {
+  const d = prop(c, 'diameter'), area = Math.PI * d * d / 4, n = temperatures.length, segment = prop(c, 'length') / n;
+  const relativeRoughness = prop(c, 'roughness') / d, laminar = Math.PI * d ** 4;
+  const counts = new Map<number, number>();
+  for (const kelvin of temperatures) { const key = Math.round(kelvin * 100); counts.set(key, (counts.get(key) ?? 0) + 1); }
+  const groups = [...counts].map(([key, count]) => ({ mu: viscosityK(key / 100), length: segment * count }));
+  return (q: number) => {
+    const v = q / area;
+    let dp = 0;
+    for (const { mu, length } of groups) {
+      const re = RHO * Math.abs(v) * d / mu;
+      dp += re <= 2300 ? 128 * mu * length * q / laminar : frictionFactor(re, relativeRoughness) * length / d * RHO * v * Math.abs(v) / 2;
+    }
+    return dp;
+  };
 }
 /** Linear internal flow resistance of the pump (Pa per m³/s); also regularises the Newton solve. */
 export const PUMP_INTERNAL_RESISTANCE = 1e5;
@@ -218,9 +241,11 @@ const topologyPumps = (cs: Component[]) => cs.filter(isPump);
 export const npsh3At = (c: Component, q: number) => prop(c, 'npshRequired') * (Math.max(0, q) / prop(c, 'ratedFlow')) ** 2;
 /** Internal (hydraulic) shaft power at the rated point, without mechanical loss. */
 function ratedInternalPower(c: Component) {
-  const omega = prop(c, 'ratedSpeed'), q = prop(c, 'ratedFlow'), head = Math.max(0, pumpHead(c, omega, q));
-  const efficiency = Math.max(0.15, prop(c, 'efficiency'));
-  return RHO * G * head * q / efficiency;
+  return derived(c, 'ratedInternalPower', () => {
+    const omega = prop(c, 'ratedSpeed'), q = prop(c, 'ratedFlow'), head = Math.max(0, pumpHead(c, omega, q));
+    const efficiency = Math.max(0.15, prop(c, 'efficiency'));
+    return RHO * G * head * q / efficiency;
+  });
 }
 /**
  * Bearing and seal friction: share s of shaft input at the rated point, P_m,r = s/(1−s)·P_internal,r,
@@ -283,6 +308,9 @@ interface HydraulicTopology {
   cs: Component[]; tanks: Component[]; terminalNodes: Record<string, string>;
   /** Groups of nodes joined by branches. Safety valves do not join their discharge side: a sealed circuit keeps its own pressure reference. */
   nodes: string[]; branches: Branch[]; group: Map<string, string>;
+  /** Components by kind (catalog order), terminals per node, and the per-solve lists derived from the components alone. */
+  ofKind: (kind: string) => Component[]; kinds: Map<string, string>; terminalCount: Map<string, number>; primers: Component[]; fluidPorts: Component[];
+  inventories?: readonly { key: string; mass: number; group: string }[];
 }
 /**
  * Network topology depends only on the (immutable) project object and the set of disconnected
@@ -319,7 +347,14 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
   for (const n of nodes) groups.find(n);
   for (const b of branches) if (b.c.kind !== 'safetyValve') groups.join(b.a, b.b);
   const group = new Map(nodes.map(n => [n, groups.find(n)]));
-  const topology = { cs, tanks: cs.filter(c => c.kind === 'tank'), terminalNodes, nodes, branches, group };
+  const byKind = new Map<string, Component[]>();
+  for (const c of cs) { const list = byKind.get(c.kind); if (list) list.push(c); else byKind.set(c.kind, [c]); }
+  const terminalCount = new Map<string, number>();
+  for (const n of Object.values(terminalNodes)) terminalCount.set(n, (terminalCount.get(n) ?? 0) + 1);
+  const topology = { cs, tanks: cs.filter(c => c.kind === 'tank'), terminalNodes, nodes, branches, group,
+    ofKind: (kind: string) => byKind.get(kind) ?? [], kinds: new Map(cs.map(c => [c.id, c.kind])), terminalCount,
+    primers: cs.filter(c => pipeCells(c) || c.kind === 'storageTank').sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind))),
+    fluidPorts: cs.filter(c => !branchKinds.has(c.kind) && definitions[c.kind].ports.some(p => p.id === 'fluid')) };
   byProject.set(key, topology);
   return topology;
 }
@@ -331,7 +366,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   if (!cs.length) return result;
   const node = (c: Component, port: string) => topology.terminalNodes[`${c.id}:${port}`];
   const groups = { find: (n: string) => topology.group.get(n) ?? n };
-  const kinds = new Map(cs.map(c => [c.id, c.kind])), byKind = (id: string) => kinds.get(id);
+  const kinds = topology.kinds, byKind = (id: string) => kinds.get(id);
   result.terminalNodes = topology.terminalNodes;
   const boundaries: Record<string, number> = {}, boundaryTanks: Record<string, Component[]> = {};
   for (const c of topology.tanks) {
@@ -353,7 +388,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   // circuit; a circuit open to a vented tank already has its pressure reference (an open system has no membrane vessel).
   const vesselGroups = new Map<string, Component>();
   result.vessels = {};
-  for (const c of cs.filter(c => c.kind === 'expansionVessel')) {
+  for (const c of topology.ofKind('expansionVessel')) {
     const n = node(c, 'fluid'), group = groups.find(n);
     if (boundaries[n] !== undefined) throw Error(`${c.name}: an expansion vessel cannot share an ideal node with a tank. Insert a pipe, or remove the vessel from the vented circuit.`);
     if (tankGroups.has(group)) throw Error(`${c.name}: this circuit is open to a vented tank, which already sets its pressure. A membrane expansion vessel belongs to a sealed circuit.`);
@@ -366,9 +401,8 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   // Safety valves: an unconnected outlet discharges to an open drain at atmospheric pressure (the water leaves the
   // system). A piped outlet must lead to a vented tank (tundish or collecting vessel).
   result.discharge = {};
-  const terminalCount = new Map<string, number>();
-  for (const n of Object.values(topology.terminalNodes)) terminalCount.set(n, (terminalCount.get(n) ?? 0) + 1);
-  for (const c of cs.filter(c => c.kind === 'safetyValve')) {
+  const terminalCount = topology.terminalCount;
+  for (const c of topology.ofKind('safetyValve')) {
     const inlet = groups.find(node(c, 'inlet')), outlet = node(c, 'outlet');
     if (!tankGroups.has(inlet) && !vesselGroups.has(inlet)) throw Error(`${c.name}: a safety valve needs the circuit's water reserve. Add an expansion vessel to this sealed circuit (the fixed fill-pressure stand-in cannot supply discharged water).`);
     if (terminalCount.get(outlet) === 1) { boundaries[outlet] = RHO * G * prop(c, 'elevation') / 1000; result.discharge[c.id] = outlet; }
@@ -379,7 +413,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   // Fixing all its nodes to zero violates continuity (a pump discharges into nothing).
   // Finite branch inventory establishes a filled loop; its pressure datum represents an
   // externally maintained fill pressure with compliant expansion, not a mass source.
-  for (const c of cs.filter(c => pipeCells(c) || c.kind === 'storageTank').sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind)))) {
+  for (const c of topology.primers) {
     const n = c.kind === 'storageTank' ? topology.terminalNodes[interiorNode(c)] : node(c, 'inlet'), group = groups.find(n);
     if (!primed.has(group)) { boundaries[n] = prop(c, 'fillPressure') / 1000; primed.add(group); }
   }
@@ -411,7 +445,13 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
    * Both parts scale with 1/φ², φ = Kv/Kvs the valve's inherent characteristic at its opening
    * (K ∝ 1/Kv²). A stuck-open fault means full bore and no cracking pressure.
    */
-  const valveTerms = (br: Branch, forward: boolean) => {
+  // Within one solve the temperatures, positions, speeds and faults are fixed: each branch's loss law is prepared once
+  // per flow direction and reused by every Newton and root-finding evaluation.
+  type BranchLaw = { pipe: (((q: number) => number) | undefined)[]; terms: (ReturnType<typeof branchTerms> | undefined)[]; atZero?: number; closedForm?: boolean };
+  const laws = new Map<Branch, BranchLaw>();
+  const lawOf = (br: Branch) => { let law = laws.get(br); if (!law) { law = { pipe: [], terms: [] }; laws.set(br, law); } return law; };
+  const valveTerms = (br: Branch, forward: boolean) => { const law = lawOf(br), k = forward ? 0 : 1; return law.terms[k] ??= branchTerms(br, forward); };
+  const branchTerms = (br: Branch, forward: boolean) => {
     const c = br.c, fault = faults[c.id], stuckOpen = fault === 'stuckOpen';
     const opening = c.kind === 'heatExchanger' || c.kind === 'radiator' || elementKinds.has(c.kind) || c.kind === 'panelRadiator' || c.kind === 'storageTank' || stuckOpen ? 100 : branchOpening(c, br.part, positions);
     // Storage tank: port nozzles (entry + exit loss) or the internal coil, each with its own bore and coefficients.
@@ -434,7 +474,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   }));
   const loss = (br: Branch, q: number) => {
     const c = br.c;
-    if (c.kind === 'pipe') return pipeLoss(c, q, pipeTemperatures(br, q)).dp;
+    if (c.kind === 'pipe') { const law = lawOf(br), k = q >= 0 ? 0 : 1; return (law.pipe[k] ??= pipeLossModel(c, pipeTemperatures(br, q)))(q); }
     if (isPump(c)) {
       // Descending head curve continued as passive quadratic resistance past zero head.
       return PUMP_INTERNAL_RESISTANCE * q - RHO * G * cavitatingHead(c, Math.max(0, speeds[c.id] ?? 0), q, npshAvailable.get(c.id)).head;
@@ -452,9 +492,9 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const actualLoss = (q: number) => loss(b, q);
     const oneWay = c.kind === 'checkValve' || isPump(c) || c.kind === 'pressureReducingValve' || c.kind === 'safetyValve';
     const allowPositive = !blocked.has(a), allowNegative = !oneWay && !blocked.has(to);
-    const atZero = actualLoss(0);
+    const law = lawOf(b), atZero = law.atZero ??= actualLoss(0);
     // Cavitating pumps (head depends on Q through NPSH3) use the bracketed numeric inverse.
-    const closedForm = c.kind !== 'pipe' && !(isPump(c) && (pumpPoints(c) || npshAvailable.has(c.id)));
+    const closedForm = law.closedForm ??= c.kind !== 'pipe' && !(isPump(c) && (pumpPoints(c) || npshAvailable.has(c.id)));
     const difference = dp - atZero, magnitude = Math.abs(difference);
     // Closed form of linear·q + quadratic·q|q| = difference (pump curve or two-K valve).
     const terms = !closedForm ? { linear: 1e5, quadratic: 0 } : isPump(c)
@@ -477,7 +517,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     }
     // Monotone loss(q) = dp: bracket by doubling, then Illinois (modified regula falsi) — superlinear,
     // always bracketed, ~10 loss evaluations instead of ~90 for bisection at the same tolerance.
-    let lo = 0, hi = 0, flo = actualLoss(0) - dp, fhi = flo;
+    let lo = 0, hi = 0, flo = atZero - dp, fhi = flo;
     // Warm start: the previous solution's flow for this branch usually brackets within a few percent.
     const guess = previousFlow.get(b.id) ?? 0;
     if (flo > 0) {
@@ -563,7 +603,8 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
       if (!improved) break;
     }
     regularize = false;
-    const final = evaluate(); result.residual = final.norm / 1000; result.converged = result.residual < 1e-12;
+    // Every exit leaves the pressures at the iterate `current` was evaluated at (unregularized): it is the final state.
+    const final = current; result.residual = final.norm / 1000; result.converged = result.residual < 1e-12;
     if (!result.converged) throw Error(`Hydraulic solve failed: continuity residual ${result.residual.toExponential(3)} m³/s after ${result.iterations} iterations.`);
     return final;
   };
@@ -618,12 +659,12 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     if (b.stream === 'hot') result.readings[c.id] = result.readings[b.id];
   });
   // Diverting valve: total flow through the common port AB, its pressure, and the drop to the open path.
-  for (const c of cs.filter(c => c.kind === 'divertingValve')) {
+  for (const c of topology.ofKind('divertingValve')) {
     const [a, b] = ['a', 'b'].map(part => result.readings[`${c.id}#${part}`]);
     if (a && b) result.readings[c.id] = { ...(Math.abs(b.flow) > Math.abs(a.flow) ? b : a), flow: a.flow + b.flow, hydraulicPower: 0 };
   }
   // Storage tank: throughput (sum of the inflows) and the gauge pressure at the tank base.
-  for (const c of cs.filter(c => c.kind === 'storageTank')) {
+  for (const c of topology.ofKind('storageTank')) {
     const n = topology.terminalNodes[interiorNode(c)], ports = result.branches.filter(b => b.component === c.id && b.part !== 'coil');
     const base = p[n] * 1000 - RHO * G * prop(c, 'elevation');
     result.readings[c.id] = { flow: ports.reduce((sum, b) => sum + Math.max(0, b.flow), 0), pressure: base, inletPressure: base, differentialPressure: 0, velocity: 0, reynolds: 0, frictionFactor: 0, hydraulicPower: 0, impellerPower: 0, shaftPower: 0, mechanicalLoss: 0, hydraulicEfficiency: null, efficiency: null, torque: 0, temperature: 293.15 };
@@ -636,7 +677,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   }
   // Routed overflow appears as a pseudo-branch from the tank to its overflow node. Its "loss" is the
   // drop of piezometric energy from the free surface to the receiving node (crest head and free fall).
-  for (const c of cs.filter(c => c.kind === 'tank')) {
+  for (const c of topology.tanks) {
     const w = result.weir[c.id];
     if (!w?.routed) continue;
     const from = result.tankNodes[c.id], drop = (p[from] - p[w.node]) * 1000;
@@ -646,7 +687,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     result.branches.push({ id: `${c.id}#overflow`, component: c.id, from, to: w.node, flow: w.flow, loss: drop * w.flow, gain: 0 });
     result.readings[`${c.id}#overflow`] = { flow: w.flow, pressure: p[w.node] * 1000, inletPressure: p[from] * 1000, differentialPressure: drop, velocity: 0, reynolds: 0, frictionFactor: 0, hydraulicPower: 0, impellerPower: 0, shaftPower: 0, mechanicalLoss: 0, hydraulicEfficiency: null, efficiency: null, torque: 0, temperature: tanks[c.id].temperature };
   }
-  for (const c of cs.filter(c => !branchKinds.has(c.kind) && definitions[c.kind].ports.some(p => p.id === 'fluid'))) {
+  for (const c of topology.fluidPorts) {
     const n = node(c, 'fluid');
     const w = result.weir[c.id];
     const netFlow = result.branches.reduce((q, b) => q + (b.to === n ? b.flow : 0) - (b.from === n ? b.flow : 0), 0) - (w && !w.routed ? w.flow : 0);
@@ -744,12 +785,19 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     storage.set(c.id, { c, r, ambientK });
     interiorMean.set(inside, layers.reduce((a, t) => a + t, 0) / layers.length);
   }
+  // Transfers by receiving node (in transfer order, which fixes the mixing sums) and the components that carry flow.
+  const incomingAt = new Map<string, Transfer[]>(), flowing = new Set<string>();
+  for (const t of transfers) {
+    const list = incomingAt.get(t.to);
+    if (list) list.push(t); else incomingAt.set(t.to, [t]);
+    flowing.add(t.component);
+  }
   // Water an expansion vessel supplies to its circuit (safety-valve discharge) enters at the vessel's water temperature.
   const supply = new Map<string, { id: string; rate: number }>();
   for (const [id, v] of Object.entries(result.vessels ?? {})) if (v.supply > 0 && vessels[id]) supply.set(v.node, { id, rate: v.supply * RHO });
   nodes.forEach((n, i) => {
     if (interiors.has(n)) { matrix[i][i] = 1; rhs[i] = interiorMean.get(n) ?? 293.15; return; }
-    const tank = boundary.get(n), incoming = transfers.filter(b => b.to === n), source = supply.get(n), total = incoming.reduce((s, b) => s + b.rate, 0) + (source?.rate ?? 0);
+    const tank = boundary.get(n), incoming = incomingAt.get(n) ?? [], source = supply.get(n), total = incoming.reduce((s, b) => s + b.rate, 0) + (source?.rate ?? 0);
     if (source) rhs[i] += source.rate / total * vessels[source.id].temperature;
     // A tank empty at the start of the interval has no stored water to supply: its outflow leaves at the
     // mixed inflow temperature, and the water it keeps is booked at that temperature.
@@ -798,7 +846,7 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     result.readings[b.id].temperatureValid = true;
   }
   // Stagnant pipes keep their water and exchange heat with ambient only.
-  for (const c of project.components.filter(c => pipeCells(c) && !transfers.some(t => t.component === c.id))) {
+  for (const c of project.components.filter(c => pipeCells(c) && !flowing.has(c.id))) {
     const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = U.celsiusToK(effectiveAmbient(project, c));
     const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : prop(c, elementKinds.has(c.kind) ? 'loss' : 'thermalUA') / n;
     const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
@@ -849,11 +897,11 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   // Diverting valve: water temperature at its common port.
   for (const c of project.components.filter(c => c.kind === 'divertingValve')) {
     const i = index.get(result.terminalNodes[`${c.id}:inlet`]);
-    if (i !== undefined && result.readings[c.id] && transfers.some(b => b.component === c.id)) Object.assign(result.readings[c.id], { temperature: temperatures[i], temperatureValid: true });
+    if (i !== undefined && result.readings[c.id] && flowing.has(c.id)) Object.assign(result.readings[c.id], { temperature: temperatures[i], temperatureValid: true });
   }
   for (const c of project.components.filter(c => c.kind === 'fluidJunction')) {
     const n = result.terminalNodes[`${c.id}:fluid`], i = index.get(n);
-    if (i !== undefined && transfers.some(b => b.to === n)) {
+    if (i !== undefined && incomingAt.has(n)) {
       result.readings[c.id].temperature = temperatures[i];
       result.readings[c.id].temperatureValid = true;
     }
@@ -907,10 +955,12 @@ export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) 
  * Fixed-mass water inventories (kg per cell, at the reference density) with the hydraulic node that places them in a
  * circuit: pipe, boiler, heat-pump and radiator cells, storage-tank layers and coil cells. Used for thermal expansion.
  */
-export function waterInventories(project: Project, disconnected = new Set<string>()) {
+export function waterInventories(project: Project, disconnected = new Set<string>()): readonly { key: string; mass: number; group: string }[] {
   const topology = hydraulicTopology(project, disconnected), node = (c: Component, port: string) => topology.terminalNodes[`${c.id}:${port}`];
   const group = (n: string) => topology.group.get(n) ?? n;
-  return project.components.flatMap(c => {
+  // Configuration only: built once per topology of a frozen (engine-owned) project.
+  if (topology.inventories && Object.isFrozen(project.components)) return topology.inventories;
+  return topology.inventories = project.components.flatMap(c => {
     if (c.kind === 'storageTank') {
       const layers = storageLayers(c), coil = coilLayers(c).length;
       return [{ key: c.id, mass: storageWaterMass(c) / layers, group: group(topology.terminalNodes[interiorNode(c)]) },

@@ -3,7 +3,7 @@ import { operatingMeasurements } from "../simulation/capabilities";
 import { niceRange, formatTick } from "./chart-axis";
 import { T } from "../theme/tokens";
 import { measurementLabel } from "../simulation/capabilities";
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   ChartNoAxesCombined,
   List,
@@ -13,7 +13,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { actions, simulation, useLab } from "../editor/store";
+import { actions, simulation, useLabSelect } from "../editor/store";
 import {
   units,
   formatReading,
@@ -144,8 +144,15 @@ function Plot({
     </div>
   );
 }
-export default function Telemetry() {
-  const s = useLab(),
+/**
+ * While running, the charts, probe values and energy balance follow the recorded samples: the panel re-renders when a
+ * sample or event is recorded (every sample interval), not on every instrument refresh. Paused, every change shows.
+ */
+function Telemetry() {
+  const s = useLabSelect((s) => ({
+      project: s.project, panel: s.panel, busy: s.busy, running: s.running, paused: s.running ? 0 : s.revision,
+      samples: simulation.samples.length, last: simulation.samples.at(-1)?.time, events: simulation.events.length,
+    })),
     [target, setTarget] = useState(""),
     [metric, setMetric] = useState<Measurement>("temperature"),
     [window, setWindow] = useState(600),
@@ -443,3 +450,4 @@ export default function Telemetry() {
     </section>
   );
 }
+export default memo(Telemetry);

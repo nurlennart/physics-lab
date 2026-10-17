@@ -1,5 +1,5 @@
 import { challengeDefinition } from "../simulation/challenges";
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   Waves,
   Cog,
@@ -14,10 +14,11 @@ import {
   BookOpen,
 } from "lucide-react";
 import { definitions, type Kind } from "../simulation/model";
-import { actions, useLab } from "../editor/store";
+import { actions, useLabSelect } from "../editor/store";
 import { ComponentIcon } from "./Icons";
-export default function Library() {
-  const s = useLab();
+/** The catalog depends on the project (challenge restrictions) and the selection only, not on the running simulation. */
+function Library() {
+  const s = useLabSelect((s) => ({ project: s.project, selected: s.selected }));
   const [query, setQuery] = useState(""),
     [collapsed, setCollapsed] = useState<string[]>([]);
   const matches = (d: (typeof definitions)[Kind]) =>
@@ -157,3 +158,4 @@ export default function Library() {
     </aside>
   );
 }
+export default memo(Library);

@@ -1160,10 +1160,56 @@ export function makeComponent(
     ...(kind === 'rigidBody' ? { spatial: makeSpatial() } : {}),
   };
 }
-export const prop = (c: Component, key: string, fallback = 0) =>
-  typeof c.props[key] === "number" ? (c.props[key] as number) : fallback;
-export const textProp = (c: Component, key: string, fallback = "") =>
-  typeof c.props[key] === "string" ? (c.props[key] as string) : fallback;
+export const prop = (c: Component, key: string, fallback = 0) => {
+  const value = c.props[key];
+  return typeof value === "number" ? value : fallback;
+};
+/**
+ * A quantity that depends on one component's configuration alone, memoised per component while it is frozen (the
+ * engine's validated, deeply frozen project): the same configuration yields the same value. Unfrozen components
+ * (editor drafts, expanded device circuits, tests that edit props) are evaluated every time.
+ */
+const derivedCache = new WeakMap<Component, Map<string, unknown>>();
+export function derived<T>(c: Component, key: string, compute: () => T): T {
+  if (!Object.isFrozen(c) || !Object.isFrozen(c.props)) return compute();
+  let values = derivedCache.get(c);
+  if (!values) { values = new Map(); derivedCache.set(c, values); }
+  if (values.has(key)) return values.get(key) as T;
+  const value = compute();
+  values.set(key, value);
+  return value;
+}
+/**
+ * Deep copy of runtime state with the result of structuredClone for plain data: plain objects (own enumerable keys in
+ * order), dense arrays and primitives, with shared and cyclic references kept shared. Anything else (maps, sets, typed
+ * arrays, sparse arrays, class instances, functions, symbols) is passed to structuredClone itself.
+ */
+export function cloneState<T>(value: T): T {
+  const copies = new Map<object, unknown>();
+  const copy = (v: unknown): unknown => {
+    if (typeof v === "symbol" || typeof v === "function") return structuredClone(v);
+    if (v === null || typeof v !== "object") return v;
+    const done = copies.get(v);
+    if (done !== undefined) return done;
+    if (Array.isArray(v)) {
+      if (Object.getPrototypeOf(v) !== Array.prototype || Object.keys(v).length !== v.length) { const out = structuredClone(v); copies.set(v, out); return out; }
+      const out: unknown[] = new Array(v.length);
+      copies.set(v, out);
+      for (let i = 0; i < v.length; i++) out[i] = copy(v[i]);
+      return out;
+    }
+    if (Object.getPrototypeOf(v) !== Object.prototype) { const out = structuredClone(v); copies.set(v, out); return out; }
+    const out: Record<string, unknown> = {};
+    copies.set(v, out);
+    for (const key of Object.keys(v)) out[key] = copy((v as Record<string, unknown>)[key]);
+    return out;
+  };
+  return copy(value) as T;
+}
+export const textProp = (c: Component, key: string, fallback = "") => {
+  const value = c.props[key];
+  return typeof value === "string" ? value : fallback;
+};
 export const terminalKey = (t: Terminal) => `${t.component}:${t.port}`;
 export const isElectrical = (c: Component) =>
   definitions[c.kind].ports.some((p) => p.domain === "electrical") &&

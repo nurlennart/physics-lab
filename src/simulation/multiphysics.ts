@@ -4,7 +4,7 @@ import { trvPosition, trvSensorStep } from './thermostatic-valve';
 import { controlBoiler, newBoiler, type BoilerState } from './boiler';
 import { advanceHeatPump, controlHeatPump, newHeatPump, planHeatPump, type HeatPumpInputs, type HeatPumpPlan, type HeatPumpState } from './heat-pump';
 import { radiatorUA } from './devices';
-import { prop, isMotor, type Component, type Project } from './model';
+import { cloneState, prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
 import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
@@ -100,16 +100,16 @@ export class Multiphysics {
   /** Dynamic state only. Immutable project/circuit references and Newton caches are retained by reference. */
   checkpoint() {
     return {
-      boilers: structuredClone(this.boilers), trvSensors: { ...this.trvSensors },
-      heatPumps: structuredClone(this.heatPumps), heatPumpView: { ...this.heatPumpView }, heatPumpPlans: { ...this.heatPumpPlans },
+      boilers: cloneState(this.boilers), trvSensors: { ...this.trvSensors },
+      heatPumps: cloneState(this.heatPumps), heatPumpView: { ...this.heatPumpView }, heatPumpPlans: { ...this.heatPumpPlans },
       tanks: Object.fromEntries(Object.entries(this.tanks).map(([id, t]) => [id, { ...t }])),
-      vessels: structuredClone(this.vessels), fillDensity: this.fillDensity, cushionWork: this.cushionWork, discharged: { ...this.discharged }, valveOpenings: { ...this.valveOpenings },
+      vessels: cloneState(this.vessels), fillDensity: this.fillDensity, cushionWork: this.cushionWork, discharged: { ...this.discharged }, valveOpenings: { ...this.valveOpenings },
       motors: { ...this.motors }, circulators: { ...this.circulators }, circulatorView: { ...this.circulatorView }, positions: { ...this.positions },
       pipeCells: Object.fromEntries(Object.entries(this.pipeCells).map(([id, t]) => [id, [...t]])),
       overflowed: { ...this.overflowed }, overflowRate: { ...this.overflowRate }, removedMass: this.removedMass, removedEnergy: this.removedEnergy,
       hydraulic: this.hydraulic, transferred: { ...this.transferred }, copperEnergy: this.copperEnergy, frictionEnergy: this.frictionEnergy,
       pumpWork: this.pumpWork, hydraulicWork: this.hydraulicWork, dissipation: this.dissipation, externalShaftWork: this.externalShaftWork, dryLoss: this.dryLoss,
-      starters: structuredClone(this.starters), drives: structuredClone(this.drives), shaftElements: structuredClone(this.shaftElements),
+      starters: cloneState(this.starters), drives: cloneState(this.drives), shaftElements: cloneState(this.shaftElements),
       drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
       acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
       circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, storageRate: this.storageRate, valveTravel: { ...this.valveTravel },

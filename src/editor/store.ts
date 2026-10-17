@@ -1,7 +1,7 @@
 import { dimensions } from './geometry';
 import { makeThermalSpace, makeEnvelope, THERMAL_PLAN_SCALE, type ThermalSpace, type ThermalElement } from '../simulation/thermal-spaces';
 import { bindSpaceTemperatures } from '../simulation/environment';
-import { useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import {
   connect,
   definitions,
@@ -45,7 +45,7 @@ import { makeSpatial, defaultWorld, type ShapeKind, type SpatialBody, type Mecha
 import { makeJoint } from '../simulation/spatial-projects';
 import { layoutEquipment } from './spatial-layout';
 export type Tool = "select" | "pan" | "wire" | "room";
-interface EditorState {
+export interface EditorState {
   workspaceView: 'schematic' | 'physical';
   selectedJoint: string | null;
   project: Project;
@@ -121,6 +121,26 @@ export const subscribe = (f: () => void) => {
   };
 };
 export const useLab = () => useSyncExternalStore(subscribe, getState);
+const shallowEqual = (a: unknown, b: unknown) => {
+  if (Object.is(a, b)) return true;
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) return false;
+  const ka = Object.keys(a), kb = Object.keys(b);
+  return ka.length === kb.length && ka.every((k) => Object.is((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+};
+/**
+ * Subscribe to a selection of the editor state (and of the simulation, read through `simulation`): the component
+ * re-renders only when the selection changes (shallow comparison), not on every instrument refresh while running.
+ */
+export function useLabSelect<T>(select: (s: EditorState) => T): T {
+  const last = useRef<{ value: T } | null>(null);
+  const snapshot = () => {
+    const next = select(state);
+    if (last.current && shallowEqual(last.current.value, next)) return last.current.value;
+    last.current = { value: next };
+    return next;
+  };
+  return useSyncExternalStore(subscribe, snapshot);
+}
 export const simulation = sim;
 /** Snapshot taken when a drag gesture starts; it becomes an undo step only once the gesture changes something. */
 let gestureStart: Project | null = null;

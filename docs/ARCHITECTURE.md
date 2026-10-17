@@ -63,6 +63,18 @@ The store runs a fixed-step accumulator on `requestAnimationFrame`. Each frame a
 
 Long advances and replays run in yielding batches, so the browser stays responsive and every step is still executed. Reset restores the project's initial conditions, clears faults and measurements, and starts a new replay origin.
 
+React views subscribe through `useLab()` (every update) or `useLabSelect(select)` (only when the selection changes, shallow comparison). Panes whose content does not follow the instruments (Library, the application shell) select editor fields only; Telemetry follows recorded samples while running; the simulation clock and status footer are small live components; static module parts (terminals, pin labels, clipped wire overlay) are memoised.
+
+### Solver caches
+
+Repeated work is memoised only where the result is provably the same, so results stay bit-identical:
+
+- values derived from one frozen component's configuration (`derived` in `model.ts`), topology-derived lists (hydraulic topology, electrical island structure per conducting set);
+- dense eliminations of bitwise-equal matrices (`solveLinear` factor cache, refinement reusing its factor; storage-tank layer systems keyed by their flows and step; complex solves of identical systems);
+- per-solve branch laws in the hydraulic network (pipe viscosities, valve coefficients) while temperatures, positions and speeds are fixed.
+
+A change to a solver should keep this property: compare the complete simulation state of every example before and after (identical hashes), not only tolerances.
+
 ## Editing
 
 - **History:** up to 60 immutable project snapshots for undo and redo.
