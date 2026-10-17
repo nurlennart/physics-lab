@@ -53,8 +53,9 @@ function wireFlow(w: Connection) {
   return portFlow(w.from.component, w.from.port) ?? -(portFlow(w.to.component, w.to.port) ?? 0);
 }
 /** Physical domain that colours a component's identifier (control and sensors stay neutral). */
-/** Readout sign: sources, batteries and solar panels show delivered power as positive (solver keeps the load convention). */
-const delivered = (c: Component) => (isSource(c) || c.kind === "solarPanel" ? -1 : 1);
+/** Readout sign: sources and solar panels show delivered power as positive; batteries keep the load convention
+ * (charging positive, as on the module face and Victron displays). */
+const delivered = (c: Component) => ((isSource(c) && c.kind !== "battery" && c.kind !== "lfpBattery") || c.kind === "solarPanel" ? -1 : 1);
 const domainOf = (c: Component) => ({ Electrical: "electrical", Thermal: "thermal", Hydraulic: "hydraulic", Mechanical: "mechanical" } as Record<string, string>)[definitions[c.kind].category] ?? "control";
 /** Readable number of significant digits for live chips. */
 const chipNumber = (v: number) => { const a = Math.abs(v); return a >= 100 ? a.toFixed(0) : a >= 10 ? a.toFixed(1) : a.toFixed(2); };
