@@ -151,119 +151,230 @@
       "test": "A2/W35 maximum",
       "steadyOutput": 7428.6413,
       "steadyCOP": 2.7799634,
-      "integratedOutput": 6886.9146,
-      "integratedCOP": 2.6351986,
+      "integratedOutput": 6754.068,
+      "integratedCOP": 2.5984072,
       "publishedOutput": 7090,
       "publishedCOP": 2.83,
-      "outputError": -0.028643924,
-      "copError": -0.068834419,
-      "defrosts": 7,
-      "defrostPeriod": 3165,
-      "meanDefrost": 57
+      "outputError": -0.047381107,
+      "copError": -0.081834921,
+      "band": 0.1,
+      "defrosts": 38,
+      "intensive": 7,
+      "defrostPeriod": 6624,
+      "normalSeconds": 194,
+      "normalKWh": 0.25392435,
+      "intensiveSeconds": 540,
+      "intensiveKWh": 1.0359297
     },
     {
       "test": "A2/W35 nominal",
       "steadyOutput": 3021.0526,
       "steadyCOP": 4.3452861,
-      "integratedOutput": 2954.5919,
-      "integratedCOP": 4.2480638,
+      "integratedOutput": 2917.7466,
+      "integratedCOP": 4.1773813,
       "publishedOutput": 2870,
       "publishedCOP": 4.06,
-      "outputError": 0.029474513,
-      "copError": 0.046321123,
-      "defrosts": 1,
-      "defrostPeriod": null,
-      "meanDefrost": 95
+      "outputError": 0.016636443,
+      "copError": 0.028911639,
+      "band": 0.08,
+      "defrosts": 7,
+      "intensive": 1,
+      "defrostPeriod": 32591,
+      "normalSeconds": 181,
+      "normalKWh": 0.2369088,
+      "intensiveSeconds": 540,
+      "intensiveKWh": 1.0323299
     },
     {
       "test": "ErP Tj +2 °C, W42",
       "steadyOutput": 3684.2105,
       "steadyCOP": 3.7136775,
-      "integratedOutput": 3562.8895,
-      "integratedCOP": 3.5953998,
+      "integratedOutput": 3533.5005,
+      "integratedCOP": 3.5458251,
       "publishedOutput": 3500,
       "publishedCOP": 3.49,
-      "outputError": 0.017968417,
-      "copError": 0.030200507,
-      "defrosts": 2,
-      "defrostPeriod": null,
-      "meanDefrost": 81
+      "outputError": 0.0095715636,
+      "copError": 0.015995717,
+      "band": 0.08,
+      "defrosts": 11,
+      "intensive": 2,
+      "defrostPeriod": 22943,
+      "normalSeconds": 158,
+      "normalKWh": 0.23710237,
+      "intensiveSeconds": 540,
+      "intensiveKWh": 1.1843991
     },
     {
       "test": "A7/W35 maximum (no frost)",
       "steadyOutput": 7970.0528,
       "steadyCOP": 3.0340388,
-      "integratedOutput": 7971.0796,
-      "integratedCOP": 3.0344957,
+      "integratedOutput": 7970.1598,
+      "integratedCOP": 3.0340864,
       "publishedOutput": 7970,
       "publishedCOP": 3.07,
-      "outputError": 0.00013546107,
-      "copError": -0.011564928,
+      "outputError": 0.000020046102,
+      "copError": -0.011698235,
+      "band": 0.08,
       "defrosts": 0,
+      "intensive": 0,
       "defrostPeriod": null,
-      "meanDefrost": null
+      "normalSeconds": null,
+      "normalKWh": null,
+      "intensiveSeconds": null,
+      "intensiveKWh": null
     }
   ],
   "scenarios": [
     {
       "scenario": "House, 2 °C / 85 % RH (defrost)",
       "outdoor": 2,
-      "hours": 3,
-      "wallSeconds": 35.058147,
-      "energyResidual": -0.000068814649,
-      "supplied": 12259086,
-      "heat": 47804469,
-      "compressorElectricity": 11891927,
-      "backupHeat": 0,
-      "spf": 4.0199095,
+      "hours": 6,
+      "wallSeconds": 66.932642,
+      "energyResidual": -0.00018808649,
+      "supplied": 24409347,
+      "heat": 95421835,
+      "compressorElectricity": 23670488,
+      "backupHeat": 4500,
+      "spf": 4.0312576,
       "defrosts": 2,
       "starts": 1,
       "maxStartsPerHour": 1,
       "minRun": null,
-      "room": 20.523703,
+      "room": 21.028456,
       "violations": 0
     },
     {
       "scenario": "Cold snap, −15 °C (backup heater)",
       "outdoor": -15,
       "hours": 3,
-      "wallSeconds": 35.593888,
-      "energyResidual": 0.00014010026,
-      "supplied": 33245971,
-      "heat": 50944862,
-      "compressorElectricity": 23036812,
-      "backupHeat": 9842000,
-      "spf": 2.2114545,
-      "defrosts": 1,
+      "wallSeconds": 34.585725,
+      "energyResidual": 0.00013435322,
+      "supplied": 33896899,
+      "heat": 53848313,
+      "compressorElectricity": 23760040,
+      "backupHeat": 9769700,
+      "spf": 2.2663393,
+      "defrosts": 0,
       "starts": 1,
       "maxStartsPerHour": 1,
       "minRun": null,
-      "room": 17.941242,
+      "room": 18.119226,
       "violations": 0
     },
     {
       "scenario": "Mild day, 12 °C, one underfloor zone open (60 W/K): low-load cycling",
       "outdoor": 12,
       "hours": 3,
-      "wallSeconds": 34.065904,
-      "energyResidual": -0.000088515943,
-      "supplied": 1573877.6,
-      "heat": 6686088,
-      "compressorElectricity": 1206718.7,
+      "wallSeconds": 33.483416,
+      "energyResidual": -0.000094775298,
+      "supplied": 1572076.5,
+      "heat": 6684360.9,
+      "compressorElectricity": 1204917.6,
       "backupHeat": 0,
-      "spf": 5.540718,
+      "spf": 5.5475669,
       "defrosts": 0,
       "starts": 4,
       "maxStartsPerHour": 2,
       "minRun": 740,
-      "room": 19.118161,
+      "room": 19.118193,
       "violations": 0
     }
   ],
   "timestep": {
-    "fixedFlow": 27.929039,
-    "adaptiveFlow": 27.930044,
-    "fixedHeat": 2014434.1,
-    "adaptiveHeat": 2015083.9
+    "fixedFlow": 27.931288,
+    "adaptiveFlow": 27.932293,
+    "fixedHeat": 2015580.6,
+    "adaptiveHeat": 2016231
+  },
+  "field": {
+    "model": {
+      "defrosts": 14,
+      "intensive": 2,
+      "normalMin": 3.8333333,
+      "normalKWh": 0.26851821,
+      "normalDip": 7.0581623,
+      "intensiveMin": 9,
+      "intensiveKWh": 0.82879917,
+      "intensiveDip": 14.63046,
+      "intervalMin": 168.33333,
+      "cop": 3.5757956,
+      "meanHeatW": 2336.9637,
+      "energyResidual": 0.0000011993143,
+      "wallSeconds": 252.62521
+    },
+    "measured": {
+      "defrosts": 14,
+      "intensive": 2,
+      "normalMin": 4.83,
+      "normalKWh": 0.416,
+      "normalDip": 12.62,
+      "intensiveMin": 10.5,
+      "intensiveKWh": 1.031,
+      "intensiveDip": 13.41,
+      "intervalMin": 207,
+      "cop": 2.9687798,
+      "meanHeatW": 2312.8762
+    },
+    "period": {
+      "from": "2025-12-29",
+      "to": "2026-01-12",
+      "normal": {
+        "n": 53,
+        "durationMin": {
+          "median": 4.8333333,
+          "iqr": [
+            4.167,
+            4.833,
+            6
+          ]
+        },
+        "waterKWh": {
+          "medianMeter": 0.32466667,
+          "medianRecomputed": 0.37175966,
+          "iqr": [
+            0.232,
+            0.372,
+            0.447
+          ]
+        },
+        "electricalW": 784.45,
+        "dipK": 12.264334,
+        "flowMinC": 21.32
+      },
+      "intensive": {
+        "n": 17,
+        "durationMin": {
+          "median": 10.666667,
+          "iqr": [
+            9,
+            10.667,
+            15
+          ]
+        },
+        "waterKWh": {
+          "medianMeter": 0.81156389,
+          "medianRecomputed": 0.83930265,
+          "iqr": [
+            0.583,
+            0.839,
+            0.998
+          ]
+        },
+        "electricalW": 1189.517,
+        "dipK": 20.652666,
+        "flowMinC": 10.94
+      },
+      "intervalMin": {
+        "median": 203.5,
+        "iqr": [
+          148,
+          204,
+          260
+        ],
+        "n": 63
+      },
+      "copDriftLateVsEarly": -0.115,
+      "roomAirC": 19.5
+    }
   }
 }

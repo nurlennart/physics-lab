@@ -1370,21 +1370,21 @@
   {
     "mode": "heatPumpHouse",
     "source": "generated",
-    "simulatedSeconds": 60,
+    "simulatedSeconds": 600,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4818.94076432006,
-    "energyResidual": -0.0000022718855001713223,
+    "suppliedEnergy": 571669.263199354,
+    "energyResidual": -0.000007222844345955437,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 24.585234336616963
+        "value": 28.868197063689365
       },
       {
         "name": "Return temperature",
-        "value": 24.460689977404968
+        "value": 25.923240146818955
       },
       {
         "name": "Flow target",
@@ -1392,23 +1392,23 @@
       },
       {
         "name": "Heat output",
-        "value": 0
+        "value": 5122.4668442868
       },
       {
         "name": "Electrical input",
-        "value": 47
+        "value": 1226.9624743668644
       },
       {
         "name": "COP",
-        "value": null
+        "value": 4.174917286635101
       },
       {
         "name": "Compressor speed",
-        "value": 0
+        "value": 79.57262881663753
       },
       {
         "name": "Frost on coil",
-        "value": 0
+        "value": 0.06879571735199397
       },
       {
         "name": "Defrost active",
@@ -1420,44 +1420,44 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 0
+        "value": 3907.277891478131
       },
       {
         "name": "Seasonal performance factor",
-        "value": 0
+        "value": 4.1668834245254525
       },
       {
         "name": "House air",
-        "value": 19.99441206809308
+        "value": 19.957353307976533
       },
       {
         "name": "House heat loss",
-        "value": 2501.2232774649383
+        "value": 2496.072109808738
       },
       {
         "name": "Energy balance residual",
-        "value": -0.0000022718855001713223
+        "value": -0.000007222844345955437
       }
     ]
   },
   {
     "mode": "heatPumpHouse",
     "source": "file",
-    "simulatedSeconds": 60,
+    "simulatedSeconds": 600,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4818.94076432006,
-    "energyResidual": -0.0000022718855001713223,
+    "suppliedEnergy": 571669.263199354,
+    "energyResidual": -0.000007222844345955437,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 24.585234336616963
+        "value": 28.868197063689365
       },
       {
         "name": "Return temperature",
-        "value": 24.460689977404968
+        "value": 25.923240146818955
       },
       {
         "name": "Flow target",
@@ -1465,23 +1465,23 @@
       },
       {
         "name": "Heat output",
-        "value": 0
+        "value": 5122.4668442868
       },
       {
         "name": "Electrical input",
-        "value": 47
+        "value": 1226.9624743668644
       },
       {
         "name": "COP",
-        "value": null
+        "value": 4.174917286635101
       },
       {
         "name": "Compressor speed",
-        "value": 0
+        "value": 79.57262881663753
       },
       {
         "name": "Frost on coil",
-        "value": 0
+        "value": 0.06879571735199397
       },
       {
         "name": "Defrost active",
@@ -1493,44 +1493,44 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 0
+        "value": 3907.277891478131
       },
       {
         "name": "Seasonal performance factor",
-        "value": 0
+        "value": 4.1668834245254525
       },
       {
         "name": "House air",
-        "value": 19.99441206809308
+        "value": 19.957353307976533
       },
       {
         "name": "House heat loss",
-        "value": 2501.2232774649383
+        "value": 2496.072109808738
       },
       {
         "name": "Energy balance residual",
-        "value": -0.0000022718855001713223
+        "value": -0.000007222844345955437
       }
     ]
   },
   {
     "mode": "heatPumpCold",
     "source": "generated",
-    "simulatedSeconds": 60,
+    "simulatedSeconds": 600,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4818.9407806676545,
-    "energyResidual": -7.924759093391742e-8,
+    "suppliedEnergy": 816783.8698130257,
+    "energyResidual": 0.000008213908858634156,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 24.476767479021646
+        "value": 27.421433869786597
       },
       {
         "name": "Return temperature",
-        "value": 24.342103766356672
+        "value": 24.596609759631065
       },
       {
         "name": "Flow target",
@@ -1538,23 +1538,23 @@
       },
       {
         "name": "Heat output",
-        "value": 0
+        "value": 4946.796119656152
       },
       {
         "name": "Electrical input",
-        "value": 47
+        "value": 2016.4272408959664
       },
       {
         "name": "COP",
-        "value": null
+        "value": 2.453248011794427
       },
       {
         "name": "Compressor speed",
-        "value": 0
+        "value": 95.15
       },
       {
         "name": "Frost on coil",
-        "value": 0
+        "value": 0.029105367531161486
       },
       {
         "name": "Defrost active",
@@ -1566,44 +1566,44 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 0
+        "value": 2939.3507378629834
       },
       {
         "name": "Seasonal performance factor",
-        "value": 0
+        "value": 2.557377749752234
       },
       {
         "name": "House air",
-        "value": 18.981311782786744
+        "value": 18.810075251182585
       },
       {
         "name": "House heat loss",
-        "value": 4723.402337807358
+        "value": 4699.600459914379
       },
       {
         "name": "Energy balance residual",
-        "value": -7.924759093391742e-8
+        "value": 0.000008213908858634156
       }
     ]
   },
   {
     "mode": "heatPumpCold",
     "source": "file",
-    "simulatedSeconds": 60,
+    "simulatedSeconds": 600,
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 4818.9407806676545,
-    "energyResidual": -7.924759093391742e-8,
+    "suppliedEnergy": 816783.8698130257,
+    "energyResidual": 0.000008213908858634156,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 24.476767479021646
+        "value": 27.421433869786597
       },
       {
         "name": "Return temperature",
-        "value": 24.342103766356672
+        "value": 24.596609759631065
       },
       {
         "name": "Flow target",
@@ -1611,23 +1611,23 @@
       },
       {
         "name": "Heat output",
-        "value": 0
+        "value": 4946.796119656152
       },
       {
         "name": "Electrical input",
-        "value": 47
+        "value": 2016.4272408959664
       },
       {
         "name": "COP",
-        "value": null
+        "value": 2.453248011794427
       },
       {
         "name": "Compressor speed",
-        "value": 0
+        "value": 95.15
       },
       {
         "name": "Frost on coil",
-        "value": 0
+        "value": 0.029105367531161486
       },
       {
         "name": "Defrost active",
@@ -1639,23 +1639,23 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 0
+        "value": 2939.3507378629834
       },
       {
         "name": "Seasonal performance factor",
-        "value": 0
+        "value": 2.557377749752234
       },
       {
         "name": "House air",
-        "value": 18.981311782786744
+        "value": 18.810075251182585
       },
       {
         "name": "House heat loss",
-        "value": 4723.402337807358
+        "value": 4699.600459914379
       },
       {
         "name": "Energy balance residual",
-        "value": -7.924759093391742e-8
+        "value": 0.000008213908858634156
       }
     ]
   },

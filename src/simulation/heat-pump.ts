@@ -26,7 +26,7 @@ export const r290Temperature = (p: number) => 2272 / (9.874 - Math.log(p));
 /** Saturation vapour pressure over water / ice (Pa), Magnus form (WMO 2008), t in °C. */
 export const vapourPressureWater = (t: number) => 611.2 * Math.exp(17.62 * t / (243.12 + t));
 export const vapourPressureIce = (t: number) => 611.2 * Math.exp(22.46 * t / (272.62 + t));
-const ATMOSPHERE = 101325, AIR_CP = 1006, LATENT_FUSION = 333.55e3;
+const ATMOSPHERE = 101325, AIR_CP = 1006, LATENT_FUSION = 333.55e3, LATENT_EVAPORATION = 2.47e6;
 const humidityRatio = (pv: number) => 0.622 * pv / (ATMOSPHERE - pv);
 
 // — Fitted and assumed cycle constants ————————————————————————————————————————————
@@ -155,7 +155,16 @@ export function frostRate(c: Component, air: number, evaporatingTemperature: num
   const ambient = humidityRatio(humidity * vapourPressureWater(air)), saturated = humidityRatio(vapourPressureIce(surface));
   return mass * effectiveness * Math.max(0, ambient - saturated);
 }
+/** Conductance factor of the coil frost (blocks air and adds conduction resistance). Refrozen base-pan ice lies below the
+ * coil, out of the airflow: it costs defrost energy but does not block the coil. */
 export const frostFactor = (c: Component, frost: number) => 1 / (1 + Math.max(0, frost) / prop(c, 'frostReference'));
+/**
+ * Defrost and crankcase constants (assumptions, see docs/HEAT-PUMP.md § Defrost calibration):
+ * natural convection of the stopped finned coil (≈ 40 m² fins at 2.5 W/(m²·K)); compressor shell capacity and loss
+ * conductance, with the thermostat margin chosen so that the 75 W heater's duty-cycled average equals the 32 W ErP
+ * P_CK at the margin (3.2 W/K × 10 K); plate-exchanger freeze margin of the refrigerant during the reverse cycle.
+ */
+export const COIL_STILL_UA = 100, SHELL_CAPACITY = 6000, SHELL_UA = 3.2, CRANKCASE_MARGIN = 10, CRANKCASE_HYSTERESIS = 2, PLATE_FREEZE_MARGIN = 2;
 
 // — Runtime state and controller ——————————————————————————————————————————————————
 export type HeatPumpMode = 'off' | 'heating' | 'defrost' | 'drip';
@@ -167,6 +176,12 @@ export interface HeatPumpState {
   elementTemperature: number;
   /** Outdoor coil temperature (°C) and accumulated frost (kg). */
   coilTemperature: number; frost: number;
+  /** Refrozen meltwater in the base pan below the coil (kg), cleared only by intensive defrosts; frost melted in the current defrost (kg). */
+  residualIce: number; meltedThisDefrost: number;
+  /** Meltwater retained on fins and base pan during a defrost (kg); what does not evaporate refreezes as residual ice. */
+  film: number;
+  /** Current defrost is an intensive (hot-gas) cycle; compressor shell temperature (°C) and crankcase heater state. */
+  intensive: boolean; shellTemperature: number; crankcaseOn: boolean;
   /** Event times (s): last start, last stop, start history (last hour), defrost start/end, drip end, supply healthy since. */
   startedAt: number; stoppedAt: number; starts: number[]; defrostStart: number; lastDefrostEnd: number; dripUntil: number; restartAt: number;
   lowFlowSince: number; shortfallSince: number;
@@ -182,7 +197,7 @@ export interface HeatPumpState {
   heat: number; defrostHeat: number; electricity: number; backupHeat: number; environment: number; defrosts: number; startCount: number;
 }
 export const newHeatPump = (c: Component, air: number): HeatPumpState => ({
-  mode: 'off', speed: 0, command: 0, integral: 0, elementTemperature: kelvin(prop(c, 'initialTemperature')), coilTemperature: air, frost: 0,
+  mode: 'off', speed: 0, command: 0, integral: 0, elementTemperature: kelvin(prop(c, 'initialTemperature')), coilTemperature: air, frost: 0, residualIce: 0, meltedThisDefrost: 0, film: 0, intensive: false, shellTemperature: air, crankcaseOn: false,
   startedAt: -Infinity, stoppedAt: -Infinity, starts: [], defrostStart: -Infinity, lastDefrostEnd: -Infinity, dripUntil: -Infinity, restartAt: prop(c, 'powerOnDelay'),
   lowFlowSince: Infinity, shortfallSince: Infinity, backupStages: 0, backupFault: false, fault: '', trips: [], ambientLock: false, demand: false, frostProtection: false,
   resetPrevious: false, defrostPrevious: false, manualDefrost: false, target: prop(c, 'setpoint'), requested: prop(c, 'setpoint'), status: 'Power-on check',
@@ -247,18 +262,30 @@ export function controlHeatPump(s: Simulation, c: Component, st: HeatPumpState, 
     if (now >= st.dripUntil - 1e-9) { st.mode = st.demand ? 'heating' : 'off'; st.speed = 0; st.status = st.demand ? 'Heating (after defrost)' : 'Standby'; if (!st.demand) st.stoppedAt = now; }
     else st.status = 'Defrost: drip time';
   } else if (st.mode === 'defrost') {
-    const done = st.frost <= 1e-9 && st.coilTemperature >= prop(c, 'defrostEndTemperature') - 1e-9, timeout = now - st.defrostStart >= prop(c, 'maxDefrostTime') - 1e-9;
-    const cold = x.water < 10, starved = x.flow < bosch.defrostMinFlow / 60000;
+    // Normal defrost: frost melted and the coil at its end temperature. Intensive (hot-gas) defrost: frost and residual
+    // ice melted, the coil at the higher end temperature and the firmware's minimum duration elapsed.
+    const elapsed = now - st.defrostStart, intensive = st.intensive;
+    const done = intensive
+      ? st.frost <= 1e-9 && st.residualIce <= 1e-9 && st.coilTemperature >= prop(c, 'intensiveEndTemperature') - 1e-9 && elapsed >= prop(c, 'intensiveMinTime') - 1e-9
+      : st.frost <= 1e-9 && st.coilTemperature >= prop(c, 'defrostEndTemperature') - 1e-9;
+    const timeout = elapsed >= prop(c, intensive ? 'intensiveMaxTime' : 'maxDefrostTime') - 1e-9;
+    // Freeze protection of the plate exchanger: the refrigerant evaporating against the water must stay above +2 °C, and the water above 5 °C.
+    const cold = x.water < 5 || x.evaporating < PLATE_FREEZE_MARGIN, starved = x.flow < bosch.defrostMinFlow / 60000;
     if (done || timeout || cold || starved) {
+      // Retained meltwater that did not evaporate refreezes in the base pan and lower coil rows.
+      st.residualIce += st.film; st.film = 0;
       st.mode = 'drip'; st.speed = 0; st.lastDefrostEnd = now; st.dripUntil = now + prop(c, 'dripTime'); st.manualDefrost = false;
-      st.status = done ? 'Defrost complete' : timeout ? 'Defrost ended: time limit' : cold ? 'Defrost aborted: water below 10 °C' : 'Defrost aborted: flow below 14 l/min';
-      if (!done) s.log(`${c.name}: ${st.status.toLowerCase()} (${st.frost.toFixed(2)} kg frost left).`, 'warning');
-    } else st.status = st.frost > 1e-9 ? 'Defrost: melting frost' : 'Defrost: warming coil';
+      const kind = intensive ? 'Intensive defrost' : 'Defrost';
+      st.status = done ? `${kind} complete` : timeout ? `${kind} ended: time limit` : cold ? `${kind} aborted: plate exchanger freeze protection` : `${kind} aborted: flow below 14 l/min`;
+      if (!done) s.log(`${c.name}: ${st.status.toLowerCase()} (${st.frost.toFixed(2)} kg frost, ${st.residualIce.toFixed(2)} kg residual ice left).`, 'warning');
+    } else st.status = `${intensive ? 'Intensive defrost' : 'Defrost'}: ${st.frost > 1e-9 ? 'melting frost' : intensive && st.residualIce > 1e-9 ? 'melting base-pan ice' : intensive && st.coilTemperature >= prop(c, 'intensiveEndTemperature') - 1e-9 ? 'holding hot gas' : 'warming coil'}`;
   } else if (st.mode === 'heating') {
     const due = st.frost >= prop(c, 'frostTrigger') && now - st.lastDefrostEnd >= prop(c, 'minDefrostInterval') - 1e-9 && now - st.startedAt >= 120 - 1e-9;
     if ((due || st.manualDefrost) && x.flow >= bosch.defrostMinFlow / 60000) {
-      st.mode = 'defrost'; st.defrostStart = now; st.defrosts++; st.speed = Math.min(st.speed, prop(c, 'defrostSpeed') / 100); st.integral = 0;
-      st.status = 'Defrost: reversing cycle';
+      st.defrosts++; st.intensive = Math.round(prop(c, 'intensiveEvery')) > 0 && st.defrosts % Math.round(prop(c, 'intensiveEvery')) === 0;
+      st.mode = 'defrost'; st.defrostStart = now; st.meltedThisDefrost = 0; st.integral = 0;
+      st.speed = Math.min(st.speed, prop(c, st.intensive ? 'intensiveSpeed' : 'defrostSpeed') / 100);
+      st.status = st.intensive ? 'Intensive defrost: reversing cycle' : 'Defrost: reversing cycle';
     } else if (!st.demand) stop('At temperature');
     else if (st.frost >= 2 * prop(c, 'frostTrigger') && x.flow < bosch.defrostMinFlow / 60000) stop('Evaporator iced: defrost needs 14 l/min');
     else st.status = due ? 'Defrost postponed: flow below 14 l/min' : st.frost > 0.01 ? `Heating · frost ${(st.frost * 1000).toFixed(0)} g` : 'Heating';
@@ -269,11 +296,17 @@ export function controlHeatPump(s: Simulation, c: Component, st: HeatPumpState, 
     else if (!budget) st.status = `Start limit: ${Math.round(prop(c, 'maxStarts'))} starts per hour`;
     else { st.mode = 'heating'; st.speed = 0; st.integral = 0; st.startedAt = now; st.starts.push(now); st.startCount++; st.status = 'Compressor start'; }
   } else st.status = 'Standby';
+  // Crankcase heater: a thermostat holds the stopped compressor shell 10 ± 1 K above the outdoor air below
+  // the enabling air temperature; the 75 W element's duty-cycled average is then the 32 W ErP P_CK.
+  // The band is centred on the margin, so the duty-cycled average is SHELL_UA × margin; the power-on check does not block it.
+  const stopped = st.mode === 'off' || st.mode === 'drip', heaterAllowed = stopped && x.powered && fault !== 'failedOpen' && x.air < prop(c, 'crankcaseBelow');
+  if (!heaterAllowed || st.shellTemperature >= x.air + CRANKCASE_MARGIN + CRANKCASE_HYSTERESIS / 2) st.crankcaseOn = false;
+  else if (st.shellTemperature <= x.air + CRANKCASE_MARGIN - CRANKCASE_HYSTERESIS / 2) st.crankcaseOn = true;
   // Inverter speed command: PI on the outlet temperature, limited to [minimum, maximum] speed.
   if (st.mode === 'heating') {
     const top = maxSpeed(x.air), error = compressorTarget - x.water;
     st.command = Math.max(MIN_SPEED, Math.min(top, MIN_SPEED + prop(c, 'proportionalGain') * error + st.integral));
-  } else st.command = st.mode === 'defrost' ? prop(c, 'defrostSpeed') / 100 : 0;
+  } else st.command = st.mode === 'defrost' ? prop(c, st.intensive ? 'intensiveSpeed' : 'defrostSpeed') / 100 : 0;
   // Electric backup heater [IDU]: sole heating while the compressor cannot run or cannot reach the target, bivalent
   // support after a delay at maximum speed, defrost assist on cold water and frost protection. Switched off at the
   // target; never above 74 °C or without flow (dry-firing).
@@ -329,7 +362,7 @@ export function planHeatPump(c: Component, st: HeatPumpState, x: HeatPumpInputs,
   const speed0 = st.speed, speed1 = st.mode === 'heating' || st.mode === 'defrost' ? speed0 + Math.max(-rate * h, Math.min(rate * h, target - speed0)) : 0;
   let speed = (speed0 + speed1) / 2;
   const fanFactor = x.fanFailed ? 0 : 1;
-  const controls = bosch.standbyPower, crankcase = st.mode === 'off' || st.mode === 'drip' ? (x.air < prop(c, 'crankcaseBelow') ? bosch.crankcasePower : 0) : 0;
+  const controls = bosch.standbyPower, crankcase = (st.mode === 'off' || st.mode === 'drip') && st.crankcaseOn ? prop(c, 'crankcasePower') : 0;
   const frost = frostFactor(c, st.frost), limit = electricalLimit(c, x.voltage) - controls;
   const empty = (mode: HeatPumpMode): HeatPumpPlan => ({ mode, speed0, speed1, point: heatingPoint(0, x.air, x.water), electrical: controls + crankcase, compressor: 0, fan: 0, controls, crankcase, backupStages: st.backupStages, condenser: 0, release: 0, air: 0, coilHeat: 0, frostRate: 0, ua: 0 });
   if (st.mode === 'heating' && speed > 0) {
@@ -350,6 +383,13 @@ export function planHeatPump(c: Component, st: HeatPumpState, x: HeatPumpInputs,
       condenser: point.condenser, release, air: point.evaporator - release, coilHeat: 0, frostRate: frostRate(c, x.air, point.evaporating, point.fanFraction, ua), ua };
   }
   if (st.mode === 'defrost' && speed > 0) {
+    // Hot-gas guard: above the hold temperature + 15 K the compressor slows until the coil heat balances its convection.
+    if (st.intensive && st.coilTemperature >= prop(c, 'intensiveEndTemperature') + 15) {
+      const loss = Math.max(0, COIL_STILL_UA * (st.coilTemperature - x.air));
+      let lo = 0, hi = speed;
+      for (let k = 0; k < 40; k++) { const n = (lo + hi) / 2; if (defrostPoint(n, x.water, st.coilTemperature).coil > loss) hi = n; else lo = n; }
+      speed = lo;
+    }
     let d = defrostPoint(speed, x.water, st.coilTemperature);
     if (d.compressor > limit) { let lo = 0, hi = speed; for (let k = 0; k < 50; k++) { const n = (lo + hi) / 2; if (defrostPoint(n, x.water, st.coilTemperature).compressor > limit) hi = n; else lo = n; } speed = lo; d = defrostPoint(speed, x.water, st.coilTemperature); }
     const point: CyclePoint = { speed, evaporating: d.evaporating, condensing: d.condensing, ratio: r290Pressure(kelvin(d.condensing)) / r290Pressure(kelvin(d.evaporating)), evaporator: d.water, condenser: -d.water, compressor: d.compressor, fan: 0, fanFraction: 0 };
@@ -357,8 +397,6 @@ export function planHeatPump(c: Component, st: HeatPumpState, x: HeatPumpInputs,
   }
   return empty(st.mode);
 }
-/** Natural-convection conductance between the stopped coil and outdoor air (W/K; assumption). */
-export const COIL_STILL_UA = 40;
 /**
  * Advance coil temperature, frost, PI integral, speed and counters over an accepted substep. Returns the energy (J)
  * released to the outdoor air or Thermal Space (negative: heat drawn from it) and the coil storage change (J).
@@ -378,7 +416,19 @@ export function advanceHeatPump(c: Component, st: HeatPumpState, plan: HeatPumpP
     energy -= loss; environment += loss;
     // Sensible warming to 0 °C, melting at 0 °C (meltwater drains to the environment), then sensible warming.
     if (st.coilTemperature < 0) { const q = Math.min(energy, -st.coilTemperature * C); st.coilTemperature += q / C; energy -= q; }
-    if (energy > 0 && st.frost > 0) { const melt = Math.min(st.frost, energy / LATENT_FUSION); st.frost -= melt; energy -= melt * LATENT_FUSION; environment += melt * LATENT_FUSION; }
+    // Melting at 0 °C: coil frost first, then (intensive defrost only) the refrozen base-pan ice. Every melted kilogram
+    // carries L_f to the environment, whether it drains or refreezes in the pan (refreezing releases L_f to the air).
+    const retain = Math.max(0, Math.min(1, prop(c, 'residualIceShare')));
+    if (energy > 0 && st.frost > 0) { const melt = Math.min(st.frost, energy / LATENT_FUSION); st.frost -= melt; st.meltedThisDefrost += melt; st.film += retain * melt; energy -= melt * LATENT_FUSION; environment += melt * LATENT_FUSION; }
+    if (energy > 0 && st.intensive && st.residualIce > 0) { const melt = Math.min(st.residualIce, energy / LATENT_FUSION); st.residualIce -= melt; st.film += retain * melt; energy -= melt * LATENT_FUSION; environment += melt * LATENT_FUSION; }
+    // A wet coil above 0 °C evaporates its film into the air (Lewis analogy with the convection conductance; vapour and
+    // its latent heat leave to the environment). This dries the coil and bounds its temperature while wet.
+    if (st.coilTemperature > 0 && st.film > 0) {
+      const humidity = Math.max(0, Math.min(100, prop(c, 'relativeHumidity'))) / 100;
+      const drive = Math.max(0, humidityRatio(vapourPressureWater(st.coilTemperature)) - humidityRatio(humidity * vapourPressureWater(x.air)));
+      const evaporated = Math.min(st.film, COIL_STILL_UA / AIR_CP * drive * h);
+      st.film -= evaporated; energy -= evaporated * LATENT_EVAPORATION; environment += evaporated * LATENT_EVAPORATION;
+    }
     if (energy !== 0) st.coilTemperature += energy / C;
     st.defrostHeat += -plan.condenser * h;
   } else {
@@ -386,7 +436,13 @@ export function advanceHeatPump(c: Component, st: HeatPumpState, plan: HeatPumpP
     const target = x.air, next = target + (st.coilTemperature - target) * Math.exp(-COIL_STILL_UA * h / C);
     environment -= C * (next - st.coilTemperature); st.coilTemperature = next;
     if (x.air > 0 && st.frost > 0) st.frost = Math.max(0, st.frost - COIL_STILL_UA * x.air * h / LATENT_FUSION);
+    else if (x.air > 0 && st.residualIce > 0) st.residualIce = Math.max(0, st.residualIce - COIL_STILL_UA * x.air * h / LATENT_FUSION);
   }
+  // Compressor shell (control state of the crankcase thermostat): running, it approaches the condensing temperature
+  // (τ 10 min); stopped, it follows its heater and its loss to the air exactly. Its sensible heat is not a separate ledger
+  // store: the heater's electrical input is booked to the air when drawn (timing shift of minutes, assumption).
+  if (plan.mode === 'heating' || plan.mode === 'defrost') st.shellTemperature += (plan.point.condensing - st.shellTemperature) * -Math.expm1(-h / 600);
+  else { const settled = x.air + plan.crankcase / SHELL_UA; st.shellTemperature = settled + (st.shellTemperature - settled) * Math.exp(-SHELL_UA * h / SHELL_CAPACITY); }
   // PI integral with anti-windup (the command already lies within its limits).
   if (plan.mode === 'heating') {
     const error = st.target - x.water, top = maxSpeed(x.air), gain = prop(c, 'proportionalGain');
@@ -401,8 +457,9 @@ export function advanceHeatPump(c: Component, st: HeatPumpState, plan: HeatPumpP
 }
 
 export const heatPumpBasis = [
-  { label: 'Manufacturer data (Bosch)', text: 'EN 14511 maximum and nominal outputs/COPs at A7, A2, A−7, A−10 with W35/W55; EN 14825 part-load COPd at Tj −10…+12 °C; modulation 1.8–7.1 kW at A2/W35; 13.1 A maximum current; 6 compressor starts per hour; operating envelope (flow ≤ 75 °C, outdoor −22…+45 °C, cut-out −23/+45 °C with restart −17/+42 °C); 15 W standby and 32 W crankcase heater; 14 l/min minimum flow in defrost; backup heater 3/6 kW at 230 V with 88 °C overheat protection; 2-minute power-on check.' },
+  { label: 'Manufacturer data (Bosch)', text: 'EN 14511 maximum and nominal outputs/COPs at A7, A2, A−7, A−10 with W35/W55; EN 14825 part-load COPd at Tj −10…+12 °C; modulation 1.8–7.1 kW at A2/W35; 13.1 A maximum current; 6 compressor starts per hour; operating envelope (flow ≤ 75 °C, outdoor −22…+45 °C, cut-out −23/+45 °C with restart −17/+42 °C); 15 W standby and 32 W average crankcase heater (ErP); 14 l/min minimum flow in defrost; backup heater 3/6 kW at 230 V with 88 °C overheat protection; 2-minute power-on check.' },
   { label: 'Fitted model', text: 'Quasi-steady R290 cycle: suction-density compressor capacity, Carnot fraction η(speed, pressure ratio) and heat-exchanger approach temperatures. Six coefficients least-squares fitted to nine published points (RMS COP error 2.0 %, largest 5.1 %). The three A2/+2 °C points include defrost in the Bosch tests and are withheld to check the frost and defrost model. Maximum speed below −7 °C back-calculated from the A−10/W35 maximum.' },
-  { label: 'Assumptions', text: 'Condenser UA 2 kW/K, evaporator UA 750 W/K at full fan, fan 40 W, fan airflow following compressor speed; R290 saturation by a two-point Clausius–Clapeyron fit. Frost by ε-NTU mass transfer at Le = 1; conductance halves at the frost reference mass; defrost trigger, minimum interval, reverse-cycle speed, minimum pressure ratio 1.8, coil capacity, 10 °C end temperature and drip time are assumptions. Controller: PI on outlet temperature, start/stop hysteresis, minimum run/off times; heating curve linear. Pressure switches at 31 bar / 1.2 bar and a 20 K evaporator-approach protection (failed fan, blocked coil). Internal water volume, metal capacities and hydraulic resistance are assumed.' },
+  { label: 'Field-calibrated defrost', text: 'A measured Bosch Compress 5800i (4 kW, same R290 outdoor-unit family; heatpumpmonitor.org #920, Zagreb, 10 s metered data) with the real weather: 2 kg frost trigger and 25 kJ/K defrost-heated capacity fitted jointly to the measured defrost interval (≈3.4 h) and heat per defrost (≈0.37 kWh); intensive hot-gas defrost every 5th cycle (Bosch firmware ≥ 9.10.0); crankcase heater 75 W measured. The model reproduces the 14 defrosts (2 intensive) of a measured 48 h window; intensive defrost energy is predicted, not fitted.' },
+  { label: 'Assumptions', text: 'Condenser UA 2 kW/K, evaporator UA 750 W/K at full fan, fan 40 W, fan airflow following compressor speed; R290 saturation by a two-point Clausius–Clapeyron fit. Frost by ε-NTU mass transfer at Le = 1 on a fin surface 35 % of the way from T_e to the air; conductance halves at 5 kg of frost. Reverse-cycle speeds 40/60 %, minimum pressure ratio 1.8, 10 °C (normal) / 20 °C (intensive) end temperatures, 9 min intensive minimum, 100 W/K coil convection, 30 % retained meltwater evaporating by the Lewis analogy, drip time, crankcase shell thermostat (10 K, 3.2 W/K) are assumptions. Controller: PI on outlet temperature, start/stop hysteresis, minimum run/off times; heating curve linear. Pressure switches at 31 bar / 1.2 bar and a 20 K evaporator-approach protection (failed fan, blocked coil). Internal water volume, metal capacities and hydraulic resistance are assumed.' },
   { label: 'Not modelled', text: 'Bosch firmware (degree-minute logic, adaptive defrost, low-noise modes), refrigerant charge migration and oil return, drip-tray heater, domestic hot water, cooling mode, SG-Ready/EVU inputs, compressor and fan electrical harmonics, sound. Latent heat from condensation on a wet coil is not separated from the sensible duty.' },
 ];

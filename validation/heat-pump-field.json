@@ -1,0 +1,423 @@
+{
+ "source": {
+  "system": "heatpumpmonitor.org #920, Bosch Compress 5800i AW 4 kW (R290), Zagreb, radiators; class-1 electricity meter, class-2 ultrasonic heat meter",
+  "url": "https://heatpumpmonitor.org/",
+  "api": "https://heatpumpmonitor.org/timeseries/data?id=920 (10 s, retrieved 2026-10-17)",
+  "weather": "Open-Meteo historical archive, 45.815 N 15.982 E, hourly 2 m temperature and relative humidity (CC BY 4.0), retrieved 2026-10-17; site outdoor sensor minus archive: +0.2 K mean, 1.7 K s.d.",
+  "processing": "Defrost = >= 60 s of heat < -150 W with the compressor running (electrical > 150 W); fragments within 3 min merged; >= 8 min classed intensive. Heat-meter samples beyond +/-12 kW (76 of 120,961) treated as spikes; event energies given from the meter (spikes dropped) and recomputed from flow rate and flow/return temperature."
+ },
+ "period": {
+  "from": "2025-12-29",
+  "to": "2026-01-12",
+  "normal": {
+   "n": 53,
+   "durationMin": {
+    "median": 4.833333333333333,
+    "iqr": [
+     4.167,
+     4.833,
+     6.0
+    ]
+   },
+   "waterKWh": {
+    "medianMeter": 0.3246666666666667,
+    "medianRecomputed": 0.3717596561022859,
+    "iqr": [
+     0.232,
+     0.372,
+     0.447
+    ]
+   },
+   "electricalW": 784.4500040690104,
+   "dipK": 12.26433353424072,
+   "flowMinC": 21.31999969482422
+  },
+  "intensive": {
+   "n": 17,
+   "durationMin": {
+    "median": 10.666666666666666,
+    "iqr": [
+     9.0,
+     10.667,
+     15.0
+    ]
+   },
+   "waterKWh": {
+    "medianMeter": 0.8115638888888889,
+    "medianRecomputed": 0.8393026478288345,
+    "iqr": [
+     0.583,
+     0.839,
+     0.998
+    ]
+   },
+   "electricalW": 1189.5170437205923,
+   "dipK": 20.652666091918945,
+   "flowMinC": 10.9399995803833
+  },
+  "intervalMin": {
+   "median": 203.5,
+   "iqr": [
+    148,
+    204,
+    260
+   ],
+   "n": 63
+  },
+  "copDriftLateVsEarly": -0.115,
+  "roomAirC": 19.5
+ },
+ "window": {
+  "from": "2026-01-09T00:00Z",
+  "to": "2026-01-11T00:00Z",
+  "heatKWh": 111.01805534379015,
+  "electricityKWh": 37.39518026487563,
+  "cop": 2.968779788128651,
+  "meanHeatW": 2312.876152995628,
+  "meanFlowC": 34.92298717933027,
+  "meanReturnC": 30.372558667794767,
+  "meanFlowLpm": 7.929914132684417,
+  "defrosts": [
+   {
+    "start": "2026-01-09T02:05Z",
+    "durationMin": 5.0,
+    "waterKWh": 0.426,
+    "dipK": 12.62,
+    "flowMinC": 19.3700008392334
+   },
+   {
+    "start": "2026-01-09T06:04Z",
+    "durationMin": 4.5,
+    "waterKWh": 0.4,
+    "dipK": 13.2,
+    "flowMinC": 26.1299991607666
+   },
+   {
+    "start": "2026-01-09T10:12Z",
+    "durationMin": 4.83,
+    "waterKWh": 0.451,
+    "dipK": 13.78,
+    "flowMinC": 23.190000534057617
+   },
+   {
+    "start": "2026-01-09T12:44Z",
+    "durationMin": 4.83,
+    "waterKWh": 0.405,
+    "dipK": 13.32,
+    "flowMinC": 26.079999923706055
+   },
+   {
+    "start": "2026-01-09T16:16Z",
+    "durationMin": 9.83,
+    "waterKWh": 1.031,
+    "dipK": 13.41,
+    "flowMinC": 21.3799991607666
+   },
+   {
+    "start": "2026-01-09T19:48Z",
+    "durationMin": 4.83,
+    "waterKWh": 0.435,
+    "dipK": 12.58,
+    "flowMinC": 21.700000762939453
+   },
+   {
+    "start": "2026-01-09T22:19Z",
+    "durationMin": 4.33,
+    "waterKWh": 0.372,
+    "dipK": 12.59,
+    "flowMinC": 22.40999984741211
+   },
+   {
+    "start": "2026-01-10T00:47Z",
+    "durationMin": 4.67,
+    "waterKWh": 0.39,
+    "dipK": 12.51,
+    "flowMinC": 21.670000076293945
+   },
+   {
+    "start": "2026-01-10T03:21Z",
+    "durationMin": 4.83,
+    "waterKWh": 0.416,
+    "dipK": 12.65,
+    "flowMinC": 21.600000381469727
+   },
+   {
+    "start": "2026-01-10T06:44Z",
+    "durationMin": 10.5,
+    "waterKWh": 0.955,
+    "dipK": 11.7,
+    "flowMinC": 21.450000762939453
+   },
+   {
+    "start": "2026-01-10T10:13Z",
+    "durationMin": 4.83,
+    "waterKWh": 0.398,
+    "dipK": 12.44,
+    "flowMinC": 20.790000915527344
+   },
+   {
+    "start": "2026-01-10T14:53Z",
+    "durationMin": 5.67,
+    "waterKWh": 0.492,
+    "dipK": 12.26,
+    "flowMinC": 20.65999984741211
+   },
+   {
+    "start": "2026-01-10T18:20Z",
+    "durationMin": 5.17,
+    "waterKWh": 0.442,
+    "dipK": 12.76,
+    "flowMinC": 20.139999389648438
+   },
+   {
+    "start": "2026-01-10T21:19Z",
+    "durationMin": 5.0,
+    "waterKWh": 0.405,
+    "dipK": 12.44,
+    "flowMinC": 19.780000686645508
+   }
+  ]
+ },
+ "weather": [
+  {
+   "time": "2026-01-09T00:00Z",
+   "air": -10.0,
+   "rh": 88
+  },
+  {
+   "time": "2026-01-09T01:00Z",
+   "air": -9.4,
+   "rh": 84
+  },
+  {
+   "time": "2026-01-09T02:00Z",
+   "air": -8.5,
+   "rh": 81
+  },
+  {
+   "time": "2026-01-09T03:00Z",
+   "air": -7.9,
+   "rh": 79
+  },
+  {
+   "time": "2026-01-09T04:00Z",
+   "air": -8.4,
+   "rh": 81
+  },
+  {
+   "time": "2026-01-09T05:00Z",
+   "air": -8.9,
+   "rh": 86
+  },
+  {
+   "time": "2026-01-09T06:00Z",
+   "air": -8.0,
+   "rh": 89
+  },
+  {
+   "time": "2026-01-09T07:00Z",
+   "air": -6.6,
+   "rh": 90
+  },
+  {
+   "time": "2026-01-09T08:00Z",
+   "air": -5.6,
+   "rh": 91
+  },
+  {
+   "time": "2026-01-09T09:00Z",
+   "air": -5.1,
+   "rh": 90
+  },
+  {
+   "time": "2026-01-09T10:00Z",
+   "air": -3.8,
+   "rh": 89
+  },
+  {
+   "time": "2026-01-09T11:00Z",
+   "air": -2.8,
+   "rh": 90
+  },
+  {
+   "time": "2026-01-09T12:00Z",
+   "air": -2.9,
+   "rh": 96
+  },
+  {
+   "time": "2026-01-09T13:00Z",
+   "air": -1.6,
+   "rh": 93
+  },
+  {
+   "time": "2026-01-09T14:00Z",
+   "air": -0.5,
+   "rh": 90
+  },
+  {
+   "time": "2026-01-09T15:00Z",
+   "air": -1.2,
+   "rh": 95
+  },
+  {
+   "time": "2026-01-09T16:00Z",
+   "air": -1.8,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-09T17:00Z",
+   "air": -3.6,
+   "rh": 98
+  },
+  {
+   "time": "2026-01-09T18:00Z",
+   "air": -1.7,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-09T19:00Z",
+   "air": -3.1,
+   "rh": 99
+  },
+  {
+   "time": "2026-01-09T20:00Z",
+   "air": -3.0,
+   "rh": 100
+  },
+  {
+   "time": "2026-01-09T21:00Z",
+   "air": -2.3,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-09T22:00Z",
+   "air": -2.1,
+   "rh": 94
+  },
+  {
+   "time": "2026-01-09T23:00Z",
+   "air": -1.7,
+   "rh": 94
+  },
+  {
+   "time": "2026-01-10T00:00Z",
+   "air": 0.2,
+   "rh": 96
+  },
+  {
+   "time": "2026-01-10T01:00Z",
+   "air": 0.3,
+   "rh": 96
+  },
+  {
+   "time": "2026-01-10T02:00Z",
+   "air": 0.3,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-10T03:00Z",
+   "air": 0.2,
+   "rh": 99
+  },
+  {
+   "time": "2026-01-10T04:00Z",
+   "air": 0.4,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-10T05:00Z",
+   "air": 0.7,
+   "rh": 96
+  },
+  {
+   "time": "2026-01-10T06:00Z",
+   "air": 0.3,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-10T07:00Z",
+   "air": 0.5,
+   "rh": 98
+  },
+  {
+   "time": "2026-01-10T08:00Z",
+   "air": 0.7,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-10T09:00Z",
+   "air": 0.8,
+   "rh": 96
+  },
+  {
+   "time": "2026-01-10T10:00Z",
+   "air": 0.9,
+   "rh": 95
+  },
+  {
+   "time": "2026-01-10T11:00Z",
+   "air": 1.4,
+   "rh": 93
+  },
+  {
+   "time": "2026-01-10T12:00Z",
+   "air": 2.1,
+   "rh": 92
+  },
+  {
+   "time": "2026-01-10T13:00Z",
+   "air": 2.1,
+   "rh": 91
+  },
+  {
+   "time": "2026-01-10T14:00Z",
+   "air": 2.0,
+   "rh": 90
+  },
+  {
+   "time": "2026-01-10T15:00Z",
+   "air": -0.2,
+   "rh": 96
+  },
+  {
+   "time": "2026-01-10T16:00Z",
+   "air": -2.4,
+   "rh": 100
+  },
+  {
+   "time": "2026-01-10T17:00Z",
+   "air": -3.0,
+   "rh": 100
+  },
+  {
+   "time": "2026-01-10T18:00Z",
+   "air": 0.6,
+   "rh": 94
+  },
+  {
+   "time": "2026-01-10T19:00Z",
+   "air": 0.1,
+   "rh": 97
+  },
+  {
+   "time": "2026-01-10T20:00Z",
+   "air": -0.7,
+   "rh": 95
+  },
+  {
+   "time": "2026-01-10T21:00Z",
+   "air": -0.2,
+   "rh": 91
+  },
+  {
+   "time": "2026-01-10T22:00Z",
+   "air": -1.2,
+   "rh": 86
+  },
+  {
+   "time": "2026-01-10T23:00Z",
+   "air": -2.2,
+   "rh": 84
+  }
+ ]
+}

@@ -15,7 +15,7 @@ const selected = process.env.PHYSICS_EXAMPLES?.split(',');
 for (const example of examples.filter(e => !selected || selected.includes(e.mode))) {
  for (const source of ['generated', 'file']) {
   const p = parseProject(source === 'file' ? JSON.parse(await readFile(`examples/${example.mode}.physics.json`, 'utf8')) : JSON.parse(serializeProject(starter(example.mode))));
-  const s = new Simulation(p), duration = example.mode === 'automated' ? 1800 : example.mode === 'supply' ? 720 : example.mode === 'circulation' ? 300 : example.mode === 'pressure' ? 195 : 60;
+  const s = new Simulation(p), duration = example.mode === 'automated' ? 1800 : example.mode === 'supply' ? 720 : example.mode === 'circulation' ? 300 : example.mode === 'pressure' ? 195 : example.mode.startsWith('heatPump') ? 600 : 60; // heat pumps: past the 2-minute power-on check, so the compressor runs and its COP is defined
   // Exercise real-time startup, then the same adaptive advance used by the sandbox UI.
   for (let i = 0; i < 60; i++) if (!s.step()) break;
   if (!s.error && !s.adaptiveUnavailable()) s.advanceAdaptive(duration - s.time);

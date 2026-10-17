@@ -127,8 +127,8 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       b.wire(mains, 'a', c, 'L'); b.wire(mains, 'b', c, 'N'); b.wire(mains, 'a', c, 'BL'); b.wire(mains, 'b', c, 'BN'); b.wire(mains, 'a', pump, 'a'); b.wire(mains, 'b', pump, 'b');
       b.wire(c, 'outlet', pipe, 'inlet'); b.wire(pipe, 'outlet', sink, 'inlet'); b.wire(sink, 'outlet', pump, 'inlet'); b.wire(pump, 'outlet', c, 'inlet');
       s = simulation(b); s.advanceAdaptive(60); assert.equal(s.error, null);
-      // Bosch ErP: 15 W standby plus the 32 W crankcase heater below its threshold during the 2-minute power-on check.
-      near(report, 'standby + crankcase input during the power-on check (W)', 47, s.electrical.readings[c.id].compressorPower, 1e-9);
+      // Bosch ErP 15 W standby plus the 75 W crankcase heater (measured on the 4/5/7 units), on during the power-on check with a cold shell.
+      near(report, 'standby + crankcase heater input during the power-on check (W)', 90, s.electrical.readings[c.id].compressorPower, 1e-9);
       s.advanceAdaptive(540); assert.equal(s.error, null);
       const st = s.multiphysics.heatPumps[c.id], view = s.multiphysics.heatPumpView[c.id];
       assert.equal(st.mode, 'heating'); assert.equal(st.startCount, 1);

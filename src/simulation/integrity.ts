@@ -174,7 +174,8 @@ export function componentError(c: Component): string | null {
     if (error) return `${c.name}: ${error}`;
   }
   if (c.kind === 'heatPump') {
-    if (!Number.isInteger(prop(c, 'backupStages')) || !Number.isInteger(prop(c, 'maxStarts'))) return 'Backup heater stages and the start limit must be integers.';
+    if (!Number.isInteger(prop(c, 'backupStages')) || !Number.isInteger(prop(c, 'maxStarts')) || !Number.isInteger(prop(c, 'intensiveEvery'))) return 'Backup heater stages, the start limit and the intensive defrost interval must be integers.';
+    if (prop(c, 'intensiveMinTime') > prop(c, 'intensiveMaxTime')) return 'The intensive defrost minimum duration must not exceed its maximum.';
     if (prop(c, 'curveDesignFlow') < prop(c, 'curveFootFlow')) return 'Heating curve: the design flow temperature must not be below the foot point.';
     if (prop(c, 'curveDesignOutdoor') >= 20) return 'Heating curve: the design outdoor temperature must be below 20 °C.';
   }

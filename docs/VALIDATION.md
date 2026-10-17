@@ -36,7 +36,8 @@ The Bosch Compress 6800i AW 7 OR-S heat pump has a [calibration and validation r
 - the steady cycle at all twelve published Bosch points (nine fitted, three withheld);
 - an EN 14511-style frost/defrost bench against Bosch's A2 and +2 °C values;
 - three coupled scenarios with energy residuals: defrost at 2 °C, a −15 °C cold snap with backup heater, low-load cycling;
-- a timestep comparison.
+- a timestep comparison;
+- a 48 h replay of real weather against a measured Bosch 5800i (heatpumpmonitor.org #920), with every result classed as measured, calibrated, predicted, extrapolated or unvalidated.
 
 `heat-pump.test.ts` runs the same physics and protection checks in the release gate. See [HEAT-PUMP.md](HEAT-PUMP.md).
 

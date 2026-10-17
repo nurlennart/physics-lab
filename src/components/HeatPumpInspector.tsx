@@ -50,7 +50,9 @@ export function HeatPumpInspector({ c }: { c: Component }) {
     ['Heat from outdoor air', started && view ? kw(view.plan.air) : '—'],
     ['Frost on coil', `${((st?.frost ?? 0) * 1000).toFixed(0)} g of ${(prop(c, 'frostTrigger') * 1000).toFixed(0)} g trigger · coil ${(st?.coilTemperature ?? air).toFixed(1)} °C`],
     ['Starts (last hour / total)', `${st?.starts.length ?? 0} / ${st?.startCount ?? 0} (max ${prop(c, 'maxStarts')}/h)`],
-    ['Defrosts', `${st?.defrosts ?? 0}${st && st.defrostHeat > 0 ? ` · ${(st.defrostHeat / 3.6e6).toFixed(3)} kWh from the water` : ''}`],
+    ['Defrosts', `${st?.defrosts ?? 0} (every ${prop(c, 'intensiveEvery')}th intensive)${st && st.defrostHeat > 0 ? ` · ${(st.defrostHeat / 3.6e6).toFixed(3)} kWh from the water` : ''}`],
+    ['Base-pan ice / meltwater film', `${((st?.residualIce ?? 0) * 1000).toFixed(0)} g / ${((st?.film ?? 0) * 1000).toFixed(0)} g`],
+    ['Crankcase heater', `${st?.crankcaseOn ? `on · ${prop(c, 'crankcasePower')} W` : 'off'} · shell ${(st?.shellTemperature ?? air).toFixed(1)} °C`],
     ['Seasonal performance factor', spf !== null ? `${spf.toFixed(2)} (${((st!.heat - st!.defrostHeat) / 3.6e6).toFixed(2)} kWh / ${(st!.electricity / 3.6e6).toFixed(2)} kWh)` : '—'],
   ];
   const flowShown = characteristicFlow(target);

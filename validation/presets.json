@@ -630,11 +630,11 @@
       ],
       "checks": [
         {
-          "label": "standby + crankcase input during the power-on check (W)",
-          "expected": 47,
-          "measured": 47,
+          "label": "standby + crankcase heater input during the power-on check (W)",
+          "expected": 90,
+          "measured": 90,
           "absoluteError": 0,
-          "tolerance": 5.700000000000001e-8
+          "tolerance": 1.0000000000000001e-7
         },
         {
           "label": "first law: condenser heat − outdoor-unit input − air heat (W)",
@@ -653,14 +653,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.0050971632757921e-7,
-          "absoluteError": 1.0050971632757921e-7,
-          "tolerance": 2034.7353937072278
+          "measured": 1.0689561902310629e-7,
+          "absoluteError": 1.0689561902310629e-7,
+          "tolerance": 2058.4283947998765
         }
       ],
       "pass": true,
       "time": 600,
-      "energyResidual": 1.0050971632757921e-7,
+      "energyResidual": 1.0689561902310629e-7,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -672,11 +672,11 @@
       ],
       "checks": [
         {
-          "label": "standby + crankcase input during the power-on check (W)",
-          "expected": 47,
-          "measured": 47,
+          "label": "standby + crankcase heater input during the power-on check (W)",
+          "expected": 90,
+          "measured": 90,
           "absoluteError": 0,
-          "tolerance": 5.700000000000001e-8
+          "tolerance": 1.0000000000000001e-7
         },
         {
           "label": "first law: condenser heat − outdoor-unit input − air heat (W)",
@@ -695,14 +695,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.0050971632757921e-7,
-          "absoluteError": 1.0050971632757921e-7,
-          "tolerance": 2034.7353937072278
+          "measured": 1.0689561902310629e-7,
+          "absoluteError": 1.0689561902310629e-7,
+          "tolerance": 2058.4283947998765
         }
       ],
       "pass": true,
       "time": 600,
-      "energyResidual": 1.0050971632757921e-7,
+      "energyResidual": 1.0689561902310629e-7,
       "massResidual": 0,
       "violations": [],
       "failed": {}

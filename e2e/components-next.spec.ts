@@ -56,7 +56,7 @@ for (const [kind, title, label] of [
   expect(state.error).toBeNull(); expect(state.time).toBeCloseTo(1, 8);
   const readings = Object.values(state.readings) as any[];
   if (kind === 'electricBoiler') { await expect(page.getByTestId('boiler-status')).toContainText('Heating'); await expect(page.getByRole('img', { name: 'Boiler water, element and target temperature history' })).toBeVisible(); expect(readings.some(r => r.heatingPower > 2999)).toBe(true); }
-  // Bosch: 2-minute power-on check; meanwhile 15 W controls and the 32 W crankcase heater at 2 °C outdoors (ErP).
+  // Bosch: 2-minute power-on check; meanwhile 15 W controls and the 75 W crankcase heater on a cold compressor shell.
   if (kind === 'heatPump') {
     await expect(page.getByTestId('heat-pump-status')).toContainText('Power-on check');
     await expect(page.getByRole('img', { name: /Heat pump flow, return and target temperature/ })).toBeVisible();
@@ -66,7 +66,7 @@ for (const [kind, title, label] of [
     await page.getByTestId('heat-pump-basis-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-reference')).toContainText('A7/W35 maximum');
     await page.getByTestId('heat-pump-characteristic-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-characteristic')).toContainText('A-7');
     await page.getByTestId('heat-pump-basis-panel').locator('summary').click(); await expect(page.getByTestId('heat-pump-reference')).toHaveCount(0);
-    expect(readings.some(r => Math.abs(r.compressorPower - 47) < 1e-6)).toBe(true);
+    expect(readings.some(r => Math.abs(r.compressorPower - 90) < 1e-6)).toBe(true);
   }
   if (kind === 'panelRadiator') {
     await expect(page.getByTestId('panel-status')).toContainText('Heating the room');
