@@ -82,10 +82,11 @@ describe('resolved thermal boundaries and conservation', () => {
     expect(s.energyResidual).toBeCloseTo(0, 6);
   });
 
-  it.each(['tank', 'pipe', 'electricBoiler', 'panelRadiator', 'storageTank'] as Kind[])('%s responds to a live global change, retains initial state, and conserves energy', kind => {
+  it.each(['tank', 'pipe', 'electricBoiler', 'panelRadiator', 'storageTank', 'underfloorHeating'] as Kind[])('%s responds to a live global change, retains initial state, and conserves energy', kind => {
     const b = new Builder(), c = b.add(kind, { initialTemperature: 60, ...(kind === 'pipe' ? { thermalUA: 10 } : {}) });
     const s = new Simulation(b.p);
-    const temperature = () => kind === 'tank' ? s.temperatures[c.id] : s.multiphysics.pipeCells[c.id][0] - 273.15;
+    // Underfloor water meets the room only through its screed: the screed node responds to the boundary.
+    const temperature = () => kind === 'tank' ? s.temperatures[c.id] : s.multiphysics.pipeCells[kind === 'underfloorHeating' ? `${c.id}#screed` : c.id][0] - 273.15;
     expect(temperature()).toBeCloseTo(60);
     expect(s.step(0.1)).toBe(true);
     const before = temperature(), stored = s.storedEnergy, ambient = s.ambientEnergy;
@@ -128,7 +129,7 @@ describe('resolved thermal boundaries and conservation', () => {
     expect(run()).toBeGreaterThan(60); expect(run(7)).toBeLessThan(60);
   });
 
-  it.each(['radiator', 'panelRadiator', 'electricBoiler'] as Kind[])('%s flowing transport agrees with equivalent explicit boundaries and telemetry', kind => {
+  it.each(['radiator', 'panelRadiator', 'electricBoiler', 'underfloorHeating'] as Kind[])('%s flowing transport agrees with equivalent explicit boundaries and telemetry', kind => {
     const b = new Builder(), hot = b.add('tank', { initialTemperature: 60, elevation: 2, loss: 0 });
     const cold = b.add('tank', { initialTemperature: 20, volume: 10, loss: 0 });
     const pipe = b.add('pipe', { initialTemperature: 60, thermalUA: 10 });
@@ -234,7 +235,7 @@ describe('global ambient propagation', () => {
   });
 
   it('every boundary component is covered by a behavioural test above', () => {
-    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve', 'heatPump', 'storageTank']);
+    const covered = new Set<Kind>([...thermalMasses, 'pipe', 'electricBoiler', 'panelRadiator', 'radiator', 'cooler', 'thermostaticValve', 'heatPump', 'storageTank', 'underfloorHeating']);
     expect(boundaryKinds.filter(k => !covered.has(k))).toEqual([]);
   });
 

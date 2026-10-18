@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 import { actions, simulation, useLab } from '../editor/store';
+import { heatedFloorArea } from '../simulation/underfloor-heating';
 import { elementArea, floorArea, opaqueArea, outdoorTemperature, roomMeasurements, roomMeasurement, roomVolume, spaceCapacity, type ThermalSpace } from '../simulation/thermal-spaces';
 import { formatReading, units } from '../simulation/measurements';
 
@@ -44,6 +45,7 @@ export function ThermalSpaceInspector({ room }: { room: ThermalSpace }) {
           <NumberField label={`${e.name} effective capacity`} value={e.heatCapacity} unit="J/K" disabled={locked} change={v => actions.element(e.id, { heatCapacity: v })} />
           {!e.parentId && <label className="room-field"><span>Adjacent environment</span><select aria-label={`${e.name} adjacency`} disabled={locked || e.from !== room.id} value={e.to} onChange={ev => actions.element(e.id, { to: ev.target.value })}><option value="outdoors">Outdoors</option>{(p.thermalSpaces ?? []).filter(r => r.id !== e.from).map(r => <option key={r.id} value={r.id}>{r.name}</option>)}</select></label>}
           {e.kind === 'wall' && <><p className="field-hint">Opaque area: {opaqueArea(p, e).toFixed(2)} m²{e.to !== 'outdoors' ? ' · Shared once between both zones. Remove the other zone’s redundant exterior surface if replacing it.' : ''}</p><div className="room-element-actions"><button disabled={locked} onClick={() => actions.opening(e.id, 'window')}><Plus size={12} /> Window</button><button disabled={locked} onClick={() => actions.opening(e.id, 'door')}><Plus size={12} /> Door</button></div></>}
+          {(e.kind === 'floor' || e.kind === 'ceiling') && heatedFloorArea(p, e) > 0 && <p className="field-hint">Underfloor heating covers {heatedFloorArea(p, e).toFixed(2)} m²: the floor conducts room air through the remaining {opaqueArea(p, e).toFixed(2)} m², the loop's own downward loss crosses the rest.</p>}
           {e.preset && <p className="field-hint">{e.preset}; U-value is an assumption, not a certified assembly.</p>}
         </div>)}
       </section>

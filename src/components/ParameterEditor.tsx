@@ -10,6 +10,7 @@ import { derivedReadouts, paramSpec, type ParamGroup, type ParamSpec } from "../
 import { builtinPresets } from "../simulation/presets";
 import { sourceLimit, sourceMode } from "../simulation/electrical";
 import { pumpRatingReadouts } from "../simulation/hydraulic";
+import { floorRatingReadouts } from "../simulation/underfloor-heating";
 import { circulatorRatingReadouts, circulatorReferences } from "../simulation/circulator";
 import { formatEngineering, parseEngineering } from "../editor/engineering";
 
@@ -169,7 +170,7 @@ export function ParameterSections({ c }: { c: Component }) {
   );
 }
 export function DerivedValues({ c }: { c: Component }) {
-  const rows = [...derivedReadouts(c), ...(c.kind === "pump" ? pumpRatingReadouts(c) : []), ...(c.kind === "circulator" ? circulatorRatingReadouts(c) : [])];
+  const rows = [...derivedReadouts(c), ...(c.kind === "pump" ? pumpRatingReadouts(c) : []), ...(c.kind === "circulator" ? circulatorRatingReadouts(c) : []), ...(c.kind === "underfloorHeating" ? floorRatingReadouts(c) : [])];
   if (!rows.length) return null;
   return (
     <div className="inspector-section">

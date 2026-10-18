@@ -4,6 +4,7 @@ import { definitions, prop, textProp, type Component } from "../simulation/model
 import { simulation } from "../editor/store";
 import { dimensions, portLocal, storageY, STORAGE_BASE, STORAGE_TOP } from "../editor/geometry";
 import { coilLayers, layerAt, storageLayers } from "../simulation/storage-tank";
+import { surfaceTemperature } from "../simulation/underfloor-heating";
 import { effectiveAmbient } from "../simulation/environment";
 import { trvSetpoint, trvTemperatureLabel } from "../simulation/thermostatic-valve";
 
@@ -43,6 +44,7 @@ export function moduleStatus(c: Component): { tone: Tone; text: string } | null 
   if (status === "sensorFault" || status === "controlLost") return { tone: "warning", text: status === "sensorFault" ? "Sensor fault" : "Control signal lost" };
   if (status === "overloaded" || (s.overload[c.id] ?? 0) > 0 || hybrid?.overload) return { tone: "warning", text: "Outside rating" };
   if (s.multiphysics.circulators[c.id]?.lockedOut) return { tone: "warning", text: "Undervoltage lockout" };
+  if (c.kind === "underfloorHeating" && hasStarted() && surfaceTemperature((s.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / prop(c, "heatedArea"), effectiveAmbient(s.project, c)) > prop(c, "maxSurfaceTemperature")) return { tone: "warning", text: `Floor surface above ${prop(c, "maxSurfaceTemperature")} °C` };
   if ((s.multiphysics.overflowRate[c.id] ?? 0) > 1e-9) return { tone: "warning", text: "Overflowing" };
   if (c.kind === "safetyValve" && hasStarted() && (s.multiphysics.positions[c.id] ?? 0) > 0) return { tone: "warning", text: "Discharging" };
   const vessel = s.multiphysics.vessels[c.id];
@@ -511,6 +513,27 @@ function face(c: Component): Face {
         </g>,
         hero: flowing && hr?.supplyTemperature !== undefined && hr.returnTemperature !== undefined ? `${(hr.supplyTemperature - 273.15).toFixed(1)} → ${(hr.returnTemperature - 273.15).toFixed(1)} °C` : celsius(mean),
         detail: started ? `${watts(hr?.duty ?? 0)} to room` : `Φ₅₀ ${prop(c, "ratedOutput").toFixed(0)} W`,
+        tone: "thermal",
+      };
+    }
+    case "underfloorHeating": {
+      // Floor section: screed strips shaded by their excess over the room air, the meandering pipe, insulation underneath.
+      const water = (s.multiphysics.pipeCells[c.id] ?? []).map((t) => t - 273.15), screed = (s.multiphysics.pipeCells[`${c.id}#screed`] ?? []).map((t) => t - 273.15), air = effectiveAmbient(s.project, c);
+      const mean = water.length ? water.reduce((a, t) => a + t, 0) / water.length : prop(c, "initialTemperature"), flowing = started && Math.abs(hr?.flow ?? 0) >= 1e-12;
+      const width = 100 / Math.max(1, screed.length), turns = Array.from({ length: 12 }, (_, i) => `H${45 + i * 8}V${i % 2 ? 50 : 78}`).join("");
+      const surface = surfaceTemperature((hr?.duty ?? 0) / prop(c, "heatedArea"), air);
+      return {
+        symbol: <g>
+          <path d="M0 66H37V50M137 50V66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
+          <rect x="37" y="44" width="100" height="40" rx="2" fill={T.n4} />
+          {screed.map((t, i) => <rect key={i} x={37 + i * width} y="44" width={width} height="40" fill={T.thermal} fillOpacity={Math.max(0.04, Math.min(0.8, (t - air) / 25))} />)}
+          <path d={`M37 50${turns}H137`} fill="none" stroke={T.hydraulicText} strokeWidth="1.5" />
+          <rect x="37" y="44" width="100" height="40" rx="2" fill="none" stroke={INK} strokeWidth={SW} />
+          <path d="M37 89H137" stroke={T.n9} strokeWidth="3" strokeDasharray="2 2" />
+        </g>,
+        hero: flowing && hr?.supplyTemperature !== undefined && hr.returnTemperature !== undefined ? `${(hr.supplyTemperature - 273.15).toFixed(1)} → ${(hr.returnTemperature - 273.15).toFixed(1)} °C` : celsius(mean),
+        detail: started ? `${watts(hr?.duty ?? 0)} · floor ${surface.toFixed(1)} °C` : `${prop(c, "heatedArea")} m² · ${(prop(c, "pipeSpacing") * 1000).toFixed(0)} mm`,
+        title: "Supply → return water; heat to the room and mean floor surface temperature (EN 1264 base curve)",
         tone: "thermal",
       };
     }

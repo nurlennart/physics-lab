@@ -33,8 +33,10 @@ for (const example of examples) test(`UI starter: ${example.title} runs, resets 
   else await advance(page, example.mode === 'supply' || example.mode.startsWith('heatPump') ? 600 : 60);
   await page.getByRole('button', { name: 'Live telemetry', exact: true }).click();
   await expect(page.locator('.trace-readouts')).not.toContainText('invalid');
+  // Cold snap: the floor starts near its steady 33 °C, so the flow is close to target and the compressor is still ramping
+  // after 10 min; above the 1.8 kW minimum modulation it is running.
   const expected = {
-    heatPumpHouse: ['Heat output', 3000, 8000], heatPumpCold: ['Heat output', 3000, 7000], heatPumpBuffer: ['Heat output', 3000, 8000], sealedBoiler: ['System pressure at the vessel', 1.79, 1.9],
+    heatPumpHouse: ['Heat output', 3000, 8000], heatPumpCold: ['Heat output', 1800, 7000], heatPumpBuffer: ['Heat output', 3000, 8000], sealedBoiler: ['System pressure at the vessel', 1.79, 1.9],
     thermostaticRoom: ['Room air', 19.95, 20.05], livingRoom: ['Room air', 14.95, 15.05], roomCooldown: ['Room air', 14.95, 15.05],
     gridSolar: ['AC solar injection', 400, 450], hybridStorage: ['Protected AC consumption', 199, 201], zeroExport: ['Protected AC consumption', 199, 201], gridBackup: ['Protected AC consumption', 199, 201], multipleSolar: ['Protected AC consumption', 199, 201],
     solarCharging: ['Charger output', 260, 280], solarOffGrid: ['AC useful load', 99, 101], solarCirculation: ['Circulation flow', 12, 12.5], solarExperiment: ['PV generated power', 449, 451],

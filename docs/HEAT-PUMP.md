@@ -191,7 +191,7 @@ The indoor unit switches between heating and a hot-water cylinder with its motor
 
 The flow, start and stop logic of the compressor are unchanged; hot water only changes the target and the demand. Measurements: `hotWater` (VW1 at B) and `hotWaterCop` (heat over electricity while charging).
 
-In the house example at 2 °C the cylinder starts at 38 °C: the charge to 48 °C takes about 33 minutes with a performance factor of about 2.6, against a heating COP of about 4.0 afterwards; the house cools by about 0.6 K meanwhile and recovers.
+In the house example at 2 °C the cylinder starts at 38 °C: the charge to 48 °C takes about 33 minutes with a performance factor of about 2.6, against a heating COP of about 4.1 falling to 3.3 afterwards as the flow target rises. The underfloor screed keeps heating the house meanwhile, so it does not cool (with the former equivalent pipe it cooled by about 0.6 K).
 
 ## Telemetry and Inspector
 
@@ -217,8 +217,8 @@ The Inspector adds:
 ## Examples
 
 - All heat-pump examples include the 3-way valve VW1, a Bosch WH 290 cylinder with its TW1 sensor, the indoor unit's 17 l expansion vessel and its 3 bar safety valve. The house and buffer examples start with the cylinder at 38 °C (an immediate hot-water charge); the cold snap starts it charged.
-- **Heat pump and underfloor heating** (`heatPumpHouse`): 120 m² single-zone house (envelope ≈ 200 W/K, about 6 kW at −10 °C), underfloor loop as an equivalent 60 m × 32 mm pipe emitting 520 W/K into the room, heating curve 25 → 35 °C, 2 °C outdoors at 85 % RH. The coil frosts and defrosts about every 3 hours (every 5th an intensive cycle); seasonal performance factor about 4.0. Set the environment to 12 °C and close the zone (lower the underfloor loop's thermal UA) to see low-load cycling; drop to −20 °C to meet the envelope.
-- **Heat pump in a cold snap** (`heatPumpCold`): the same house at −15 °C. The compressor runs at its current limit (about 5.2 kW, COP about 2.2) and the 6 kW backup heater joins after its delay. Lower the outdoor temperature below −23 °C for the cut-out, or inject an outdoor fan failure.
+- **Heat pump and underfloor heating** (`heatPumpHouse`): 120 m² single-zone house (envelope ≈ 200 W/K, about 6 kW at −10 °C), wet-screed [underfloor heating](UNDERFLOOR-HEATING.md) under the whole floor (FLOORTEC tacker 16 × 2, 100 mm spacing, twelve 100 m loops; about 3.4 kW to the house and 1.1 kW down at 2 °C), heating curve 25 → 35 °C, 2 °C outdoors at 85 % RH. Indoor pipes, cylinder and floor belong to the house. The coil frosts and defrosts about every 3 hours (every 5th an intensive cycle); performance factor over the first 6 h, hot-water charge included, about 3.4. Set the environment to 12 °C and, after Reset, reduce the floor's heated area (15 m² ≈ 60 W/K) to see low-load cycling; drop to −20 °C to meet the envelope.
+- **Heat pump in a cold snap** (`heatPumpCold`): the same house at −15 °C. The compressor runs at its current limit (about 5.4 kW, COP about 2.1). The floor starts at 33 °C and its screed carries the shortfall for the first hours; the backup heater first joins after about 4.6 h and then cycles with the flow target. Lower the outdoor temperature below −23 °C for the cut-out, or inject an outdoor fan failure.
 
 ## Validation
 

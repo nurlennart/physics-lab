@@ -15,6 +15,7 @@ import { spatialError, spatialSignature } from './spatial-model';
 import { applyDerived, derivedError, domainError, editEffects, paramSpec, type EditPolicy } from "./parameters";
 import { challengeDefinition, isChallengeId } from './challenges';
 import { parsePumpPoints } from "./hydraulic";
+import { characteristic, upwardResistance } from "./underfloor-heating";
 /**
  * Challenge-mode editing sets (unchanged from the scored assignments). In a
  * challenge only these keys may differ from the purchased catalog model, and only
@@ -109,7 +110,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -123,7 +124,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if ('ambient' in c.props && prop(c, 'ambient') !== rules.ambient)
@@ -222,6 +223,13 @@ export function componentError(c: Component): string | null {
   }
   if (c.kind === "pipe" && prop(c, "roughness") > 0.05 * prop(c, "diameter"))
     return `${c.name}: relative roughness ε/D above 0.05 is outside the friction-factor correlation.`;
+  if (c.kind === "underfloorHeating") {
+    if (prop(c, "roughness") > 0.05 * prop(c, "diameter")) return `${c.name}: relative roughness ε/D above 0.05 is outside the friction-factor correlation.`;
+    if (prop(c, "diameter") <= 0) return `${c.name}: the pipe wall leaves no bore.`;
+    if (!Number.isInteger(prop(c, "loops"))) return `${c.name}: the number of loops must be an integer.`;
+    // The characteristic's flux cannot exceed what the screed above the pipe plane conducts (water at the plane).
+    if (characteristic(c) * upwardResistance(c) >= 0.98) return `${c.name}: this spacing, pipe and covering give an EN 1264 characteristic beyond the one-node screed model (K_H·R_o ≥ 0.98).`;
+  }
   if (c.kind === "hysteresis" && prop(c, "low") >= prop(c, "high"))
     return "Low threshold must be below high threshold.";
   if (

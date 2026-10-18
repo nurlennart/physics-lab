@@ -19,7 +19,11 @@ export function resolveAmbient(project: Pick<Project, 'environment'>, component:
   return { temperature: projectAmbient(project), source: 'experiment' };
 }
 
-export const effectiveAmbient = (project: Pick<Project, 'environment'>, component: Component) =>
+/** A Thermal Space's bound (accepted or trial) temperature, °C; its initial temperature before the engine binds any. */
+export const spaceTemperature = (project: Project, id: string) =>
+  spaceTemperatures.get(project)?.[id] ?? project.thermalSpaces?.find(s => s.id === id)?.initialTemperature ?? projectAmbient(project);
+
+export const effectiveAmbient =(project: Pick<Project, 'environment'>, component: Component) =>
   resolveAmbient(project, component).temperature;
 
 /**

@@ -3,6 +3,7 @@ import { isMotor, isThermalMass, perPoleKinds, portConductance, prop, type Compo
 import { bindSpaceTemperatures, effectiveAmbient, resolveAmbient } from './environment';
 import { elementKinds, transport, transportCopy, STAGNANT_FLOW, type HydraulicResult } from './hydraulic';
 import { panelExchange } from './panel-radiator';
+import { belowBoundary, belowKey, roomCoupled } from './underfloor-heating';
 import type { ElectricalResult } from './electrical';
 import { solveLinear } from './linear-algebra';
 import { WATER_CP, WATER_RHO } from './units';
@@ -19,6 +20,11 @@ import { opaqueArea, outdoorTemperature, roomMatrix, spaceCapacity, ventilationC
 export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, electrical: ElectricalResult, h: number, motorPower: Record<string, number>, radiatorUA: Record<string, number>, directHeat: Record<string, number> = {}) {
   const p = s.project, spaces = p.thermalSpaces!, oldRoom = { ...s.spaceTemperatures }, m = spaces.length;
   const assigned = (c: Component) => c.thermalSpaceId && resolveAmbient(p, c).source === 'space' ? spaces.findIndex(r => r.id === c.thermalSpaceId) : -1;
+  // Underfloor loops lose heat down into the room under their floor element (when that is a Thermal Space).
+  const below = new Map(p.components.filter(c => c.kind === 'underfloorHeating' && roomCoupled(p, c)).flatMap(c => {
+    const space = belowBoundary(p, c).space, j = space ? spaces.findIndex(r => r.id === space) : -1;
+    return j >= 0 ? [[c.id, j] as const] : [];
+  }));
   const fixedPanel: Record<string, ReturnType<typeof panelExchange>> = {};
   for (const c of p.components.filter(c => c.kind === 'panelRadiator')) {
     const branch = hydraulic.branches.find(b => b.component === c.id && Math.abs(b.flow) > STAGNANT_FLOW);
@@ -40,7 +46,7 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   let base: ReturnType<typeof evaluate>, responses: ReturnType<typeof evaluate>[];
   try {
     base = evaluate(oldRoom);
-    responses = spaces.map((r, i) => p.components.some(c => assigned(c) === i && (['pipe', 'panelRadiator', 'radiator', 'storageTank'].includes(c.kind) || elementKinds.has(c.kind)))
+    responses = spaces.map((r, i) => p.components.some(c => (assigned(c) === i && (['pipe', 'panelRadiator', 'radiator', 'storageTank', 'underfloorHeating'].includes(c.kind) || elementKinds.has(c.kind))) || below.get(c.id) === i)
       ? evaluate({ ...oldRoom, [r.id]: oldRoom[r.id] + 1 }) : base);
   } finally { bindSpaceTemperatures(p, s.spaceTemperatures); }
   const bodies = p.components.filter(c => isThermalMass(c) && (c.kind !== 'tank' || (base.tanks[c.id]?.mass ?? 0) > 1e-10 || prop(c, 'vesselHeatCapacity') > 0));
@@ -83,7 +89,8 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
     const ci = bodies[i - m], cj = bodies[j - m];
     link(i, j, 1 / (1 / (portConductance(ci) * poles(ci)) + 1 / (portConductance(cj) * poles(cj))));
   }
-  const hydraulicRoom = (ev: ReturnType<typeof evaluate>, room: number) => p.components.reduce((sum, c) => sum + (assigned(c) === room ? ev.exchange.environmentExchange[c.id] ?? 0 : 0), 0);
+  const hydraulicRoom = (ev: ReturnType<typeof evaluate>, room: number) => p.components.reduce((sum, c) => sum + (assigned(c) === room ? ev.exchange.environmentExchange[c.id] ?? 0 : 0)
+    + (below.get(c.id) === room ? ev.exchange.environmentExchange[belowKey(c.id)] ?? 0 : 0), 0);
   const direct: Record<string, number> = {};
   for (const c of p.components) {
     const r = electrical.readings[c.id], hr = hydraulic.readings[c.id];
@@ -110,6 +117,10 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
     if (i < 0) continue;
     const energy = accepted.exchange.environmentExchange[c.id] ?? 0;
     device[spaces[i].id][c.id] = energy / h + direct[c.id]; internalHydraulic += energy; internalDirect += direct[c.id] * h;
+  }
+  for (const [id, j] of below) {
+    const energy = accepted.exchange.environmentExchange[belowKey(id)] ?? 0;
+    device[spaces[j].id][id] = (device[spaces[j].id][id] ?? 0) + energy / h; internalHydraulic += energy;
   }
   for (const l of losses) {
     const i = assigned(l.owner), ambient = i >= 0 ? temperature[i] : effectiveAmbient(p, l.owner);

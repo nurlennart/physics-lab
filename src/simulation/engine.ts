@@ -1,5 +1,6 @@
 import { type SpaceReading } from "./thermal-spaces";
 import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
+import { belowBoundary, screedKey, surfaceTemperature } from "./underfloor-heating";
 import { resetBoiler } from './boiler';
 import { resetHeatPump } from './heat-pump';
 import { Devices } from "./devices";
@@ -116,6 +117,8 @@ export interface Sample {
   heatPumps?: Record<string, { flow: number; ret: number; target: number; heat: number; electrical: number; backup: number; frost: number; mode: string }>;
   /** Panel radiators: inlet (null without flow), outlet cell, mean water and air temperature (°C). */
   panelTemperatures?: Record<string, { supply: number | null; ret: number; mean: number; air: number }>;
+  /** Underfloor heating: supply (null without flow), return, mean water, mean screed, mean surface (base curve), room and below (°C). */
+  floorTemperatures?: Record<string, { supply: number | null; ret: number; mean: number; screed: number; surface: number; air: number; below: number }>;
   kinetic: number;
   potential: number;
   shaftExport: number;
@@ -454,7 +457,7 @@ export class Simulation {
       // Heat pumps: quasi-steady cycle per substep (≤ 0.5 s, split at controller deadlines inside the coupled step).
       if (c.kind === "heatPump") limit = Math.min(limit, 0.5);
       // Panel radiators: water and steel cells change by at most the thermal tolerance per step (as lumped masses).
-      if (c.kind === "panelRadiator" && this.multiphysics.panelRate > 0) limit = Math.min(limit, tolerance / this.multiphysics.panelRate);
+      if ((c.kind === "panelRadiator" || c.kind === "underfloorHeating") && this.multiphysics.panelRate > 0) limit = Math.min(limit, tolerance / this.multiphysics.panelRate);
       // Storage layers: the implicit upwind front is insensitive to the step (its numerical diffusion is set by the layer
       // height); 1 K per step resolves the passage of a thermocline past the sensors and ports.
       if (c.kind === "storageTank" && this.multiphysics.storageRate > 0) limit = Math.min(limit, 1 / this.multiphysics.storageRate);
@@ -492,7 +495,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -817,7 +820,7 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve", "underfloorHeating"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
         if (r && c.kind === "thermostaticValve" && Math.abs(r.differentialPressure) > prop(c, "maxDifferentialPressure")) this.violation(`${c.name}: thermostatic regulating differential pressure exceeded.`);
@@ -911,7 +914,12 @@ export class Simulation {
         if (v && v.water < 0) this.violation(`${c.name}: vessel empty — the circuit pressure fell below the ${(prop(c, 'precharge') / 1e5).toFixed(2)} bar precharge (air can be drawn in at vents; refill the system).`);
         if (v && v.water > 0.98 * prop(c, 'nominalVolume') / 1000) this.violation(`${c.name}: gas cushion fully compressed — the vessel cannot take further expansion.`, 'error');
       }
-      if (c.kind === 'panelRadiator' || c.kind === 'storageTank') {
+      if (c.kind === 'underfloorHeating') {
+        // EN 1264 comfort limit: mean surface temperature of the base curve at the delivered upward flux.
+        const r = this.multiphysics.hydraulic.readings[c.id], room = effectiveAmbient(this.project, c);
+        if (r?.duty !== undefined && surfaceTemperature(r.duty / prop(c, 'heatedArea'), room) > prop(c, 'maxSurfaceTemperature')) this.violation(`${c.name}: floor surface above its ${prop(c, 'maxSurfaceTemperature')} °C limit (EN 1264 base curve).`);
+      }
+      if (c.kind === 'panelRadiator' || c.kind === 'storageTank' || c.kind === 'underfloorHeating') {
         const cells = [...(this.multiphysics.pipeCells[c.id] ?? []), ...(this.multiphysics.pipeCells[`${c.id}#coil`] ?? [])].map(t => t - 273.15), hottest = Math.max(...cells), coldest = Math.min(...cells);
         if (hottest > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
         if (hottest >= 100 || coldest < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
@@ -1053,6 +1061,11 @@ export class Simulation {
       panelTemperatures: Object.fromEntries(this.project.components.filter(c => c.kind === "panelRadiator" && this.multiphysics.pipeCells[c.id]).map(c => {
         const cells = this.multiphysics.pipeCells[c.id], r = this.multiphysics.hydraulic.readings[c.id], flowing = Math.abs(r?.flow ?? 0) >= 1e-12;
         return [c.id, { supply: flowing && r?.supplyTemperature !== undefined ? r.supplyTemperature - 273.15 : null, ret: (r && (r.flow ?? 0) < 0 ? cells[0] : cells[cells.length - 1]) - 273.15, mean: cells.reduce((a, t) => a + t, 0) / cells.length - 273.15, air: effectiveAmbient(this.project, c) }];
+      })),
+      floorTemperatures: Object.fromEntries(this.project.components.filter(c => c.kind === "underfloorHeating" && this.multiphysics.pipeCells[c.id]).map(c => {
+        const cells = this.multiphysics.pipeCells[c.id], screed = this.multiphysics.pipeCells[screedKey(c.id)] ?? cells, r = this.multiphysics.hydraulic.readings[c.id], flowing = Math.abs(r?.flow ?? 0) >= 1e-12, air = effectiveAmbient(this.project, c);
+        const mean = (t: number[]) => t.reduce((a, x) => a + x, 0) / t.length - 273.15;
+        return [c.id, { supply: flowing && r?.supplyTemperature !== undefined ? r.supplyTemperature - 273.15 : null, ret: (r && (r.flow ?? 0) < 0 ? cells[0] : cells[cells.length - 1]) - 273.15, mean: mean(cells), screed: mean(screed), surface: surfaceTemperature((r?.duty ?? 0) / prop(c, 'heatedArea'), air), air, below: belowBoundary(this.project, c).temperature }];
       })),
       kinetic: this.multiphysics.kineticEnergy(this.project),
       potential: this.multiphysics.potential(this.project) - this.multiphysics.initialPotential,

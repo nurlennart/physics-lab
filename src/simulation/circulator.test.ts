@@ -100,6 +100,8 @@ describe('electric circulator: coupled operation', () => {
     const { b, pump, tank } = loop({ inertia: 0.002 });
     const s = new Simulation(b.p);
     const enthalpy = () => s.multiphysics.tanks[tank.id].mass * WATER_CP * s.multiphysics.tanks[tank.id].temperature
+      // The wet rotor's own water (0.1 L at the reference density) holds part of the motor loss on its way into the loop.
+      + s.multiphysics.pipeCells[pump.id][0] * 0.1 * WATER_CP
       + s.project.components.filter(c => c.kind === 'pipe').reduce((sum, c) => sum + s.multiphysics.pipeCells[c.id].reduce((x, T) => x + 1000 * Math.PI * 0.0001 * 20 / s.multiphysics.pipeCells[c.id].length * WATER_CP * T, 0), 0);
     const before = enthalpy();
     run(s, 10);

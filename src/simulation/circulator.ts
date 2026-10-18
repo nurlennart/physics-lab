@@ -173,6 +173,6 @@ export function circulatorModelBasis(c: Component): { kind: BasisKind; text: str
       ? 'Measured flow:head points at maximum speed, interpolated piecewise linearly and scaled to other speeds by the affinity laws (H ∝ ω², Q ∝ ω).'
       : 'Quadratic approximation H = H₀·[(ω/ω_max)² − ½·(Q/Q_r)²] through the shutoff head and rated flow, scaled by the affinity laws; not a measured curve. The maximum curve additionally bends down where the input power limit P1,max applies.' },
     { kind: 'control', text: 'The controller recomputes its speed target from the last solved flow (one substep of delay) and follows it on the soft-start ramp. Proportional pressure follows the straight line H_set·(1 + Q/Q_r)/2; real pumps estimate head from speed and power and use proprietary curve families (PP1–3, AUTOADAPT), which are not reproduced.' },
-    { kind: 'assumed', text: 'Rated speed, hydraulic efficiency, motor and electronics efficiency (constant), standby power, rotor inertia, ramp time and undervoltage lockout are illustrative values chosen so that the maximum input power and EEI match the reference; they are not published data.' },
+    { kind: 'assumed', text: 'Rated speed, hydraulic efficiency, motor and electronics efficiency (constant), standby power, rotor inertia, ramp time, undervoltage lockout and the wet-rotor water volume (0.1 L, one mixed cell that the losses heat) are illustrative values chosen so that the maximum input power and EEI match the reference; they are not published data.' },
   ];
 }

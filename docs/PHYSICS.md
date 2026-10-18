@@ -389,6 +389,17 @@ Equations, provenance, calibration and limitations: [STORAGE-AND-PRESSURE.md](ST
 
 Enthalpy m·c_p·T is transported conservatively: tanks mix integrated enthalpy, and junctions are solved by a directed upwind mixing system. Hydraulic dissipation and pump inefficiency heat the outgoing water. The heat exchanger is a two-branch ε-NTU element (counter- or parallel-flow) inside the same linear enthalpy transport; its streams are hot/A and cold/B. Not modelled: wetted inventory, fouling, phase change.
 
+### Underfloor heating
+
+Wet-screed underfloor heating (EN 1264 type A) follows the EN 1264-2 characteristic q = K_H·Δθ_H, K_H = B·a_B·a_T^m_T·a_ü^m_ü·a_D^m_D, with B fitted to the FLOORTEC tacker 16 × 2 tables. Each of 16 water cells exchanges with its own screed node at the pipe plane, which heats the room through R_o = 1/10.8 + s_u/λ_E + R_λ,B and loses heat down through R_u:
+
+```
+C_w·dT_k/dt = ṁ·c·(T_{k−1} − T_k) − g_wp·(X_k − S_k) + P_diss/N
+C_s·dS_k/dt = g_wp·(X_k − S_k) − (S_k − θ_i)·a/R_o − (S_k − θ_u)·a/R_u,   g_wp = a·K_H·(1 + R_o/R_u)/(1 − R_o·K_H)
+```
+
+The implicit screed node is eliminated per cell, leaving the same affine cell form as the radiator chain (effective conductance and per-cell effective temperature), so the enthalpy transport stays one linear solve and the room coupling stays affine. Steady output is exactly K_H·Δθ_H (log-mean) and the downward loss EN 1264's q_u. See [UNDERFLOOR-HEATING.md](UNDERFLOOR-HEATING.md).
+
 ### Panel radiator
 
 The hydronic panel radiator (Kermi therm-x2 Profil-K reference) follows the EN 442 characteristic Φ = Φ₅₀·(ΔT_ln/49.83 K)^n with Kermi's registered output and exponent. It holds its published water content and steel mass in 16 cells along the flow path:
@@ -562,6 +573,8 @@ A standalone circulator (`circulator.ts`) is a glandless (wet-rotor) centrifugal
 P1 = P₀ + max(0, P_mech)/η_m,   P_mech = P_shaft(ω_mid, Q) + (½·J·ω₁² − ½·J·ω₀²)/h
 motor and electronics loss  P1 − P_mech ≥ 0  → pumped water (wet rotor); without flow → ambient
 ```
+
+The loss heats the pump's own water, one fully mixed cell of the wet-rotor volume (assumed 0.1 L), which the flow carries on. Before this cell, the loss went straight into a zero-volume outlet: during the soft start against a high-resistance circuit (a single long underfloor loop) a flow of about 0.02 kg/h heated that outlet by about 90 K in one step.
 
 In the electrical solve the unit is a resistance R = V²/P1 iterated to a fixed point (in phase with the voltage on AC); the iteration contracts with factor 2·R_s/(R + R_s) for a source resistance R_s, i.e. while the terminal voltage stays above half the open-circuit voltage. Within one coupled substep the hydraulic network is solved first (it depends only on speeds), then the electrical network with each circulator's demand for that operating point, so the ledger holds exactly: P1·h = (P_shaft + loss)·h + Δ(½·J·ω²). A supply that cannot hold the demand above the undervoltage lockout (fixed point below it, collapse or no convergence) switches the electronics off within the same substep; they restart 1 s later once the terminal voltage is back above 105 % of the lockout, so a supply that is too weak gives a brownout cycle. Without supply or run command the light rotor (J ≈ 2·10⁻⁵ kg·m², coast-down well below one step) stops within the substep and its kinetic energy heats the water. Outside the nominal voltage +10 % a rating violation is reported.
 

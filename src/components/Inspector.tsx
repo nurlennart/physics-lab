@@ -4,6 +4,7 @@ import { SolarInspector } from './SolarInspector';
 import { BoilerInspector } from './BoilerInspector';
 import { HeatPumpInspector } from "./HeatPumpInspector";
 import { PanelRadiatorInspector } from './PanelRadiatorInspector';
+import { UnderfloorHeatingInspector } from './UnderfloorHeatingInspector';
 import { ExpansionVesselInspector, SafetyValveInspector, StorageTankInspector } from "./StoragePressureInspector";
 import { T } from "../theme/tokens";
 import { inspectorMeasurements, measurementLabel, operatingMeasurements } from "../simulation/capabilities";
@@ -165,6 +166,7 @@ export default function Inspector() {
             {c.kind === "electricBoiler" && <BoilerInspector c={c} />}
             {c.kind === "heatPump" && <HeatPumpInspector c={c} />}
             {c.kind === "panelRadiator" && <PanelRadiatorInspector c={c} />}
+            {c.kind === "underfloorHeating" && <UnderfloorHeatingInspector c={c} />}
             {c.kind === "storageTank" && <StorageTankInspector c={c} />}
             {c.kind === "expansionVessel" && <ExpansionVesselInspector c={c} />}
             {c.kind === "safetyValve" && <SafetyValveInspector c={c} />}

@@ -6,37 +6,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180542.14459609656,
-    "energyResidual": -8.445229594533643e-7,
+    "suppliedEnergy": 180542.1445171426,
+    "energyResidual": -8.210082608206548e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.145166861787118
+        "value": 23.10516974939435
       },
       {
         "name": "Radiator return",
-        "value": 19.999943070540894
+        "value": 19.99994336056335
       },
       {
         "name": "Radiator mean water",
-        "value": 20.200646053847663
+        "value": 20.19783227865412
       },
       {
         "name": "Radiator heat output",
-        "value": 2.4112442030966506
+        "value": 2.3714468379304603
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 474.1945246459993
+        "value": 468.1687371294779
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 0.3176876381160577
+        "value": 0.3136250224942545
       },
       {
         "name": "Radiator flow",
-        "value": 2.1641130878951653
+        "value": 2.1641338092169384
       },
       {
         "name": "Boiler element input",
@@ -44,39 +44,39 @@
       },
       {
         "name": "Circulator input",
-        "value": 6.070488297967816
+        "value": 6.07049469205464
       },
       {
         "name": "System pressure",
-        "value": 1.8020011784973986
+        "value": 1.8020036879330792
       },
       {
         "name": "Energy balance residual",
-        "value": -8.445229594533643e-7
+        "value": -8.210082608206548e-7
       },
       {
         "name": "TRV effective opening",
-        "value": 81.12833269466155
+        "value": 81.12833276339677
       },
       {
         "name": "Room air",
-        "value": 19.981195116626456
+        "value": 19.981194885763568
       },
       {
         "name": "Room device gain",
-        "value": 2.4112442030966506
+        "value": 2.3714468379304603
       },
       {
         "name": "Envelope loss",
-        "value": 478.54962304320355
+        "value": 478.5496175140375
       },
       {
         "name": "Ventilation loss",
-        "value": 167.34250910174657
+        "value": 167.3425071682699
       },
       {
         "name": "Room stored energy Δ",
-        "value": -38743.701214513436
+        "value": -38744.176861321415
       }
     ]
   },
@@ -87,37 +87,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180542.14459609656,
-    "energyResidual": -8.445229594533643e-7,
+    "suppliedEnergy": 180542.1445171426,
+    "energyResidual": -8.210082608206548e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.145166861787118
+        "value": 23.10516974939435
       },
       {
         "name": "Radiator return",
-        "value": 19.999943070540894
+        "value": 19.99994336056335
       },
       {
         "name": "Radiator mean water",
-        "value": 20.200646053847663
+        "value": 20.19783227865412
       },
       {
         "name": "Radiator heat output",
-        "value": 2.4112442030966506
+        "value": 2.3714468379304603
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 474.1945246459993
+        "value": 468.1687371294779
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 0.3176876381160577
+        "value": 0.3136250224942545
       },
       {
         "name": "Radiator flow",
-        "value": 2.1641130878951653
+        "value": 2.1641338092169384
       },
       {
         "name": "Boiler element input",
@@ -125,39 +125,39 @@
       },
       {
         "name": "Circulator input",
-        "value": 6.070488297967816
+        "value": 6.07049469205464
       },
       {
         "name": "System pressure",
-        "value": 1.8020011784973986
+        "value": 1.8020036879330792
       },
       {
         "name": "Energy balance residual",
-        "value": -8.445229594533643e-7
+        "value": -8.210082608206548e-7
       },
       {
         "name": "TRV effective opening",
-        "value": 81.12833269466155
+        "value": 81.12833276339677
       },
       {
         "name": "Room air",
-        "value": 19.981195116626456
+        "value": 19.981194885763568
       },
       {
         "name": "Room device gain",
-        "value": 2.4112442030966506
+        "value": 2.3714468379304603
       },
       {
         "name": "Envelope loss",
-        "value": 478.54962304320355
+        "value": 478.5496175140375
       },
       {
         "name": "Ventilation loss",
-        "value": 167.34250910174657
+        "value": 167.3425071682699
       },
       {
         "name": "Room stored energy Δ",
-        "value": -38743.701214513436
+        "value": -38744.176861321415
       }
     ]
   },
@@ -168,37 +168,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180400.2560179533,
-    "energyResidual": -5.939395668619341e-7,
+    "suppliedEnergy": 180400.2559893192,
+    "energyResidual": -6.152367902911848e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.49647105625155
+        "value": 23.498609673189833
       },
       {
         "name": "Radiator return",
-        "value": 19.869379635496443
+        "value": 19.869379227443517
       },
       {
         "name": "Radiator mean water",
-        "value": 20.156014556127502
+        "value": 20.156184062543616
       },
       {
         "name": "Radiator heat output",
-        "value": 91.45380128347544
+        "value": 91.45908615240012
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 617.8224704828301
+        "value": 618.186280633666
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 5.280851737932209
+        "value": 5.2810879805309305
       },
       {
         "name": "Radiator flow",
-        "value": 2.4450073344723022
+        "value": 2.445005191726868
       },
       {
         "name": "Boiler element input",
@@ -206,35 +206,35 @@
       },
       {
         "name": "Circulator input",
-        "value": 3.676712425853068
+        "value": 3.6767113527940487
       },
       {
         "name": "System pressure",
-        "value": 1.8019433645289897
+        "value": 1.8019433816939279
       },
       {
         "name": "Energy balance residual",
-        "value": -5.939395668619341e-7
+        "value": -6.152367902911848e-7
       },
       {
         "name": "Room air",
-        "value": 14.988389384098562
+        "value": 14.988389419981619
       },
       {
         "name": "Room device gain",
-        "value": 91.45380128347547
+        "value": 91.45908615240009
       },
       {
         "name": "Envelope loss",
-        "value": 358.97192574916056
+        "value": 358.9719266085598
       },
       {
         "name": "Ventilation loss",
-        "value": 125.52776109182545
+        "value": 125.52776139234606
       },
       {
         "name": "Room stored energy Δ",
-        "value": -23921.351941731737
+        "value": -23921.278011870374
       }
     ]
   },
@@ -245,37 +245,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180400.2560179533,
-    "energyResidual": -5.939395668619341e-7,
+    "suppliedEnergy": 180400.2559893192,
+    "energyResidual": -6.152367902911848e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.49647105625155
+        "value": 23.498609673189833
       },
       {
         "name": "Radiator return",
-        "value": 19.869379635496443
+        "value": 19.869379227443517
       },
       {
         "name": "Radiator mean water",
-        "value": 20.156014556127502
+        "value": 20.156184062543616
       },
       {
         "name": "Radiator heat output",
-        "value": 91.45380128347544
+        "value": 91.45908615240012
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 617.8224704828301
+        "value": 618.186280633666
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 5.280851737932209
+        "value": 5.2810879805309305
       },
       {
         "name": "Radiator flow",
-        "value": 2.4450073344723022
+        "value": 2.445005191726868
       },
       {
         "name": "Boiler element input",
@@ -283,35 +283,35 @@
       },
       {
         "name": "Circulator input",
-        "value": 3.676712425853068
+        "value": 3.6767113527940487
       },
       {
         "name": "System pressure",
-        "value": 1.8019433645289897
+        "value": 1.8019433816939279
       },
       {
         "name": "Energy balance residual",
-        "value": -5.939395668619341e-7
+        "value": -6.152367902911848e-7
       },
       {
         "name": "Room air",
-        "value": 14.988389384098562
+        "value": 14.988389419981619
       },
       {
         "name": "Room device gain",
-        "value": 91.45380128347547
+        "value": 91.45908615240009
       },
       {
         "name": "Envelope loss",
-        "value": 358.97192574916056
+        "value": 358.9719266085598
       },
       {
         "name": "Ventilation loss",
-        "value": 125.52776109182545
+        "value": 125.52776139234606
       },
       {
         "name": "Room stored energy Δ",
-        "value": -23921.351941731737
+        "value": -23921.278011870374
       }
     ]
   },
@@ -322,37 +322,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180400.2560179533,
-    "energyResidual": -5.939395668619341e-7,
+    "suppliedEnergy": 180400.2559893192,
+    "energyResidual": -6.152367902911848e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.49647105625155
+        "value": 23.498609673189833
       },
       {
         "name": "Radiator return",
-        "value": 19.869379635496443
+        "value": 19.869379227443517
       },
       {
         "name": "Radiator mean water",
-        "value": 20.156014556127502
+        "value": 20.156184062543616
       },
       {
         "name": "Radiator heat output",
-        "value": 91.45380128347544
+        "value": 91.45908615240012
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 617.8224704828301
+        "value": 618.186280633666
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 5.280851737932209
+        "value": 5.2810879805309305
       },
       {
         "name": "Radiator flow",
-        "value": 2.4450073344723022
+        "value": 2.445005191726868
       },
       {
         "name": "Boiler element input",
@@ -360,35 +360,35 @@
       },
       {
         "name": "Circulator input",
-        "value": 3.676712425853068
+        "value": 3.6767113527940487
       },
       {
         "name": "System pressure",
-        "value": 1.8019433645289897
+        "value": 1.8019433816939279
       },
       {
         "name": "Energy balance residual",
-        "value": -5.939395668619341e-7
+        "value": -6.152367902911848e-7
       },
       {
         "name": "Room air",
-        "value": 14.988389384098562
+        "value": 14.988389419981619
       },
       {
         "name": "Room device gain",
-        "value": 91.45380128347547
+        "value": 91.45908615240009
       },
       {
         "name": "Envelope loss",
-        "value": 358.97192574916056
+        "value": 358.9719266085598
       },
       {
         "name": "Ventilation loss",
-        "value": 125.52776109182545
+        "value": 125.52776139234606
       },
       {
         "name": "Room stored energy Δ",
-        "value": -23921.351941731737
+        "value": -23921.278011870374
       }
     ]
   },
@@ -399,37 +399,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180400.2560179533,
-    "energyResidual": -5.939395668619341e-7,
+    "suppliedEnergy": 180400.2559893192,
+    "energyResidual": -6.152367902911848e-7,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.49647105625155
+        "value": 23.498609673189833
       },
       {
         "name": "Radiator return",
-        "value": 19.869379635496443
+        "value": 19.869379227443517
       },
       {
         "name": "Radiator mean water",
-        "value": 20.156014556127502
+        "value": 20.156184062543616
       },
       {
         "name": "Radiator heat output",
-        "value": 91.45380128347544
+        "value": 91.45908615240012
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 617.8224704828301
+        "value": 618.186280633666
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 5.280851737932209
+        "value": 5.2810879805309305
       },
       {
         "name": "Radiator flow",
-        "value": 2.4450073344723022
+        "value": 2.445005191726868
       },
       {
         "name": "Boiler element input",
@@ -437,35 +437,35 @@
       },
       {
         "name": "Circulator input",
-        "value": 3.676712425853068
+        "value": 3.6767113527940487
       },
       {
         "name": "System pressure",
-        "value": 1.8019433645289897
+        "value": 1.8019433816939279
       },
       {
         "name": "Energy balance residual",
-        "value": -5.939395668619341e-7
+        "value": -6.152367902911848e-7
       },
       {
         "name": "Room air",
-        "value": 14.988389384098562
+        "value": 14.988389419981619
       },
       {
         "name": "Room device gain",
-        "value": 91.45380128347547
+        "value": 91.45908615240009
       },
       {
         "name": "Envelope loss",
-        "value": 358.97192574916056
+        "value": 358.9719266085598
       },
       {
         "name": "Ventilation loss",
-        "value": 125.52776109182545
+        "value": 125.52776139234606
       },
       {
         "name": "Room stored energy Δ",
-        "value": -23921.351941731737
+        "value": -23921.278011870374
       }
     ]
   },
@@ -1203,36 +1203,36 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 119886.47999999994,
-    "energyResidual": 1.6131678215458578e-9,
+    "energyResidual": 1.7441350586011595e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 263.6460521206079
+        "value": 263.6460521191061
       },
       {
         "name": "Charger output",
-        "value": 258.3731310912319
+        "value": 258.37313108976014
       },
       {
         "name": "Battery SOC",
-        "value": 20.320429973211702
+        "value": 20.32042996584878
       },
       {
         "name": "Stored chemical energy",
-        "value": 867182.6161125706
+        "value": 867182.6157705517
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 19.316214530333955
+        "value": 19.316214530329773
       },
       {
         "name": "Circulator electrical power",
-        "value": 8.832654514478373
+        "value": 8.832654514479257
       },
       {
         "name": "Circulation flow",
-        "value": 12.201420302846415
+        "value": 12.201420302847199
       }
     ]
   },
@@ -1244,36 +1244,36 @@
     "violations": [],
     "failed": {},
     "suppliedEnergy": 119886.47999999994,
-    "energyResidual": 1.6131678215458578e-9,
+    "energyResidual": 1.7441350586011595e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "PV generated power",
-        "value": 263.6460521206079
+        "value": 263.6460521191061
       },
       {
         "name": "Charger output",
-        "value": 258.3731310912319
+        "value": 258.37313108976014
       },
       {
         "name": "Battery SOC",
-        "value": 20.320429973211702
+        "value": 20.32042996584878
       },
       {
         "name": "Stored chemical energy",
-        "value": 867182.6161125706
+        "value": 867182.6157705517
       },
       {
         "name": "Battery current (+ charging)",
-        "value": 19.316214530333955
+        "value": 19.316214530329773
       },
       {
         "name": "Circulator electrical power",
-        "value": 8.832654514478373
+        "value": 8.832654514479257
       },
       {
         "name": "Circulation flow",
-        "value": 12.201420302846415
+        "value": 12.201420302847199
       }
     ]
   },
@@ -1398,17 +1398,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 842482.0418241723,
-    "energyResidual": -0.000016381952717026138,
+    "suppliedEnergy": 841604.2811929906,
+    "energyResidual": -0.000012709940638178097,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 43.52539933773477
+        "value": 43.52962765539792
       },
       {
         "name": "Return temperature",
-        "value": 39.6462883626167
+        "value": 39.65409578566744
       },
       {
         "name": "Flow target",
@@ -1416,23 +1416,23 @@
       },
       {
         "name": "Heat output",
-        "value": 6633.610516569261
+        "value": 6625.845694960319
       },
       {
         "name": "Electrical input",
-        "value": 2354.7308044975894
+        "value": 2350.035411396252
       },
       {
         "name": "COP",
-        "value": 2.817141774294927
+        "value": 2.8194663207324324
       },
       {
         "name": "Compressor speed",
-        "value": 88.3702980965171
+        "value": 88.29536482737093
       },
       {
         "name": "Frost on coil",
-        "value": 0.0675678941443086
+        "value": 0.06747896323971357
       },
       {
         "name": "Defrost active",
@@ -1444,23 +1444,27 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 4237.485325453597
+        "value": 4234.628206844589
       },
       {
         "name": "Seasonal performance factor",
-        "value": 3.1180368836346117
+        "value": 3.119368879117378
       },
       {
         "name": "House air",
-        "value": 19.89266045373408
+        "value": 20.039399857781277
+      },
+      {
+        "name": "Floor surface",
+        "value": 22.998962402079208
       },
       {
         "name": "House heat loss",
-        "value": 2487.079803069037
+        "value": 1749.8217862047838
       },
       {
         "name": "System pressure",
-        "value": 1.304167387942368
+        "value": 1.3119731539459867
       },
       {
         "name": "Hot-water mode (VW1 → B)",
@@ -1468,23 +1472,23 @@
       },
       {
         "name": "Cylinder sensor TW1",
-        "value": 39.64046192462973
+        "value": 39.643611713006976
       },
       {
         "name": "Cylinder top",
-        "value": 39.64046192462973
+        "value": 39.643611713006976
       },
       {
         "name": "Coil heat into the cylinder",
-        "value": 5646.803717467267
+        "value": 5656.932702346443
       },
       {
         "name": "Hot-water performance factor",
-        "value": 3.1180368836346117
+        "value": 3.119368879117378
       },
       {
         "name": "Energy balance residual",
-        "value": -0.000016381952717026138
+        "value": -0.000012709940638178097
       }
     ]
   },
@@ -1495,17 +1499,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 842482.0418241723,
-    "energyResidual": -0.000016381952717026138,
+    "suppliedEnergy": 841604.2811929906,
+    "energyResidual": -0.000012709940638178097,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 43.52539933773477
+        "value": 43.52962765539792
       },
       {
         "name": "Return temperature",
-        "value": 39.6462883626167
+        "value": 39.65409578566744
       },
       {
         "name": "Flow target",
@@ -1513,23 +1517,23 @@
       },
       {
         "name": "Heat output",
-        "value": 6633.610516569261
+        "value": 6625.845694960319
       },
       {
         "name": "Electrical input",
-        "value": 2354.7308044975894
+        "value": 2350.035411396252
       },
       {
         "name": "COP",
-        "value": 2.817141774294927
+        "value": 2.8194663207324324
       },
       {
         "name": "Compressor speed",
-        "value": 88.3702980965171
+        "value": 88.29536482737093
       },
       {
         "name": "Frost on coil",
-        "value": 0.0675678941443086
+        "value": 0.06747896323971357
       },
       {
         "name": "Defrost active",
@@ -1541,23 +1545,27 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 4237.485325453597
+        "value": 4234.628206844589
       },
       {
         "name": "Seasonal performance factor",
-        "value": 3.1180368836346117
+        "value": 3.119368879117378
       },
       {
         "name": "House air",
-        "value": 19.89266045373408
+        "value": 20.039399857781277
+      },
+      {
+        "name": "Floor surface",
+        "value": 22.998962402079208
       },
       {
         "name": "House heat loss",
-        "value": 2487.079803069037
+        "value": 1749.8217862047838
       },
       {
         "name": "System pressure",
-        "value": 1.304167387942368
+        "value": 1.3119731539459867
       },
       {
         "name": "Hot-water mode (VW1 → B)",
@@ -1565,23 +1573,23 @@
       },
       {
         "name": "Cylinder sensor TW1",
-        "value": 39.64046192462973
+        "value": 39.643611713006976
       },
       {
         "name": "Cylinder top",
-        "value": 39.64046192462973
+        "value": 39.643611713006976
       },
       {
         "name": "Coil heat into the cylinder",
-        "value": 5646.803717467267
+        "value": 5656.932702346443
       },
       {
         "name": "Hot-water performance factor",
-        "value": 3.1180368836346117
+        "value": 3.119368879117378
       },
       {
         "name": "Energy balance residual",
-        "value": -0.000016381952717026138
+        "value": -0.000012709940638178097
       }
     ]
   },
@@ -1592,17 +1600,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 819792.6996805684,
-    "energyResidual": -0.000033711132076730266,
+    "suppliedEnergy": 349679.1098349637,
+    "energyResidual": -0.000009428124340349342,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 27.532092755022745
+        "value": 34.135736336611956
       },
       {
         "name": "Return temperature",
-        "value": 24.537735536576122
+        "value": 32.775580197944805
       },
       {
         "name": "Flow target",
@@ -1610,23 +1618,23 @@
       },
       {
         "name": "Heat output",
-        "value": 4955.301365536851
+        "value": 2136.7041409606445
       },
       {
         "name": "Electrical input",
-        "value": 2024.9321898006904
+        "value": 744.9636383683876
       },
       {
         "name": "COP",
-        "value": 2.447144349077976
+        "value": 2.8681992394158113
       },
       {
         "name": "Compressor speed",
-        "value": 95.15
+        "value": 43.34241237686668
       },
       {
         "name": "Frost on coil",
-        "value": 0.029105425881466432
+        "value": 0.00961455024591952
       },
       {
         "name": "Defrost active",
@@ -1638,23 +1646,27 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 2939.349216141808
+        "value": 1396.7013038229477
       },
       {
         "name": "Seasonal performance factor",
-        "value": 2.5515168389759277
+        "value": 2.7885485363245084
       },
       {
         "name": "House air",
-        "value": 18.8119727504517
+        "value": 19.091671488117314
+      },
+      {
+        "name": "Floor surface",
+        "value": 24.64649816780452
       },
       {
         "name": "House heat loss",
-        "value": 4699.864212312787
+        "value": 3306.8921343473794
       },
       {
         "name": "System pressure",
-        "value": 1.30230101088691
+        "value": 1.3081264277088176
       },
       {
         "name": "Hot-water mode (VW1 → B)",
@@ -1662,19 +1674,19 @@
       },
       {
         "name": "Cylinder sensor TW1",
-        "value": 46.982485024714435
+        "value": 46.98257575533796
       },
       {
         "name": "Cylinder top",
-        "value": 46.982485024714435
+        "value": 46.98257575533796
       },
       {
         "name": "Coil heat into the cylinder",
-        "value": 2.6874507559495164
+        "value": 2.6606181547184424
       },
       {
         "name": "Energy balance residual",
-        "value": -0.000033711132076730266
+        "value": -0.000009428124340349342
       }
     ]
   },
@@ -1685,17 +1697,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 819792.6996805684,
-    "energyResidual": -0.000033711132076730266,
+    "suppliedEnergy": 349679.1098349637,
+    "energyResidual": -0.000009428124340349342,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 27.532092755022745
+        "value": 34.135736336611956
       },
       {
         "name": "Return temperature",
-        "value": 24.537735536576122
+        "value": 32.775580197944805
       },
       {
         "name": "Flow target",
@@ -1703,23 +1715,23 @@
       },
       {
         "name": "Heat output",
-        "value": 4955.301365536851
+        "value": 2136.7041409606445
       },
       {
         "name": "Electrical input",
-        "value": 2024.9321898006904
+        "value": 744.9636383683876
       },
       {
         "name": "COP",
-        "value": 2.447144349077976
+        "value": 2.8681992394158113
       },
       {
         "name": "Compressor speed",
-        "value": 95.15
+        "value": 43.34241237686668
       },
       {
         "name": "Frost on coil",
-        "value": 0.029105425881466432
+        "value": 0.00961455024591952
       },
       {
         "name": "Defrost active",
@@ -1731,23 +1743,27 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 2939.349216141808
+        "value": 1396.7013038229477
       },
       {
         "name": "Seasonal performance factor",
-        "value": 2.5515168389759277
+        "value": 2.7885485363245084
       },
       {
         "name": "House air",
-        "value": 18.8119727504517
+        "value": 19.091671488117314
+      },
+      {
+        "name": "Floor surface",
+        "value": 24.64649816780452
       },
       {
         "name": "House heat loss",
-        "value": 4699.864212312787
+        "value": 3306.8921343473794
       },
       {
         "name": "System pressure",
-        "value": 1.30230101088691
+        "value": 1.3081264277088176
       },
       {
         "name": "Hot-water mode (VW1 → B)",
@@ -1755,19 +1771,19 @@
       },
       {
         "name": "Cylinder sensor TW1",
-        "value": 46.982485024714435
+        "value": 46.98257575533796
       },
       {
         "name": "Cylinder top",
-        "value": 46.982485024714435
+        "value": 46.98257575533796
       },
       {
         "name": "Coil heat into the cylinder",
-        "value": 2.6874507559495164
+        "value": 2.6606181547184424
       },
       {
         "name": "Energy balance residual",
-        "value": -0.000033711132076730266
+        "value": -0.000009428124340349342
       }
     ]
   },
@@ -1778,17 +1794,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 842475.135739862,
-    "energyResidual": -0.00008961941375495996,
+    "suppliedEnergy": 841702.0397618088,
+    "energyResidual": -0.000021193707364641767,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 43.52541999387
+        "value": 43.52880189480783
       },
       {
         "name": "Return temperature",
-        "value": 39.646338875729555
+        "value": 39.6530251535695
       },
       {
         "name": "Flow target",
@@ -1796,23 +1812,23 @@
       },
       {
         "name": "Heat output",
-        "value": 6633.560286851653
+        "value": 6627.188175000927
       },
       {
         "name": "Electrical input",
-        "value": 2354.700324369454
+        "value": 2350.8367352591913
       },
       {
         "name": "COP",
-        "value": 2.8171569087578052
+        "value": 2.819076321040324
       },
       {
         "name": "Compressor speed",
-        "value": 88.36983156330255
+        "value": 88.30791043660126
       },
       {
         "name": "Frost on coil",
-        "value": 0.06756703690019568
+        "value": 0.06749268022364766
       },
       {
         "name": "Defrost active",
@@ -1824,31 +1840,35 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 4237.466666945718
+        "value": 4235.102670345835
       },
       {
         "name": "Seasonal performance factor",
-        "value": 3.1180458832683082
+        "value": 3.119256116448093
       },
       {
         "name": "House air",
-        "value": 19.892939523703493
+        "value": 20.039674156512874
+      },
+      {
+        "name": "Floor surface",
+        "value": 22.99913031837671
       },
       {
         "name": "House heat loss",
-        "value": 2487.1185937947857
+        "value": 1749.8483931817489
       },
       {
         "name": "System pressure",
-        "value": 1.3041296032455998
+        "value": 1.3119507466848628
       },
       {
         "name": "Buffer top",
-        "value": 24.993817016863034
+        "value": 25.018905546385042
       },
       {
         "name": "Buffer lower sensor",
-        "value": 24.993817016863034
+        "value": 24.99480529473084
       },
       {
         "name": "Hot-water mode (VW1 → B)",
@@ -1856,23 +1876,23 @@
       },
       {
         "name": "Cylinder sensor TW1",
-        "value": 39.64050049576639
+        "value": 39.642763818624644
       },
       {
         "name": "Cylinder top",
-        "value": 39.64050049576639
+        "value": 39.642763818624644
       },
       {
         "name": "Coil heat into the cylinder",
-        "value": 5646.768374713616
+        "value": 5657.19660440276
       },
       {
         "name": "Hot-water performance factor",
-        "value": 3.1180458832683082
+        "value": 3.119256116448093
       },
       {
         "name": "Energy balance residual",
-        "value": -0.00008961941375495996
+        "value": -0.000021193707364641767
       }
     ]
   },
@@ -1883,17 +1903,17 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 842475.135739862,
-    "energyResidual": -0.00008961941375495996,
+    "suppliedEnergy": 841702.0397618088,
+    "energyResidual": -0.000021193707364641767,
     "massResidual": 0,
     "probes": [
       {
         "name": "Flow temperature",
-        "value": 43.52541999387
+        "value": 43.52880189480783
       },
       {
         "name": "Return temperature",
-        "value": 39.646338875729555
+        "value": 39.6530251535695
       },
       {
         "name": "Flow target",
@@ -1901,23 +1921,23 @@
       },
       {
         "name": "Heat output",
-        "value": 6633.560286851653
+        "value": 6627.188175000927
       },
       {
         "name": "Electrical input",
-        "value": 2354.700324369454
+        "value": 2350.8367352591913
       },
       {
         "name": "COP",
-        "value": 2.8171569087578052
+        "value": 2.819076321040324
       },
       {
         "name": "Compressor speed",
-        "value": 88.36983156330255
+        "value": 88.30791043660126
       },
       {
         "name": "Frost on coil",
-        "value": 0.06756703690019568
+        "value": 0.06749268022364766
       },
       {
         "name": "Defrost active",
@@ -1929,31 +1949,35 @@
       },
       {
         "name": "Heat from outdoor air",
-        "value": 4237.466666945718
+        "value": 4235.102670345835
       },
       {
         "name": "Seasonal performance factor",
-        "value": 3.1180458832683082
+        "value": 3.119256116448093
       },
       {
         "name": "House air",
-        "value": 19.892939523703493
+        "value": 20.039674156512874
+      },
+      {
+        "name": "Floor surface",
+        "value": 22.99913031837671
       },
       {
         "name": "House heat loss",
-        "value": 2487.1185937947857
+        "value": 1749.8483931817489
       },
       {
         "name": "System pressure",
-        "value": 1.3041296032455998
+        "value": 1.3119507466848628
       },
       {
         "name": "Buffer top",
-        "value": 24.993817016863034
+        "value": 25.018905546385042
       },
       {
         "name": "Buffer lower sensor",
-        "value": 24.993817016863034
+        "value": 24.99480529473084
       },
       {
         "name": "Hot-water mode (VW1 → B)",
@@ -1961,23 +1985,23 @@
       },
       {
         "name": "Cylinder sensor TW1",
-        "value": 39.64050049576639
+        "value": 39.642763818624644
       },
       {
         "name": "Cylinder top",
-        "value": 39.64050049576639
+        "value": 39.642763818624644
       },
       {
         "name": "Coil heat into the cylinder",
-        "value": 5646.768374713616
+        "value": 5657.19660440276
       },
       {
         "name": "Hot-water performance factor",
-        "value": 3.1180458832683082
+        "value": 3.119256116448093
       },
       {
         "name": "Energy balance residual",
-        "value": -0.00008961941375495996
+        "value": -0.000021193707364641767
       }
     ]
   },
@@ -1988,25 +2012,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 524177.7763261893,
-    "energyResidual": 3.088594047184756e-9,
+    "suppliedEnergy": 524177.77632681234,
+    "energyResidual": 3.659529346222712e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "System pressure at the vessel",
-        "value": 1.8032038656632596
+        "value": 1.8032038642089128
       },
       {
         "name": "Pressure at the boiler flow",
-        "value": 1.954585279971836
+        "value": 1.9545852785174889
       },
       {
         "name": "Thermal expansion",
-        "value": 0.025428108839834363
+        "value": 0.025428097316741744
       },
       {
         "name": "Water in the vessel",
-        "value": 2.691383853974464
+        "value": 2.691383842451371
       },
       {
         "name": "Safety valve discharge",
@@ -2014,23 +2038,23 @@
       },
       {
         "name": "Boiler flow",
-        "value": 24.130388991844768
+        "value": 24.13038847967084
       },
       {
         "name": "Buffer top",
-        "value": 23.349096597943117
+        "value": 23.34908111743181
       },
       {
         "name": "Buffer lower sensor",
-        "value": 20.000177297809216
+        "value": 20.00017727572356
       },
       {
         "name": "Stored heat",
-        "value": 0.10783861448042095
+        "value": 0.1078373261457516
       },
       {
         "name": "Energy balance residual",
-        "value": 3.088594047184756e-9
+        "value": 3.659529346222712e-9
       }
     ]
   },
@@ -2041,25 +2065,25 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 524177.7763261893,
-    "energyResidual": 3.088594047184756e-9,
+    "suppliedEnergy": 524177.77632681234,
+    "energyResidual": 3.659529346222712e-9,
     "massResidual": 0,
     "probes": [
       {
         "name": "System pressure at the vessel",
-        "value": 1.8032038656632596
+        "value": 1.8032038642089128
       },
       {
         "name": "Pressure at the boiler flow",
-        "value": 1.954585279971836
+        "value": 1.9545852785174889
       },
       {
         "name": "Thermal expansion",
-        "value": 0.025428108839834363
+        "value": 0.025428097316741744
       },
       {
         "name": "Water in the vessel",
-        "value": 2.691383853974464
+        "value": 2.691383842451371
       },
       {
         "name": "Safety valve discharge",
@@ -2067,23 +2091,23 @@
       },
       {
         "name": "Boiler flow",
-        "value": 24.130388991844768
+        "value": 24.13038847967084
       },
       {
         "name": "Buffer top",
-        "value": 23.349096597943117
+        "value": 23.34908111743181
       },
       {
         "name": "Buffer lower sensor",
-        "value": 20.000177297809216
+        "value": 20.00017727572356
       },
       {
         "name": "Stored heat",
-        "value": 0.10783861448042095
+        "value": 0.1078373261457516
       },
       {
         "name": "Energy balance residual",
-        "value": 3.088594047184756e-9
+        "value": 3.659529346222712e-9
       }
     ]
   },
@@ -2094,21 +2118,21 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 523345.8187381863,
-    "energyResidual": -2.0620502860779766e-8,
+    "suppliedEnergy": 523345.77919052885,
+    "energyResidual": -2.025365475333274e-8,
     "massResidual": 0,
     "probes": [
       {
         "name": "Boiler supply",
-        "value": 32.670699470062516
+        "value": 32.57752615767856
       },
       {
         "name": "Boiler return",
-        "value": 28.886357312627183
+        "value": 28.767618473689026
       },
       {
         "name": "Immersed elements",
-        "value": 39.930726594354326
+        "value": 39.83962544505209
       },
       {
         "name": "Element input",
@@ -2120,23 +2144,23 @@
       },
       {
         "name": "Loop flow",
-        "value": 19.195396059039666
+        "value": 19.193935724898434
       },
       {
         "name": "Circulator input",
-        "value": 19.87553125000475
+        "value": 19.873816532349274
       },
       {
         "name": "Radiator heat output",
-        "value": 1072.669025927466
+        "value": 1064.9773261659163
       },
       {
         "name": "System pressure",
-        "value": 1.8069490467467624
+        "value": 1.8069463085865631
       },
       {
         "name": "Energy balance residual",
-        "value": -2.0620502860779766e-8
+        "value": -2.025365475333274e-8
       }
     ]
   },
@@ -2147,21 +2171,21 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 523345.8187381863,
-    "energyResidual": -2.0620502860779766e-8,
+    "suppliedEnergy": 523345.77919052885,
+    "energyResidual": -2.025365475333274e-8,
     "massResidual": 0,
     "probes": [
       {
         "name": "Boiler supply",
-        "value": 32.670699470062516
+        "value": 32.57752615767856
       },
       {
         "name": "Boiler return",
-        "value": 28.886357312627183
+        "value": 28.767618473689026
       },
       {
         "name": "Immersed elements",
-        "value": 39.930726594354326
+        "value": 39.83962544505209
       },
       {
         "name": "Element input",
@@ -2173,23 +2197,23 @@
       },
       {
         "name": "Loop flow",
-        "value": 19.195396059039666
+        "value": 19.193935724898434
       },
       {
         "name": "Circulator input",
-        "value": 19.87553125000475
+        "value": 19.873816532349274
       },
       {
         "name": "Radiator heat output",
-        "value": 1072.669025927466
+        "value": 1064.9773261659163
       },
       {
         "name": "System pressure",
-        "value": 1.8069490467467624
+        "value": 1.8069463085865631
       },
       {
         "name": "Energy balance residual",
-        "value": -2.0620502860779766e-8
+        "value": -2.025365475333274e-8
       }
     ]
   },
@@ -2200,37 +2224,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180400.25200142874,
-    "energyResidual": -3.205161136499157e-10,
+    "suppliedEnergy": 180400.2520058663,
+    "energyResidual": -4.670584474730788e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.73769290454726
+        "value": 23.73738607550507
       },
       {
         "name": "Radiator return",
-        "value": 20.00002450568087
+        "value": 20.000024505651936
       },
       {
         "name": "Radiator mean water",
-        "value": 20.30819252143442
+        "value": 20.30814950501673
       },
       {
         "name": "Radiator heat output",
-        "value": 3.5125222126074283
+        "value": 3.5119597927166395
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 636.5977765197713
+        "value": 636.5455175586782
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 0.4249356100965211
+        "value": 0.4248830122653961
       },
       {
         "name": "Radiator flow",
-        "value": 2.4447773723986534
+        "value": 2.4447773723988333
       },
       {
         "name": "Boiler element input",
@@ -2238,15 +2262,15 @@
       },
       {
         "name": "Circulator input",
-        "value": 3.6765970988448746
+        "value": 3.6765970988448857
       },
       {
         "name": "System pressure",
-        "value": 1.8020618612220127
+        "value": 1.8020618635535885
       },
       {
         "name": "Energy balance residual",
-        "value": -3.205161136499157e-10
+        "value": -4.670584474730788e-10
       }
     ]
   },
@@ -2257,37 +2281,37 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 180400.25200142874,
-    "energyResidual": -3.205161136499157e-10,
+    "suppliedEnergy": 180400.2520058663,
+    "energyResidual": -4.670584474730788e-10,
     "massResidual": 0,
     "probes": [
       {
         "name": "Radiator supply",
-        "value": 23.73769290454726
+        "value": 23.73738607550507
       },
       {
         "name": "Radiator return",
-        "value": 20.00002450568087
+        "value": 20.000024505651936
       },
       {
         "name": "Radiator mean water",
-        "value": 20.30819252143442
+        "value": 20.30814950501673
       },
       {
         "name": "Radiator heat output",
-        "value": 3.5125222126074283
+        "value": 3.5119597927166395
       },
       {
         "name": "Water heat input ṁ·c·ΔT",
-        "value": 636.5977765197713
+        "value": 636.5455175586782
       },
       {
         "name": "Excess temperature ΔT",
-        "value": 0.4249356100965211
+        "value": 0.4248830122653961
       },
       {
         "name": "Radiator flow",
-        "value": 2.4447773723986534
+        "value": 2.4447773723988333
       },
       {
         "name": "Boiler element input",
@@ -2295,15 +2319,15 @@
       },
       {
         "name": "Circulator input",
-        "value": 3.6765970988448746
+        "value": 3.6765970988448857
       },
       {
         "name": "System pressure",
-        "value": 1.8020618612220127
+        "value": 1.8020618635535885
       },
       {
         "name": "Energy balance residual",
-        "value": -3.205161136499157e-10
+        "value": -4.670584474730788e-10
       }
     ]
   },
@@ -2622,29 +2646,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 91739.86953852748,
-    "energyResidual": -3.3849067992974824e-8,
-    "massResidual": 4.2871306504821405e-10,
+    "suppliedEnergy": 91739.8648634016,
+    "energyResidual": -3.5212096349823696e-8,
+    "massResidual": 4.08483913361124e-10,
     "probes": [
       {
         "name": "Circulated flow",
-        "value": 21.394056756056717
+        "value": 21.393997772546545
       },
       {
         "name": "Pump Δp (rise negative)",
-        "value": -0.32199217716642853
+        "value": -0.3219917868762696
       },
       {
         "name": "Pump input P1",
-        "value": 29.564126722489238
+        "value": 29.564025229950605
       },
       {
         "name": "Wire-to-water efficiency",
-        "value": 38.83489709204813
+        "value": 38.834876270673405
       },
       {
         "name": "Boiler temperature",
-        "value": 20.376316205904477
+        "value": 20.375984942363917
       }
     ]
   },
@@ -2655,29 +2679,29 @@
     "error": null,
     "violations": [],
     "failed": {},
-    "suppliedEnergy": 91739.86953852748,
-    "energyResidual": -3.3849067992974824e-8,
-    "massResidual": 4.2871306504821405e-10,
+    "suppliedEnergy": 91739.8648634016,
+    "energyResidual": -3.5212096349823696e-8,
+    "massResidual": 4.08483913361124e-10,
     "probes": [
       {
         "name": "Circulated flow",
-        "value": 21.394056756056717
+        "value": 21.393997772546545
       },
       {
         "name": "Pump Δp (rise negative)",
-        "value": -0.32199217716642853
+        "value": -0.3219917868762696
       },
       {
         "name": "Pump input P1",
-        "value": 29.564126722489238
+        "value": 29.564025229950605
       },
       {
         "name": "Wire-to-water efficiency",
-        "value": 38.83489709204813
+        "value": 38.834876270673405
       },
       {
         "name": "Boiler temperature",
-        "value": 20.376316205904477
+        "value": 20.375984942363917
       }
     ]
   },

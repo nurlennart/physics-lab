@@ -1,9 +1,9 @@
 {
   "summary": {
-    "presets": 101,
-    "coveredPresets": 101,
-    "scenarios": 145,
-    "passed": 145,
+    "presets": 104,
+    "coveredPresets": 104,
+    "scenarios": 148,
+    "passed": 148,
     "failed": 0
   },
   "reports": [
@@ -653,14 +653,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.0689561902310629e-7,
-          "absoluteError": 1.0689561902310629e-7,
-          "tolerance": 2058.4283947998765
+          "measured": 1.0270648642674018e-7,
+          "absoluteError": 1.0270648642674018e-7,
+          "tolerance": 2062.28593388854
         }
       ],
       "pass": true,
       "time": 600,
-      "energyResidual": 1.0689561902310629e-7,
+      "energyResidual": 1.0270648642674018e-7,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -695,14 +695,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.0689561902310629e-7,
-          "absoluteError": 1.0689561902310629e-7,
-          "tolerance": 2058.4283947998765
+          "measured": 1.0270648642674018e-7,
+          "absoluteError": 1.0270648642674018e-7,
+          "tolerance": 2062.28593388854
         }
       ],
       "pass": true,
       "time": 600,
-      "energyResidual": 1.0689561902310629e-7,
+      "energyResidual": 1.0270648642674018e-7,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -953,6 +953,132 @@
       "failed": {}
     },
     {
+      "name": "FLOORTEC tacker 16 × 2 · 150 mm · living room (R 0.10)",
+      "presets": [
+        "builtin:underfloorHeating:FLOORTEC tacker 16 × 2 · 150 mm · living room (R 0.10)"
+      ],
+      "checks": [
+        {
+          "label": "heat flux per log-mean excess (W/(m²·K))",
+          "expected": 3.4,
+          "measured": 3.3953058054350285,
+          "absoluteError": 0.004694194564971443,
+          "tolerance": 0.034000010000000004
+        },
+        {
+          "label": "water heat + dissipation = up + down (W)",
+          "expected": 826.3452393616423,
+          "measured": 826.3488688459164,
+          "absoluteError": 0.003629484274142669,
+          "tolerance": 0.08263453393616423
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.00005735596641898155,
+          "absoluteError": 0.00005735596641898155,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 259200,
+      "energyResidual": -0.00005735596641898155,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "FLOORTEC tacker 16 × 2 · 100 mm · heat-pump floor (R 0.10)",
+      "presets": [
+        "builtin:underfloorHeating:FLOORTEC tacker 16 × 2 · 100 mm · heat-pump floor (R 0.10)"
+      ],
+      "checks": [
+        {
+          "label": "heat flux per log-mean excess (W/(m²·K))",
+          "expected": 3.75,
+          "measured": 3.765416856277098,
+          "absoluteError": 0.015416856277098212,
+          "tolerance": 0.03750001
+        },
+        {
+          "label": "water heat + dissipation = up + down (W)",
+          "expected": 760.4576896349868,
+          "measured": 760.4717730168869,
+          "absoluteError": 0.014083381900150016,
+          "tolerance": 0.07604577896349868
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": 0.000031313684303313494,
+          "absoluteError": 0.000031313684303313494,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 259200,
+      "energyResidual": 0.000031313684303313494,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
+      "name": "FLOORTEC tacker 16 × 2 · 150 mm · bathroom tiles (R 0)",
+      "presets": [
+        "builtin:underfloorHeating:FLOORTEC tacker 16 × 2 · 150 mm · bathroom tiles (R 0)"
+      ],
+      "checks": [
+        {
+          "label": "heat flux per log-mean excess (W/(m²·K))",
+          "expected": 5.6,
+          "measured": 5.584217390411113,
+          "absoluteError": 0.015782609588886665,
+          "tolerance": 0.056000009999999996
+        },
+        {
+          "label": "water heat + dissipation = up + down (W)",
+          "expected": 1057.4913887780174,
+          "measured": 1057.4958627308463,
+          "absoluteError": 0.0044739528289028385,
+          "tolerance": 0.10574914887780174
+        },
+        {
+          "label": "mass residual (kg)",
+          "expected": 0,
+          "measured": 0,
+          "absoluteError": 0,
+          "tolerance": 0.000001
+        },
+        {
+          "label": "energy residual (J)",
+          "expected": 0,
+          "measured": -0.000021647720132023096,
+          "absoluteError": 0.000021647720132023096,
+          "tolerance": 0.5
+        }
+      ],
+      "pass": true,
+      "time": 259200,
+      "energyResidual": -0.000021647720132023096,
+      "massResidual": 0,
+      "violations": [],
+      "failed": {}
+    },
+    {
       "name": "Kermi therm-x2 Profil-K 22 · 600 × 1000 · 1,666 W",
       "presets": [
         "builtin:panelRadiator:Kermi therm-x2 Profil-K 22 · 600 × 1000 · 1,666 W"
@@ -1107,10 +1233,10 @@
       "checks": [
         {
           "label": "input power P1 = P0 + P_shaft/η_m (W)",
-          "expected": 32.27683095369452,
-          "measured": 32.276830955322126,
-          "absoluteError": 1.6276047176688735e-9,
-          "tolerance": 0.00003228683095369452
+          "expected": 32.276830953694535,
+          "measured": 32.27683095532213,
+          "absoluteError": 1.6275976122415159e-9,
+          "tolerance": 0.000032286830953694534
         },
         {
           "label": "motor loss into the water (W)",
@@ -1129,22 +1255,22 @@
         {
           "label": "mass residual (kg)",
           "expected": 0,
-          "measured": -9.833911462919787e-12,
-          "absoluteError": 9.833911462919787e-12,
+          "measured": -9.86233317235019e-12,
+          "absoluteError": 9.86233317235019e-12,
           "tolerance": 0.000001
         },
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 3.9058090095522857e-10,
-          "absoluteError": 3.9058090095522857e-10,
-          "tolerance": 1.5850020953054833
+          "measured": 3.908082746306718e-10,
+          "absoluteError": 3.908082746306718e-10,
+          "tolerance": 1.5850020720634888
         }
       ],
       "pass": true,
       "time": 11.000000000000126,
-      "energyResidual": 3.9058090095522857e-10,
-      "massResidual": -9.833911462919787e-12,
+      "energyResidual": 3.908082746306718e-10,
+      "massResidual": -9.86233317235019e-12,
       "violations": [],
       "failed": {}
     },
@@ -1156,17 +1282,17 @@
       "checks": [
         {
           "label": "input power P1 = P0 + P_shaft/η_m (W)",
-          "expected": 27.300524000662804,
-          "measured": 27.300523994791998,
-          "absoluteError": 5.870806063512646e-9,
-          "tolerance": 0.000027310524000662804
+          "expected": 27.30052400648125,
+          "measured": 27.300524000993278,
+          "absoluteError": 5.487972742912461e-9,
+          "tolerance": 0.00002731052400648125
         },
         {
           "label": "motor loss into the water (W)",
-          "expected": 7.220104794261754,
-          "measured": 7.220104798958399,
-          "absoluteError": 4.696644850810117e-9,
-          "tolerance": 0.000007230104794261754
+          "expected": 7.220104795808275,
+          "measured": 7.220104800198655,
+          "absoluteError": 4.390379615415441e-9,
+          "tolerance": 0.000007230104795808275
         },
         {
           "label": "terminal voltage (V)",
@@ -1178,29 +1304,29 @@
         {
           "label": "held head (m)",
           "expected": 3,
-          "measured": 2.99999999995231,
-          "absoluteError": 4.7689852067378524e-11,
+          "measured": 2.999999999934898,
+          "absoluteError": 6.510214589638963e-11,
           "tolerance": 0.00300001
         },
         {
           "label": "mass residual (kg)",
           "expected": 0,
-          "measured": 8.65156835061498e-11,
-          "absoluteError": 8.65156835061498e-11,
+          "measured": 8.714096111361869e-11,
+          "absoluteError": 8.714096111361869e-11,
           "tolerance": 0.000001
         },
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": -3.0211875223784546e-9,
-          "absoluteError": 3.0211875223784546e-9,
-          "tolerance": 1.3533367188114653
+          "measured": -3.0452296240213172e-9,
+          "absoluteError": 3.0452296240213172e-9,
+          "tolerance": 1.3533366955711257
         }
       ],
       "pass": true,
       "time": 11.000000000000126,
-      "energyResidual": -3.0211875223784546e-9,
-      "massResidual": 8.65156835061498e-11,
+      "energyResidual": -3.0452296240213172e-9,
+      "massResidual": 8.714096111361869e-11,
       "violations": [],
       "failed": {}
     },
@@ -1212,17 +1338,17 @@
       "checks": [
         {
           "label": "input power P1 = P0 + P_shaft/η_m (W)",
-          "expected": 10.478278908328674,
-          "measured": 10.478278908328674,
+          "expected": 10.478278909023887,
+          "measured": 10.478278909023887,
           "absoluteError": 0,
-          "tolerance": 0.000010488278908328674
+          "tolerance": 0.000010488278909023886
         },
         {
           "label": "motor loss into the water (W)",
-          "expected": 3.493483672498602,
-          "measured": 3.493483672498602,
+          "expected": 3.493483672707166,
+          "measured": 3.493483672707166,
           "absoluteError": 0,
-          "tolerance": 0.0000035034836724986018
+          "tolerance": 0.0000035034836727071654
         },
         {
           "label": "terminal voltage (V)",
@@ -1234,22 +1360,22 @@
         {
           "label": "mass residual (kg)",
           "expected": 0,
-          "measured": -3.278159965702798e-10,
-          "absoluteError": 3.278159965702798e-10,
+          "measured": -2.4448354452033527e-10,
+          "absoluteError": 2.4448354452033527e-10,
           "tolerance": 0.000001
         },
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 5.156402860251319e-9,
-          "absoluteError": 5.156402860251319e-9,
+          "measured": 3.865375131084647e-9,
+          "absoluteError": 3.865375131084647e-9,
           "tolerance": 0.5
         }
       ],
       "pass": true,
       "time": 7.999999999999977,
-      "energyResidual": 5.156402860251319e-9,
-      "massResidual": -3.278159965702798e-10,
+      "energyResidual": 3.865375131084647e-9,
+      "massResidual": -2.4448354452033527e-10,
       "violations": [],
       "failed": {}
     },

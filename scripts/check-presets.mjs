@@ -151,6 +151,20 @@ for (const p of builtinPresets.filter(p => !['heater', 'tank'].includes(p.kind))
       near(report, 'Kermi chart pressure drop (Pa)', group * (m * 36) ** 1.987, r.differentialPressure, 0.02);
       break;
     }
+    case 'underfloorHeating': {
+      // Gravity-fed from a 40 °C tank into 20 °C air: after 3 days the screed is steady, and the upward flux per log-mean
+      // excess equals the FLOORTEC table's q/Δθ for the preset's spacing and covering (16 × 2 tacker, 45 mm screed).
+      // Wide tanks: a constant head over the three days, so the end state is steady (no stored heat released).
+      const wide = { capacity: 300000, volume: 100000, surfaceArea: 100000, loss: 0, maxPressure: 1e7 };
+      const high = b.add('tank', { ...wide, elevation: 0.3, initialTemperature: 40 }), low = b.add('tank', wide); connectFluid(b, high, c, low);
+      s = simulation(b); s.advanceAdaptive(72 * 3600); assert.equal(s.error, null);
+      const r = s.multiphysics.hydraulic.readings[c.id], ret = r.returnTemperature - 273.15, lmtd = (40 - ret) / Math.log(20 / (ret - 20));
+      const table = { '0.1/0.15': 68, '0.1/0.1': 75, '0/0.15': 112 }[`${v.coveringResistance}/${v.pipeSpacing}`];
+      assert(table, 'preset configuration has a FLOORTEC table point');
+      near(report, 'heat flux per log-mean excess (W/(m²·K))', table / 20, r.duty / v.heatedArea / lmtd, 0.01);
+      near(report, 'water heat + dissipation = up + down (W)', r.heatInput + r.differentialPressure * r.flow, r.duty + r.downwardLoss, 1e-4);
+      break;
+    }
     case 'storageTank': {
       // ErP standby rating: at 65 °C in 20 °C air the loss is the published standby loss S.
       c.props.initialTemperature = 65; b.p.environment = { ambient: 20 };

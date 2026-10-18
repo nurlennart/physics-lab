@@ -1,6 +1,7 @@
 import { effectiveAmbient } from "./environment";
 import { boilerExchange, boilerWaterCapacity } from './boiler';
 import { PANEL_CELLS, panelCellCapacity, panelExchange } from './panel-radiator';
+import { FLOOR_CELLS, belowBoundary, belowKey, floorCellCapacity, floorExchange, floorWaterMass, loopCount, screedCapacity, screedKey } from './underfloor-heating';
 import { definitions, derived, prop, textProp, terminalKey, type Component, type Project } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
@@ -39,6 +40,8 @@ export interface HydraulicReading {
   returnTemperature?: number;
   /** Panel radiator: inlet water temperature, mean exchange excess over the air and ṁ·c_p·(T_in − T_out). */
   supplyTemperature?: number; excessTemperature?: number; heatInput?: number;
+  /** Underfloor heating: heat lost down through the insulation (W) and the mean screed (pipe-plane) temperature (K). */
+  downwardLoss?: number; screedTemperature?: number;
   torque: number; temperature: number; temperatureValid?: boolean;
   /** Heat-exchanger duty (W), positive from the hot (A) stream into the cold (B) stream. */
   duty?: number;
@@ -78,7 +81,7 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve', 'divertingValve']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve', 'divertingValve', 'underfloorHeating']);
 /** Internal node of a sealed storage tank: all its ports connect to it through short nozzle branches. */
 export const interiorNode = (c: Component) => `${c.id}:interior`;
 /** Key of a storage tank's coil cells in the cell store. */
@@ -353,7 +356,8 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
   for (const n of Object.values(terminalNodes)) terminalCount.set(n, (terminalCount.get(n) ?? 0) + 1);
   const topology = { cs, tanks: cs.filter(c => c.kind === 'tank'), terminalNodes, nodes, branches, group,
     ofKind: (kind: string) => byKind.get(kind) ?? [], kinds: new Map(cs.map(c => [c.id, c.kind])), terminalCount,
-    primers: cs.filter(c => pipeCells(c) || c.kind === 'storageTank').sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind))),
+    // A circulator's own water does not prime its circuit (an unprimed pump still runs dry).
+    primers: cs.filter(c => (pipeCells(c) && c.kind !== 'circulator') || c.kind === 'storageTank').sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind))),
     fluidPorts: cs.filter(c => !branchKinds.has(c.kind) && definitions[c.kind].ports.some(p => p.id === 'fluid')) };
   byProject.set(key, topology);
   return topology;
@@ -475,6 +479,8 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   const loss = (br: Branch, q: number) => {
     const c = br.c;
     if (c.kind === 'pipe') { const law = lawOf(br), k = q >= 0 ? 0 : 1; return (law.pipe[k] ??= pipeLossModel(c, pipeTemperatures(br, q)))(q); }
+    // Underfloor heating: identical parallel loops, each a Darcy–Colebrook pipe carrying its share of the flow.
+    if (c.kind === 'underfloorHeating') { const law = lawOf(br), k = q >= 0 ? 0 : 1, loops = loopCount(c); return (law.pipe[k] ??= pipeLossModel(c, pipeTemperatures(br, q)))(q / loops); }
     if (isPump(c)) {
       // Descending head curve continued as passive quadratic resistance past zero head.
       return PUMP_INTERNAL_RESISTANCE * q - RHO * G * cavitatingHead(c, Math.max(0, speeds[c.id] ?? 0), q, npshAvailable.get(c.id)).head;
@@ -494,7 +500,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const allowPositive = !blocked.has(a), allowNegative = !oneWay && !blocked.has(to);
     const law = lawOf(b), atZero = law.atZero ??= actualLoss(0);
     // Cavitating pumps (head depends on Q through NPSH3) use the bracketed numeric inverse.
-    const closedForm = law.closedForm ??= c.kind !== 'pipe' && !(isPump(c) && (pumpPoints(c) || npshAvailable.has(c.id)));
+    const closedForm = law.closedForm ??= c.kind !== 'pipe' && c.kind !== 'underfloorHeating' && !(isPump(c) && (pumpPoints(c) || npshAvailable.has(c.id)));
     const difference = dp - atZero, magnitude = Math.abs(difference);
     // Closed form of linear·q + quadratic·q|q| = difference (pump curve or two-K valve).
     const terms = !closedForm ? { linear: 1e5, quadratic: 0 } : isPump(c)
@@ -632,7 +638,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   branches.forEach((b, i) => {
     const { c, a, b: to } = b, q = final.flows[i], dp = (p[a] - p[to]) * 1000;
     const opening = c.kind === 'heatExchanger' ? 100 : positions[c.id] ?? prop(c, 'opening');
-    const pipe = c.kind === 'pipe' ? pipeLoss(c, q, pipeTemperatures(b, q)) : (() => {
+    const pipe = c.kind === 'pipe' ? pipeLoss(c, q, pipeTemperatures(b, q)) : c.kind === 'underfloorHeating' ? pipeLoss(c, q / loopCount(c), pipeTemperatures(b, q)) : (() => {
       const velocity = q / (Math.PI * prop(c, 'diameter', 0.025) ** 2 / 4);
       if (isPump(c)) return { velocity, reynolds: 0, frictionFactor: 0 };
       const mu = valveTerms(b, q >= 0).mu;
@@ -704,11 +710,14 @@ export function effectiveness(ntu: number, cr: number, arrangement: string) {
   const e = Math.exp(-ntu * (1 - cr));
   return (1 - e) / (1 - cr * e);
 }
-/** Finite branch inventory cells: pipe chain, one boiler mixing cell, a panel radiator chain, or zero-volume branch. */
-export const pipeCells = (c: Component) => elementKinds.has(c.kind) ? 1 : c.kind === 'panelRadiator' ? PANEL_CELLS : (c.kind === 'pipe' && c.props.inventory !== false ? Math.max(1, Math.round(prop(c, 'segments', 4))) : 0);
-export const pipeWaterMass = (c: Component) => elementKinds.has(c.kind) || c.kind === 'panelRadiator' ? prop(c, 'waterVolume') : RHO * Math.PI * prop(c, 'diameter') ** 2 / 4 * prop(c, 'length');
-/** Heat capacity (J/K) of one inventory cell; boiler and radiator metal is lumped with the water. */
-export const cellCapacity = (c: Component, n: number) => elementKinds.has(c.kind) ? boilerWaterCapacity(c) : c.kind === 'panelRadiator' ? panelCellCapacity(c) : pipeWaterMass(c) / n * CP;
+/**
+ * Finite branch inventory cells: pipe chain, one boiler mixing cell, a panel radiator or underfloor chain, one wet-rotor
+ * circulator cell (its motor loss heats that water, so a nearly stalled flow cannot heat it without bound), or zero-volume branch.
+ */
+export const pipeCells = (c: Component) => elementKinds.has(c.kind) || c.kind === 'circulator' ? 1 : c.kind === 'panelRadiator' ? PANEL_CELLS : c.kind === 'underfloorHeating' ? FLOOR_CELLS : (c.kind === 'pipe' && c.props.inventory !== false ? Math.max(1, Math.round(prop(c, 'segments', 4))) : 0);
+export const pipeWaterMass = (c: Component) => elementKinds.has(c.kind) || c.kind === 'panelRadiator' || c.kind === 'circulator' ? prop(c, 'waterVolume') : c.kind === 'underfloorHeating' ? floorWaterMass(c) : RHO * Math.PI * prop(c, 'diameter') ** 2 / 4 * prop(c, 'length');
+/** Heat capacity (J/K) of one inventory cell; boiler and radiator metal is lumped with the water (underfloor screed is its own node). */
+export const cellCapacity = (c: Component, n: number) => elementKinds.has(c.kind) ? boilerWaterCapacity(c) : c.kind === 'panelRadiator' ? panelCellCapacity(c) : c.kind === 'underfloorHeating' ? floorCellCapacity(c) : pipeWaterMass(c) / n * CP;
 /**
  * Conservative upwind enthalpy transport. Junctions are ideal mixers. Zero-volume
  * branches carry their dissipation and exponential UA loss into the outgoing
@@ -724,7 +733,9 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   for (const [id, n] of Object.entries(result.tankNodes)) if (!result.drained?.includes(id)) boundary.set(n, id);
   const byId = new Map(project.components.map((c) => [c.id, c]));
   const directed = result.branches.filter(b => Math.abs(b.flow) > STAGNANT_FLOW).map(b => ({ ...b, from: b.flow > 0 ? b.from : b.to, to: b.flow > 0 ? b.to : b.from, rate: Math.abs(b.flow) * RHO }));
-  type Transfer = (typeof directed)[number] & { terms: { node: string; coeff: number }[]; offset: number; heat: number; ua: number; ambientK: number; attenuation: number; uaCell?: number; weight?: number };
+  type Transfer = (typeof directed)[number] & { terms: { node: string; coeff: number }[]; offset: number; heat: number; ua: number; ambientK: number; attenuation: number; uaCell?: number; weight?: number;
+    /** Underfloor heating: per-cell effective exchange temperature (flow order), the eliminated screed coupling and the boundary below. */
+    cellAmbient?: number[]; floor?: ReturnType<typeof floorExchange>; belowK?: number };
   const transfers: Transfer[] = directed.map(b => {
     const c = byId.get(b.component)!, r = result.readings[b.id];
     // Branch dissipation plus pump shaft losses (shaft − impeller); with b.loss = P_imp − P_net
@@ -735,18 +746,24 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const n = pipeCells(c), state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? state : [...state].reverse();
     // Panel radiator: EN 442 conductance per cell from the interval's start state (inlet: last transported node temperature).
     const panel = c.kind === 'panelRadiator' ? fixedPanel?.[c.id] ?? panelExchange(c, order, result.nodeTemperatures[b.from], ambientK, b.rate * CP) : undefined;
-    const ua = panel ? panel.g * n : elementKinds.has(c.kind) ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0;
+    // Underfloor heating: each water cell exchanges with its implicit screed node, eliminated into an effective conductance
+    // and per-cell effective temperature (affine in the room and below-floor temperatures).
+    const floor = c.kind === 'underfloorHeating' ? floorExchange(c, dt, b.rate * CP) : undefined;
+    const belowK = floor ? U.celsiusToK(belowBoundary(project, c).temperature) : undefined;
+    const screed = floor && (cells[screedKey(c.id)] ?? Array(n).fill(293.15)), screedOrder = screed && (b.flow > 0 ? screed : [...screed].reverse());
+    const cellAmbient = floor && screedOrder!.map(t => floor.ambient(t, ambientK, belowK!));
+    const ua = panel ? panel.g * n : floor ? floor.effective * n : elementKinds.has(c.kind) ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0;
     if (n) {
-      // Implicit cell chain with exchange temperature w·T_{k−1}' + (1 − w)·T_k' (w = 0 except in panel radiators):
+      // Implicit cell chain with exchange temperature w·T_{k−1}' + (1 − w)·T_k' (w = 0 except in panel radiators and floors):
       // T_k' = (m c T_k + h (ṁ c − g w) T_{k−1}' + h g T_amb + h Q/N)/(m c + h ṁ c + h g (1 − w)), g = UA/N.
-      const mc = cellCapacity(c, n), uaCell = ua / n, w = panel?.w ?? 0, flowTerm = dt * b.rate * CP;
+      const mc = cellCapacity(c, n), uaCell = ua / n, w = panel?.w ?? floor?.w ?? 0, flowTerm = dt * b.rate * CP;
       let alpha = 1, beta = 0;
-      for (const old of order) {
+      order.forEach((old, k) => {
         const den = mc + flowTerm + dt * (uaCell * (1 - w) + (exchange?.sink ?? 0)), a = (flowTerm - dt * uaCell * w) / den;
-        beta = dt === 0 ? old : a * beta + (mc * old + dt * uaCell * ambientK + dt * (heat / n + (exchange?.source ?? 0))) / den;
+        beta = dt === 0 ? old : a * beta + (mc * old + dt * uaCell * (cellAmbient?.[k] ?? ambientK) + dt * (heat / n + (exchange?.source ?? 0))) / den;
         alpha *= a;
-      }
-      return { ...b, terms: [{ node: b.from, coeff: alpha }], offset: beta, heat, ua, ambientK, attenuation: alpha, uaCell, weight: w };
+      });
+      return { ...b, terms: [{ node: b.from, coeff: alpha }], offset: beta, heat, ua, ambientK, attenuation: alpha, uaCell, weight: w, cellAmbient, floor, belowK };
     }
     const attenuation = Math.exp(-ua / (b.rate * CP));
     return { ...b, terms: [{ node: b.from, coeff: attenuation }], offset: ambientK * (1 - attenuation) + heat / (b.rate * CP), heat, ua, ambientK, attenuation };
@@ -824,17 +841,28 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
       const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
       const mc = cellCapacity(c, n), uaCell = b.uaCell ?? b.ua / n, w = b.weight ?? 0, flowTerm = dt * b.rate * CP;
       const state = cells[c.id] ?? Array(n).fill(293.15), order = b.flow > 0 ? [...state] : [...state].reverse();
-      let upstream = inlet, output = 0, excess = 0;
-      const updated = order.map(old => {
+      let upstream = inlet, output = 0, excess = 0, downward = 0;
+      const screed = b.floor && (cells[screedKey(c.id)] ?? Array(n).fill(293.15)), screedOrder = screed && (b.flow > 0 ? screed : [...screed].reverse()), screedNext: number[] = [];
+      const updated = order.map((old, k) => {
         const into = upstream;
-        upstream = dt === 0 ? old : (mc * old + (flowTerm - dt * uaCell * w) * into + dt * uaCell * b.ambientK + dt * (b.heat / n + (exchange?.source ?? 0))) / (mc + flowTerm + dt * (uaCell * (1 - w) + (exchange?.sink ?? 0)));
+        upstream = dt === 0 ? old : (mc * old + (flowTerm - dt * uaCell * w) * into + dt * uaCell * (b.cellAmbient?.[k] ?? b.ambientK) + dt * (b.heat / n + (exchange?.source ?? 0))) / (mc + flowTerm + dt * (uaCell * (1 - w) + (exchange?.sink ?? 0)));
+        if (b.floor) {
+          // Back-substituted screed node: water → screed g_wp·(X − S') splits into the room, the space below and storage.
+          const x = w * into + (1 - w) * upstream, next = b.floor.screed(screedOrder![k], x, b.ambientK, b.belowK!);
+          const up = b.floor.up * (next - b.ambientK), down = b.floor.down * (next - b.belowK!);
+          release(c.id, up * dt); release(belowKey(c.id), down * dt); output += up; downward += down; excess += (x - b.ambientK) / n;
+          screedNext.push(next);
+          return upstream;
+        }
         // The same implicit exchange that entered the cell balance is booked (exact ledger).
         const local = w * (into - b.ambientK) + (1 - w) * (upstream - b.ambientK);
         release(c.id, uaCell * local * dt); output += uaCell * local; excess += local / n;
         return upstream;
       });
       cells[c.id] = b.flow > 0 ? updated : updated.reverse();
+      if (b.floor) cells[screedKey(c.id)] = b.flow > 0 ? screedNext : screedNext.reverse();
       if (c.kind === 'panelRadiator') Object.assign(result.readings[b.id], { duty: output, supplyTemperature: inlet, returnTemperature: outlet, heatInput: b.rate * CP * (inlet - outlet), excessTemperature: excess });
+      if (b.floor) Object.assign(result.readings[b.id], { duty: output, downwardLoss: downward, supplyTemperature: inlet, returnTemperature: outlet, heatInput: b.rate * CP * (inlet - outlet), excessTemperature: excess, screedTemperature: screedNext.reduce((a, t) => a + t, 0) / n });
     } else release(c.id, b.rate * CP * (1 - b.attenuation) * (inlet - b.ambientK) * dt);
     heat += b.heat * dt;
     if (elementKinds.has(c.kind)) {
@@ -848,17 +876,27 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   // Stagnant pipes keep their water and exchange heat with ambient only.
   for (const c of project.components.filter(c => pipeCells(c) && !flowing.has(c.id))) {
     const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = U.celsiusToK(effectiveAmbient(project, c));
-    const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : prop(c, elementKinds.has(c.kind) ? 'loss' : 'thermalUA') / n;
+    const floor = c.kind === 'underfloorHeating' ? floorExchange(c, dt, 0) : undefined, belowK = floor && U.celsiusToK(belowBoundary(project, c).temperature);
+    const screed = floor && (cells[screedKey(c.id)] ?? Array(n).fill(293.15)), screedNext: number[] = [];
+    const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : floor ? floor.effective : c.kind === 'circulator' ? 0 : prop(c, elementKinds.has(c.kind) ? 'loss' : 'thermalUA') / n;
     const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;
-    let output = 0;
-    cells[c.id] = before.map(old => {
-      const next = dt === 0 ? old : (mc * old + dt * uaCell * ambientK + dt * (exchange?.source ?? 0)) / (mc + dt * (uaCell + (exchange?.sink ?? 0)));
+    let output = 0, downward = 0;
+    cells[c.id] = before.map((old, k) => {
+      const local = floor ? floor.ambient(screed![k], ambientK, belowK!) : ambientK;
+      const next = dt === 0 ? old : (mc * old + dt * uaCell * local + dt * (exchange?.source ?? 0)) / (mc + dt * (uaCell + (exchange?.sink ?? 0)));
+      if (floor) {
+        const s = floor.screed(screed![k], next, ambientK, belowK!), up = floor.up * (s - ambientK), down = floor.down * (s - belowK!);
+        release(c.id, up * dt); release(belowKey(c.id), down * dt); output += up; downward += down; screedNext.push(s);
+        return next;
+      }
       release(c.id, uaCell * (next - ambientK) * dt); output += uaCell * (next - ambientK);
       return next;
     });
+    if (floor) cells[screedKey(c.id)] = screedNext;
     const mean = cells[c.id].reduce((s, t) => s + t, 0) / n;
     if (result.readings[c.id]) { result.readings[c.id].temperature = mean; result.readings[c.id].temperatureValid = true; }
     if (c.kind === 'panelRadiator' && result.readings[c.id]) Object.assign(result.readings[c.id], { duty: output, heatInput: 0, excessTemperature: mean - ambientK });
+    if (floor && result.readings[c.id]) Object.assign(result.readings[c.id], { duty: output, downwardLoss: downward, heatInput: 0, excessTemperature: mean - ambientK, screedTemperature: screedNext.reduce((a, t) => a + t, 0) / n });
   }
   // Storage tanks: layers and coil from the same implicit response at the solved inlet temperatures; the same
   // implicit wall loss is booked; then density inversions are mixed (conservative redistribution).
@@ -946,9 +984,9 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
 export const transportCopy = (r: HydraulicResult): HydraulicResult => ({
   ...r, readings: Object.fromEntries(Object.entries(r.readings).map(([id, v]) => [id, { ...v }])), nodeTemperatures: { ...r.nodeTemperatures },
 });
-/** Enthalpy (J, relative to 0 K) of all water cells: pipes, boilers, heat pumps, panel radiators, storage layers and coils. */
+/** Enthalpy (J, relative to 0 K) of all water cells: pipes, boilers, heat pumps, panel radiators, storage layers and coils; and underfloor screed. */
 export const pipeEnthalpy = (project: Project, cells: Record<string, number[]>) =>
-  project.components.reduce((sum, c) => sum + (c.kind === 'storageTank'
+  project.components.reduce((sum, c) => sum + (cells[screedKey(c.id)] ?? []).reduce((s, t) => s + screedCapacity(c) * t, 0) + (c.kind === 'storageTank'
     ? (cells[c.id] ?? []).reduce((s, t) => s + layerCapacity(c) * t, 0) + (cells[coilKey(c.id)] ?? []).reduce((s, t) => s + coilCellCapacity(c) * t, 0)
     : cells[c.id] ? cells[c.id].reduce((s, t) => s + cellCapacity(c, cells[c.id].length) * t, 0) : 0), 0);
 /**

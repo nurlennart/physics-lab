@@ -37,6 +37,7 @@ for (const [kind, title, label] of [
   ['electricBoiler', 'Bosch boiler and ALPHA2 heating loop', 'Manufacturer specifications'],
   ['panelRadiator', 'Bosch boiler, ALPHA2 and Kermi radiator', 'Manufacturer data (Kermi Technik)'],
   ['heatPump', 'Heat pump and underfloor heating', 'Bosch Compress 6800i AW 7 OR-S'],
+  ['underfloorHeating', 'Heat pump and underfloor heating', 'Manufacturer data (FLOORTEC)'],
   ['storageTank', 'Sealed boiler circuit: expansion vessel and safety valve', 'Stratified storage tank'],
   ['expansionVessel', 'Sealed boiler circuit: expansion vessel and safety valve', 'Membrane expansion vessel'],
   ['safetyValve', 'Sealed boiler circuit: expansion vessel and safety valve', 'Safety valve · 3.0 bar'],
@@ -75,6 +76,13 @@ for (const [kind, title, label] of [
   if (kind === 'storageTank') {
     await expect(page.getByRole('img', { name: /Temperature profile over the height of the tank/ })).toBeVisible();
     await expect(page.getByTestId('storage-basis-manufacturer')).toContainText('BH 120-5 1 B');
+  }
+  // During the heat pump's power-on check the 27 °C screed heats the house on its own stored heat.
+  if (kind === 'underfloorHeating') {
+    await expect(page.getByTestId('underfloor-status')).toContainText('W to the 20.0 °C room');
+    await expect(page.getByRole('img', { name: /EN 1264 characteristic/ })).toBeVisible();
+    await expect(page.getByTestId('underfloor-basis-fitted')).toContainText('6.754');
+    expect((Object.values(state.hydraulics.readings) as any[]).some(r => r.duty > 1000 && r.downwardLoss > 0 && r.screedTemperature > 300)).toBe(true);
   }
   if (kind === 'expansionVessel') {
     await expect(page.getByTestId('vessel-status')).toContainText('bar');

@@ -101,7 +101,9 @@
         "inertia": 0.00002,
         "rampTime": 2,
         "maxPressure": 1000000,
-        "elevation": 0
+        "elevation": 0,
+        "waterVolume": 0.1,
+        "initialTemperature": 20
       }
     },
     {

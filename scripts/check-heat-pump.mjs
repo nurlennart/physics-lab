@@ -10,6 +10,7 @@ const bundle = await build({ stdin: { contents: `
   export * from './src/simulation/heat-pump-bench';
   export { Builder } from './src/simulation/scaling-validation';
   export { makeComponent } from './src/simulation/model';
+  export { applyDerived } from './src/simulation/parameters';
 `, resolveDir: process.cwd() }, bundle: true, platform: 'node', format: 'esm', write: false });
 const m = await import(`data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0].text).toString('base64')}`);
 const f = (v, d = 3) => Number.isFinite(v) ? v.toFixed(d) : '—';
@@ -44,11 +45,12 @@ bench('ErP Tj +2 °C, W42', 2, 84, 42, m.speedForOutput(3500 / 0.95, 2, 42), [35
 bench('A7/W35 maximum (no frost)', 7, 87, 35, 1, [7970, 3.07], 0.08);
 
 // 3. Full engine scenarios from the starters: energy ledger, events and timing.
-async function scenario(label, mode, hours, environment, check, floorUA) {
+async function scenario(label, mode, hours, environment, check, openArea) {
   const p = m.parseProject(JSON.parse(m.serializeProject(m.starter(mode))));
   if (environment !== undefined) p.environment = { ambient: environment };
-  // A single open underfloor zone (the others closed) emits less than the minimum compressor output.
-  if (floorUA !== undefined) p.components = p.components.map(c => c.kind === 'pipe' && c.thermalSpaceId ? { ...c, props: { ...c.props, thermalUA: floorUA } } : c);
+  // A small heated area (about 60 W/K) emits less than the minimum compressor output. The twelve loops stay, so the flow
+  // stays above the heat pump's minimum (a single closed-down loop would need a bypass).
+  if (openArea !== undefined) p.components = p.components.map(c => c.kind === 'underfloorHeating' ? { ...c, props: m.applyDerived(c.kind, { ...c.props, heatedArea: openArea }) } : c);
   const s = new m.Simulation(p); if (s.error) throw Error(s.error);
   const hp = p.components.find(c => c.kind === 'heatPump'), room = p.thermalSpaces[0].id, t0 = performance.now();
   let maxStartsPerHour = 0, minRun = Infinity, since = 0, previous = 'off';
@@ -68,8 +70,8 @@ async function scenario(label, mode, hours, environment, check, floorUA) {
   check?.(row);
 }
 await scenario('House, 2 °C / 85 % RH (defrost)', 'heatPumpHouse', 6, undefined, r => { if (r.defrosts < 2) throw Error('expected defrosts'); });
-await scenario('Cold snap, −15 °C (backup heater)', 'heatPumpCold', 3, undefined, r => { if (!(r.backupHeat > 0)) throw Error('expected backup heat'); });
-await scenario('Mild day, 12 °C, one underfloor zone open (60 W/K): low-load cycling', 'heatPumpHouse', 3, 12, r => { if (r.starts < 3 || r.minRun < 300 - 10) throw Error(`expected cycling within the minimum run time: ${JSON.stringify(r)}`); }, 60);
+await scenario('Cold snap, −15 °C (backup heater)', 'heatPumpCold', 6, undefined, r => { if (!(r.backupHeat > 0)) throw Error('expected backup heat'); });
+await scenario('Mild day, 12 °C, heated floor reduced to 15 m² (≈ 60 W/K): low-load cycling', 'heatPumpHouse', 3, 12, r => { if (r.starts < 3 || r.minRun < 300 - 10) throw Error(`expected cycling within the minimum run time: ${JSON.stringify(r)}`); }, 15);
 
 // 4. Timestep: fixed 0.1 s steps against adaptive 30 s macro steps over 10 min of warm-up at 7 °C.
 {

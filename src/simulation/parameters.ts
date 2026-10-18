@@ -48,6 +48,19 @@ const temperature = (label: string, description: string, group: ParamGroup = "th
   label, description, unit: "°C", group, policy, domain: [ABSOLUTE_ZERO, 10000], limitReason: "Temperature must be above absolute zero.",
 });
 const base: Record<string, Base> = {
+  heatedArea: { label: "Heated floor area", description: "Floor area covered by the loop(s). In a Thermal Space it replaces the same area of the room's floor element, which must be at least this large.", unit: "m²", group: "configuration", policy: "reset", domain: [0.5, 2000], positive: true, limitReason: "0.5–2000 m².", typical: [2, 200] },
+  loops: { label: "Parallel loops", description: "Identical loops sharing the heated area and the flow equally (one manifold circuit each). Loop length = area / (loops × spacing); EN 1264-3 practice keeps 16 mm loops below about 120 m.", unit: "1", group: "configuration", policy: "reset", domain: [1, 64], limitReason: "1–64 identical loops." },
+  pipeSpacing: { label: "Pipe spacing T", description: "Centre distance of the pipes (Verlegeabstand). EN 1264-2 characteristic validity 50–375 mm.", unit: "m", group: "configuration", policy: "reset", domain: [0.05, 0.375], limitReason: "EN 1264-2 characteristic: 0.050 ≤ T ≤ 0.375 m.", display: { unit: "mm", scale: 1000 } },
+  outerDiameter: { label: "Pipe outer diameter D", description: "Outer diameter of the heating pipe (a_D factor). FLOORTEC Alu-Verbundrohr 16 × 2 mm.", unit: "m", group: "configuration", policy: "reset", domain: [0.008, 0.03], limitReason: "EN 1264-2 characteristic: 8 ≤ D ≤ 30 mm.", display: { unit: "mm", scale: 1000 } },
+  wallThickness: { label: "Pipe wall thickness", description: "Sets the inner (hydraulic) diameter D − 2s and the water content.", unit: "m", group: "configuration", policy: "reset", domain: [0.0005, 0.005], limitReason: "0.5–5 mm.", display: { unit: "mm", scale: 1000 } },
+  screedCover: { label: "Screed cover s_u", description: "Screed thickness above the pipe. FLOORTEC tables: 45 mm. Enters a_B, a_ü, R_o and the screed capacity.", unit: "m", group: "configuration", policy: "reset", domain: [0.015, 0.065], limitReason: "EN 1264-2 characteristic for type A: 15–65 mm cover.", display: { unit: "mm", scale: 1000 } },
+  screedConductivity: { label: "Screed conductivity λ_E", description: "Thermal conductivity of the screed. EN 1264-2 reference cement screed: 1.2 W/(m·K).", unit: "W/(m·K)", group: "thermal", policy: "live", domain: [0.5, 3], limitReason: "0.5–3 W/(m·K): mineral screeds." },
+  screedDensity: { label: "Screed density", description: "Assumption: cement screed 2000 kg/m³ (EN ISO 10456 design value).", unit: "kg/m³", group: "thermal", policy: "reset", domain: [500, 3000], limitReason: "500–3000 kg/m³." },
+  screedSpecificHeat: { label: "Screed specific heat", description: "Assumption: cement screed 1000 J/(kg·K) (EN ISO 10456 design value).", unit: "J/(kg·K)", group: "thermal", policy: "reset", domain: [500, 2000], limitReason: "500–2000 J/(kg·K)." },
+  coveringResistance: { label: "Floor covering R_λ,B", description: "Thermal resistance of the floor covering (tiles about 0.01–0.02, parquet 0.05–0.1, carpet 0.1–0.15 m²K/W). EN 1264-3 designs living rooms with 0.10 and bathrooms with 0. Live: changing the covering stores no energy.", unit: "m²K/W", group: "operating", policy: "live", domain: [0, 0.15], limitReason: "EN 1264-2 tabulates 0–0.15 m²K/W (also the EN 1264 design maximum)." },
+  downwardResistance: { label: "Downward resistance R_u", description: "Resistance from the pipe plane to the space below (insulation, slab, ceiling surface). EN 1264-4 minimum insulation: 0.75 m²K/W above a heated room, 1.25 above an unheated room or the ground, 1.25–2.0 above outdoor air (design temperature 0 to −15 °C).", unit: "m²K/W", group: "thermal", policy: "live", domain: [0.1, 20], limitReason: "0.1–20 m²K/W." },
+  systemConstant: { label: "System constant B", description: "EN 1264-2 system coefficient of the characteristic (6.7 W/(m²·K) for a 2 mm plastic pipe of λ 0.35). FLOORTEC 16 × 2: 6.754, fitted to its tables.", unit: "W/(m²·K)", group: "advanced", policy: "live", domain: [4, 9], limitReason: "4–9 W/(m²·K) around the EN 1264 value 6.7." },
+  maxSurfaceTemperature: { label: "Maximum floor surface temperature", description: "EN 1264 limit for the mean surface temperature by the base curve: 29 °C occupied zone (q_G 100 W/m² at 20 °C), 33 °C bathrooms, 35 °C perimeter zones. Exceeding it is reported.", unit: "°C", group: "ratings", policy: "live", domain: [15, 45], limitReason: "15–45 °C." },
   hotWater: { label: "Hot-water mode", description: "Charge a hot-water cylinder through the 3-way valve VW1: wire the cylinder sensor to TW1 and the DHW output to a diverting valve. Hot water has priority over heating and also runs with heating disabled (summer).", group: "operating", policy: "live" },
   dhwStart: { label: "Hot-water start temperature", description: "A charge starts when the cylinder sensor falls to this temperature. Bosch ranges [owners' documentation]: Comfort ≥ 40 °C, Eco ≥ 35 °C, Eco+ ≥ 30 °C; default 40 °C from its example (not a stated Bosch default).", unit: "°C", group: "operating", policy: "live", domain: [20, 65], limitReason: "Bosch hot-water modes span 30–65 °C." },
   dhwStop: { label: "Hot-water stop temperature", description: "The charge ends when the cylinder sensor reaches this temperature. Bosch ranges: Comfort ≤ 65 °C, Eco ≤ 60 °C, Eco+ ≤ 55 °C; default 48 °C from the owners' documentation example.", unit: "°C", group: "operating", policy: "live", domain: [25, 70], limitReason: "Bosch hot-water modes span up to 70 °C (extra hot water)." },
@@ -436,6 +449,16 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     laminarK: { label: "Low-Re coefficient K₁", description: "Hooper low-Reynolds term (0 = orifice law)." },
     elevation: { description: "Height of the valve; its outlet discharges at atmospheric pressure here." },
   },
+  underfloorHeating: {
+    diameter: { label: "Pipe inner diameter", policy: "derived", derivedFrom: ["outerDiameter", "wallThickness"], description: "D − 2s: hydraulic diameter of each loop (FLOORTEC 16 × 2: 12 mm, 0.113 L/m)." },
+    length: { label: "Loop length", policy: "derived", derivedFrom: ["heatedArea", "loops", "pipeSpacing"], description: "Pipe length per loop in the heated area, A/(loops × T); manifold connection runs are separate pipes." },
+    roughness: { description: "Absolute roughness for Colebrook friction. FLOORTEC Alu-Verbundrohr: 0.007 mm (data sheet)." },
+    ambientMode: { label: "Room air", description: "Inherit the assigned Thermal Space (or the experiment ambient outside a room), or set a local room-air temperature for this loop. A local override bypasses the room." },
+    ambient: { label: "Room air temperature", description: "Local room-air temperature, used only with the local override (also the boundary below the floor then)." },
+    initialTemperature: { description: "Water and screed temperature at reset." },
+    maxPressure: { description: "FLOORTEC Alu-Verbundrohr: 10 bar maximum operating pressure. Exceeding it is reported." },
+    maxTemperature: { label: "Maximum water temperature", description: "55 °C: flow-temperature limit for cement and calcium sulphate heating screeds (EN 1264-4 / DIN 18560); the pipe itself is rated 95 °C. Exceeding it is reported." },
+  },
   panelRadiator: {
     waterVolume: { label: "Water content", description: "Kermi catalog water content (type 22, 600 × 1000 mm: 6.08 L). Fixed inventory at the reference density in 16 cells.", typical: [0.5, 50] },
     ambientMode: { label: "Room air", description: "Inherit the experiment ambient as room air, or set a local room-air temperature for this radiator. Water and steel initial temperature is separate." },
@@ -488,6 +511,8 @@ const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
     enabled: { label: "Contactor closed", description: "Used when the enable input is not wired." },
   },
   circulator: {
+    waterVolume: { label: "Wet-rotor water volume", description: "Water held in the rotor can and pump housing, one mixed cell: the motor and electronics losses heat it, then the flow carries the heat on. Assumption: 0.1 L (not published by Grundfos).", typical: [0.03, 1] },
+    initialTemperature: { description: "Temperature of the water in the pump at reset." },
     mode: { label: "Control mode", description: "Proportional pressure: head follows H_set·(1 + Q/Q_r)/2. Constant pressure: head held at H_set. Constant curve: fixed speed. The controller acts on the last solved flow (approximated control logic, not the manufacturer's algorithm). A wired speed command (percent) overrides the mode.", options: [{ value: "proportionalPressure", label: "Proportional pressure" }, { value: "constantPressure", label: "Constant pressure" }, { value: "constantSpeed", label: "Constant curve (speed)" }] },
     enabled: { label: "Run", description: "Runs when on; off stops the motor (the electronics stay powered with their standby input). A wired enable input overrides it." },
     ratedSpeed: { label: "Maximum speed", description: "Speed of the maximum curve (affinity laws scale the curve from here). Assumed value: datasheets of circulators rarely state it." },
@@ -655,6 +680,10 @@ export function applyDerived(kind: Kind, props: Record<string, Property>): Recor
     p.loss = tmax > 30 ? num(p, "ratedCurrent") ** 2 * hot / (tmax - 30) : 0;
   }
   if (kind === "storageTank") p.loss = num(p, "standbyHeatLoss") / 45;
+  if (kind === "underfloorHeating") {
+    p.diameter = num(p, "outerDiameter") - 2 * num(p, "wallThickness");
+    p.length = num(p, "heatedArea") / (Math.max(1, Math.round(num(p, "loops", 1))) * num(p, "pipeSpacing"));
+  }
   if (kind === "tank" && p.lossModel === "insulation") {
     const g = vesselGeometry(num(p, "capacity", 20), num(p, "surfaceArea", 0.1));
     const thickness = num(p, "insulationThickness"), k = num(p, "insulationConductivity", 0.04);

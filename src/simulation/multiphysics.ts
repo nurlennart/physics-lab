@@ -10,6 +10,7 @@ import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive,
 import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
 import { solveHydraulic, boundaryTime, transport, emptyHydraulics, pipeCells, vaporPressure, npsh3At, isPump, elementKinds, waterInventories, circuitOf, coilKey, STAGNANT_FLOW, type TankState } from './hydraulic';
 import { coilLayers, storageLayers } from './storage-tank';
+import { screedKey } from './underfloor-heating';
 import { cellDensities, fullLiftFlow, inventoryVolumeAt, newVessel, valveLift, valveSetPoints, vesselPressure, vesselStiffness, waterAtPressure, type VesselState } from './expansion';
 import { circulatorInput, circulatorKinetic, circulatorTarget, rampedSpeed, RESTART_MARGIN, type CirculatorPlan, type CirculatorState } from './circulator';
 import { unitsSI as U, WATER_CP as CP, WATER_RHO as RHO, GRAVITY as G } from './units';
@@ -136,6 +137,7 @@ export class Multiphysics {
       if (c.kind === 'circulator') this.circulators[c.id] = { omega: 0, lockedOut: false, restartIn: 0, angle: 0 };
       if (c.kind === 'pressureReducingValve') this.positions[c.id] = 100;
       if (pipeCells(c)) this.pipeCells[c.id] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
+      if (c.kind === 'underfloorHeating') this.pipeCells[screedKey(c.id)] = Array(pipeCells(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
       if (c.kind === 'storageTank') {
         this.pipeCells[c.id] = Array(storageLayers(c)).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
         if (coilLayers(c).length) this.pipeCells[coilKey(c.id)] = Array(coilLayers(c).length).fill(U.celsiusToK(prop(c, 'initialTemperature', 20)));
@@ -741,7 +743,8 @@ export class Multiphysics {
     this.circulatorCommands = this.circulatorControls(s);
     const elementBefore = Object.fromEntries(Object.entries(this.elementStates()).map(([id, b]) => [id, b.elementTemperature]));
     let heatPumpGain = 0;
-    const panelBefore = s.project.components.filter(c => c.kind === 'panelRadiator' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
+    // Emitter inventories (radiator cells; underfloor water and screed cells) bound the adaptive step by their rate of change.
+    const panelBefore = s.project.components.filter(c => (c.kind === 'panelRadiator' || c.kind === 'underfloorHeating') && this.pipeCells[c.id]).flatMap(c => [c.id, ...(c.kind === 'underfloorHeating' ? [screedKey(c.id)] : [])].map(key => [key, [...this.pipeCells[key]]] as const));
     const storageBefore = s.project.components.filter(c => c.kind === 'storageTank' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;

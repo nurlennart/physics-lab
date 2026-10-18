@@ -9,9 +9,10 @@ export const heatPumpTitles: Record<HeatPumpMode, string> = {
   heatPumpBuffer: 'Heat pump with a buffer tank',
 };
 /**
- * A Bosch Compress 6800i AW 7 OR-S heats a 120 m² single-zone house through an underfloor loop (an equivalent 60 m,
- * 32 mm pipe whose heat goes to the room). Envelope ≈ 200 W/K: about 6 kW at −10 °C, 3.6 kW at +2 °C and below the
- * 1.8 kW minimum modulation on mild days. The heating curve runs from 25 °C (20 °C outdoor) to 35 °C (−10 °C).
+ * A Bosch Compress 6800i AW 7 OR-S heats a 120 m² single-zone house through wet-screed underfloor heating (FLOORTEC
+ * tacker 16 × 2, 100 mm spacing, twelve 100 m loops under the whole floor, R_λ,B 0.10). Envelope ≈ 200 W/K: about 6 kW at
+ * −10 °C, 3.6 kW at +2 °C and below the 1.8 kW minimum modulation on mild days. The heating curve runs from 25 °C (20 °C
+ * outdoor) to 35 °C (−10 °C).
  */
 export function heatPumpStarter(mode: HeatPumpMode): Project {
   // Every house has hot water: the indoor unit's 3-way valve VW1 serves a Bosch WH 290 cylinder through its coil.
@@ -34,9 +35,12 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
   const hp = add('heatPump', 330, 330, { targetMode: 'curve', curveDesignOutdoor: -10, curveDesignFlow: 35, curveFootFlow: 25, relativeHumidity: cold ? 80 : 85, initialTemperature: 25, hotWater: dhw }, 'Bosch CS6800iAW 7 OR-S');
   const pump = add('circulator', 330, 650, { mode: 'constantPressure', headSetpoint: 4 }, 'Circulator · 4 m constant');
   const supply = add('pipe', dhw ? 950 : 640, 330, { diameter: 0.028, length: 10, thermalUA: 1, segments: 2, initialTemperature: 25 }, 'Insulated flow · 10 m');
-  const floor = add('pipe', 1300, 560, { diameter: 0.032, length: 60, thermalUA: 520, segments: 6, initialTemperature: 25 }, 'Underfloor loop (equivalent)');
+  // Downward resistance 2.6 m²K/W: the floor element's U 0.35 W/(m²·K) less the screed and covering above the pipes (R_o 0.23).
+  const floor = add('underfloorHeating', 1300, 560, { heatedArea: 120, loops: 12, pipeSpacing: 0.1, downwardResistance: 2.6, initialTemperature: cold ? 33 : 27 }, 'Underfloor heating · 12 loops');
+  floor.variant = 'spacing100';
   const back = add('pipe', 640, 650, { diameter: 0.028, length: 10, thermalUA: 1, segments: 2, initialTemperature: 25 }, 'Insulated return · 10 m');
-  floor.thermalSpaceId = room.id; floor.thermalSpacePinned = true;
+  // The whole circuit is indoors: pipe losses warm the house (outside it, still pipes would freeze in a cold snap).
+  for (const c of [floor, supply, back]) { c.thermalSpaceId = room.id; c.thermalSpacePinned = true; }
   wire(mains, 'a', hp, 'L'); wire(mains, 'b', hp, 'N'); wire(backupSupply, 'a', hp, 'BL'); wire(backupSupply, 'b', hp, 'BN');
   wire(mains, 'a', pump, 'a'); wire(mains, 'b', pump, 'b');
   // Hot water: the indoor unit's 3-way valve VW1 diverts the flow from the heating (A) to the cylinder coil (B) while the
@@ -56,6 +60,7 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
   function hotWaterSide() {
     const coilFlow = add('pipe', 1300, 760, { diameter: 0.028, length: 4, thermalUA: 0.5, segments: 2, initialTemperature: 25 }, 'Flow to coil · 4 m');
     const coilReturn = add('pipe', 640, 1100, { diameter: 0.028, length: 4, thermalUA: 0.5, segments: 2, initialTemperature: 25 }, 'Return from coil · 4 m');
+    for (const c of [coilFlow, coilReturn]) { c.thermalSpaceId = room.id; c.thermalSpacePinned = true; }
     const tank = makeComponent('storageTank', 980, 1060, p.components); tank.variant = 'wh290';
     tank.props = applyDerived('storageTank', { ...catalog(tank).props, initialTemperature: cold ? 47 : 38 }); tank.name = 'Bosch Stora WH 290 LP1 B'; p.components.push(tank);
     tank.thermalSpaceId = room.id; tank.thermalSpacePinned = true;
@@ -75,6 +80,7 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
   trace(hp, 'compressorSpeed', 'Compressor speed', '#C4B0FC'); trace(hp, 'frostMass', 'Frost on coil', '#A5D8FF'); trace(hp, 'defrosting', 'Defrost active', '#5EC8E5');
   trace(hp, 'backupPower', 'Backup heater', '#FF7B72'); trace(hp, 'environmentHeat', 'Heat from outdoor air', '#9BE9A8'); trace(hp, 'seasonalCop', 'Seasonal performance factor', '#D2A8FF');
   p.probes!.push({ id: uid(), name: 'House air', component: room.id, targetKind: 'space', measurement: 'roomTemperature', visible: true, color: '#C4CDD8' });
+  trace(floor, 'surfaceTemperature', 'Floor surface', '#E6A0C4');
   p.probes!.push({ id: uid(), name: 'House heat loss', component: room.id, targetKind: 'space', measurement: 'envelopeLoss', visible: true, color: '#8CC6F8' });
   trace(vessel, 'pressure', 'System pressure', '#8CC6F8');
   if (buffer) { trace(buffer, 'topTemperature', 'Buffer top', '#F59B85'); trace(buffer, 'bottomTemperature', 'Buffer lower sensor', '#8CC6F8'); }

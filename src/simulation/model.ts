@@ -5,7 +5,7 @@ export type Kind =
   | "motor" | "pump" | "pipe" | "valve" | "checkValve" | "actuatedValve" | "thermostaticValve"
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
-  | "electricBoiler" | "panelRadiator" | "heatPump"
+  | "electricBoiler" | "panelRadiator" | "heatPump" | "underfloorHeating"
   | "storageTank" | "expansionVessel" | "safetyValve" | "divertingValve"
   | "source"
   | "source3"
@@ -85,6 +85,7 @@ export interface Connection {
   route?: Point[];
 }
 export type Measurement =
+  | "downwardLoss" | "screedTemperature" | "surfaceTemperature" | "heatFlux"
   | "roomTemperature" | "envelopeLoss" | "ventilationLoss" | "netHeat" | "storedThermalEnergy" | "temperatureRate" | "adjacentHeat" | "effectiveHeatCapacity" | "internalHeat"
   | "acInputPower" | "acOutputPower" | "converterLossEnergy" | "transferLossEnergy" | "batteryHeatEnergy"
   | "gridPower" | "gridReactivePower" | "gridImportPower" | "gridExportPower" | "gridImportEnergy" | "gridExportEnergy" | "gridVoltage" | "gridFrequency" | "synchronized" | "backupAvailable" | "dcPower" | "acConversionPower"
@@ -282,6 +283,22 @@ export const definitions: Record<Kind, Definition> = {
         overrides: { ratedOutput: m.output, exponent: m.exponent, waterVolume: m.water, metalMass: m.mass, radiantShare: m.radiant, lossCoefficient: h.lossCoefficient, laminarK: h.laminarK } };
     }),
   },
+  underfloorHeating: {
+    label: "Underfloor heating loop", category: "Thermal", prefix: "UFH", cost: 45,
+    description: "Wet-screed underfloor heating (EN 1264 type A), FLOORTEC tacker system with 16 × 2 mm multilayer pipe: EN 1264-2 characteristic q = K_H·Δθ_H from pipe spacing, screed cover and floor covering; water cells along the loop, each over its own screed node, which heats the room through the covering and loses heat down through the insulation; Darcy–Colebrook loop pressure drop. Assign it to a Thermal Space: it replaces that area of the room's floor element",
+    spec: "15 m² · 150 mm spacing · 100 m loop · R_λ,B 0.10",
+    ports: fluid,
+    defaults: {
+      heatedArea: 15, loops: 1, pipeSpacing: 0.15, outerDiameter: 0.016, wallThickness: 0.002, diameter: 0.012, length: 100, roughness: 0.000007,
+      screedCover: 0.045, screedConductivity: 1.2, screedDensity: 2000, screedSpecificHeat: 1000, coveringResistance: 0.1, downwardResistance: 1.25, systemConstant: 6.754,
+      maxSurfaceTemperature: 29, ambient: 20, initialTemperature: 20, maxPressure: 1000000, maxTemperature: 55, elevation: 0,
+    },
+    variants: [
+      { id: "spacing100", label: "FLOORTEC tacker 16 × 2 · 100 mm spacing", cost: 60, spec: "15 m² · 100 mm spacing · 150 m loop · R_λ,B 0.10", overrides: { pipeSpacing: 0.1, length: 150 } },
+      { id: "spacing200", label: "FLOORTEC tacker 16 × 2 · 200 mm spacing", cost: 35, spec: "15 m² · 200 mm spacing · 75 m loop · R_λ,B 0.10", overrides: { pipeSpacing: 0.2, length: 75 } },
+      { id: "tiles", label: "FLOORTEC tacker 16 × 2 · tiled floor (R_λ,B 0)", cost: 45, spec: "15 m² · 150 mm spacing · 100 m loop · R_λ,B 0 (EN 1264-3 bathroom design)", overrides: { coveringResistance: 0 } },
+    ],
+  },
   storageTank: {
     label: "Storage tank (stratified)", category: "Thermal", prefix: "ST", cost: 620,
     description: "Sealed vertical buffer or hot-water cylinder: water in layers with buoyancy mixing, four ports at set heights, optional internal coil, standby loss from the ErP rating. Bosch BH 120-5 1 B buffer reference; Stora WH 290 LP1 B cylinder variant.",
@@ -352,7 +369,7 @@ export const definitions: Record<Kind, Definition> = {
     { id: "industrial", label: "Industrial transfer pump", cost: 360, spec: "35 m shutoff · 360 L/min reference flow · 2,865 RPM", overrides: { ratedFlow: 0.006, shutoffHead: 35, efficiency: 0.78, mechanicalLoss: 1.9 } },
     { id: "highCapacity", label: "High-capacity process pump", cost: 2400, spec: "30 m shutoff · 3,000 L/min reference flow · 1,475 RPM", overrides: { ratedSpeed: 154.5, ratedFlow: 0.05, shutoffHead: 30, efficiency: 0.82, mechanicalLoss: 1.5, maxPressure: 1600000 } },
   ] },
-  circulator: { label: "Circulator pump (electric)", category: "Hydraulic", description: "Standalone wet-rotor circulator with integrated EC motor and controller: proportional pressure, constant pressure or constant speed; input power limit, soft start and undervoltage lockout; draws its input power from the network, motor losses heat the pumped water", spec: "230 V · 3–34 W · 6 m · 2.8 m³/h", cost: 190, prefix: "CP", ports: [...electric, ...fluid, input("enable", "boolean", true), input("speed", "number", true)], defaults: { mode: "proportionalPressure", headSetpoint: 4, speedSetting: 100, minSpeed: 25, enabled: true, ratedSpeed: 471.24, ratedFlow: 0.00055556, shutoffHead: 6, efficiency: 0.55, mechanicalLoss: 2, curvePoints: "", npshRequired: 0.5, ratedVoltage: 230, minVoltage: 180, ratedPower: 34, standbyPower: 2.2, motorEfficiency: 80, inertia: 0.00002, rampTime: 2, maxPressure: 1000000, elevation: 0 }, variants: [
+  circulator: { label: "Circulator pump (electric)", category: "Hydraulic", description: "Standalone wet-rotor circulator with integrated EC motor and controller: proportional pressure, constant pressure or constant speed; input power limit, soft start and undervoltage lockout; draws its input power from the network, motor losses heat the pumped water", spec: "230 V · 3–34 W · 6 m · 2.8 m³/h", cost: 190, prefix: "CP", ports: [...electric, ...fluid, input("enable", "boolean", true), input("speed", "number", true)], defaults: { mode: "proportionalPressure", headSetpoint: 4, speedSetting: 100, minSpeed: 25, enabled: true, ratedSpeed: 471.24, ratedFlow: 0.00055556, shutoffHead: 6, efficiency: 0.55, mechanicalLoss: 2, curvePoints: "", npshRequired: 0.5, ratedVoltage: 230, minVoltage: 180, ratedPower: 34, standbyPower: 2.2, motorEfficiency: 80, inertia: 0.00002, rampTime: 2, maxPressure: 1000000, elevation: 0, waterVolume: 0.1, initialTemperature: 20 }, variants: [
     { id: "dc12", label: "12 V DC solar circulator", cost: 60, spec: "12 V DC · 19 W · 5 m · 0.8 m³/h · constant speed", overrides: { mode: "constantSpeed", minSpeed: 30, ratedSpeed: 418.88, ratedFlow: 0.00015713, shutoffHead: 5, efficiency: 0.3, ratedVoltage: 12, minVoltage: 9, ratedPower: 19, standbyPower: 0.5, motorEfficiency: 70, inertia: 0.00001, rampTime: 1, maxPressure: 300000 } },
   ] },
   pipe: { label: "Pipe", category: "Hydraulic", description: "Darcy–Weisbach pipe with laminar/transition/turbulent friction, explicit physical length and water inventory in mixing cells (thermal transport delay)", spec: "5 m · Ø25 mm", cost: 12, prefix: "PL", ports: fluid, defaults: { length: 5, diameter: 0.025, roughness: 0.000045, maxPressure: 1000000, material: "steel", conductivity: 45, insulation: 0, thermalUA: 0, ambient: 20, elevation: 0, inventory: true, segments: 4, initialTemperature: 20 } },
@@ -1104,7 +1121,7 @@ const costDrivers: Partial<Record<Kind, (p: Record<string, Property>) => number>
   heater: p => +p.ratedPower, resistor: p => +p.ratedPower, lamp: p => +p.ratedPower, meter: () => 1,
   source: p => +p.ratedVoltage * +p.maxCurrent, fuse: p => +p.ratedCurrent, switch: p => +p.ratedPower,
   relay: p => +p.ratedCurrent * +p.ratedVoltage, safety: p => +p.ratedCurrent * +p.ratedVoltage,
-  motor: p => +p.ratedPower, panelRadiator: p => +p.ratedOutput, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
+  motor: p => +p.ratedPower, panelRadiator: p => +p.ratedOutput, underfloorHeating: p => +p.length * +p.loops, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
   cooler: p => +p.conductance, pipe: p => +p.length * (+p.diameter) ** 1.5, valve: p => (+p.diameter) ** 2,
   checkValve: p => (+p.diameter) ** 2, actuatedValve: p => (+p.diameter) ** 2, thermostaticValve: p => +p.kvs, cable: p => +p.area * +p.length,
 };

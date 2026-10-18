@@ -1,5 +1,6 @@
 import { projectAmbient, uid, type Project } from './model';
 import { solveLinear } from './linear-algebra';
+import { heatedFloorArea, roomCoupled } from './underfloor-heating';
 
 /** Thermal plans use schematic coordinates, independently of camera zoom and mechanical world geometry. */
 export const THERMAL_PLAN_SCALE = 100;
@@ -39,7 +40,8 @@ export function elementArea(p: Project, e: ThermalElement): number {
   const s = p.thermalSpaces!.find(s => s.id === e.from)!;
   return e.side === 'floor' || e.side === 'ceiling' ? floorArea(s) : (e.side === 'north' || e.side === 'south' ? s.width : s.length) * s.height;
 }
-export const opaqueArea = (p: Project, e: ThermalElement) => elementArea(p, e) - (p.thermalElements ?? []).filter(o => o.parentId === e.id).reduce((sum, o) => sum + elementArea(p, o), 0);
+/** Conducting area: gross area less openings and, for a floor, the area of underfloor loops laid on it. */
+export const opaqueArea = (p: Project, e: ThermalElement) => elementArea(p, e) - (e.kind === 'floor' || e.kind === 'ceiling' ? heatedFloorArea(p, e) : 0) - (p.thermalElements ?? []).filter(o => o.parentId === e.id).reduce((sum, o) => sum + elementArea(p, o), 0);
 export const ventilationConductance = (s: ThermalSpace) => AIR_DENSITY * AIR_CP * (s.ventilationMode === 'flow' ? s.ventilationFlow ?? 0 : s.airChangesPerHour * roomVolume(s) / 3600);
 export const spaceCapacity = (p: Project, s: ThermalSpace) => AIR_DENSITY * AIR_CP * roomVolume(s) + s.addedHeatCapacity + (p.thermalElements ?? []).reduce((sum, e) => sum + (e.from === s.id || e.to === s.id ? e.heatCapacity / (e.to === 'outdoors' ? 1 : 2) : 0), 0);
 export function makeThermalSpace(x = 0, y = 0, width = 5, length = 4): ThermalSpace {
@@ -70,7 +72,12 @@ export function thermalSpaceError(p: Project): string | null {
       const parent = p.thermalElements?.find(x => x.id === e.parentId);
       if (!parent || parent.kind !== 'wall' || parent.from !== e.from || parent.to !== e.to || e.area === undefined) return 'Windows and doors must belong to a wall with the same thermal endpoints.';
     } else if (e.parentId) return 'Only windows and doors can be openings.';
+    if ((e.kind === 'floor' || e.kind === 'ceiling') && opaqueArea(p, e) < 0) return `Underfloor heating covers more than the ${e.name} element's area.`;
     if (opaqueArea(p, e) < 0) return 'Window and door areas exceed the parent wall area.';
+  }
+  for (const s of p.thermalSpaces ?? []) {
+    const heated = p.components.reduce((sum, c) => sum + (c.kind === 'underfloorHeating' && c.thermalSpaceId === s.id && roomCoupled(p, c) ? c.props.heatedArea as number : 0), 0);
+    if (heated > floorArea(s) * (1 + 1e-9)) return `${s.name}: underfloor heating covers ${heated.toFixed(1)} m², more than the ${floorArea(s).toFixed(1)} m² floor.`;
   }
   if (p.challenge && ((p.thermalSpaces?.length ?? 0) > 0 || (p.thermalElements?.length ?? 0) > 0)) return 'Thermal Spaces are available in Free Sandbox; challenge environments are locked.';
   return null;

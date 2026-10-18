@@ -147,7 +147,9 @@
         "inertia": 0.00002,
         "rampTime": 2,
         "maxPressure": 1000000,
-        "elevation": 0
+        "elevation": 0,
+        "waterVolume": 0.1,
+        "initialTemperature": 20
       }
     },
     {
@@ -173,30 +175,40 @@
         "segments": 2,
         "initialTemperature": 25,
         "ambientMode": "inherit"
-      }
+      },
+      "thermalSpaceId": "heatPumpCold-space-1",
+      "thermalSpacePinned": true
     },
     {
       "id": "heatPumpCold-component-6",
-      "kind": "pipe",
-      "name": "Underfloor loop (equivalent)",
+      "kind": "underfloorHeating",
+      "name": "Underfloor heating · 12 loops",
       "x": 1300,
       "y": 560,
       "rotation": 0,
-      "variant": "standard",
+      "variant": "spacing100",
       "props": {
-        "length": 60,
-        "diameter": 0.032,
-        "roughness": 0.000045,
-        "maxPressure": 1000000,
-        "material": "steel",
-        "conductivity": 45,
-        "insulation": 0,
-        "thermalUA": 520,
+        "heatedArea": 120,
+        "loops": 12,
+        "pipeSpacing": 0.1,
+        "outerDiameter": 0.016,
+        "wallThickness": 0.002,
+        "diameter": 0.012,
+        "length": 99.99999999999999,
+        "roughness": 0.000007,
+        "screedCover": 0.045,
+        "screedConductivity": 1.2,
+        "screedDensity": 2000,
+        "screedSpecificHeat": 1000,
+        "coveringResistance": 0.1,
+        "downwardResistance": 2.6,
+        "systemConstant": 6.754,
+        "maxSurfaceTemperature": 29,
         "ambient": 20,
+        "initialTemperature": 33,
+        "maxPressure": 1000000,
+        "maxTemperature": 55,
         "elevation": 0,
-        "inventory": true,
-        "segments": 6,
-        "initialTemperature": 25,
         "ambientMode": "inherit"
       },
       "thermalSpaceId": "heatPumpCold-space-1",
@@ -225,7 +237,9 @@
         "segments": 2,
         "initialTemperature": 25,
         "ambientMode": "inherit"
-      }
+      },
+      "thermalSpaceId": "heatPumpCold-space-1",
+      "thermalSpacePinned": true
     },
     {
       "id": "heatPumpCold-component-8",
@@ -268,7 +282,9 @@
         "segments": 2,
         "initialTemperature": 25,
         "ambientMode": "inherit"
-      }
+      },
+      "thermalSpaceId": "heatPumpCold-space-1",
+      "thermalSpacePinned": true
     },
     {
       "id": "heatPumpCold-component-10",
@@ -293,7 +309,9 @@
         "segments": 2,
         "initialTemperature": 25,
         "ambientMode": "inherit"
-      }
+      },
+      "thermalSpaceId": "heatPumpCold-space-1",
+      "thermalSpacePinned": true
     },
     {
       "id": "heatPumpCold-component-11",
@@ -929,6 +947,14 @@
     },
     {
       "id": "heatPumpCold-probe-14",
+      "component": "heatPumpCold-component-6",
+      "measurement": "surfaceTemperature",
+      "name": "Floor surface",
+      "color": "#E6A0C4",
+      "visible": true
+    },
+    {
+      "id": "heatPumpCold-probe-15",
       "name": "House heat loss",
       "component": "heatPumpCold-space-1",
       "targetKind": "space",
@@ -937,7 +963,7 @@
       "color": "#8CC6F8"
     },
     {
-      "id": "heatPumpCold-probe-15",
+      "id": "heatPumpCold-probe-16",
       "component": "heatPumpCold-component-18",
       "measurement": "pressure",
       "name": "System pressure",
@@ -945,7 +971,7 @@
       "visible": true
     },
     {
-      "id": "heatPumpCold-probe-16",
+      "id": "heatPumpCold-probe-17",
       "component": "heatPumpCold-component-3",
       "measurement": "hotWater",
       "name": "Hot-water mode (VW1 → B)",
@@ -953,7 +979,7 @@
       "visible": true
     },
     {
-      "id": "heatPumpCold-probe-17",
+      "id": "heatPumpCold-probe-18",
       "component": "heatPumpCold-component-11",
       "measurement": "fluidTemperature",
       "name": "Cylinder sensor TW1",
@@ -961,7 +987,7 @@
       "visible": true
     },
     {
-      "id": "heatPumpCold-probe-18",
+      "id": "heatPumpCold-probe-19",
       "component": "heatPumpCold-component-11",
       "measurement": "topTemperature",
       "name": "Cylinder top",
@@ -969,7 +995,7 @@
       "visible": true
     },
     {
-      "id": "heatPumpCold-probe-19",
+      "id": "heatPumpCold-probe-20",
       "component": "heatPumpCold-component-11",
       "measurement": "heatDuty",
       "name": "Coil heat into the cylinder",
@@ -977,7 +1003,7 @@
       "visible": true
     },
     {
-      "id": "heatPumpCold-probe-20",
+      "id": "heatPumpCold-probe-21",
       "component": "heatPumpCold-component-3",
       "measurement": "energyResidual",
       "name": "Energy balance residual",

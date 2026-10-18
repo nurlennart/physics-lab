@@ -11,6 +11,7 @@ import {
 } from "./model";
 import { nodeVoltage } from "./electrical";
 import { sensorTemperature, storageEnthalpy } from "./storage-tank";
+import { screedKey, surfaceTemperature } from "./underfloor-heating";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
   roomTemperature: "°C", envelopeLoss: "W", ventilationLoss: "W", netHeat: "W", storedThermalEnergy: "J", temperatureRate: "K/s", adjacentHeat: "W", effectiveHeatCapacity: "J/K", internalHeat: "W",
@@ -18,6 +19,7 @@ export const units: Record<Measurement, string> = {
   gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
+  downwardLoss: "W", screedTemperature: "°C", surfaceTemperature: "°C", heatFlux: "W/m²",
   topTemperature: "°C", bottomTemperature: "°C", storedHeat: "kWh", vesselWater: "L", expansionVolume: "L", dischargedVolume: "L", hotWater: "bool", hotWaterCop: "1",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
   heatOutput: "W", backupPower: "W", environmentHeat: "W", cop: "1", compressorSpeed: "%", evaporatingTemperature: "°C", condensingTemperature: "°C", frostMass: "kg", defrosting: "bool", targetTemperature: "°C", seasonalCop: "1", heatEnergy: "J", compressorStarts: "1",
@@ -78,6 +80,10 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "returnTemperature": return h?.returnTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.returnTemperature - 273.15;
     case "supplyTemperature": return h?.supplyTemperature === undefined || Math.abs(h.flow) < 1e-12 ? null : h.supplyTemperature - 273.15;
     case "excessTemperature": return h?.excessTemperature ?? null;
+    case "downwardLoss": return h?.downwardLoss ?? 0;
+    case "screedTemperature": { const cells = s.multiphysics.pipeCells[screedKey(c.id)]; return cells?.length ? cells.reduce((a, t) => a + t, 0) / cells.length - 273.15 : null; }
+    case "heatFlux": return (h?.duty ?? 0) / prop(c, "heatedArea");
+    case "surfaceTemperature": return surfaceTemperature((h?.duty ?? 0) / prop(c, "heatedArea"), effectiveAmbient(s.project, c));
     case "heatInput": return h?.heatInput ?? 0;
     case "elementTemperature": return (s.multiphysics.elementStates()[c.id]?.elementTemperature ?? 293.15) - 273.15;
     case "heatOutput": return s.multiphysics.heatPumpView[c.id]?.heatOutput ?? 0;

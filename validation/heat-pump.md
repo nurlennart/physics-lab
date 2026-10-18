@@ -38,13 +38,13 @@ Production controller, water outlet held, air at the EN 14511 humidity, fixed co
 
 | Scenario | Outdoor (°C) | Hours | Net heat (kWh) | Outdoor-unit electricity (kWh) | Backup heat (kWh) | SPF | Defrosts | Starts | Max starts / h | Shortest run (s) | House air (°C) | Energy residual (J) | Wall time (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| House, 2 °C / 85 % RH (defrost) | 2 | 6 | 27.97 | 7.54 | 0.04 | 3.71 | 2 | 2 | 2 | 1840 | 20.72 | -1.55e-3 | 239.6 |
-| Cold snap, −15 °C (backup heater) | -15 | 3 | 14.94 | 6.59 | 2.62 | 2.27 | 0 | 1 | 1 | — | 18.12 | -5.72e-4 | 130.5 |
-| Mild day, 12 °C, one underfloor zone open (60 W/K): low-load cycling | 12 | 3 | 4.83 | 1.34 | 0.00 | 3.60 | 0 | 4 | 2 | 740 | 19.12 | -8.70e-4 | 136.2 |
+| House, 2 °C / 85 % RH (defrost) | 2 | 6 | 31.87 | 9.50 | 0.03 | 3.36 | 2 | 2 | 2 | 1840 | 20.86 | -3.49e-4 | 92.5 |
+| Cold snap, −15 °C (backup heater) | -15 | 6 | 30.14 | 14.10 | 2.11 | 2.14 | 0 | 1 | 1 | — | 19.54 | 1.70e-5 | 85.5 |
+| Mild day, 12 °C, heated floor reduced to 15 m² (≈ 60 W/K): low-load cycling | 12 | 3 | 4.44 | 1.29 | 0.00 | 3.46 | 0 | 3 | 2 | 840 | 19.16 | -1.75e-4 | 45.2 |
 
 ## 4. Timestep
 
-Fixed 0.1 s steps against adaptive 30 s macro steps (0.5 s heat-pump substeps), 10 min warm-up at 7 °C: flow temperature 43.7690 vs 43.7687 °C, compressor heat 2.6843 vs 2.6846 MJ.
+Fixed 0.1 s steps against adaptive 30 s macro steps (0.5 s heat-pump substeps), 10 min warm-up at 7 °C: flow temperature 43.7722 vs 43.7691 °C, compressor heat 2.6839 vs 2.6830 MJ.
 
 
 ## 5. Field comparison: measured Bosch Compress 5800i (4 kW), Zagreb
@@ -61,10 +61,10 @@ Source: heatpumpmonitor.org #920, Bosch Compress 5800i AW 4 kW (R290), Zagreb, r
 | Normal defrost heat from the water (kWh) | 0.269 | 0.416 | 0.372 (0.232–0.372–0.447) | calibrated (coil capacity) |
 | Intensive defrost duration (min) | 9.00 | 10.50 | 10.67 (9–10.667–15) | firmware minimum (documented 9–16 min) |
 | Intensive defrost heat from the water (kWh) | 0.829 | 1.031 | 0.839 (0.583–0.839–0.998) | predicted (not fitted) |
-| Flow dip, normal / intensive (K) | 7.1 / 14.6 | 12.6 / 13.4 | 12.3 / 20.7 | installation-dependent, unvalidated |
+| Flow dip, normal / intensive (K) | 6.7 / 16.1 | 12.6 / 13.4 | 12.3 / 20.7 | installation-dependent, unvalidated |
 | COP over 48 h incl. defrost | 3.58 | 2.97 | — | extrapolated (lab-calibrated cycle) |
 | Mean heat (W) | 2337 | 2313 | — | imposed (load) |
 
-Energy residual of the replay: 1.20e-6 J (wall time 276 s).
+Energy residual of the replay: -4.99e-7 J (wall time 188 s).
 
 Wall times are measured on the machine that ran this report, not a performance guarantee.
