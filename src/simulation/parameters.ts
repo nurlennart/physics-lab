@@ -48,6 +48,13 @@ const temperature = (label: string, description: string, group: ParamGroup = "th
   label, description, unit: "°C", group, policy, domain: [ABSOLUTE_ZERO, 10000], limitReason: "Temperature must be above absolute zero.",
 });
 const base: Record<string, Base> = {
+  circuits: { label: "Circuits", description: "Heating circuits on the manifold (Oventrop Multidis SF: 2–12). Each has a flow and a return port and an actuator input; ports beyond this number are not fitted.", group: "configuration", policy: "reset", domain: [2, 12], limitReason: "Multidis SF: 2–12 circuits." },
+  meterRange: { label: "Flow-meter range", description: "Oventrop: the flow meters in the flow bar read 0–5 l/min. A flow beyond the range pegs the sight glass (shown as > range).", unit: "l/min", group: "configuration", policy: "live", domain: [0.1, 100], positive: true, limitReason: POSITIVE },
+  actuatorTime: { label: "Actuator stroke time", description: "Time for a thermal (wax) actuator to open or close its circuit fully. Assumption: 180 s, typical of normally closed 230 V actuators (no dead time modelled).", unit: "s", group: "configuration", policy: "live", domain: [1, 3600], limitReason: "1 s – 1 h." },
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [
+    [`setting${i + 1}`, { label: `Circuit ${i + 1} regulating setting`, description: "Opening of the circuit's regulating insert in the flow bar: Kv = setting × kvs (linear, an assumption). Set it by hand, or balance the manifold to the planned flows while the system runs.", unit: "%", group: "configuration", policy: "live", domain: [0, 100], limitReason: "0–100 %." } as Base],
+    [`planned${i + 1}`, { label: `Circuit ${i + 1} planned flow`, description: "Design flow of the circuit (from the heating-load calculation, e.g. EN 1264-3), the target of balancing. Read on the flow meter in l/min.", unit: "l/min", group: "configuration", policy: "live", domain: [0, 100], limitReason: "0–100 l/min.", simulated: false } as Base],
+  ]).flat()),
   heatedArea: { label: "Heated floor area", description: "Floor area covered by the loop(s). In a Thermal Space it replaces the same area of the room's floor element, which must be at least this large.", unit: "m²", group: "configuration", policy: "reset", domain: [0.5, 2000], positive: true, limitReason: "0.5–2000 m².", typical: [2, 200] },
   loops: { label: "Parallel loops", description: "Identical loops sharing the heated area and the flow equally (one manifold circuit each). Loop length = area / (loops × spacing); EN 1264-3 practice keeps 16 mm loops below about 120 m.", unit: "1", group: "configuration", policy: "reset", domain: [1, 64], limitReason: "1–64 identical loops." },
   pipeSpacing: { label: "Pipe spacing T", description: "Centre distance of the pipes (Verlegeabstand). EN 1264-2 characteristic validity 50–375 mm.", unit: "m", group: "configuration", policy: "reset", domain: [0.05, 0.375], limitReason: "EN 1264-2 characteristic: 0.050 ≤ T ≤ 0.375 m.", display: { unit: "mm", scale: 1000 } },
@@ -372,6 +379,14 @@ for (const [key, label] of Object.entries({ coordinateSolar: 'Export surplus cha
 base.energyMode = { label: 'Energy management policy', description: 'Self-consumption, keep charged, or an explicit signed active-power command. Grid input current and converter limits still apply.', group: 'operating', policy: 'live', options: [{ value: 'selfConsumption', label: 'Self-consumption' }, { value: 'keepCharged', label: 'Keep batteries charged' }, { value: 'power', label: 'External active-power setpoint' }] };
 
 const overrides: Partial<Record<Kind, Record<string, Partial<ParamSpec>>>> = {
+  heatingManifold: {
+    kvs: { label: "kvs per circuit", description: "Oventrop Multidis SF type 140 43: kvs 1.1 m³/h (flow-meter insert fully open). Taken as the whole circuit's value through both bars (the tender text does not split it)." },
+    diameter: { label: "Circuit connection bore", description: "G ¾ loop connections; reference bore for the velocity reading only (assumed 20 mm)." },
+    maxPressure: { description: "Oventrop: 6 bar maximum operating pressure. Exceeding it is reported." },
+    maxTemperature: { description: "Oventrop: 80 °C maximum operating temperature. Water above it is reported." },
+    maxDifferentialPressure: { label: "Maximum differential pressure", description: "Oventrop: 1 bar between flow and return bar. Exceeding it reports an operating warning (noise, regulating range)." },
+    elevation: { description: "Height of the manifold; its bars are at this elevation." },
+  },
   solarPanel: { area: { label: 'Aperture area', description: 'Incident sunlight is irradiance times this aperture area; keep area compatible with the STC electrical ratings.', unit: 'm²', domain: [0.01, 100], typical: [1, 3] } },
   lfpBattery: {
     internalResistance: { label: 'Pack ohmic resistance', description: 'Series cell/connector resistance; I²R heats the battery thermal mass.' },

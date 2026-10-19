@@ -154,7 +154,8 @@ function Field({ c, field, value, s }: { c: Component; field: string; value: Pro
 }
 export function ParameterSections({ c }: { c: Component }) {
   const s = useLab();
-  const fields = Object.entries(c.props).filter(([k]) => k !== "ambient" || c.props.ambientMode === "override");
+  // A manifold's per-circuit settings and planned flows live in its circuit table.
+  const fields = Object.entries(c.props).filter(([k]) => (k !== "ambient" || c.props.ambientMode === "override") && !(c.kind === "heatingManifold" && /^(setting|planned)\d+$/.test(k)));
   const grouped = groupOrder.map((g) => [g, fields.filter(([k]) => (paramSpec(c.kind, k)?.group ?? "advanced") === g)] as const).filter(([, list]) => list.length);
   return (
     <>

@@ -1,3 +1,4 @@
+import { balance, circuitIndices, circuitKey } from '../simulation/heating-manifold';
 import { dimensions } from './geometry';
 import { makeThermalSpace, makeEnvelope, THERMAL_PLAN_SCALE, type ThermalSpace, type ThermalElement } from '../simulation/thermal-spaces';
 import { bindSpaceTemperatures } from '../simulation/environment';
@@ -318,6 +319,25 @@ export const actions = {
     const next = withProperty(state.project, c, key, value);
     if (edit({ ...next, components: next.components.map((x) => (x.id === id && x.preset ? { ...x, preset: undefined } : x)) }))
       sim.log(`${c.name}: ${paramSpec(c.kind, key)?.label ?? key} set to ${value}${paramSpec(c.kind, key)?.unit ? " " + paramSpec(c.kind, key)!.unit : ""}.`);
+  },
+  /**
+   * Hydraulic balancing of a manifold at the current operating point: every circuit's regulating insert is set for its
+   * planned flow at the measured bar-to-bar differential pressure (one undoable edit). Repeat while running to converge.
+   */
+  balanceManifold(id: string) {
+    const c = state.project.components.find((c) => c.id === id);
+    if (!c || c.kind !== "heatingManifold") return;
+    const r = sim.multiphysics.hydraulic.readings;
+    if (sim.time <= 0 || !r[id] || Math.abs(r[id].flow) < 1e-9) return toast(`${c.name}: balance with the system running and water flowing (advance the simulation first).`);
+    const flows = Object.fromEntries(circuitIndices(c).map((k) => [k, r[circuitKey(id, k)]?.flow ?? 0]));
+    const strokes = Object.fromEntries(circuitIndices(c).map((k) => [k, sim.multiphysics.positions[circuitKey(id, k)] ?? 100]));
+    const result = balance(c, flows, strokes, r[id].differentialPressure);
+    const props = { ...c.props, ...Object.fromEntries(result.map((b) => [`setting${b.circuit}`, b.next])) };
+    if (edit({ ...state.project, components: state.project.components.map((x) => (x.id === id ? { ...x, preset: undefined, props } : x)) })) {
+      const short = result.filter((b) => !b.reachable).map((b) => b.circuit);
+      sim.log(`${c.name}: balanced at Δp ${(r[id].differentialPressure / 1000).toFixed(1)} kPa — settings ${result.map((b) => `${b.circuit}: ${b.next} %`).join(", ")}.${short.length ? ` Circuit ${short.join(", ")} cannot reach its planned flow fully open.` : ""}`);
+      toast(short.length ? `${c.name}: circuit ${short.join(", ")} cannot reach its planned flow fully open (raise the pump head).` : `${c.name}: inserts set; advance and balance again to converge.`);
+    }
   },
   /** Restore the catalog values of every configuration parameter (keeps commands, targets, wiring). */
   resetDefaults(id: string) {

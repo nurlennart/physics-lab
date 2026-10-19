@@ -1,4 +1,4 @@
-import { definitions, isElectrical, isThermalMass, type Component, type Measurement } from "./model";
+import { definitions, isElectrical, isThermalMass, type Component, type Measurement, componentPorts } from "./model";
 
 const capabilityCache = new Map<string, Measurement[]>();
 export function measurements(c: Component): Measurement[] {
@@ -13,9 +13,9 @@ function componentMeasurements(c: Component): Measurement[] {
   return [...new Set<Measurement>([
     ...(c.spatial ? ['rpm', 'positionX', 'positionY', 'displacement', 'linearSpeed', 'velocityX', 'velocityY', 'angularVelocity', 'acceleration', 'appliedForce', 'appliedTorque', 'kineticEnergy', 'potentialEnergy', 'mechanicalResidual', 'contactImpulse', 'jointForce'] as Measurement[] : []),
     ...(c.kind === 'forceActuator' ? ['appliedForce', 'appliedTorque', 'energy'] as Measurement[] : []),
-    ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic") ? ["pressure", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
+    ...(componentPorts(c).some(p => p.domain === "hydraulic") ? ["pressure", "fluidTemperature", "transferredVolume", "massResidual", "energyResidual"] as Measurement[] : []),
     ...(["pipe", "valve", "actuatedValve", "thermostaticValve", "checkValve", "pump", "circulator", "pressureReducingValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "underfloorHeating"].includes(c.kind) ? ["differentialPressure", "velocity"] as Measurement[] : []),
-    ...(definitions[c.kind].ports.some(p => p.domain === "hydraulic" && p.id === "inlet") || c.kind === "heatExchanger" ? ["flow", "inletPressure"] as Measurement[] : []),
+    ...(componentPorts(c).some(p => p.domain === "hydraulic" && p.id === "inlet") || c.kind === "heatExchanger" ? ["flow", "inletPressure"] as Measurement[] : []),
     ...(c.kind === "electricBoiler" ? ["returnTemperature", "elementTemperature", "heatingStages", "heatingPower", "heatLoss", "heatDuty"] as Measurement[] : []),
     ...(c.kind === "heatPump" ? ["hotWater", "hotWaterCop", "targetTemperature", "returnTemperature", "heatOutput", "cop", "compressorSpeed", "evaporatingTemperature", "condensingTemperature", "environmentHeat", "frostMass", "defrosting", "backupPower", "elementTemperature", "heatDuty", "heatLoss", "seasonalCop", "heatEnergy", "compressorStarts"] as Measurement[] : []),
     ...(c.kind === "panelRadiator" ? ["supplyTemperature", "returnTemperature", "excessTemperature", "heatDuty", "heatInput"] as Measurement[] : []),
@@ -24,6 +24,7 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(c.kind === "expansionVessel" ? ["vesselWater", "expansionVolume"] as Measurement[] : []),
     ...(c.kind === "safetyValve" ? ["differentialPressure", "position", "dischargedVolume"] as Measurement[] : []),
     ...(c.kind === "divertingValve" ? ["differentialPressure", "position"] as Measurement[] : []),
+    ...(c.kind === "heatingManifold" ? ["flow", "differentialPressure"] as Measurement[] : []),
     ...(c.kind === "pipe" ? ["reynolds", "frictionFactor"] as Measurement[] : []),
     ...(c.kind === "tank" ? ["level", "overflow", "overflowVolume"] as Measurement[] : []),
     ...(c.kind === "pump" || c.kind === "circulator" ? ["hydraulicPower", "impellerPower", "mechanicalLoss", "hydraulicEfficiency"] as Measurement[] : []),
@@ -54,11 +55,11 @@ function componentMeasurements(c: Component): Measurement[] {
     ...(isThermalMass(c) || ["sensor", "thermostat", "safety"].includes(c.kind)
       ? ["temperature" as const]
       : []),
-    ...(definitions[c.kind].ports.some((p) => p.domain === "electrical")
+    ...(componentPorts(c).some((p) => p.domain === "electrical")
       ? ["nodeVoltage" as const]
       : []),
     "state",
-    ...(definitions[c.kind].ports.some(
+    ...(componentPorts(c).some(
       (p) => p.domain === "control" && p.direction === "out",
     )
       ? ["signal" as const]
@@ -112,6 +113,12 @@ export function measurementLabel(c: Component, m: Measurement, ac?: boolean): st
     if (m === "fluidTemperature") return "vessel water temperature";
   }
   if (c.kind === "safetyValve" && m === "position") return "valve lift";
+  if (c.kind === "heatingManifold") {
+    if (m === "flow") return "total flow through the bars (all circuits)";
+    if (m === "differentialPressure") return "flow-bar to return-bar differential pressure";
+    if (m === "fluidTemperature") return "flow-bar water temperature";
+    if (m === "pressure") return "flow-bar gauge pressure";
+  }
   if (c.kind === "divertingValve") {
     if (m === "position") return "position (0 % = A, 100 % = B)";
     if (m === "flow") return "flow through the common port AB";

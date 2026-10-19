@@ -3,6 +3,7 @@ import { roomMeasurements } from './thermal-spaces';
 import { hybridStarter, hybridTitles, type HybridMode } from './hybrid-projects';
 import { solarStarter, solarTitles, type SolarMode } from './solar-projects';
 import { heatPumpStarter, heatPumpTitles, type HeatPumpMode } from './heat-pump-projects';
+import { manifoldStarter } from './manifold-projects';
 import { deviceStarter, type DeviceMode } from "./device-projects";
 import { compatibleTarget, legacyUnavailableMeasurement } from "./capabilities";
 import { hydraulicStarter, industrialStarter, heatExchangerStarter, type HydraulicMode } from "./hydraulic-projects";
@@ -17,16 +18,16 @@ import {
   type Kind,
   type Project,
   type Component,
-  type Measurement,
-} from "./model";
+  type Measurement, componentPorts } from "./model";
 export function starter(
-  mode: "thermostaticRoom" | "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode | HeatPumpMode = "heat",
+  mode: "thermostaticRoom" | "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode | HeatPumpMode | "manifoldRooms" = "heat",
   challenge = false,
 ): Project {
   if (mode === "livingRoom" || mode === "roomCooldown" || mode === "thermostaticRoom") return thermalStarter(mode);
   if (mode in hybridTitles) return hybridStarter(mode as HybridMode);
   if (mode in solarTitles) return solarStarter(mode as SolarMode);
   if (mode in heatPumpTitles) return heatPumpStarter(mode as HeatPumpMode);
+  if (mode === 'manifoldRooms') return manifoldStarter();
   if (["battery", "capacitor", "inductor", "contactor", "transformer", "radiator", "circulator", "boiler", "kermi", "sealedBoiler"].includes(mode)) return deviceStarter(mode as DeviceMode);
   if (['mechanism', 'rotor', 'descent', 'lift', 'rotation'].includes(mode)) return mechanicalStarter(mode as MechanicalMode, challenge);
   if (mode === "exchanger") return heatExchangerStarter();
@@ -373,7 +374,7 @@ export function parseProject(input: unknown): Project {
     if (error) throw Error(error);
     const c = p.components.find((c) => c.id === w.from.component)!;
     if (
-      definitions[c.kind].ports.find((x) => x.id === w.from.port)?.domain !==
+      componentPorts(c).find((x) => x.id === w.from.port)?.domain !==
       w.domain
     )
       throw Error("Invalid connection domain.");
@@ -479,7 +480,7 @@ export function validateProbes(p: Project) {
       !p.components.some(
         (c) =>
           c.id === probe.reference!.component &&
-          definitions[c.kind].ports.some(
+          componentPorts(c).some(
             (x) => x.domain === "electrical" && x.id === probe.reference!.port,
           ),
       )
@@ -487,7 +488,7 @@ export function validateProbes(p: Project) {
       throw Error("Invalid voltage reference terminal.");
     if (
       probe.measurement === "nodeVoltage" &&
-      !definitions[c.kind].ports.some(
+      !componentPorts(c).some(
         (x) => x.domain === "electrical" && x.id === probe.terminal,
       )
     )

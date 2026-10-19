@@ -2,12 +2,14 @@ import {
   definitions,
   type Component,
   type Connection,
-  type Point,
-} from "../simulation/model";
+  type Point, componentPorts } from "../simulation/model";
+/** Manifold face: one 72 px column per circuit (flow and return ports below, 34 px apart; actuator input above the return). */
+export const MANIFOLD_PITCH = 72, MANIFOLD_LEFT = 40, MANIFOLD_RETURN = 34;
+const manifoldCircuits = (c: Component) => Math.max(2, Math.min(12, Math.round(Number(c.props.circuits) || 2)));
 export function dimensions(c: Component) {
   return {
-    w: c.kind === "tank" ? 202 : c.kind === "switch" ? 154 : 174,
-    h: c.kind === "tank" ? 170 : c.kind === "switch" ? 100 : c.kind === "storageTank" ? 220 : 132,
+    w: c.kind === "heatingManifold" ? Math.max(220, MANIFOLD_LEFT + MANIFOLD_PITCH * manifoldCircuits(c) - 4) : c.kind === "tank" ? 202 : c.kind === "switch" ? 154 : 174,
+    h: c.kind === "tank" ? 170 : c.kind === "switch" ? 100 : c.kind === "storageTank" ? 220 : c.kind === "heatingManifold" ? 168 : 132,
   };
 }
 /** Storage-tank face: the water column spans y = 44 (top) … 160 (base), below the 31 px name band and above the readouts. */
@@ -15,7 +17,15 @@ export const STORAGE_TOP = 44, STORAGE_BASE = 160;
 export const storageY = (percent: number) => Math.max(STORAGE_TOP + 4, Math.min(STORAGE_BASE - 4, STORAGE_BASE - (STORAGE_BASE - STORAGE_TOP) * percent / 100));
 export function portLocal(c: Component, port: string): Point {
   const { w, h } = dimensions(c);
-  const p = definitions[c.kind].ports.find((p) => p.id === port);
+  const p = componentPorts(c).find((p) => p.id === port);
+  // Manifold: supply and return on the left (flow bar above the return bar); circuit k's flow and return ports below its
+  // column, its actuator input above.
+  if (c.kind === 'heatingManifold') {
+    if (port === 'supply') return { x: -12, y: 46 };
+    if (port === 'return') return { x: -12, y: 108 };
+    const m = /^(flow|return|act)(\d+)$/.exec(port), x = MANIFOLD_LEFT + MANIFOLD_PITCH * (Number(m?.[2] ?? 1) - 1);
+    return m?.[1] === 'act' ? { x: x + MANIFOLD_RETURN, y: -12 } : { x: m?.[1] === 'flow' ? x : x + MANIFOLD_RETURN, y: h + 12 };
+  }
   if (c.kind === 'electricBoiler' && p?.domain === 'electrical') return { x: 22 + ['L1', 'L2', 'L3', 'N', 'PE'].indexOf(port) * 32, y: -12 };
   if (c.kind === 'electricBoiler' && p?.domain === 'control') return { x: 30 + ['enable', 'setpoint', 'reset'].indexOf(port) * 56, y: h + 12 };
   // Heat pump: outdoor-unit and backup-heater supplies on top, controls below, water through the sides.
@@ -42,7 +52,7 @@ export function portLocal(c: Component, port: string): Point {
     if (["relay", "safety", "cooler", "motor", "circulator", "actuatedValve", "divertingValve", "breaker", "motorProtector", "starDeltaStarter", "softStarter", "vfd"].includes(c.kind))
       return { x: ["in", "enable", "position", "run", "start"].includes(port) ? w * 0.3 : w * 0.7, y: h + 12 };
     if (p.direction === "out") return { x: w + 12, y: h / 2 };
-    const inputs = definitions[c.kind].ports.filter(
+    const inputs = componentPorts(c).filter(
       (p) => p.direction === "in",
     );
     return { x: -12, y: 48 + inputs.findIndex((p) => p.id === port) * 36 };
@@ -177,7 +187,7 @@ function computeRoutes(cs: Component[], ws: Connection[]): Map<string, Point[]> 
   const parent = new Map<string, string>();
   const find = (k: string): string => { const p = parent.get(k) ?? k; if (p === k) return k; const r = find(p); parent.set(k, r); return r; };
   for (const w of ws) parent.set(find(`${w.from.component}:${w.from.port}`), find(`${w.to.component}:${w.to.port}`));
-  const terminals = new Map(cs.flatMap((c) => definitions[c.kind].ports.map((port) => [`${c.id}:${port.id}`, { p: portPoint(c, port.id), dir: portDirection(c, port.id) }] as const)));
+  const terminals = new Map(cs.flatMap((c) => componentPorts(c).map((port) => [`${c.id}:${port.id}`, { p: portPoint(c, port.id), dir: portDirection(c, port.id) }] as const)));
   const all = [...terminals.values()], stub = (c: Component, port: string) => { const t = terminals.get(`${c.id}:${port}`)!; return stubLength(c, t.p, t.dir, all); };
   const ends: { w: Connection; a: Point; b: Point; sa: Point; sb: Point; da: Dir; db: Dir; net: string }[] = [];
   for (const w of ws) {
@@ -229,7 +239,7 @@ function computeRoutes(cs: Component[], ws: Connection[]): Map<string, Point[]> 
   const mark = (m: Int32Array, k: number, net: number) => { m[k] = m[k] === -1 || m[k] === net ? net : -2; };
   // Terminals with their stubs, each owned by its net (an unwired terminal is a net of its own).
   const terminalH = occupancy(), terminalV = occupancy();
-  for (const c of cs) for (const port of definitions[c.kind].ports) {
+  for (const c of cs) for (const port of componentPorts(c)) {
     const { p, dir } = terminals.get(`${c.id}:${port.id}`)!, l = stub(c, port.id), q = { x: p.x + DX[dir] * l, y: p.y + DY[dir] * l };
     const net = netOf(`${c.id}:${port.id}`);
     cover({ x0: Math.min(p.x, q.x) - 6, y0: Math.min(p.y, q.y) - 6, x1: Math.max(p.x, q.x) + 6, y1: Math.max(p.y, q.y) + 6 }, (e) => mark(terminalH, e, net), (e) => mark(terminalV, e, net));

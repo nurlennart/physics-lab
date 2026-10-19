@@ -42,6 +42,7 @@ for (const [kind, title, label] of [
   ['expansionVessel', 'Sealed boiler circuit: expansion vessel and safety valve', 'Membrane expansion vessel'],
   ['safetyValve', 'Sealed boiler circuit: expansion vessel and safety valve', 'Safety valve · 3.0 bar'],
   ['divertingValve', 'Heat pump and underfloor heating', 'position (0 % = A, 100 % = B)'],
+  ['heatingManifold', 'Underfloor manifold: three rooms', 'Oventrop Multidis SF'],
   ['battery', 'Finite battery discharge', 'state of charge'],
   ['capacitor', 'Charging a capacitor', 'stored field energy'],
   ['inductor', 'Switching an inductor', 'stored field energy'],
@@ -83,6 +84,11 @@ for (const [kind, title, label] of [
     await expect(page.getByRole('img', { name: /EN 1264 characteristic/ })).toBeVisible();
     await expect(page.getByTestId('underfloor-basis-fitted')).toContainText('6.754');
     expect((Object.values(state.hydraulics.readings) as any[]).some(r => r.duty > 1000 && r.downwardLoss > 0 && r.screedTemperature > 300)).toBe(true);
+  }
+  if (kind === 'heatingManifold') {
+    await expect(page.getByTestId('manifold-status')).toContainText('l/min in total');
+    await expect(page.getByTestId('manifold-circuits').locator('tbody tr')).toHaveCount(3);
+    await expect(page.getByTestId('manifold-basis-manufacturer')).toContainText('kvs 1.1');
   }
   if (kind === 'expansionVessel') {
     await expect(page.getByTestId('vessel-status')).toContainText('bar');

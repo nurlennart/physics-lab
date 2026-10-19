@@ -1,5 +1,5 @@
 import {
-  Waves, Fan, Gauge, GitBranch, Pipette, Star, TrendingUp, Grid3x3,
+  Waves, Fan, Gauge, GitBranch, Pipette, Star, TrendingUp, Grid3x3, Columns4,
   BatteryCharging,
   Zap,
   Lightbulb,
@@ -24,7 +24,7 @@ export const kindIcons: Record<Kind, LucideIcon> = {
   resistor: Zap,
   lamp: Lightbulb,
   switch: ToggleRight,
-  heater: Flame, electricBoiler: Flame, panelRadiator: Heater, underfloorHeating: Grid3x3, heatPump: Fan, storageTank: Cylinder, expansionVessel: Gauge, safetyValve: Droplets, divertingValve: GitBranch,
+  heater: Flame, electricBoiler: Flame, panelRadiator: Heater, underfloorHeating: Grid3x3, heatingManifold: Columns4, heatPump: Fan, storageTank: Cylinder, expansionVessel: Gauge, safetyValve: Droplets, divertingValve: GitBranch,
   tank: Container,
   ground: Earth,
   fuse: Shield,

@@ -1,3 +1,4 @@
+import { circuitIndices, circuitKey } from "./heating-manifold";
 import { type SpaceReading } from "./thermal-spaces";
 import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
 import { belowBoundary, screedKey, surfaceTemperature } from "./underfloor-heating";
@@ -451,6 +452,8 @@ export class Simulation {
       if (c.kind === "actuatedValve" || c.kind === "pressureReducingValve") limit = Math.min(limit, prop(c, "responseTime") / 50);
       // A diverting valve resolves its changeover; standing at A or B it bounds nothing (a new command ends the step first).
       if (c.kind === "divertingValve" && this.multiphysics.valveTravel[c.id]) limit = Math.min(limit, prop(c, "responseTime") / 50);
+      // Manifold actuators bound the step only while one travels.
+      if (c.kind === "heatingManifold" && circuitIndices(c).some(k => this.multiphysics.valveTravel[circuitKey(c.id, k)])) limit = Math.min(limit, prop(c, "actuatorTime") / 50);
       if (c.kind === "thermostaticValve") limit = Math.min(limit, 5, prop(c, "sensorTimeConstant") / 20);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
       if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
@@ -495,7 +498,7 @@ export class Simulation {
     return run;
   }
   private hasFluidsOrMotors() {
-    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve", "heatingManifold"].includes(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -820,10 +823,11 @@ export class Simulation {
         this.ambientEnergy += l.ua * (temperatures[i] - l.ambient) * dt;
     });
     if (coupled) {
-      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve", "underfloorHeating"].includes(c.kind))) {
+      for (const c of p.components.filter(c => ["tank", "pipe", "pump", "circulator", "valve", "checkValve", "actuatedValve", "thermostaticValve", "fluidJunction", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve", "heatingManifold", "underfloorHeating"].includes(c.kind))) {
         const r = this.multiphysics.hydraulic.readings[c.id];
         if (r && Math.max(r.pressure, r.inletPressure) > prop(c, "maxPressure")) this.violation(`${c.name}: hydraulic pressure rating exceeded.`, "error");
         if (r && c.kind === "thermostaticValve" && Math.abs(r.differentialPressure) > prop(c, "maxDifferentialPressure")) this.violation(`${c.name}: thermostatic regulating differential pressure exceeded.`);
+        if (r && c.kind === "heatingManifold" && Math.abs(r.differentialPressure) > prop(c, "maxDifferentialPressure")) this.violation(`${c.name}: flow-to-return bar differential pressure above ${prop(c, "maxDifferentialPressure") / 1e5} bar (Oventrop limit).`);
       }
       for (const c of p.components.filter((c) => c.kind === "tank")) {
         // Start/stop events use a 1e-6 m³/s (0.06 L/min) reporting threshold: a draining weir decays
@@ -905,7 +909,7 @@ export class Simulation {
         if (water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
         if (water >= 100 || water < 0) { this.error = `${c.name}: water left the supported liquid range (0–100 °C). Simulation paused.`; this.violation(this.error, 'error'); }
       }
-      if (c.kind === 'thermostaticValve') {
+      if (c.kind === 'thermostaticValve' || c.kind === 'heatingManifold') {
         const water = this.fluidTemperatureMeasurement(c.id);
         if (water !== undefined && water > prop(c, 'maxTemperature')) this.violation(`${c.name}: water above its ${prop(c, 'maxTemperature')} °C operating rating.`);
       }

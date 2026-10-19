@@ -1,8 +1,9 @@
 import { effectiveAmbient } from "./environment";
 import { boilerExchange, boilerWaterCapacity } from './boiler';
 import { PANEL_CELLS, panelCellCapacity, panelExchange } from './panel-radiator';
+import { circuitFraction, circuitIndices, circuitKey } from './heating-manifold';
 import { FLOOR_CELLS, belowBoundary, belowKey, floorCellCapacity, floorExchange, floorWaterMass, loopCount, screedCapacity, screedKey } from './underfloor-heating';
-import { definitions, derived, prop, textProp, terminalKey, type Component, type Project } from './model';
+import { definitions, derived, prop, textProp, terminalKey, type Component, type Project, componentPorts } from './model';
 import { solveLinear } from './electrical';
 import { GRAVITY as G, WATER_CP as CP, WATER_RHO as RHO, unitsSI as U } from './units';
 import { viscosityK, inventoryVolume } from './water';
@@ -81,7 +82,7 @@ export const weirFlow = (length: number, surcharge: number) => surcharge > 0 ? (
 /** Surcharge of a tank's free surface above its rim (m). */
 export const tankSurcharge = (c: Component, volume: number) => Math.max(0, volume - U.litersToM3(prop(c, 'capacity'))) / prop(c, 'surfaceArea');
 export const emptyHydraulics = (): HydraulicResult => ({ readings: {}, potentials: {}, residual: 0, pressureResidual: 0, iterations: 0, converged: true, diagnostics: [], branches: [], tankNodes: {}, terminalNodes: {}, nodeTemperatures: {}, weir: {} });
-export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve', 'divertingValve', 'underfloorHeating']);
+export const branchKinds = new Set(['pipe', 'valve', 'checkValve', 'actuatedValve', 'thermostaticValve', 'pump', 'circulator', 'pressureReducingValve', 'heatExchanger', 'radiator', 'electricBoiler', 'panelRadiator', 'heatPump', 'storageTank', 'safetyValve', 'divertingValve', 'underfloorHeating', 'heatingManifold']);
 /** Internal node of a sealed storage tank: all its ports connect to it through short nozzle branches. */
 export const interiorNode = (c: Component) => `${c.id}:interior`;
 /** Key of a storage tank's coil cells in the cell store. */
@@ -94,9 +95,13 @@ export type ElementState = { elementTemperature: number };
 export const isPump = (c: Component) => c.kind === 'pump' || c.kind === 'circulator';
 /** Positioned valves: their opening is simulation state (actuator / regulator travel). */
 export const positionedValves = new Set(['actuatedValve', 'thermostaticValve', 'pressureReducingValve']);
-const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve', 'safetyValve', 'divertingValve']);
-/** Opening (%) of one branch: a diverting valve's position is the share of path B; path A has the complement. */
+const valveKinds = new Set(['valve', 'actuatedValve', 'thermostaticValve', 'checkValve', 'pressureReducingValve', 'safetyValve', 'divertingValve', 'heatingManifold']);
+/**
+ * Opening (%) of one branch: a diverting valve's position is the share of path B; path A has the complement. A manifold
+ * circuit (part `cK`) opens by its regulating setting times its actuator stroke.
+ */
 const branchOpening = (c: Component, part: string | undefined, positions: Record<string, number>) => {
+  if (c.kind === 'heatingManifold') { const k = Number(part!.slice(1)); return 100 * circuitFraction(prop(c, `setting${k}`), positions[circuitKey(c.id, k)] ?? 100); }
   const position = positions[c.id] ?? prop(c, c.kind === 'divertingValve' ? 'position' : 'opening');
   return c.kind === 'divertingValve' ? (part === 'a' ? 100 - position : position) : position;
 };
@@ -326,9 +331,11 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
   const cached = byProject.get(key);
   if (cached) return cached;
   const uf = new Union();
-  const cs = project.components.filter(c => definitions[c.kind].ports.some(p => p.domain === 'hydraulic'));
-  for (const c of cs) for (const p of definitions[c.kind].ports.filter(p => p.domain === 'hydraulic')) uf.find(`${c.id}:${p.id}`);
+  const cs = project.components.filter(c => componentPorts(c).some(p => p.domain === 'hydraulic'));
+  for (const c of cs) for (const p of componentPorts(c).filter(p => p.domain === 'hydraulic')) uf.find(`${c.id}:${p.id}`);
   for (const c of cs.filter(c => c.kind === 'storageTank')) uf.find(interiorNode(c));
+  // Manifold: the return bar is one node joining every circuit's return port and the main return.
+  for (const c of cs.filter(c => c.kind === 'heatingManifold')) for (const k of circuitIndices(c)) uf.join(`${c.id}:return`, `${c.id}:return${k}`);
   for (const w of project.connections.filter(w => w.domain === 'hydraulic' && !disconnected.has(w.id))) uf.join(terminalKey(w.from), terminalKey(w.to));
   const terminalNodes: Record<string, string> = {};
   for (const k of uf.p.keys()) terminalNodes[k] = uf.find(k);
@@ -339,6 +346,9 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
   const connected = (c: Component, port: string) => (terminals.get(node(c, port)) ?? 0) > 1;
   const branches = cs.filter(c => branchKinds.has(c.kind)).flatMap((c): Branch[] => c.kind === 'heatExchanger'
     ? [{ id: `${c.id}#hot`, stream: 'hot', c, a: node(c, 'hotIn'), b: node(c, 'hotOut') }, { id: `${c.id}#cold`, stream: 'cold', c, a: node(c, 'coldIn'), b: node(c, 'coldOut') }]
+    : c.kind === 'heatingManifold'
+      // One branch per fitted, connected circuit: flow bar → regulating insert → loop port (the loop returns to the bar node).
+      ? circuitIndices(c).filter(k => connected(c, `flow${k}`)).map((k): Branch => ({ id: circuitKey(c.id, k), part: `c${k}`, c, a: node(c, 'supply'), b: node(c, `flow${k}`) }))
     : c.kind === 'divertingValve'
       ? [{ id: `${c.id}#a`, part: 'a', c, a: node(c, 'inlet'), b: node(c, 'outletA') }, { id: `${c.id}#b`, part: 'b', c, a: node(c, 'inlet'), b: node(c, 'outletB') }]
     : c.kind === 'storageTank'
@@ -358,7 +368,7 @@ function hydraulicTopology(project: Project, disconnected: Set<string>): Hydraul
     ofKind: (kind: string) => byKind.get(kind) ?? [], kinds: new Map(cs.map(c => [c.id, c.kind])), terminalCount,
     // A circulator's own water does not prime its circuit (an unprimed pump still runs dry).
     primers: cs.filter(c => (pipeCells(c) && c.kind !== 'circulator') || c.kind === 'storageTank').sort((a, b) => Number(elementKinds.has(b.kind)) - Number(elementKinds.has(a.kind))),
-    fluidPorts: cs.filter(c => !branchKinds.has(c.kind) && definitions[c.kind].ports.some(p => p.id === 'fluid')) };
+    fluidPorts: cs.filter(c => !branchKinds.has(c.kind) && componentPorts(c).some(p => p.id === 'fluid')) };
   byProject.set(key, topology);
   return topology;
 }
@@ -464,7 +474,7 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
     const mu = viscosityK(nodeTemperature(forward ? br.a : br.b));
     return {
       linear: prop(c, key('laminarK')) * mu / (2 * d * area) / fraction ** 2,
-      quadratic: c.kind === 'thermostaticValve' || c.kind === 'safetyValve' || c.kind === 'divertingValve' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, key('lossCoefficient')) / fraction ** 2 * RHO / (2 * area ** 2),
+      quadratic: c.kind === 'thermostaticValve' || c.kind === 'safetyValve' || c.kind === 'divertingValve' || c.kind === 'heatingManifold' ? 1e5 * (3600 / prop(c, 'kvs') / fraction) ** 2 : prop(c, key('lossCoefficient')) / fraction ** 2 * RHO / (2 * area ** 2),
       offset: c.kind === 'checkValve' && !stuckOpen ? prop(c, 'crackingPressure') : 0,
       mu,
     };
@@ -668,6 +678,12 @@ export function solveHydraulic(project: Project, tanks: Record<string, TankState
   for (const c of topology.ofKind('divertingValve')) {
     const [a, b] = ['a', 'b'].map(part => result.readings[`${c.id}#${part}`]);
     if (a && b) result.readings[c.id] = { ...(Math.abs(b.flow) > Math.abs(a.flow) ? b : a), flow: a.flow + b.flow, hydraulicPower: 0 };
+  }
+  // Manifold: total flow through the bars, gauge pressure in the flow bar and the bar-to-bar differential pressure.
+  for (const c of topology.ofKind('heatingManifold')) {
+    const s = topology.terminalNodes[`${c.id}:supply`], r = topology.terminalNodes[`${c.id}:return`], parts = result.branches.filter(b => b.component === c.id);
+    const flow = parts.reduce((sum, b) => sum + b.flow, 0), pressure = p[s] * 1000 - RHO * G * prop(c, 'elevation');
+    result.readings[c.id] = { flow, pressure, inletPressure: pressure, differentialPressure: (p[s] - p[r]) * 1000, velocity: 0, reynolds: 0, frictionFactor: 0, hydraulicPower: 0, impellerPower: 0, shaftPower: 0, mechanicalLoss: 0, hydraulicEfficiency: null, efficiency: null, torque: 0, temperature: 293.15 };
   }
   // Storage tank: throughput (sum of the inflows) and the gauge pressure at the tank base.
   for (const c of topology.ofKind('storageTank')) {
@@ -933,6 +949,11 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   for (const [id, d] of Object.entries(duty)) {
     const q = d.coefficient * (at(d.hot) - at(d.cold));
     for (const key of [id, `${id}#hot`, `${id}#cold`]) if (result.readings[key]) result.readings[key].duty = q;
+  }
+  // Manifold: water temperature in the flow bar.
+  for (const c of project.components.filter(c => c.kind === 'heatingManifold')) {
+    const i = index.get(result.terminalNodes[`${c.id}:supply`]);
+    if (i !== undefined && result.readings[c.id] && Math.abs(result.readings[c.id].flow) > STAGNANT_FLOW) Object.assign(result.readings[c.id], { temperature: temperatures[i], temperatureValid: true });
   }
   // Diverting valve: water temperature at its common port.
   for (const c of project.components.filter(c => c.kind === 'divertingValve')) {

@@ -1,4 +1,4 @@
-import { definitions, isSource, perPoleKinds, prop, terminalKey, type Component, type Project } from "./model";
+import { definitions, isSource, perPoleKinds, prop, terminalKey, type Component, type Project, componentPorts } from "./model";
 import { actualResistance } from "./parameters";
 import { machineParams, currents, midpointThevenin, midpointState, airGapTorque, rotorCopper, steadyCircuit, type MachineParams } from "./induction";
 import { expm, preciseDot, solveComplex, solveLinear, solveLyapunov } from "./linear-algebra";
@@ -256,8 +256,8 @@ function electricalTopology(project: Project, disconnected: Set<string>): Electr
   const cached = byProject.get(key);
   if (cached) return cached;
   const uf = new Union();
-  const cs = project.components.filter((c) => definitions[c.kind].ports.some((p) => p.domain === "electrical"));
-  for (const c of cs) for (const p of definitions[c.kind].ports.filter((p) => p.domain === "electrical")) uf.find(`${c.id}:${p.id}`);
+  const cs = project.components.filter((c) => componentPorts(c).some((p) => p.domain === "electrical"));
+  for (const c of cs) for (const p of componentPorts(c).filter((p) => p.domain === "electrical")) uf.find(`${c.id}:${p.id}`);
   for (const w of project.connections.filter((w) => w.domain === "electrical" && !disconnected.has(w.id))) uf.join(terminalKey(w.from), terminalKey(w.to));
   const grounds = cs.filter((c) => c.kind === "ground");
   for (const g of grounds.slice(1)) uf.join(`${g.id}:a`, `${grounds[0].id}:a`);
@@ -266,7 +266,7 @@ function electricalTopology(project: Project, disconnected: Set<string>): Electr
   const ports = new Map<string, Record<string, string>>(), terminals: string[] = [];
   for (const c of cs) {
     const byPort: Record<string, string> = {};
-    for (const p of definitions[c.kind].ports.filter((p) => p.domain === "electrical")) terminals.push(byPort[p.id] = root.get(`${c.id}:${p.id}`)!);
+    for (const p of componentPorts(c).filter((p) => p.domain === "electrical")) terminals.push(byPort[p.id] = root.get(`${c.id}:${p.id}`)!);
     ports.set(c.id, byPort);
   }
   const topology = { cs, grounds, root, ports, terminals, rootEntries: [...root], islandCache: new Map<string, IslandStructure>() };
@@ -332,7 +332,7 @@ export function solveElectricalCore(
    * Each starter feeds exactly one induction motor: from its motor terminal through series two-terminal
    * elements (cable, overload relay, breaker, meter, …) to the motor's terminal a, without branches.
    */
-  const terminals = (c: Component) => definitions[c.kind].ports.filter((p) => p.domain === "electrical").map((p) => node(c.id, p.id));
+  const terminals = (c: Component) => componentPorts(c).filter((p) => p.domain === "electrical").map((p) => node(c.id, p.id));
   const structural = cs.filter((c) => c.kind !== "ground" && c.kind !== "junction");
   const feeder = (st: Component) => {
     let at = node(st.id, "b"), previous = st;

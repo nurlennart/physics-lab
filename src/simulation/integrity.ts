@@ -9,8 +9,7 @@ import {
   type Component,
   type Project,
   type Property,
-  type ChallengeId,
-} from "./model";
+  type ChallengeId, componentPorts } from "./model";
 import { spatialError, spatialSignature } from './spatial-model';
 import { applyDerived, derivedError, domainError, editEffects, paramSpec, type EditPolicy } from "./parameters";
 import { challengeDefinition, isChallengeId } from './challenges';
@@ -110,7 +109,7 @@ export function challengeError(
     return "Challenge environment is locked at the assignment ambient temperature.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatingManifold", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
   }
@@ -124,7 +123,7 @@ export function challengeError(
   for (const c of p.components) {
     if (!rules.allowed.includes(c.kind))
       return `${c.name}: this component is unavailable in the assignment.`;
-    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
+    if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatingManifold", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
     const error = catalogError(c);
     if (error) return error;
     if ('ambient' in c.props && prop(c, 'ambient') !== rules.ambient)
@@ -230,6 +229,7 @@ export function componentError(c: Component): string | null {
     // The characteristic's flux cannot exceed what the screed above the pipe plane conducts (water at the plane).
     if (characteristic(c) * upwardResistance(c) >= 0.98) return `${c.name}: this spacing, pipe and covering give an EN 1264 characteristic beyond the one-node screed model (K_H·R_o ≥ 0.98).`;
   }
+  if (c.kind === "heatingManifold" && !Number.isInteger(prop(c, "circuits"))) return `${c.name}: the number of circuits must be an integer.`;
   if (c.kind === "hysteresis" && prop(c, "low") >= prop(c, "high"))
     return "Low threshold must be below high threshold.";
   if (
@@ -266,6 +266,12 @@ export function transitionError(
   if (next.components.length > 100 || next.connections.length > 300) return 'Scene limit: 100 components/bodies and 300 connections.';
   if (next.environment !== undefined && (!next.environment || typeof next.environment.ambient !== "number" || !Number.isFinite(next.environment.ambient) || next.environment.ambient < -100 || next.environment.ambient > 500))
     return "Environment ambient temperature must be between −100 and 500 °C.";
+  // A manifold's circuits beyond its circuit count are not fitted: their ports must be free first.
+  for (const c of next.components.filter(c => c.kind === "heatingManifold")) {
+    const fitted = new Set(componentPorts(c).map(p => p.id));
+    const loose = next.connections.find(w => (w.from.component === c.id && !fitted.has(w.from.port)) || (w.to.component === c.id && !fitted.has(w.to.port)));
+    if (loose) return `${c.name}: ${(loose.from.component === c.id ? loose.from.port : loose.to.port).replace(/\D+/, "circuit ")} is still connected; remove its connections before reducing the circuits.`;
+  }
   const spatialViolation = spatialError(next);
   if (spatialViolation) return spatialViolation;
   if (time > 1e-10 && spatialSignature(previous) !== spatialSignature(next)) return 'Reset to Build mode before changing geometry, mass, materials, gravity, joints or spatial placement.';
@@ -302,7 +308,7 @@ export function transitionError(
     const error = connectionError(checked, w.from, w.to);
     if (error) return error;
     const c = next.components.find(c => c.id === w.from.component)!;
-    if (definitions[c.kind].ports.find(p => p.id === w.from.port)?.domain !== w.domain) return "Invalid connection domain.";
+    if (componentPorts(c).find(p => p.id === w.from.port)?.domain !== w.domain) return "Invalid connection domain.";
     checked.connections.push(w);
   }
   const violation = challengeError(next, lockedChallenge ?? next.challenge);

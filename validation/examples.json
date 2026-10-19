@@ -1392,6 +1392,120 @@
     ]
   },
   {
+    "mode": "manifoldRooms",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 522996.2282071052,
+    "energyResidual": 0.0000014249294340018537,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Living room air",
+        "value": 18.983583678717817
+      },
+      {
+        "name": "Living room circuit flow",
+        "value": 1.9957900320712039
+      },
+      {
+        "name": "Bedroom air",
+        "value": 16.995318452516525
+      },
+      {
+        "name": "Bedroom circuit flow",
+        "value": 2.336517534051331
+      },
+      {
+        "name": "Bathroom air",
+        "value": 20.97817558829227
+      },
+      {
+        "name": "Bathroom circuit flow",
+        "value": 2.739927468746077
+      },
+      {
+        "name": "Manifold Δp",
+        "value": 0.17653690717546652
+      },
+      {
+        "name": "Manifold total flow",
+        "value": 7.072235034868614
+      },
+      {
+        "name": "Boiler flow",
+        "value": 34.68834539262059
+      },
+      {
+        "name": "Element input",
+        "value": 9000
+      },
+      {
+        "name": "Energy balance residual",
+        "value": 0.0000014249294340018537
+      }
+    ]
+  },
+  {
+    "mode": "manifoldRooms",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 522996.2282071052,
+    "energyResidual": 0.0000014249294340018537,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Living room air",
+        "value": 18.983583678717817
+      },
+      {
+        "name": "Living room circuit flow",
+        "value": 1.9957900320712039
+      },
+      {
+        "name": "Bedroom air",
+        "value": 16.995318452516525
+      },
+      {
+        "name": "Bedroom circuit flow",
+        "value": 2.336517534051331
+      },
+      {
+        "name": "Bathroom air",
+        "value": 20.97817558829227
+      },
+      {
+        "name": "Bathroom circuit flow",
+        "value": 2.739927468746077
+      },
+      {
+        "name": "Manifold Δp",
+        "value": 0.17653690717546652
+      },
+      {
+        "name": "Manifold total flow",
+        "value": 7.072235034868614
+      },
+      {
+        "name": "Boiler flow",
+        "value": 34.68834539262059
+      },
+      {
+        "name": "Element input",
+        "value": 9000
+      },
+      {
+        "name": "Energy balance residual",
+        "value": 0.0000014249294340018537
+      }
+    ]
+  },
+  {
     "mode": "heatPumpHouse",
     "source": "generated",
     "simulatedSeconds": 600,

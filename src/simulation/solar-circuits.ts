@@ -1,5 +1,5 @@
 /** Renewable devices expand into normal MNA branches. Iteration couples ports by measured electrical power. */
-import { definitions, prop, type Component, type Project, type Terminal } from './model';
+import { definitions, prop, type Component, type Project, type Terminal, componentPorts } from './model';
 import { WARM_START_BUDGET, WarmStartUnconverged, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { initialSolarState, inverterLoss, pvModel, solarKinds } from './solar';
 
@@ -224,7 +224,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
     r.readings[c.id] = x;
     for (const field of ['nodes', 'nodeIds', 'nodeIslands', 'phasors'] as const) {
       const values = r[field]; if (!values) continue;
-      for (const port of definitions[c.kind].ports.filter(p => p.domain === 'electrical')) { const t = e.map({ component: c.id, port: port.id }); const key = `${t.component}:${t.port}`; if (key in values) (values as Record<string, unknown>)[`${c.id}:${port.id}`] = values[key]; }
+      for (const port of componentPorts(c).filter(p => p.domain === 'electrical')) { const t = e.map({ component: c.id, port: port.id }); const key = `${t.component}:${t.port}`; if (key in values) (values as Record<string, unknown>)[`${c.id}:${port.id}`] = values[key]; }
       parts.forEach(id => { delete values[`${id}:a`]; delete values[`${id}:b`]; });
     }
     parts.forEach(id => delete r.readings[id]);

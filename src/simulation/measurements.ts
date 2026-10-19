@@ -7,8 +7,7 @@ import {
   prop,
   type Measurement,
   type Probe,
-  type Project,
-} from "./model";
+  type Project, componentPorts } from "./model";
 import { nodeVoltage } from "./electrical";
 import { sensorTemperature, storageEnthalpy } from "./storage-tank";
 import { screedKey, surfaceTemperature } from "./underfloor-heating";
@@ -263,7 +262,7 @@ export function probeUnit(
   if (p.measurement !== "signal") return units[p.measurement];
   const c = project.components.find((c) => c.id === p.component);
   return c
-    ? (definitions[c.kind].ports.find((p) => p.id === "out")?.unit ?? "1")
+    ? (componentPorts(c).find((p) => p.id === "out")?.unit ?? "1")
     : "1";
 }
 

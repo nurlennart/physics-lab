@@ -115,7 +115,10 @@ export function preciseDot(a: number[], b: number[]) {
  */
 export function solveLinear(a: number[][], b: number[], refine = true, normwise = false): number[] {
   const n = b.length, factor = cachedFactor(a, n), x = substituteLinear(factor, b);
-  if (refine && n && coefficientSpread(factor, a) > 1e6) {
+  // Refine widely spread matrices, and any solve whose first result misses the componentwise certificate (a pivot
+  // chosen after equilibration can leave a few rounding units in an equation with small terms). A solve that already
+  // passes is returned unchanged.
+  if (refine && n && (coefficientSpread(factor, a) > 1e6 || !linearResidualOk(a, b, x, normwise))) {
     for (let iteration = 0; iteration < 2; iteration++) {
       const residual = b.map((v, i) => v - preciseDot(a[i], x));
       if (residual.every(v => v === 0)) break;
@@ -239,17 +242,22 @@ function substituteLinear({ n, m, scales, columns, pivots, multipliers }: Linear
 }
 /** Finite result and scaled equation residual of `solveLinear`. */
 function certifyLinear(a: number[][], b: number[], x: number[], normwise: boolean) {
-  const n = b.length;
   if (x.some((v) => !Number.isFinite(v)))
     throw Error("Circuit solver produced a non-finite result.");
+  if (!linearResidualOk(a, b, x, normwise)) throw Error("Circuit numerical error: scaled equation residual is too large.");
+}
+function linearResidualOk(a: number[][], b: number[], x: number[], normwise: boolean) {
+  const n = b.length;
+  if (x.some((v) => !Number.isFinite(v))) return false;
   let magnitude = 0;
   if (normwise) for (let j = 0; j < n; j++) magnitude = Math.max(magnitude, Math.abs(x[j]));
   for (let i = 0; i < n; i++) {
     const row = a[i];
     let lhs = 0, scale = Math.abs(b[i]);
     for (let j = 0; j < n; j++) { lhs += row[j] * x[j]; scale += Math.abs(row[j]) * (normwise ? magnitude : Math.abs(x[j])); }
-    if (Math.abs(lhs - b[i]) > 256 * Number.EPSILON * Math.max(1, n) * scale) throw Error("Circuit numerical error: scaled equation residual is too large.");
+    if (Math.abs(lhs - b[i]) > 256 * Number.EPSILON * Math.max(1, n) * scale) return false;
   }
+  return true;
 }
 function matmul(a: number[][], b: number[][]) {
   const n = a.length, m = b[0].length, inner = b.length, c = Array.from({ length: n }, () => new Array<number>(m).fill(0));

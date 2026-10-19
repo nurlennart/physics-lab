@@ -4,6 +4,7 @@
 
 Open **File → Starters & examples** in the app for descriptions and suggested experiments. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
 
+- `manifoldRooms`: three rooms on the ground, each with its own underfloor loop on an Oventrop Multidis SF manifold ([model basis](../docs/HEATING-MANIFOLD.md)); room thermostats drive the thermal actuators. It starts unbalanced: balance it to the planned flows while it runs.
 - `heatPumpHouse`: Bosch Compress 6800i AW 7 OR-S heating a 120 m² house through wet-screed underfloor heating (FLOORTEC tacker, twelve 100 m loops, [model basis](../docs/UNDERFLOOR-HEATING.md)) with a weather-compensated flow target at 2 °C / 85 % RH, and a Bosch WH 290 hot-water cylinder through the 3-way valve VW1 with hot-water priority; frost build-up, reverse-cycle defrosts, COP and seasonal performance factor. See [model basis](../docs/HEAT-PUMP.md).
 - `heatPumpCold`: the same house at −15 °C: the compressor at its current limit, the 6 kW backup heater joining after its delay, cut-out below −23 °C.
 - `heatPumpBuffer`: the heat-pump house with a Bosch BH 120-5 buffer in series in the return; defrost energy from stored water, buffer layers, system pressure from the indoor unit's 17 L vessel. See [model basis](../docs/STORAGE-AND-PRESSURE.md).

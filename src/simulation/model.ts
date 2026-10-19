@@ -6,7 +6,7 @@ export type Kind =
   | "fluidJunction" | "pressureSensor" | "flowSensor" | "levelSensor" | "pid"
   | "battery" | "contactor" | "transformer" | "radiator" | "circulator"
   | "electricBoiler" | "panelRadiator" | "heatPump" | "underfloorHeating"
-  | "storageTank" | "expansionVessel" | "safetyValve" | "divertingValve"
+  | "storageTank" | "expansionVessel" | "safetyValve" | "divertingValve" | "heatingManifold"
   | "source"
   | "source3"
   | "sourceAC"
@@ -188,6 +188,8 @@ const heat: Port = {
   domain: "thermal",
   label: "Thermal interface",
 };
+/** Most circuits of a heating manifold (Oventrop Multidis SF: 2–12). */
+export const MAX_CIRCUITS = 12;
 const input = (
   id = "in",
   signalType: "number" | "boolean" = "boolean",
@@ -333,6 +335,29 @@ export const definitions: Record<Kind, Definition> = {
       { id: "bosch17", label: "Bosch CS6800iAW indoor-unit vessel 17 L", cost: 0, spec: "17 L · 0.75 bar precharge · 3 bar", overrides: { nominalVolume: 17, precharge: 75000, fillPressure: 130000 } },
       { id: "generic12", label: "Membrane vessel 12 L (generic)", cost: 40, spec: "12 L · 1.5 bar precharge · 3 bar", overrides: { nominalVolume: 12 } },
       { id: "generic50", label: "Membrane vessel 50 L (generic)", cost: 110, spec: "50 L · 1.5 bar precharge · 3 bar", overrides: { nominalVolume: 50 } },
+    ],
+  },
+  heatingManifold: {
+    label: "Heating circuit manifold", category: "Hydraulic", prefix: "HKV", cost: 260,
+    description: "Underfloor heating manifold Oventrop Multidis SF (type 140 43, stainless steel): flow bar with a flow meter and regulating insert per circuit (0–5 l/min, kvs 1.1), return bar with valve inserts for thermal actuators. Each circuit runs from its flow port through a loop back to its return port; set the inserts by hand or balance them to planned flows. A wired Boolean opens a circuit's actuator (normally closed); unwired circuits stay open.",
+    spec: "4 circuits · kvs 1.1 · 0–5 l/min · 6 bar · 80 °C",
+    ports: [
+      { id: "supply", domain: "hydraulic", label: "Flow from the heat source" }, { id: "return", domain: "hydraulic", label: "Return to the heat source" },
+      ...Array.from({ length: MAX_CIRCUITS }, (_, i) => [
+        { id: `flow${i + 1}`, domain: "hydraulic" as const, label: `Circuit ${i + 1} flow (to the loop)`, optional: true },
+        { id: `return${i + 1}`, domain: "hydraulic" as const, label: `Circuit ${i + 1} return (from the loop)`, optional: true },
+        { ...input(`act${i + 1}`, "boolean", true), label: `Circuit ${i + 1} actuator (true = open)` },
+      ]).flat(),
+    ],
+    defaults: {
+      circuits: 4, kvs: 1.1, meterRange: 5, actuatorTime: 180, diameter: 0.02, laminarK: 0,
+      ...Object.fromEntries(Array.from({ length: MAX_CIRCUITS }, (_, i) => [[`setting${i + 1}`, 100], [`planned${i + 1}`, 2]]).flat()),
+      maxPressure: 600000, maxTemperature: 80, maxDifferentialPressure: 100000, elevation: 0,
+    },
+    variants: [
+      { id: "circuits2", label: "Multidis SF · 2 circuits", cost: 170, spec: "2 circuits · kvs 1.1 · 0–5 l/min", overrides: { circuits: 2 } },
+      { id: "circuits8", label: "Multidis SF · 8 circuits", cost: 390, spec: "8 circuits · kvs 1.1 · 0–5 l/min", overrides: { circuits: 8 } },
+      { id: "circuits12", label: "Multidis SF · 12 circuits", cost: 540, spec: "12 circuits · kvs 1.1 · 0–5 l/min", overrides: { circuits: 12 } },
     ],
   },
   divertingValve: {
@@ -1118,12 +1143,22 @@ export function catalog(c: Component) {
     props: applyDerived(c.kind, { ...d.defaults, ...variant?.overrides }),
   };
 }
+/**
+ * The ports a component actually has: its kind's ports, except a manifold's circuits beyond its circuit count.
+ * Use this, not definitions[kind].ports, wherever a placed component is meant.
+ */
+export function componentPorts(c: Pick<Component, 'kind' | 'props'>): Port[] {
+  const ports = definitions[c.kind].ports;
+  if (c.kind !== 'heatingManifold') return ports;
+  const n = Math.max(2, Math.min(MAX_CIRCUITS, Math.round(Number(c.props.circuits) || 2)));
+  return ports.filter(p => { const m = /^(?:flow|return|act)(\d+)$/.exec(p.id); return !m || Number(m[1]) <= n; });
+}
 /** Properties that size a component and therefore drive its cost. */
 const costDrivers: Partial<Record<Kind, (p: Record<string, Property>) => number>> = {
   heater: p => +p.ratedPower, resistor: p => +p.ratedPower, lamp: p => +p.ratedPower, meter: () => 1,
   source: p => +p.ratedVoltage * +p.maxCurrent, fuse: p => +p.ratedCurrent, switch: p => +p.ratedPower,
   relay: p => +p.ratedCurrent * +p.ratedVoltage, safety: p => +p.ratedCurrent * +p.ratedVoltage,
-  motor: p => +p.ratedPower, panelRadiator: p => +p.ratedOutput, underfloorHeating: p => +p.length * +p.loops, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
+  motor: p => +p.ratedPower, heatingManifold: p => +p.circuits, panelRadiator: p => +p.ratedOutput, underfloorHeating: p => +p.length * +p.loops, pump: p => +p.ratedFlow * +p.shutoffHead, circulator: p => +p.ratedFlow * +p.shutoffHead, tank: p => +p.capacity,
   cooler: p => +p.conductance, pipe: p => +p.length * (+p.diameter) ** 1.5, valve: p => (+p.diameter) ** 2,
   checkValve: p => (+p.diameter) ** 2, actuatedValve: p => (+p.diameter) ** 2, thermostaticValve: p => +p.kvs, cable: p => +p.area * +p.length,
 };
@@ -1231,7 +1266,7 @@ export const textProp = (c: Component, key: string, fallback = "") => {
 };
 export const terminalKey = (t: Terminal) => `${t.component}:${t.port}`;
 export const isElectrical = (c: Component) =>
-  definitions[c.kind].ports.some((p) => p.domain === "electrical") &&
+  componentPorts(c).some((p) => p.domain === "electrical") &&
   !["ground", "junction"].includes(c.kind);
 export const isSource = (c: Component) => c.kind === "source" || c.kind === "source3" || c.kind === "sourceAC" || c.kind === "battery" || c.kind === "lfpBattery";
 /** Machines with a rotating shaft driven by the electrical network. */
@@ -1249,8 +1284,8 @@ export function connectionError(
 ): string | null {
   const a = project.components.find((c) => c.id === from.component),
     b = project.components.find((c) => c.id === to.component);
-  const pa = a && definitions[a.kind].ports.find((p) => p.id === from.port),
-    pb = b && definitions[b.kind].ports.find((p) => p.id === to.port);
+  const pa = a && componentPorts(a).find((p) => p.id === from.port),
+    pb = b && componentPorts(b).find((p) => p.id === to.port);
   if (!pa || !pb) return "This terminal does not exist.";
   if (from.component === to.component)
     return "Connect terminals on different components.";
@@ -1335,7 +1370,7 @@ export function connect(
   to: Terminal,
 ): Project {
   let a = project.components.find((c) => c.id === from.component),
-    p = a && definitions[a.kind].ports.find((p) => p.id === from.port);
+    p = a && componentPorts(a).find((p) => p.id === from.port);
   if (p?.domain === "control" && p.direction === "in") [from, to] = [to, from];
   const error = connectionError(project, from, to);
   if (error) throw Error(error);
@@ -1346,7 +1381,7 @@ export function connect(
       ...project.connections,
       {
         id: uid(),
-        domain: definitions[a.kind].ports.find((p) => p.id === from.port)!
+        domain: componentPorts(a).find((p) => p.id === from.port)!
           .domain,
         from,
         to,

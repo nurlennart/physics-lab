@@ -4,6 +4,7 @@ import { SolarInspector } from './SolarInspector';
 import { BoilerInspector } from './BoilerInspector';
 import { HeatPumpInspector } from "./HeatPumpInspector";
 import { PanelRadiatorInspector } from './PanelRadiatorInspector';
+import { HeatingManifoldInspector } from "./HeatingManifoldInspector";
 import { UnderfloorHeatingInspector } from './UnderfloorHeatingInspector';
 import { ExpansionVesselInspector, SafetyValveInspector, StorageTankInspector } from "./StoragePressureInspector";
 import { T } from "../theme/tokens";
@@ -26,8 +27,7 @@ import {
   prop,
   isThermalMass,
   type Component,
-  type Measurement,
-} from "../simulation/model";
+  type Measurement, componentPorts } from "../simulation/model";
 import { thermalThreshold } from "../simulation/parameters";
 import { ParameterSections, DerivedValues, RatingIndicators, ModelAndPresets, EnvironmentPanel } from "./ParameterEditor";
 import { allowedFaults, type FaultType } from "../simulation/automation";
@@ -167,6 +167,7 @@ export default function Inspector() {
             {c.kind === "heatPump" && <HeatPumpInspector c={c} />}
             {c.kind === "panelRadiator" && <PanelRadiatorInspector c={c} />}
             {c.kind === "underfloorHeating" && <UnderfloorHeatingInspector c={c} />}
+            {c.kind === "heatingManifold" && <HeatingManifoldInspector c={c} />}
             {c.kind === "storageTank" && <StorageTankInspector c={c} />}
             {c.kind === "expansionVessel" && <ExpansionVesselInspector c={c} />}
             {c.kind === "safetyValve" && <SafetyValveInspector c={c} />}
@@ -186,7 +187,7 @@ export default function Inspector() {
               >
                 <span>{primary}</span>
                 <small>
-                  {c.kind === 'rigidBody' ? 'm' : c.kind === 'forceActuator' ? c.props.axis === 'torque' ? 'N·m' : 'N' : sensor ? ["sensor", "thermostat", "safety"].includes(c.kind) ? "°C" : definitions[c.kind].ports.find(p => p.id === "out")?.unit ?? "°C" : isThermalMass(c) ? "°C" : h ? "L/min" : v ? "" : "V"}
+                  {c.kind === 'rigidBody' ? 'm' : c.kind === 'forceActuator' ? c.props.axis === 'torque' ? 'N·m' : 'N' : sensor ? ["sensor", "thermostat", "safety"].includes(c.kind) ? "°C" : componentPorts(c).find(p => p.id === "out")?.unit ?? "°C" : isThermalMass(c) ? "°C" : h ? "L/min" : v ? "" : "V"}
                 </small>
               </div>
               <div className="reading-caption">

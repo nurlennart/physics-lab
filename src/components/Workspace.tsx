@@ -34,8 +34,7 @@ import {
   prop,
   type Component,
   type Connection,
-  type Terminal,
-} from "../simulation/model";
+  type Terminal, componentPorts } from "../simulation/model";
 import {
   dimensions,
   portPoint,
@@ -75,7 +74,7 @@ function wireValue(w: Connection, project: { components: Component[]; connection
   if (w.domain !== "electrical") return null;
   for (const end of [w.from, w.to]) {
     const c = project.components.find((x) => x.id === end.component);
-    if (!c || definitions[c.kind].ports.filter((p) => p.domain === "electrical").length !== 2) continue;
+    if (!c || componentPorts(c).filter((p) => p.domain === "electrical").length !== 2) continue;
     const wires = project.connections.filter((x) => x.domain === "electrical" && [x.from, x.to].some((t) => t.component === end.component && t.port === end.port));
     const r = simulation.electrical.readings[c.id];
     if (wires.length === 1 && r && Math.abs(r.current) > 1e-6) return `${chipNumber(r.current)} A`;
@@ -102,7 +101,7 @@ const ModuleTerminals = memo(function ModuleTerminals({ c, w, h, connections, pe
   const pins = modulePins(c);
   return (
     <>
-      {definitions[c.kind].ports.map((p) => {
+      {componentPorts(c).map((p) => {
         const { x, y } = portLocal(c, p.id);
         const branches = connections.filter(
           (w) =>
@@ -179,7 +178,7 @@ const ModuleTerminals = memo(function ModuleTerminals({ c, w, h, connections, pe
         // labelled beside its stub (the name band is above it inside).
         <g className="pin-labels">
           {Object.entries(pins.labels).map(([id, text]) => {
-            const { x, y } = portLocal(c, id), domain = definitions[c.kind].ports.find((p) => p.id === id)?.domain;
+            const { x, y } = portLocal(c, id), domain = componentPorts(c).find((p) => p.id === id)?.domain;
             const at: { x: number; y: number; a: "start" | "middle" | "end" } = x < 0 ? (pins.strip ? { x: 12, y: y + 4.5, a: "start" } : { x: 7, y: y - 7, a: "start" })
               : x > w ? (pins.strip ? { x: w - 12, y: y + 4.5, a: "end" } : { x: w - 7, y: y - 7, a: "end" })
               : y < 0 ? { x: x + 8, y: -5, a: "start" } : { x, y: h - 5, a: "middle" };
@@ -456,7 +455,7 @@ export default function Workspace() {
     if (state.nodeMode) {
       const c = project.components.find((c) => c.id === t.component)!;
       if (
-        definitions[c.kind].ports.find((p) => p.id === t.port)?.domain !==
+        componentPorts(c).find((p) => p.id === t.port)?.domain !==
         "electrical"
       )
         return;
@@ -698,7 +697,7 @@ export default function Workspace() {
               status = moduleStatus(c),
               // The name runs from x = 12 to the status lamp; terminals on the right edge inside the name band (grid side of
               // inverters, tank overflow) take the end of the band.
-              nameWidth = definitions[c.kind].ports.some((p) => { const q = portLocal(c, p.id); return q.x > w && q.y < 31; }) ? w - 68 : w - 35;
+              nameWidth = componentPorts(c).some((p) => { const q = portLocal(c, p.id); return q.x > w && q.y < 31; }) ? w - 68 : w - 35;
             return (
               <g
                 key={c.id}
@@ -744,7 +743,7 @@ export default function Workspace() {
                 </g>
                 <text
                   x={w / 2}
-                  y={h + 32}
+                  y={h + (c.kind === "heatingManifold" ? 46 : 32)}
                   textAnchor="middle"
                   className="component-caption"
                 >
@@ -753,7 +752,7 @@ export default function Workspace() {
                 {overlay && (hasStarted() || c.kind === "tank") && (
                   <text
                     x={w / 2}
-                    y={h + (c.kind === "heater" ? 64 : 49)}
+                    y={h + (c.kind === "heater" ? 64 : c.kind === "heatingManifold" ? 63 : 49)}
                     textAnchor="middle"
                     className="live-caption"
                   >
@@ -773,6 +772,8 @@ export default function Workspace() {
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 100000).toFixed(3)} bar · ${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min discharge`
                       : c.kind === "storageTank"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min through · coil ${((simulation.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / 1000).toFixed(2)} kW`
+                      : c.kind === "heatingManifold"
+                        ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min total · Δp ${((simulation.multiphysics.hydraulic.readings[c.id]?.differentialPressure ?? 0) / 1000).toFixed(1)} kPa`
                       : c.kind === "underfloorHeating"
                         ? `${((simulation.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) * 60000).toFixed(2)} L/min · q ${((simulation.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / prop(c, "heatedArea")).toFixed(0)} W/m²`
                       : c.kind === "panelRadiator"
@@ -798,7 +799,7 @@ export default function Workspace() {
                         : c.kind === "switch"
                           ? "Double-click to toggle"
                           : simulation.automation.status[c.id] &&
-                              definitions[c.kind].ports.some(
+                              componentPorts(c).some(
                                 (p) => p.domain === "control",
                               )
                             ? simulation.automation.status[c.id].toUpperCase()

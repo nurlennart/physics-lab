@@ -1,3 +1,4 @@
+import { circuitIndices, circuitKey } from './heating-manifold';
 import { advanceSpaceThermal } from './thermal-coupling';
 import { effectiveAmbient } from './environment';
 import { trvPosition, trvSensorStep } from './thermostatic-valve';
@@ -130,6 +131,8 @@ export class Multiphysics {
       if (isMotor(c)) this.motors[c.id] = { omega: p.components.find(b => b.id === shaftBody(p, c.id))?.spatial?.omega ?? 0, current: 0, torque: 0, load: 0, shaftPower: 0, copperPower: 0, duty: 1, acceleration: 0, angle: 0, ...(c.kind === 'inductionMotor' ? { psiS: [0, 0] as Cx, psiR: noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), frequency: prop(c, 'ratedFrequency', 50), inrushPeak: 0, energized: false, fluxRate: 0 } : {}) };
       if (c.kind === 'actuatedValve') this.positions[c.id] = prop(c, 'opening');
       if (c.kind === 'divertingValve') this.positions[c.id] = prop(c, 'position');
+      // Manifold actuators start open; a wired command closes them over the stroke time.
+      if (c.kind === 'heatingManifold') for (const k of circuitIndices(c)) this.positions[circuitKey(c.id, k)] = 100;
       if (c.kind === 'thermostaticValve') {
         this.trvSensors[c.id] = effectiveAmbient(p, c);
         this.positions[c.id] = trvPosition(c, this.trvSensors[c.id]);
@@ -988,6 +991,17 @@ export class Multiphysics {
         const step = 100 * h / prop(c, 'responseTime');
         this.positions[c.id] = Math.max(this.positions[c.id] - step, Math.min(this.positions[c.id] + step, command));
         this.valveTravel[c.id] = this.positions[c.id] !== command;
+      }
+      // Manifold thermal actuators: normally closed. An unwired circuit has no actuator (open); a wired one opens on true and
+      // closes on false, an invalid command or a lost signal. Each travels at 100 %/stroke time.
+      for (const c of s.project.components.filter(c => c.kind === 'heatingManifold')) for (const k of circuitIndices(c)) {
+        const port = `act${k}`, key = circuitKey(c.id, k);
+        const wired = s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);
+        const input = wired ? s.automation.input(c, port, s) : undefined;
+        const command = !wired ? 100 : !input!.valid ? 0 : typeof input!.value === 'boolean' ? (input!.value ? 100 : 0) : Math.max(0, Math.min(100, Number(input!.value)));
+        const step = 100 * h / prop(c, 'actuatorTime'), position = this.positions[key] ?? 100;
+        this.positions[key] = Math.max(position - step, Math.min(position + step, command));
+        this.valveTravel[key] = this.positions[key] !== command;
       }
       for (const c of s.project.components.filter(c => c.kind === 'actuatedValve')) {
         let target = prop(c, 'opening');

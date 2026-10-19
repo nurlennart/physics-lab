@@ -112,7 +112,7 @@ The FLOORTEC tables are themselves EN 1264 calculations of a registered system, 
 - **Surface temperature.** Mean surface temperature by the base curve; the maximum above the pipes (EN 1264's θ_F,max) is not resolved, so the limit check is conservative only on average.
 - **EN 1264 range.** Spacing 50–375 mm, D 8–30 mm, cover 15–65 mm, R_λ,B 0–0.15 m²K/W. Type A only: no dry systems (type B), no thin-screed systems, no wall or ceiling heating. Only the 16 × 2 FLOORTEC pipe is calibrated; other pipes use the EN 1264 standard B (6.7) or a user value, without the standard's pipe-conductivity correction.
 - **Cooling.** Water below the room temperature uses the same characteristic; dew point and the different upward heat transfer coefficient of a cooled floor are not modelled.
-- **Manifold.** Loops in one component are identical and share the flow equally; unequal loops need separate components in parallel with their own balancing valves. Manifold connection pipes are separate pipe components.
+- **Manifold.** Loops in one component are identical and share the flow equally. Unequal loops are separate components on a [heating circuit manifold](HEATING-MANIFOLD.md), one loop per circuit, balanced by its regulating inserts. Manifold connection pipes are separate pipe components.
 - **Ground.** A fixed ground temperature with the ISO 13370 steady-state soil resistance: no seasonal swing, no soil storage, no basement or edge insulation ([GROUND.md](GROUND.md)).
 
 The model is suitable for heating-system and control experiments (heat pumps, flow temperature, storage, room interaction). It is not a substitute for an EN 1264-3 design of a specific floor.

@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { T } from "../theme/tokens";
-import { definitions, prop, textProp, type Component } from "../simulation/model";
+import { definitions, prop, textProp, type Component, componentPorts } from "../simulation/model";
 import { simulation } from "../editor/store";
-import { dimensions, portLocal, storageY, STORAGE_BASE, STORAGE_TOP } from "../editor/geometry";
+import { dimensions, portLocal, storageY, MANIFOLD_LEFT, MANIFOLD_PITCH, MANIFOLD_RETURN, STORAGE_BASE, STORAGE_TOP } from "../editor/geometry";
+import { circuitIndices, circuitKey, meterReading } from "../simulation/heating-manifold";
 import { coilLayers, layerAt, storageLayers } from "../simulation/storage-tank";
 import { surfaceTemperature } from "../simulation/underfloor-heating";
 import { effectiveAmbient } from "../simulation/environment";
@@ -47,6 +48,11 @@ export function moduleStatus(c: Component): { tone: Tone; text: string } | null 
   if (c.kind === "underfloorHeating" && hasStarted() && surfaceTemperature((s.multiphysics.hydraulic.readings[c.id]?.duty ?? 0) / prop(c, "heatedArea"), effectiveAmbient(s.project, c)) > prop(c, "maxSurfaceTemperature")) return { tone: "warning", text: `Floor surface above ${prop(c, "maxSurfaceTemperature")} °C` };
   if ((s.multiphysics.overflowRate[c.id] ?? 0) > 1e-9) return { tone: "warning", text: "Overflowing" };
   if (c.kind === "safetyValve" && hasStarted() && (s.multiphysics.positions[c.id] ?? 0) > 0) return { tone: "warning", text: "Discharging" };
+  if (c.kind === "heatingManifold" && hasStarted()) {
+    const h = s.multiphysics.hydraulic.readings[c.id];
+    if (h && Math.abs(h.differentialPressure) > prop(c, "maxDifferentialPressure")) return { tone: "warning", text: "Δp above 1 bar" };
+    if (circuitIndices(c).some((k) => meterReading(s.multiphysics.hydraulic.readings[circuitKey(c.id, k)]?.flow ?? 0, prop(c, "meterRange")).beyond)) return { tone: "warning", text: "Flow beyond meter range" };
+  }
   const vessel = s.multiphysics.vessels[c.id];
   if (vessel && hasStarted() && vessel.water < 0) return { tone: "warning", text: "Vessel empty: below precharge" };
   if (vessel && hasStarted() && vessel.water > 0.98 * prop(c, "nominalVolume") / 1000) return { tone: "fault", text: "Cushion fully compressed" };
@@ -516,6 +522,34 @@ function face(c: Component): Face {
         tone: "thermal",
       };
     }
+    case "heatingManifold": {
+      // Flow bar above the return bar; per circuit a flow-meter sight glass (fill = reading / range) with its l/min value, and
+      // the thermal actuator on the return insert (fill = stroke). The loops leave below.
+      const { w } = dimensions(c), range = prop(c, "meterRange"), circuits = circuitIndices(c);
+      const flows = circuits.map((k) => s.multiphysics.hydraulic.readings[circuitKey(c.id, k)]?.flow ?? 0);
+      const total = hr?.flow ?? 0, dp = hr?.differentialPressure ?? 0;
+      return {
+        symbol: <g>
+          <path d={`M0 46H16M0 108H16`} stroke={T.hydraulic} strokeWidth="3" />
+          {circuits.map((k) => { const x = MANIFOLD_LEFT + MANIFOLD_PITCH * (k - 1); return <path key={k} d={`M${x} 52V56M${x} 156V168M${x + MANIFOLD_RETURN} 156V168M${x + MANIFOLD_RETURN} 74V102`} stroke={T.hydraulic} strokeWidth="2" />; })}
+          {circuits.map((k) => <path key={`c${k}`} d={`M${MANIFOLD_LEFT + MANIFOLD_PITCH * (k - 1) + MANIFOLD_RETURN} 0V62`} stroke={FAINT} strokeWidth="1" strokeDasharray="3 2" />)}
+          <rect x="16" y="40" width={w - 26} height="12" rx="3" fill={T.n4} stroke={INK} strokeWidth={SW} />
+          <rect x="16" y="102" width={w - 26} height="12" rx="3" fill={T.n4} stroke={INK} strokeWidth={SW} />
+          {circuits.map((k, i) => {
+            const x = MANIFOLD_LEFT + MANIFOLD_PITCH * (k - 1), meter = meterReading(flows[i], range), stroke = s.multiphysics.positions[circuitKey(c.id, k)] ?? 100;
+            return <g key={`m${k}`}>
+              <rect x={x - 4} y="56" width="8" height="22" rx="2" fill={T.n2} stroke={INK} strokeWidth="1" />
+              <rect x={x - 3} y={77 - 20 * meter.value / range} width="6" height={20 * meter.value / range} fill={T.hydraulic} fillOpacity="0.7" />
+              <rect x={x + MANIFOLD_RETURN - 5} y="62" width="10" height="12" rx="1.5" fill={T.thermal} fillOpacity={0.1 + 0.6 * stroke / 100} stroke={INK} strokeWidth="1" />
+              {started && <text x={x} y="92" textAnchor="middle" fill={T.n13} fontSize="9">{meter.beyond ? ">" : ""}{meter.value.toFixed(1)}</text>}
+            </g>;
+          })}
+        </g>,
+        hero: started ? `${(Math.abs(total) * 60000).toFixed(1)} l/min` : `${circuits.length} circuits`,
+        detail: started ? `Δp ${(dp / 1000).toFixed(1)} kPa` : `kvs ${prop(c, "kvs")} · 0–${range} l/min`,
+        readoutY: 133,
+      };
+    }
     case "underfloorHeating": {
       // Floor section: screed strips shaded by their excess over the room air, the meandering pipe, insulation underneath.
       const water = (s.multiphysics.pipeCells[c.id] ?? []).map((t) => t - 273.15), screed = (s.multiphysics.pipeCells[`${c.id}#screed`] ?? []).map((t) => t - 273.15), air = effectiveAmbient(s.project, c);
@@ -680,7 +714,7 @@ function face(c: Component): Face {
   }
   // Instrumentation and control blocks: ISA bubbles for sensors, IEC 61131 function blocks for logic.
   const sensorTag: Record<string, string> = { sensor: "TT", pressureSensor: "PT", flowSensor: "FT", levelSensor: "LT", positionSensor: "ZT", speedSensor: "ST" };
-  const sensor = s.automation.sensors[c.id], unit = definitions[c.kind].ports.find((p) => p.id === "out")?.unit ?? "";
+  const sensor = s.automation.sensors[c.id], unit = componentPorts(c).find((p) => p.id === "out")?.unit ?? "";
   if (sensorTag[c.kind])
     return {
       symbol: <g><Bubble tag={sensorTag[c.kind]} /><path d="M107 66H174" stroke={T.n13} strokeWidth="1.5" strokeDasharray="2 3" /></g>,
@@ -695,7 +729,7 @@ function face(c: Component): Face {
       <Box x={58} y={40} w={58} h={52} />
       <Glyph x={87} y={71} size={fn[c.kind]?.length > 3 ? 12 : 14} mono>{fn[c.kind] ?? "f"}</Glyph>
       {c.kind === "not" && <circle cx="120" cy="66" r="4" fill={T.n3} stroke={INK} strokeWidth="1.5" />}
-      {definitions[c.kind].ports.filter((p) => p.domain === "control").map((p) => { const q = portLocal(c, p.id); return q.y > 92 ? null : <path key={p.id} d={q.x < 0 ? `M0 ${q.y}H58` : `M${c.kind === "not" ? 124 : 116} ${q.y}H174`} stroke={T.n13} strokeWidth="1.5" />; })}
+      {componentPorts(c).filter((p) => p.domain === "control").map((p) => { const q = portLocal(c, p.id); return q.y > 92 ? null : <path key={p.id} d={q.x < 0 ? `M0 ${q.y}H58` : `M${c.kind === "not" ? 124 : 116} ${q.y}H174`} stroke={T.n13} strokeWidth="1.5" />; })}
     </g>,
     hero: out ?? "—",
     detail: c.kind === "thermostat" ? `${prop(c, "setpoint")} °C · ${prop(c, "hysteresis")} K band`
@@ -732,7 +766,7 @@ function fit(text: string | undefined, width: number, font: keyof typeof FONTS) 
 export function modulePins(c: Component): Pins | undefined {
   const pins = face(c).pins;
   if (!pins) return undefined;
-  const ports = new Set(definitions[c.kind].ports.map((p) => p.id));
+  const ports = new Set(componentPorts(c).map((p) => p.id));
   return { ...pins, labels: Object.fromEntries(Object.entries(pins.labels).filter(([id]) => ports.has(id))) };
 }
 

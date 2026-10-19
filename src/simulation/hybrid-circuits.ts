@@ -1,6 +1,6 @@
 import { acDischargeBudget, essActiveCommand, solarSurplus } from './ess';
 /** Grid-following current injection and isolated backup, coupled through actual MNA port powers. */
-import { definitions, prop, type Component, type Project, type Terminal } from './model';
+import { definitions, prop, type Component, type Project, type Terminal, componentPorts } from './model';
 import { WARM_START_BUDGET, WarmStartUnconverged, type ElectricalReading, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
 import { hybridKinds, hybridRatedPower, initialHybridState, phaseDifference, type HybridReading } from './hybrid';
 import { inverterLoss } from './solar';
@@ -231,7 +231,7 @@ export function solveHybrid(p:Project,failed:Record<string,boolean>,runtime:Elec
   result.readings[c.id]=reading;
   for(const field of ['nodes','nodeIds','nodeIslands','phasors'] as const) {
    const values=result[field];if(!values)continue;
-   for(const port of definitions[c.kind].ports.filter(p=>p.domain==='electrical')){const t=e.map({component:c.id,port:port.id}),k=`${t.component}:${t.port}`;if(k in values)(values as Record<string,unknown>)[`${c.id}:${port.id}`]=values[k];}
+   for(const port of componentPorts(c).filter(p=>p.domain==='electrical')){const t=e.map({component:c.id,port:port.id}),k=`${t.component}:${t.port}`;if(k in values)(values as Record<string,unknown>)[`${c.id}:${port.id}`]=values[k];}
    parts.forEach(id=>{delete values[`${id}:a`];delete values[`${id}:b`];});
   }
   parts.forEach(id=>delete result.readings[id]);

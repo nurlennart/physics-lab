@@ -37,6 +37,7 @@ for (const example of examples) test(`UI starter: ${example.title} runs, resets 
   // after 10 min; above the 1.8 kW minimum modulation it is running.
   const expected = {
     heatPumpHouse: ['Heat output', 3000, 8000], heatPumpCold: ['Heat output', 1800, 7000], heatPumpBuffer: ['Heat output', 3000, 8000], sealedBoiler: ['System pressure at the vessel', 1.79, 1.9],
+    manifoldRooms: ['Manifold total flow', 6.8, 7.3], // unbalanced: 2.0 + 2.3 + 2.7 l/min through the three loops
     thermostaticRoom: ['Room air', 19.95, 20.05], livingRoom: ['Room air', 14.95, 15.05], roomCooldown: ['Room air', 14.95, 15.05],
     gridSolar: ['AC solar injection', 400, 450], hybridStorage: ['Protected AC consumption', 199, 201], zeroExport: ['Protected AC consumption', 199, 201], gridBackup: ['Protected AC consumption', 199, 201], multipleSolar: ['Protected AC consumption', 199, 201],
     solarCharging: ['Charger output', 260, 280], solarOffGrid: ['AC useful load', 99, 101], solarCirculation: ['Circulation flow', 12, 12.5], solarExperiment: ['PV generated power', 449, 451],
