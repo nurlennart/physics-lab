@@ -748,8 +748,9 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
     const panel = c.kind === 'panelRadiator' ? fixedPanel?.[c.id] ?? panelExchange(c, order, result.nodeTemperatures[b.from], ambientK, b.rate * CP) : undefined;
     // Underfloor heating: each water cell exchanges with its implicit screed node, eliminated into an effective conductance
     // and per-cell effective temperature (affine in the room and below-floor temperatures).
-    const floor = c.kind === 'underfloorHeating' ? floorExchange(c, dt, b.rate * CP) : undefined;
-    const belowK = floor ? U.celsiusToK(belowBoundary(project, c).temperature) : undefined;
+    const below = c.kind === 'underfloorHeating' ? belowBoundary(project, c) : undefined;
+    const floor = below ? floorExchange(c, dt, b.rate * CP, below.resistance) : undefined;
+    const belowK = below ? U.celsiusToK(below.temperature) : undefined;
     const screed = floor && (cells[screedKey(c.id)] ?? Array(n).fill(293.15)), screedOrder = screed && (b.flow > 0 ? screed : [...screed].reverse());
     const cellAmbient = floor && screedOrder!.map(t => floor.ambient(t, ambientK, belowK!));
     const ua = panel ? panel.g * n : floor ? floor.effective * n : elementKinds.has(c.kind) ? prop(c, 'loss') : c.kind === 'pipe' ? prop(c, 'thermalUA') : c.kind === 'radiator' ? radiatorConductance[c.id] ?? prop(c, 'naturalUA') : 0;
@@ -876,7 +877,8 @@ export function transport(project: Project, tanks: Record<string, TankState>, re
   // Stagnant pipes keep their water and exchange heat with ambient only.
   for (const c of project.components.filter(c => pipeCells(c) && !flowing.has(c.id))) {
     const n = pipeCells(c), mc = cellCapacity(c, n), ambientK = U.celsiusToK(effectiveAmbient(project, c));
-    const floor = c.kind === 'underfloorHeating' ? floorExchange(c, dt, 0) : undefined, belowK = floor && U.celsiusToK(belowBoundary(project, c).temperature);
+    const below = c.kind === 'underfloorHeating' ? belowBoundary(project, c) : undefined;
+    const floor = below ? floorExchange(c, dt, 0, below.resistance) : undefined, belowK = below && U.celsiusToK(below.temperature);
     const screed = floor && (cells[screedKey(c.id)] ?? Array(n).fill(293.15)), screedNext: number[] = [];
     const before = cells[c.id] ?? Array(n).fill(293.15), uaCell = c.kind === 'panelRadiator' ? (fixedPanel?.[c.id] ?? panelExchange(c, before, undefined, ambientK, 0)).g : floor ? floor.effective : c.kind === 'circulator' ? 0 : prop(c, elementKinds.has(c.kind) ? 'loss' : 'thermalUA') / n;
     const exchange = elementKinds.has(c.kind) ? boilerExchange(c, boilers[c.id], boilerPower[c.id] ?? 0, dt) : undefined;

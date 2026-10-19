@@ -39,6 +39,7 @@ export function ThermalRegions({ zoom, panning }: { zoom: number; panning: () =>
         <text x={w - 14} y={28} textAnchor="end">Envelope {reading.envelopeLoss.toFixed(0)} W outward</text>
         <text x={w - 14} y={46} textAnchor="end">Ventilation {reading.ventilationLoss.toFixed(0)} W outward</text>
         <text x={w - 14} y={64} textAnchor="end">Storage Δ {(reading.storedEnergy / 1e6).toFixed(2)} MJ</text>
+        {reading.groundLoss !== 0 && <text x={w - 14} y={82} textAnchor="end">Ground {reading.groundLoss.toFixed(0)} W outward</text>}
         {Object.entries(reading.deviceFlows).map(([id, q]) => { const c = state.project.components.find(c => c.id === id); return c ? <text key={id} x={c.x - room.x + 87} y={c.y - room.y - 24} textAnchor="middle">{q >= 0 ? '+' : ''}{q.toFixed(0)} W to room</text> : null; })}
         {Math.abs(reading.adjacentHeat) > 0.01 && <text x={w / 2} y={h - 32} textAnchor="middle">Adjacent rooms {reading.adjacentHeat >= 0 ? '+' : ''}{reading.adjacentHeat.toFixed(0)} W</text>}
       </g>}

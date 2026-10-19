@@ -18,7 +18,7 @@ export function UnderfloorHeatingInspector({ c }: { c: Component }) {
   const stored = water.reduce((sum, t) => sum + floorCellCapacity(c) * (t - 273.15 - air), 0) + screed.reduce((sum, t) => sum + screedCapacity(c) * (t - 273.15 - air), 0);
   const room = c.thermalSpaceId && simulation.project.thermalSpaces?.find(s => s.id === c.thermalSpaceId);
   const status = !started ? 'Ready' : surface > maxSurface ? `Floor surface above ${maxSurface} °C` : flowing ? `${flow < 0 ? 'Reverse flow · ' : ''}Heating the floor` : 'No flow: the screed releases its heat';
-  const belowName = below.space ? simulation.project.thermalSpaces?.find(s => s.id === below.space)?.name ?? 'room below' : room ? 'outdoors / ground' : 'ambient';
+  const belowName = below.space ? simulation.project.thermalSpaces?.find(s => s.id === below.space)?.name ?? 'room below' : below.ground ? 'the ground' : room ? 'outdoors' : 'ambient';
 
   // Temperature history: supply, return, mean water, screed, surface, room air.
   const history = simulation.samples.filter(s => s.floorTemperatures?.[c.id]).slice(-1200);
@@ -39,6 +39,7 @@ export function UnderfloorHeatingInspector({ c }: { c: Component }) {
   return <div className="inspector-section" data-testid="underfloor-section">
     <div className="section-label">Underfloor heating · {fmt(area, 1)} m² · {fmt(prop(c, 'pipeSpacing') * 1000, 0)} mm spacing · {loopCount(c)} × {fmt(prop(c, 'length'), 0)} m</div>
     <p className="field-hint" data-testid="underfloor-status"><strong>{status}</strong> · {started ? `${fmt(output, 0)} W to the ${fmt(air)} °C room, ${fmt(downward, 0)} W down to ${belowName}` : `K_H ${fmt(k, 2)} W/(m²·K) · water and screed at ${fmt(mean)} °C`}</p>
+    {below.ground && <p className="field-hint" data-testid="underfloor-ground">On the ground: downward loss crosses R_u {fmt(prop(c, 'downwardResistance'), 2)} plus the soil's {fmt(below.resistance, 2)} m²·K/W (EN ISO 13370 share for this slab, below this floor's own layers) to the fixed {fmt(below.temperature)} °C ground boundary.</p>}
     {!room && <p className="field-hint">Not in a Thermal Space: the floor heats the {c.props.ambientMode === 'override' ? 'local' : 'experiment'} ambient, which also stands for the space below. Assign it to a room to heat that room.</p>}
     <svg viewBox="0 0 260 160" role="img" aria-label="Underfloor supply, return, mean water, screed, floor surface and room air temperature history">
       <path d="M22 15V116H238" fill="none" stroke={T.n11}/>

@@ -38,9 +38,21 @@ Production controller, water outlet held, air at the EN 14511 humidity, fixed co
 
 | Scenario | Outdoor (°C) | Hours | Net heat (kWh) | Outdoor-unit electricity (kWh) | Backup heat (kWh) | SPF | Defrosts | Starts | Max starts / h | Shortest run (s) | House air (°C) | Energy residual (J) | Wall time (s) |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| House, 2 °C / 85 % RH (defrost) | 2 | 6 | 31.87 | 9.50 | 0.03 | 3.36 | 2 | 2 | 2 | 1840 | 20.86 | -3.49e-4 | 92.5 |
-| Cold snap, −15 °C (backup heater) | -15 | 6 | 30.14 | 14.10 | 2.11 | 2.14 | 0 | 1 | 1 | — | 19.54 | 1.70e-5 | 85.5 |
-| Mild day, 12 °C, heated floor reduced to 15 m² (≈ 60 W/K): low-load cycling | 12 | 3 | 4.44 | 1.29 | 0.00 | 3.46 | 0 | 3 | 2 | 840 | 19.16 | -1.75e-4 | 45.2 |
+| House, 2 °C / 85 % RH (defrost) | 2 | 6 | 29.98 | 8.57 | 0.03 | 3.50 | 2 | 2 | 2 | 1840 | 21.02 | -2.27e-4 | 124.5 |
+| Cold snap, −15 °C (backup heater) | -15 | 12 | 60.69 | 28.98 | 1.50 | 2.09 | 1 | 1 | 1 | — | 19.65 | 6.48e-5 | 203.2 |
+| House, 2 °C, floor on outdoor air (before the ground model) | 2 | 6 | 31.87 | 9.50 | 0.03 | 3.36 | 2 | 2 | 2 | 1840 | 20.86 | -3.49e-4 | 90.8 |
+| Cold snap, −15 °C, floor on outdoor air (before the ground model) | -15 | 12 | 60.98 | 28.98 | 9.72 | 2.10 | 1 | 1 | 1 | — | 18.91 | -9.31e-5 | 167.9 |
+| Mild day, 12 °C, heated floor reduced to 15 m² (≈ 60 W/K): low-load cycling | 12 | 3 | 4.38 | 1.27 | 0.00 | 3.43 | 0 | 3 | 2 | 780 | 19.19 | 3.43e-4 | 45.0 |
+
+Where the heat goes (kWh over the run; rates of the last accepted interval integrated over each 10 s macro step). The floor is a slab on the ground: an EN ISO 13370 steady-state boundary at the assumed annual mean 10 °C, with the soil's 1.44 m²·K/W added under the loop's R_u 2.6 m²·K/W. The *floor on outdoor air* rows are the same house with the floor element on the outdoor endpoint (the model before the ground boundary).
+
+| Scenario | Floor boundary | Floor loss downward | Walls, windows, roof | Ventilation | Ground (unheated floor) | Net heat | SPF |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| House, 2 °C / 85 % RH (defrost) | ground, 10 °C | 3.05 | 10.77 | 6.70 | 0.00 | 29.98 | 3.50 |
+| Cold snap, −15 °C (backup heater) | ground, 10 °C | 7.32 | 40.50 | 25.18 | 0.00 | 60.69 | 2.09 |
+| House, 2 °C, floor on outdoor air (before the ground model) | outdoor air | 6.87 | 10.74 | 6.67 | 0.00 | 31.87 | 3.36 |
+| Cold snap, −15 °C, floor on outdoor air (before the ground model) | outdoor air | 24.69 | 40.02 | 24.88 | 0.00 | 60.98 | 2.10 |
+| Mild day, 12 °C, heated floor reduced to 15 m² (≈ 60 W/K): low-load cycling | ground, 10 °C | 0.18 | 2.21 | 1.37 | 0.70 | 4.38 | 3.43 |
 
 ## 4. Timestep
 
@@ -65,6 +77,6 @@ Source: heatpumpmonitor.org #920, Bosch Compress 5800i AW 4 kW (R290), Zagreb, r
 | COP over 48 h incl. defrost | 3.58 | 2.97 | — | extrapolated (lab-calibrated cycle) |
 | Mean heat (W) | 2337 | 2313 | — | imposed (load) |
 
-Energy residual of the replay: -4.99e-7 J (wall time 188 s).
+Energy residual of the replay: -4.99e-7 J (wall time 189 s).
 
 Wall times are measured on the machine that ran this report, not a performance guarantee.

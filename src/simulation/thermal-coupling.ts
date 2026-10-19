@@ -9,7 +9,8 @@ import { solveLinear } from './linear-algebra';
 import { WATER_CP, WATER_RHO } from './units';
 import { inventoryVolume } from './water';
 import { filamentEnergy, filamentInitial, filamentStep } from './filament';
-import { opaqueArea, outdoorTemperature, roomMatrix, spaceCapacity, ventilationConductance, type SpaceReading } from './thermal-spaces';
+import { GROUND } from './ground';
+import { elementU, exteriorTemperature, opaqueArea, outdoorTemperature, roomMatrix, spaceCapacity, ventilationConductance, type SpaceReading } from './thermal-spaces';
 
 /**
  * Schur assembly around the EXISTING conservative hydraulic transport. With panel
@@ -145,18 +146,18 @@ export function advanceSpaceThermal(s: Simulation, hydraulic: HydraulicResult, e
   let exterior = 0;
   spaces.forEach((r, i) => {
     const t = temperature[i], capacity = spaceCapacity(p, r), outdoor = outdoorTemperature(p, r);
-    const reading: SpaceReading = { temperature: t, outdoor, capacity, deviceHeat: Object.values(device[r.id]).reduce((a, b) => a + b, 0), internalHeat: r.internalGain, adjacentHeat: 0, envelopeLoss: 0, ventilationLoss: ventilationConductance(r) * (t - outdoor), netHeat: 0, rate: (t - oldRoom[r.id]) / h, storedEnergy: capacity * (t - r.initialTemperature), elementFlows: {}, deviceFlows: device[r.id] };
+    const reading: SpaceReading = { temperature: t, outdoor, capacity, deviceHeat: Object.values(device[r.id]).reduce((a, b) => a + b, 0), internalHeat: r.internalGain, adjacentHeat: 0, envelopeLoss: 0, groundLoss: 0, ventilationLoss: ventilationConductance(r) * (t - outdoor), netHeat: 0, rate: (t - oldRoom[r.id]) / h, storedEnergy: capacity * (t - r.initialTemperature), elementFlows: {}, deviceFlows: device[r.id] };
     for (const e of p.thermalElements ?? []) {
       if (e.from !== r.id && e.to !== r.id) continue;
-      const other = e.from === r.id ? e.to : e.from, q = e.uValue * opaqueArea(p, e) * (t - (nextRoom[other] ?? outdoor));
+      const other = e.from === r.id ? e.to : e.from, q = elementU(p, e) * opaqueArea(p, e) * (t - (nextRoom[other] ?? exteriorTemperature(p, r, other)));
       reading.elementFlows[e.id] = q;
-      if (other === 'outdoors') reading.envelopeLoss += q; else reading.adjacentHeat -= q;
+      if (other === GROUND) reading.groundLoss += q; else if (other === 'outdoors') reading.envelopeLoss += q; else reading.adjacentHeat -= q;
     }
-    reading.netHeat = reading.deviceHeat + reading.internalHeat + reading.adjacentHeat - reading.envelopeLoss - reading.ventilationLoss;
+    reading.netHeat = reading.deviceHeat + reading.internalHeat + reading.adjacentHeat - reading.envelopeLoss - reading.groundLoss - reading.ventilationLoss;
     const gain = capacity * (t - oldRoom[r.id]);
     s.spaceReadings[r.id] = reading; s.roomStored += gain; s.storedEnergy += gain; s.suppliedEnergy += r.internalGain * h;
     s.thermalRate = Math.max(s.thermalRate, Math.abs(reading.rate));
-    exterior += (reading.envelopeLoss + reading.ventilationLoss) * h;
+    exterior += (reading.envelopeLoss + reading.groundLoss + reading.ventilationLoss) * h;
   });
   // Hydraulic/direct internal transfers must disappear from the external ledger.
   const fan = p.components.filter(c => c.kind === 'radiator').reduce((sum, c) => sum + (electrical.readings[c.id]?.fanPower ?? 0) * h, 0);

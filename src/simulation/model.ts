@@ -86,7 +86,7 @@ export interface Connection {
 }
 export type Measurement =
   | "downwardLoss" | "screedTemperature" | "surfaceTemperature" | "heatFlux"
-  | "roomTemperature" | "envelopeLoss" | "ventilationLoss" | "netHeat" | "storedThermalEnergy" | "temperatureRate" | "adjacentHeat" | "effectiveHeatCapacity" | "internalHeat"
+  | "roomTemperature" | "envelopeLoss" | "groundLoss" | "ventilationLoss" | "netHeat" | "storedThermalEnergy" | "temperatureRate" | "adjacentHeat" | "effectiveHeatCapacity" | "internalHeat"
   | "acInputPower" | "acOutputPower" | "converterLossEnergy" | "transferLossEnergy" | "batteryHeatEnergy"
   | "gridPower" | "gridReactivePower" | "gridImportPower" | "gridExportPower" | "gridImportEnergy" | "gridExportEnergy" | "gridVoltage" | "gridFrequency" | "synchronized" | "backupAvailable" | "dcPower" | "acConversionPower"
   | "incidentEnergy" | "inputPower" | "outputPower" | "conversionLoss" | "mppPower" | "mppVoltage" | "mppCurrent" | "trackingEfficiency" | "incidentPower" | "generatedEnergy" | "outputEnergy" | "lostEnergy"
@@ -142,6 +142,8 @@ export interface Project {
   environment?: { ambient: number };
   thermalSpaces?: import("./thermal-spaces").ThermalSpace[];
   thermalElements?: import("./thermal-spaces").ThermalElement[];
+  /** Boundary behind floor elements on the ground. Absent = fixed at the assumed default (see ground.ts). */
+  ground?: import("./ground").GroundModel;
 }
 export const DEFAULT_AMBIENT = 20;
 /**

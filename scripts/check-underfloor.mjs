@@ -121,7 +121,7 @@ md += `\n## Timestep convergence (backward Euler)\n\nOutlet temperature 240 s af
 convergence.forEach((c, i) => { md += `| ${c.h} | ${f(c.value)} | ${f(c.error)} | ${i + 1 < convergence.length ? f(c.error / convergence[i + 1].error) : '—'} |\n`; });
 md += `\nRatios near 2 confirm first-order convergence. Steady states are exact for any step.\n\n## Heat-pump house, hourly\n\n| Hour | House air (°C) | Floor to house (W) | Floor downwards (W) | Heat-pump output (W) | Energy residual (J) |\n| --- | --- | --- | --- | --- | --- |\n`;
 for (const x of house.samples) md += `| ${x.hour} | ${x.room.toFixed(2)} | ${x.floor.toFixed(0)} | ${x.down.toFixed(0)} | ${x.hp.toFixed(0)} | ${x.residual.toExponential(2)} |\n`;
-md += `\nThe floor's downward loss goes to the room's floor boundary, which in this example is the outdoor temperature (Thermal Spaces have no ground model). Hourly values are instantaneous at the end of each hour. Six simulated hours took about ${Math.round(house.seconds / 10) * 10} s on this host (not a guarantee).\n`;
+md += `\nThe floor's downward loss goes to the room's floor boundary, which in this example is the ground: a fixed 10 °C (assumed annual mean) behind R_u plus the soil's EN ISO 13370 resistance (docs/GROUND.md). Hourly values are instantaneous at the end of each hour. Six simulated hours took about ${Math.round(house.seconds / 10) * 10} s on this host (not a guarantee).\n`;
 const previous = await readFile('validation/underfloor-heating.md', 'utf8').catch(() => '');
 // The timing sentence changes on every run; rewrite only when a result changes.
 const strip = t => t.replace(/took about \d+ s/, '');

@@ -371,6 +371,11 @@ export const actions = {
       toast(`Preset import failed: ${(e as Error).message}`);
     }
   },
+  /** Fixed ground boundary behind floor elements on the ground (°C). */
+  groundTemperature(temperature: number) {
+    if (!Number.isFinite(temperature)) return toast("Ground temperature must be a finite number.");
+    edit({ ...state.project, ground: { kind: 'fixed', temperature } });
+  },
   /** Experiment environment inherited by all thermal boundaries. */
   environment(ambient: number) {
     if (!Number.isFinite(ambient)) return toast("Ambient temperature must be a finite number.");

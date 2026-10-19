@@ -14,7 +14,7 @@ import { sensorTemperature, storageEnthalpy } from "./storage-tank";
 import { screedKey, surfaceTemperature } from "./underfloor-heating";
 import type { Simulation } from "./engine";
 export const units: Record<Measurement, string> = {
-  roomTemperature: "°C", envelopeLoss: "W", ventilationLoss: "W", netHeat: "W", storedThermalEnergy: "J", temperatureRate: "K/s", adjacentHeat: "W", effectiveHeatCapacity: "J/K", internalHeat: "W",
+  roomTemperature: "°C", envelopeLoss: "W", groundLoss: "W", ventilationLoss: "W", netHeat: "W", storedThermalEnergy: "J", temperatureRate: "K/s", adjacentHeat: "W", effectiveHeatCapacity: "J/K", internalHeat: "W",
   acInputPower: 'W', acOutputPower: 'W', converterLossEnergy: 'J', transferLossEnergy: 'J', batteryHeatEnergy: 'J',
   gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',

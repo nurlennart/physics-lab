@@ -1081,10 +1081,15 @@
       "kind": "floor",
       "side": "floor",
       "from": "heatPumpCold-space-1",
-      "to": "outdoors",
-      "uValue": 0.35,
+      "to": "ground",
+      "uValue": 0.23,
       "heatCapacity": 0,
-      "preset": "Illustrative insulated construction"
+      "preset": "Slab on ground, EN ISO 13370 from the heated floor layers",
+      "slab": {
+        "wallThickness": 0.3,
+        "soilConductivity": 2,
+        "floorResistance": 2.7375000000000003
+      }
     },
     {
       "id": "heatPumpCold-element-6",

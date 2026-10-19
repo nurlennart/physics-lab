@@ -7,7 +7,8 @@ import { prop, type Component, type Project } from './model';
 import { WATER_CP, WATER_RHO } from './units';
 import { exchangeWeight } from './panel-radiator';
 import { resolveAmbient, spaceTemperature } from './environment';
-import { outdoorTemperature, type ThermalElement } from './thermal-spaces';
+import { elementArea, outdoorTemperature, slabPerimeter, type ThermalElement } from './thermal-spaces';
+import { GROUND, defaultSlab, groundTemperature, soilResistance } from './ground';
 import {
   BASE_CURVE_EXPONENT, BASE_CURVE_K, EN1264_ALPHA, EN1264_B, EN1264_COVER_REF, EN1264_LAMBDA_REF, FLOORTEC_B,
   coverFactor, coverings, diameterFactor, floortec, spacingFactor, spacings,
@@ -46,10 +47,10 @@ export function characteristic(c: Component) {
 /**
  * Per-area conductances (W/(m²·K)) of the node model: water → pipe plane g_wp, plane → room 1/R_o, plane → below 1/R_u.
  * g_wp is chosen so that, with the space below at room temperature, the upward flux is exactly K_H·Δθ_H and the downward
- * flux is EN 1264's q_u = (R_o·q + θ_i − θ_u)/R_u.
+ * flux is EN 1264's q_u = (R_o·q + θ_i − θ_u)/R_u. `extra` is resistance beyond the construction (the soil over ground).
  */
-export function floorConductances(c: Component) {
-  const k = characteristic(c), ro = upwardResistance(c), ru = prop(c, 'downwardResistance');
+export function floorConductances(c: Component, extra = 0) {
+  const k = characteristic(c), ro = upwardResistance(c), ru = prop(c, 'downwardResistance') + extra;
   return { k, ro, ru, plane: k * (1 + ro / ru) / (1 - ro * k), up: 1 / ro, down: 1 / ru };
 }
 /** Water per cell capacity (J/K): all loops' water in one cell (fixed mass at the reference density). */
@@ -64,8 +65,8 @@ export const screedCapacity = (c: Component) => prop(c, 'heatedArea') / FLOOR_CE
  * weight uses the steady series conductance, so the steady chain is the exact exponential (log-mean) profile; it is capped
  * at ṁ·c/g_eff to keep the implicit coefficients non-negative (very low flow).
  */
-export function floorExchange(c: Component, dt: number, flowCapacity: number) {
-  const g = floorConductances(c), share = prop(c, 'heatedArea') / FLOOR_CELLS;
+export function floorExchange(c: Component, dt: number, flowCapacity: number, extra = 0) {
+  const g = floorConductances(c, extra), share = prop(c, 'heatedArea') / FLOOR_CELLS;
   const plane = g.plane * share, up = g.up * share, down = g.down * share, storage = dt > 0 ? screedCapacity(c) / dt : 0;
   const d = storage + plane + up + down, rest = d - plane, effective = plane * rest / d, series = plane * (up + down) / (plane + up + down);
   const w = flowCapacity > 0 ? Math.min(exchangeWeight(series / flowCapacity), flowCapacity / effective) : 0;
@@ -82,16 +83,29 @@ export function floorElement(p: Pick<Project, 'thermalElements'>, spaceId: strin
 }
 /** True when the loop exchanges with its assigned Thermal Space (no local override). */
 export const roomCoupled = (p: Project, c: Component) => !!c.thermalSpaceId && resolveAmbient(p, c).source === 'space';
+/** Floor construction resistance R_f of the heated floor (m²·K/W): covering and screed above the pipes, R_u below. */
+export const heatedFloorResistance = (c: Component) => upwardResistance(c) - 1 / EN1264_ALPHA + prop(c, 'downwardResistance');
 /**
- * The boundary under the floor (°C): the far side of the room's floor element (outdoors/ground or the room below),
- * the room's outdoor boundary when it has no floor element, or the loop's own ambient outside a room.
+ * Soil resistance (m²·K/W) under a loop on a slab-on-ground element: the EN ISO 13370 calculation for the whole slab
+ * (B′ from the gross floor area and exposed perimeter) with the heated floor's own layers as R_f, less R_si and R_f.
+ * It is added below R_u once; the element's own U-value applies only to the unheated rest of the floor.
  */
-export function belowBoundary(p: Project, c: Component): { temperature: number; space?: string } {
-  if (!roomCoupled(p, c)) return { temperature: resolveAmbient(p, c).temperature };
+export function loopSoilResistance(p: Project, c: Component, e: ThermalElement) {
+  const slab = e.slab ?? defaultSlab();
+  return soilResistance(elementArea(p, e), slabPerimeter(p, e), slab.wallThickness, slab.soilConductivity, heatedFloorResistance(c));
+}
+/**
+ * The boundary under the floor (°C): the far side of the room's floor element (outdoors, the ground or the room below),
+ * the room's outdoor boundary when it has no floor element, or the loop's own ambient outside a room. `resistance` is
+ * added below R_u: the soil's over the ground, zero otherwise.
+ */
+export function belowBoundary(p: Project, c: Component): { temperature: number; space?: string; ground?: true; resistance: number } {
+  if (!roomCoupled(p, c)) return { temperature: resolveAmbient(p, c).temperature, resistance: 0 };
   const room = p.thermalSpaces!.find(s => s.id === c.thermalSpaceId)!, e = floorElement(p, room.id);
   const other = e && (e.from === room.id ? e.to : e.from);
-  if (!other || other === 'outdoors') return { temperature: outdoorTemperature(p, room) };
-  return { temperature: spaceTemperature(p, other), space: other };
+  if (e && other === GROUND) return { temperature: groundTemperature(p), ground: true, resistance: loopSoilResistance(p, c, e) };
+  if (!other || other === 'outdoors') return { temperature: outdoorTemperature(p, room), resistance: 0 };
+  return { temperature: spaceTemperature(p, other), space: other, resistance: 0 };
 }
 /** Heated area of room-coupled loops laid on a floor element (it no longer conducts the room air through that area). */
 export const heatedFloorArea = (p: Project, e: ThermalElement) => p.components.reduce((sum, c) =>

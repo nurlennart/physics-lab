@@ -64,11 +64,11 @@ The inlet weight w = 1/x − 1/(eˣ − 1) uses the steady series conductance x 
 
 Room air and the space below come from the same resolution as every component (`resolveAmbient`):
 
-- **Assigned to a Thermal Space (inherit).** Upward heat enters that room. The space below is the far side of the room's floor element: another room (the floor is that room's ceiling element), or outdoors. A room without a floor element uses its outdoor boundary. The heated area is **taken out of the floor element's conducting area**: the floor element now conducts room air to below only through the remaining area, and the loop's own downward path (R_u) crosses the heated part. A heated area larger than the floor element or the room is rejected.
+- **Assigned to a Thermal Space (inherit).** Upward heat enters that room. The space below is the far side of the room's floor element: another room (the floor is that room's ceiling element), the [ground](GROUND.md), or outdoors. A room without a floor element uses its outdoor boundary. The heated area is **taken out of the floor element's conducting area**: the floor element now conducts room air to below only through the remaining area, and the loop's own downward path (R_u) crosses the heated part. A heated area larger than the floor element or the room is rejected.
 - **Downward heat into a room below** is an internal exchange credited to that room (its readings list the loop as a device). It has its own implicit response in the room coupling.
 - **Local override or outside any room.** The prescribed ambient stands for both the room and the space below; all heat goes to the external ambient ledger.
 
-Thermal Spaces have no ground model, so a ground-floor loop over an "outdoors" floor element loses heat to the outdoor air temperature. That overstates the loss compared with real ground (about 10 °C under a slab in winter).
+**On the ground.** When the floor element rests on the ground, downward loss crosses R_u plus the soil's EN ISO 13370 share R_g (from the same slab calculation, using the heated floor's own layers) to a fixed ground temperature, 10 °C by default as an assumption. R_u is then the construction only; do not include soil in it. A floor element left on the outdoor endpoint still loses to the outdoor air. Details, no-double-counting argument and scope: [GROUND.md](GROUND.md).
 
 ## Energy accounting
 
@@ -86,7 +86,7 @@ Probes and sensors can read supply, return and mean water temperature, the mean 
 
 ## Example
 
-**Heat pump and underfloor heating** (and its cold-snap and buffer variants) heats the 120 m² single-zone house through the FLOORTEC tacker system at 100 mm spacing: twelve 100 m loops under the whole floor (R_λ,B 0.10, R_u 2.6 m²K/W, consistent with the floor's U 0.35 W/(m²·K)). It replaces the earlier equivalent 60 m pipe with UA 520 W/K, which had no screed storage, no downward loss and no surface temperature. The floor starts near its steady state: 27 °C at 2 °C outdoors, 33 °C in the −15 °C cold snap. A trace follows the floor surface temperature.
+**Heat pump and underfloor heating** (and its cold-snap and buffer variants) heats the 120 m² single-zone house through the FLOORTEC tacker system at 100 mm spacing: twelve 100 m loops under the whole floor (R_λ,B 0.10, R_u 2.6 m²K/W for the insulation and slab), on a slab on the [ground](GROUND.md): the soil adds 1.44 m²K/W below R_u and the ground is at the assumed 10 °C, so about 0.5 kW goes down at 2 °C outdoors (1.15 kW when the floor faced the outdoor air). It replaces the earlier equivalent 60 m pipe with UA 520 W/K, which had no screed storage, no downward loss and no surface temperature. The floor starts near its steady state: 27 °C at 2 °C outdoors, 33 °C in the −15 °C cold snap. A trace follows the floor surface temperature.
 
 ## Calibration accuracy
 
@@ -113,6 +113,6 @@ The FLOORTEC tables are themselves EN 1264 calculations of a registered system, 
 - **EN 1264 range.** Spacing 50–375 mm, D 8–30 mm, cover 15–65 mm, R_λ,B 0–0.15 m²K/W. Type A only: no dry systems (type B), no thin-screed systems, no wall or ceiling heating. Only the 16 × 2 FLOORTEC pipe is calibrated; other pipes use the EN 1264 standard B (6.7) or a user value, without the standard's pipe-conductivity correction.
 - **Cooling.** Water below the room temperature uses the same characteristic; dew point and the different upward heat transfer coefficient of a cooled floor are not modelled.
 - **Manifold.** Loops in one component are identical and share the flow equally; unequal loops need separate components in parallel with their own balancing valves. Manifold connection pipes are separate pipe components.
-- **Ground.** Downward loss to a ground-floor element goes to the outdoor temperature (no ground model in Thermal Spaces).
+- **Ground.** A fixed ground temperature with the ISO 13370 steady-state soil resistance: no seasonal swing, no soil storage, no basement or edge insulation ([GROUND.md](GROUND.md)).
 
 The model is suitable for heating-system and control experiments (heat pumps, flow temperature, storage, room interaction). It is not a substitute for an EN 1264-3 design of a specific floor.

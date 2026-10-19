@@ -32,13 +32,15 @@ Q_ventilation = rho × cp × airflow × (T_room - T_outdoor)
 airflow = ACH × volume / 3600, or explicitly configured m³/s
 ```
 
-Air properties are constant dry-air approximations. Additional capacity and optional element capacities participate at the single zone temperature. Exterior element capacity belongs to its room; an interior element allocates half to each room. These are effective storage contributions, not separate simulated wall temperatures. No detailed stratification, wall conduction delay, radiation network, solar-gain model, ground temperature or airflow network is claimed.
+Air properties are constant dry-air approximations. Additional capacity and optional element capacities participate at the single zone temperature. Exterior element capacity belongs to its room; an interior element allocates half to each room. These are effective storage contributions, not separate simulated wall temperatures. No detailed stratification, wall conduction delay, radiation network, solar-gain model or airflow network is claimed.
+
+A floor element can rest on the **ground**: its heat goes to a fixed, project-wide ground temperature (an assumed 10 °C annual mean unless set), with either an entered U-value or the EN ISO 13370 slab-on-ground transmittance. Ground loss is reported separately from envelope loss and leaves as ambient energy. This is the ISO 13370 steady-state boundary only: no seasonal swing, soil storage, basements or edge insulation. See [GROUND.md](GROUND.md).
 
 ## Coupling and energy
 
 The engine combines room and component body equations with its conservative hydraulic transport at accepted multiphysics intervals. Hydraulic mixer/cell responses are eliminated into the same linear thermal assembly using affine unit responses. Kermi conductance and exchange weights remain evaluated from the interval's start state, exactly as in the established radiator model. Trial responses operate on private fluid/boiler copies; only a successful complete solve commits them. Existing electrical, hydraulic, controller and protection timestep bounds remain in force. Temperature-dependent device storage uses the same interval-start coefficients as its electrical stamp, even though room/body temperatures advance within the accepted substep.
 
-Underfloor heating heats its room from its screed nodes and loses heat into the space under the room's floor element (another room or outdoors); its heated area is taken out of that floor element's conducting area. See [UNDERFLOOR-HEATING.md](UNDERFLOOR-HEATING.md).
+Underfloor heating heats its room from its screed nodes and loses heat into the space under the room's floor element (another room, the ground through the soil's ISO 13370 resistance, or outdoors); its heated area is taken out of that floor element's conducting area. See [UNDERFLOOR-HEATING.md](UNDERFLOOR-HEATING.md).
 
 The Kermi radiator delivers its actual integrated cell exchange, including stored water and steel heat after shutdown. Its water input and room output differ while its inventory warms or cools. Generic component body losses enter the assigned room only after leaving the body's heat storage. Wet-rotor circulator losses enter the water; they do not also become immediate room gains. Boiler auxiliary heat, fan heat, dry pump losses, drive braking and assigned flywheel losses retain explicit destinations. Mechanical shaft exports and rigid-body contact losses retain their existing external ledger meaning.
 

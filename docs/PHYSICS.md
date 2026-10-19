@@ -398,7 +398,7 @@ C_w·dT_k/dt = ṁ·c·(T_{k−1} − T_k) − g_wp·(X_k − S_k) + P_diss/N
 C_s·dS_k/dt = g_wp·(X_k − S_k) − (S_k − θ_i)·a/R_o − (S_k − θ_u)·a/R_u,   g_wp = a·K_H·(1 + R_o/R_u)/(1 − R_o·K_H)
 ```
 
-The implicit screed node is eliminated per cell, leaving the same affine cell form as the radiator chain (effective conductance and per-cell effective temperature), so the enthalpy transport stays one linear solve and the room coupling stays affine. Steady output is exactly K_H·Δθ_H (log-mean) and the downward loss EN 1264's q_u. See [UNDERFLOOR-HEATING.md](UNDERFLOOR-HEATING.md).
+The implicit screed node is eliminated per cell, leaving the same affine cell form as the radiator chain (effective conductance and per-cell effective temperature), so the enthalpy transport stays one linear solve and the room coupling stays affine. Steady output is exactly K_H·Δθ_H (log-mean) and the downward loss EN 1264's q_u. Over a floor on the ground, R_u is followed by the soil's EN ISO 13370 share R_g = 1/U − R_si − R_f and θ_u is the fixed ground temperature. See [UNDERFLOOR-HEATING.md](UNDERFLOOR-HEATING.md) and [GROUND.md](GROUND.md).
 
 ### Panel radiator
 

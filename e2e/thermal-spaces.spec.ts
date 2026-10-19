@@ -69,3 +69,29 @@ test('reverse drawing uses metres consistently after canvas zoom', async ({ page
   expect(await canvas.locator(':scope > g').first().getAttribute('transform')).not.toBe(beforePan);
   expect(Number(await page.getByLabel('Room width', { exact: true }).inputValue())).toBeCloseTo(3 / scale, 6);
 });
+
+test('a floor rests on the ground: ISO 13370 U-value, fixed ground temperature and ground loss', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/'); await page.getByRole('button', { name: 'New empty experiment', exact: true }).click();
+  const canvas = page.locator('.construction-canvas'), box = (await canvas.boundingBox())!;
+  await page.getByRole('button', { name: 'Draw Thermal Space', exact: true }).click();
+  await page.mouse.move(box.x + 100, box.y + 110); await page.mouse.down(); await page.mouse.move(box.x + 500, box.y + 410, { steps: 8 }); await page.mouse.up();
+  await expect(page.getByTestId('ground-hint')).toHaveCount(0);
+  // Walls cannot rest on the ground; the floor can.
+  await expect(page.getByLabel('North adjacency', { exact: true }).locator('option[value="ground"]')).toHaveCount(0);
+  await page.getByLabel('Floor adjacency', { exact: true }).selectOption('ground');
+  await expect(page.getByTestId('ground-hint')).toContainText('assumed default 10 °C');
+  await expect(page.getByLabel('Floor U-value', { exact: true })).toBeEnabled(); // entered U until R_f is given
+  await page.getByLabel('Floor U-value source', { exact: true }).selectOption('iso');
+  await expect(page.getByLabel('Floor U-value', { exact: true })).toBeDisabled();
+  // 4 × 3 m room: B′ = 12/7 m; R_f 3 → d_t 6.72 m ≥ B′ → U = 2/(0.457·12/7 + 6.72) = 0.2665 W/(m²·K).
+  await expect(page.getByTestId('slab-basis')).toContainText('B′ = A/(½P) = 1.71 m');
+  await expect(page.getByLabel('Floor U-value', { exact: true })).toHaveValue('0.2665');
+  await page.getByLabel('Ground temperature', { exact: true }).fill('7'); await page.getByLabel('Ground temperature', { exact: true }).press('Enter');
+  await expect(page.getByTestId('ground-hint')).not.toContainText('assumed default');
+  await page.getByRole('button', { name: 'Advance 60 s', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled();
+  // 20 °C room over 7 °C ground through 12 m² at 0.2665 W/(m²·K): about 41.6 W.
+  await expect(page.locator('.room-reading', { hasText: 'ground Loss' }).locator('b')).toContainText(/^41\.[4-6]/);
+  expect(errors).toEqual([]);
+});

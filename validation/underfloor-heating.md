@@ -71,8 +71,8 @@ Reference system: FLOORTEC tacker system, N. reg. 7F147 with the FLOORTEC Alu-Ve
 
 | Check | Reference | Model | Error | Tolerance | Result | Basis |
 | --- | --- | --- | --- | --- | --- | --- |
-| house air after 6 h (°C), within 19–22 | 20.5 | 20.82098 | 0.3209813 | 1.5 | PASS | Plausibility band around the 20 °C design room temperature |
-| energy residual after 6 h (J) | 0 | -0.0004593845 | 0.0004593845 | 0.1 | PASS | Global ledger |
+| house air after 6 h (°C), within 19–22 | 20.5 | 21.01679 | 0.5167905 | 1.5 | PASS | Plausibility band around the 20 °C design room temperature |
+| energy residual after 6 h (J) | 0 | -0.0002195993 | 0.0002195993 | 0.1 | PASS | Global ledger |
 
 ## Timestep convergence (backward Euler)
 
@@ -91,11 +91,11 @@ Ratios near 2 confirm first-order convergence. Steady states are exact for any s
 
 | Hour | House air (°C) | Floor to house (W) | Floor downwards (W) | Heat-pump output (W) | Energy residual (J) |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 20.16 | 3192 | 1120 | 5110 | -6.53e-5 |
-| 2 | 20.28 | 3324 | 1138 | 6536 | -1.43e-4 |
-| 3 | 20.42 | 3279 | 1140 | 5494 | -2.22e-4 |
-| 4 | 20.55 | 3391 | 1156 | 6240 | -2.98e-4 |
-| 5 | 20.70 | 3327 | 1157 | 4628 | -3.79e-4 |
-| 6 | 20.82 | 3365 | 1166 | 5817 | -4.59e-4 |
+| 1 | 20.18 | 3255 | 488 | 4951 | -3.81e-5 |
+| 2 | 20.33 | 3409 | 501 | 6158 | -1.12e-4 |
+| 3 | 20.51 | 3389 | 506 | 4878 | -1.74e-4 |
+| 4 | 20.68 | 3482 | 516 | 5678 | -2.13e-4 |
+| 5 | 20.86 | 3512 | 523 | 1947 | -1.96e-4 |
+| 6 | 21.02 | 3442 | 524 | 5023 | -2.20e-4 |
 
-The floor's downward loss goes to the room's floor boundary, which in this example is the outdoor temperature (Thermal Spaces have no ground model). Hourly values are instantaneous at the end of each hour. Six simulated hours took about 80 s on this host (not a guarantee).
+The floor's downward loss goes to the room's floor boundary, which in this example is the ground: a fixed 10 °C (assumed annual mean) behind R_u plus the soil's EN ISO 13370 resistance (docs/GROUND.md). Hourly values are instantaneous at the end of each hour. Six simulated hours took about 90 s on this host (not a guarantee).

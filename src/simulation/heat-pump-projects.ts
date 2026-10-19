@@ -1,6 +1,8 @@
 import { applyDerived } from './parameters';
 import { catalog, connect, makeComponent, uid, type Component, type Kind, type Measurement, type Project, type Property } from './model';
-import { makeEnvelope, makeThermalSpace } from './thermal-spaces';
+import { elementU, makeEnvelope, makeThermalSpace } from './thermal-spaces';
+import { GROUND, defaultSlab } from './ground';
+import { heatedFloorResistance } from './underfloor-heating';
 
 export type HeatPumpMode = 'heatPumpHouse' | 'heatPumpCold' | 'heatPumpBuffer';
 export const heatPumpTitles: Record<HeatPumpMode, string> = {
@@ -12,7 +14,7 @@ export const heatPumpTitles: Record<HeatPumpMode, string> = {
  * A Bosch Compress 6800i AW 7 OR-S heats a 120 m² single-zone house through wet-screed underfloor heating (FLOORTEC
  * tacker 16 × 2, 100 mm spacing, twelve 100 m loops under the whole floor, R_λ,B 0.10). Envelope ≈ 200 W/K: about 6 kW at
  * −10 °C, 3.6 kW at +2 °C and below the 1.8 kW minimum modulation on mild days. The heating curve runs from 25 °C (20 °C
- * outdoor) to 35 °C (−10 °C).
+ * outdoor) to 35 °C (−10 °C). The floor is a slab on the ground (EN ISO 13370 boundary at the assumed 10 °C).
  */
 export function heatPumpStarter(mode: HeatPumpMode): Project {
   // Every house has hot water: the indoor unit's 3-way valve VW1 serves a Bosch WH 290 cylinder through its coil.
@@ -25,7 +27,7 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
   const trace = (c: Component, measurement: Measurement, name: string, color: string) => p.probes!.push({ id: uid(), component: c.id, measurement, name, color, visible: true });
   const room = makeThermalSpace(900, 160, 12, 10);
   Object.assign(room, { name: 'House (single zone)', initialTemperature: cold ? 19 : 20, airChangesPerHour: 0.6 });
-  const envelope = makeEnvelope(room).map(e => e.kind === 'wall' ? { ...e, uValue: 0.5, preset: 'Illustrative 1990s masonry' } : e.kind === 'floor' ? { ...e, uValue: 0.35 } : e);
+  const envelope = makeEnvelope(room).map(e => e.kind === 'wall' ? { ...e, uValue: 0.5, preset: 'Illustrative 1990s masonry' } : e.kind === 'floor' ? { ...e, to: GROUND, uValue: 0.35, slab: defaultSlab() } : e);
   const north = envelope.find(e => e.side === 'north')!, south = envelope.find(e => e.side === 'south')!;
   envelope.push({ id: uid(), name: 'North windows', kind: 'window', from: room.id, to: 'outdoors', area: 5, parentId: north.id, uValue: 1.3, heatCapacity: 0, preset: 'Illustrative double glazing' });
   envelope.push({ id: uid(), name: 'South windows', kind: 'window', from: room.id, to: 'outdoors', area: 10, parentId: south.id, uValue: 1.3, heatCapacity: 0, preset: 'Illustrative double glazing' });
@@ -35,12 +37,16 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
   const hp = add('heatPump', 330, 330, { targetMode: 'curve', curveDesignOutdoor: -10, curveDesignFlow: 35, curveFootFlow: 25, relativeHumidity: cold ? 80 : 85, initialTemperature: 25, hotWater: dhw }, 'Bosch CS6800iAW 7 OR-S');
   const pump = add('circulator', 330, 650, { mode: 'constantPressure', headSetpoint: 4 }, 'Circulator · 4 m constant');
   const supply = add('pipe', dhw ? 950 : 640, 330, { diameter: 0.028, length: 10, thermalUA: 1, segments: 2, initialTemperature: 25 }, 'Insulated flow · 10 m');
-  // Downward resistance 2.6 m²K/W: the floor element's U 0.35 W/(m²·K) less the screed and covering above the pipes (R_o 0.23).
+  // Downward resistance 2.6 m²K/W: insulation and slab under the pipes; the soil's EN ISO 13370 share is added for the ground.
   const floor = add('underfloorHeating', 1300, 560, { heatedArea: 120, loops: 12, pipeSpacing: 0.1, downwardResistance: 2.6, initialTemperature: cold ? 33 : 27 }, 'Underfloor heating · 12 loops');
   floor.variant = 'spacing100';
   const back = add('pipe', 640, 650, { diameter: 0.028, length: 10, thermalUA: 1, segments: 2, initialTemperature: 25 }, 'Insulated return · 10 m');
   // The whole circuit is indoors: pipe losses warm the house (outside it, still pipes would freeze in a cold snap).
   for (const c of [floor, supply, back]) { c.thermalSpaceId = room.id; c.thermalSpacePinned = true; }
+  // The slab's U for any unheated floor comes from the same layers (the loop covers all of it here).
+  const slab = envelope.find(e => e.kind === 'floor')!;
+  slab.slab!.floorResistance = heatedFloorResistance(floor);
+  Object.assign(slab, { uValue: Number(elementU(p, slab).toFixed(3)), preset: 'Slab on ground, EN ISO 13370 from the heated floor layers' });
   wire(mains, 'a', hp, 'L'); wire(mains, 'b', hp, 'N'); wire(backupSupply, 'a', hp, 'BL'); wire(backupSupply, 'b', hp, 'BN');
   wire(mains, 'a', pump, 'a'); wire(mains, 'b', pump, 'b');
   // Hot water: the indoor unit's 3-way valve VW1 diverts the flow from the heating (A) to the cylinder coil (B) while the
