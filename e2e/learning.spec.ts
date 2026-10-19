@@ -25,14 +25,29 @@ test('mission starts empty, offers optional hints, and accepts equipment purchas
   await page.getByRole('button', { name: 'Open challenge guidebook' }).click();
   await expect(guide).toContainText('€45 / €100 spent');
 });
-test('example shelf fits a phone and filters mechanisms', async ({ page }) => {
+test('example shelf fits a phone, starts with the beginner group, filters and searches', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   await page.locator('.file-menu > summary').click();
   await page.getByRole('button', { name: 'Starters & examples', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Start here', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.example-card').first()).toContainText('First light');
   await page.getByRole('button', { name: 'Mechanisms', exact: true }).click();
   await expect(page.locator('.example-card')).toHaveCount(5);
   await expect(page.getByRole('button', { name: 'Open Gravity playground' })).toBeVisible();
+  // A search looks through every group.
+  await page.getByLabel('Search examples').fill('kermi');
+  await expect(page.getByRole('button', { name: 'Open Bosch boiler, ALPHA2 and Kermi radiator', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Open Gravity playground' })).toHaveCount(0);
+  await page.getByLabel('Search examples').fill('heat pump'); // the phrase ranks above the separate words
+  await expect(page.locator('.example-card').first()).toContainText('Heat pump');
+  await page.getByLabel('Search examples').fill('solar battery');
+  await expect(page.getByRole('button', { name: 'Open Basic solar charging', exact: true })).toBeVisible();
+  await page.getByLabel('Search examples').fill('flux capacitor');
+  await expect(page.getByTestId('examples-empty')).toBeVisible();
+  await page.getByRole('button', { name: 'Solar & storage', exact: true }).click(); // a group clears the search
+  await expect(page.getByLabel('Search examples')).toHaveValue('');
+  await expect(page.locator('.example-card')).toHaveCount(9);
   const bounds = await page.getByRole('dialog').boundingBox();
   expect(bounds!.width).toBeLessThanOrEqual(390);
 });
@@ -54,7 +69,7 @@ test('heat exchanger example opens from the water shelf and visibly recovers hea
   await page.goto('/');
   await page.locator('.file-menu > summary').click();
   await page.getByRole('button', { name: 'Starters & examples', exact: true }).click();
-  await page.getByRole('button', { name: 'Water & industry', exact: true }).click();
+  await page.getByRole('button', { name: 'Water & pumping', exact: true }).click();
   await page.getByRole('button', { name: 'Open Heat exchanger lab', exact: true }).click();
   await expect(page.locator('[data-component="heatExchanger"]')).toHaveCount(1);
   await expect(page.locator('[data-component="tank"]')).toHaveCount(4);

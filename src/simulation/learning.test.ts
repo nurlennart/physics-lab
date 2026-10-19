@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { examples } from './learning';
+import { exampleGroups, examples } from './learning';
 import { starter, parseProject, serializeProject } from './projects';
 import { challengeDefinition, challengeList, hydraulicState } from './challenges';
 import { challengeError } from './integrity';
@@ -84,5 +84,15 @@ describe('heat exchanger example', () => {
     expect(weak.hot.duty).toBeLessThan(Number(strong.hot.duty) * 0.3);
     expect(weak.hot.temperature).toBeGreaterThan(strong.hot.temperature);
     expect(weak.cold.temperature).toBeLessThan(strong.cold.temperature);
+  });
+});
+
+describe('example shelf groups', () => {
+  it('places every example in a listed group, keeps groups contiguous and starts with the beginner group', () => {
+    expect(new Set(examples.map(e => e.mode)).size).toBe(examples.length);
+    for (const e of examples) expect(exampleGroups, e.mode).toContain(e.group);
+    for (const g of exampleGroups) expect(examples.some(e => e.group === g), g).toBe(true);
+    expect(examples.map(e => e.group).filter((g, i, all) => g !== all[i - 1])).toEqual([...exampleGroups]);
+    expect(examples[0].mode).toBe('light');
   });
 });

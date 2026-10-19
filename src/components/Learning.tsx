@@ -1,18 +1,30 @@
 import { useState } from 'react';
-import { BookOpen, X, ArrowUpRight, Lightbulb, Star, Check } from 'lucide-react';
+import { BookOpen, X, ArrowUpRight, Lightbulb, Star, Check, Search } from 'lucide-react';
 import { actions, simulation, useLab } from '../editor/store';
-import { examples } from '../simulation/learning';
+import { exampleGroups, examples } from '../simulation/learning';
 import { challengeDefinition, evaluateChallenge } from '../simulation/challenges';
 import { projectCost } from '../simulation/model';
 
 export function Examples() {
-  const [category, setCategory] = useState('All');
-  const groups = ['All', 'Electrical & thermal', 'Water & industry', 'Mechanisms'];
+  const [category, setCategory] = useState<string>('Start here'), [query, setQuery] = useState('');
+  const groups = ['All', ...exampleGroups];
+  // A search looks through every group: all words must appear in the title, tag line, description or group. The whole
+  // phrase in the title ranks first, then the phrase anywhere, then the separate words; shelf order within each rank.
+  const phrase = query.trim().toLowerCase(), words = phrase.split(/\s+/).filter(Boolean);
+  const text = (example: typeof examples[number]) => `${example.title} ${example.category} ${example.description} ${example.group}`.toLowerCase();
+  const rank = (example: typeof examples[number]) => example.title.toLowerCase().includes(phrase) ? 0 : text(example).includes(phrase) ? 1 : 2;
+  const shown = words.length
+    ? examples.filter(example => words.every(word => text(example).includes(word))).map((example, i) => ({ example, i })).sort((a, b) => rank(a.example) - rank(b.example) || a.i - b.i).map(x => x.example)
+    : examples.filter(example => category === 'All' || category === example.group);
   return <div className="modal-backdrop"><section className="learning-dialog" role="dialog" aria-modal="true" aria-label="Starters & examples">
     <div className="dialog-header"><div><span className="eyebrow">The experiment shelf</span><h2>Start with something that works.</h2></div><button aria-label="Close examples" onClick={() => actions.set({ view: 'workspace' })}><X size={20}/></button></div>
     <p className="dialog-intro">Working circuits, live measurements, and an idea to try next. Open any example as an editable sandbox.</p>
-    <div className="learning-filters" aria-label="Example categories">{groups.map(group => <button key={group} aria-pressed={category === group} onClick={() => setCategory(group)}>{group}</button>)}</div>
-    <div className="example-grid">{examples.filter(example => category === 'All' || category === example.group).map(example => <article className="example-card" key={example.mode}>
+    <div className="learning-filters" aria-label="Example categories">
+      <label className="learning-search"><Search size={15}/><input type="search" aria-label="Search examples" placeholder="Search examples" value={query} onChange={e => setQuery(e.target.value)} /></label>
+      {groups.map(group => <button key={group} aria-pressed={!words.length && category === group} onClick={() => { setCategory(group); setQuery(''); }}>{group}</button>)}
+    </div>
+    {!shown.length && <p className="dialog-intro" data-testid="examples-empty">No example matches “{query.trim()}”.</p>}
+    <div className="example-grid">{shown.map(example => <article className="example-card" key={example.mode}>
       <span className="eyebrow">{example.category}</span><h3>{example.title}</h3><p>{example.description}</p><div className="try-next"><Lightbulb size={16}/><p><strong>Try this</strong>{example.experiment}</p></div>
       <button className="primary-button" onClick={() => actions.newProject(example.mode)}>Open {example.title}<ArrowUpRight size={15}/></button>
     </article>)}</div>

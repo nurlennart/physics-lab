@@ -3085,6 +3085,9 @@ select option {
 .learning-filters { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0; }
 .learning-filters button { padding: 8px 12px; border: 1px solid var(--n-10); border-radius: 20px; color: var(--n-14); }
 .learning-filters button[aria-pressed="true"] { background: var(--n-10); border-color: var(--ok); color: var(--n-15); }
+.learning-search { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; border: 1px solid var(--n-10); border-radius: 20px; color: var(--n-13); flex: 1 1 200px; max-width: 280px; }
+.learning-search input { flex: 1; min-width: 0; padding: 8px 0; border: 0; background: transparent; color: var(--n-15); font: inherit; outline: none; }
+.learning-search:focus-within { border-color: var(--ok); }
 .example-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .example-card { display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--n-10); border-radius: 8px; background: var(--n-7); }
 .example-card h3 { margin: 12px 0 6px; font-size: 18px; }

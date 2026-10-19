@@ -25,7 +25,7 @@ Most of this project's code, physical models and documentation were written with
 
 ## Using it
 
-- **File → Starters & examples** opens a shelf of complete experiments, from *First light* to *Starting a motor three ways*, each with an explanation and a suggested experiment. The same experiments are in [`examples/`](examples/) as importable JSON.
+- **File → Starters & examples** opens a shelf of complete experiments, each with an explanation and a suggested experiment. It opens on *Start here* (from *First light* on) and groups the rest into Electricity, Motors & machines, Water & pumping, Home heating, Solar & storage and Mechanisms, simple to advanced; a search box finds an example in any group. The same experiments are in [`examples/`](examples/) as importable JSON.
 - **Sandbox** projects (everything that is not a challenge) expose every model parameter with its unit, validity domain and editing policy. Ratings are reported when exceeded instead of blocking the experiment. See [docs/SANDBOX.md](docs/SANDBOX.md).
 - **Challenges** offers nine scored assignments (circuits, heating, thermal runaway, water transfer, pressure and level control, descent, lift, speed control). The player buys and wires the equipment; scores reward efficiency, cost and time. See [docs/CHALLENGES.md](docs/CHALLENGES.md).
 - **Physical** (beside Schematic) builds mechanisms in metres; a motor's shaft can drive a rotor and a pump at the same time.

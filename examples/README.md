@@ -2,7 +2,7 @@
 
 `thermostaticRoom.physics.json` demonstrates the self-acting radiator valve: a numbered dial senses room air, while the Bosch regulates its water temperature and a balanced bypass maintains circulation.
 
-Open **File → Starters & examples** in the app for descriptions and suggested experiments. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
+Open **File → Starters & examples** in the app for descriptions and suggested experiments; the shelf groups them by topic (Start here, Electricity, Motors & machines, Water & pumping, Home heating, Solar & storage, Mechanisms) and has a search box. These JSON files are importable copies of the same current starter factories, including catalog properties and live probes. They are editable sandboxes; fresh challenge missions are built separately with only fixed environment fixtures.
 
 - `manifoldRooms`: three rooms on the ground, each with its own underfloor loop on an Oventrop Multidis SF manifold ([model basis](../docs/HEATING-MANIFOLD.md)); room thermostats drive the thermal actuators. It starts unbalanced: balance it to the planned flows while it runs.
 - `heatPumpHouse`: Bosch Compress 6800i AW 7 OR-S heating a 120 m² house through wet-screed underfloor heating (FLOORTEC tacker, twelve 100 m loops, [model basis](../docs/UNDERFLOOR-HEATING.md)) with a weather-compensated flow target at 2 °C / 85 % RH, and a Bosch WH 290 hot-water cylinder through the 3-way valve VW1 with hot-water priority; frost build-up, reverse-cycle defrosts, COP and seasonal performance factor. See [model basis](../docs/HEAT-PUMP.md).

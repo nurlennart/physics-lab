@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 export async function openExample(page: Page, title: string) {
   await page.locator('.file-menu > summary').click();
   await page.getByRole('button', { name: 'Starters & examples', exact: true }).click();
+  await page.getByRole('button', { name: 'All', exact: true }).click();
   await page.getByRole('button', { name: `Open ${title}`, exact: true }).click();
 }
 export async function addMissionEquipment(page: Page, mode: 'light' | 'heat' | 'transfer' | 'runaway') {
