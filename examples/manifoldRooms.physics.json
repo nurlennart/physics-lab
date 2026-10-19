@@ -72,7 +72,7 @@
     {
       "id": "manifoldRooms-component-4",
       "kind": "electricBoiler",
-      "name": "Bosch TH3000 9 · 3.7 L",
+      "name": "Bosch TH3000 9 · 2 stages · 3.7 L",
       "x": 330,
       "y": 330,
       "rotation": 0,
@@ -90,10 +90,10 @@
         "initialTemperature": 20,
         "ambient": 20,
         "setpoint": 60,
-        "hysteresis": 7,
+        "hysteresis": 3,
         "stageDelay": 2,
         "antiCycleTime": 10,
-        "maxStages": 3,
+        "maxStages": 2,
         "enabled": true,
         "tripTemperature": 95,
         "resetTemperature": 70,
@@ -131,7 +131,7 @@
       "rotation": 0,
       "variant": "standard",
       "props": {
-        "value": 35
+        "value": 40
       }
     },
     {
@@ -457,7 +457,7 @@
         "coveringResistance": 0,
         "downwardResistance": 1.25,
         "systemConstant": 6.754,
-        "maxSurfaceTemperature": 29,
+        "maxSurfaceTemperature": 33,
         "ambient": 20,
         "initialTemperature": 24,
         "maxPressure": 1000000,

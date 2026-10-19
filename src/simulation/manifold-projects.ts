@@ -6,7 +6,7 @@ import { GROUND, defaultSlab } from './ground';
 export const manifoldTitle = 'Underfloor manifold: three rooms';
 /**
  * A three-room flat (living room, bedroom, bathroom; slabs on the ground, shared interior walls) heated by underfloor
- * loops of different lengths from an Oventrop Multidis SF manifold. A Bosch electric boiler holds 35 °C flow; an ALPHA2
+ * loops of different lengths from an Oventrop Multidis SF manifold. A Bosch electric boiler, limited to two stages (6 kW) with 3 K hysteresis, holds 40 °C flow; an ALPHA2
  * at 3 m constant pressure circulates. Each room thermostat drives its circuit's thermal actuator, a minimum-flow bypass
  * keeps the boiler's flow interlock satisfied when every circuit is closed. The inserts start fully open (unbalanced).
  */
@@ -40,10 +40,12 @@ export function manifoldStarter(): Project {
   window(living, 3); window(bedroom, 1.5); window(bath, 0.6);
   p.thermalSpaces = [living, bedroom, bath]; p.thermalElements = elements;
 
-  // Heat source: Bosch TH3000 at 35 °C flow, ALPHA2 at 3 m constant pressure, sealed circuit with vessel and safety valve.
+  // Heat source: Bosch TH3000 at 40 °C flow, ALPHA2 at 3 m constant pressure, sealed circuit with vessel and safety valve.
+  // Two of three stages and the smallest SE04 hysteresis (3 K): the full 9 kW with 7 K on a ~1.5 kW floor load short-cycled
+  // every 84 s with the flow swinging 28–35 °C, too cold on average to bring the rooms to their setpoints.
   const phases = [0, -120, 120].map((phase, i) => add('sourceAC', 40 + i * 280, 45, { voltage: 230, phase, maxCurrent: 16, maxPower: 3680 }, `Mains L${i + 1} · ${phase}°`));
-  const boiler = add('electricBoiler', 330, 330, { flowInterlock: true }, 'Bosch TH3000 9 · 3.7 L');
-  const earth = add('ground', 900, 45), target = add('constant', 40, 330, { value: 35 }, 'Flow target · °C');
+  const boiler = add('electricBoiler', 330, 330, { flowInterlock: true, maxStages: 2, hysteresis: 3 }, 'Bosch TH3000 9 · 2 stages · 3.7 L');
+  const earth = add('ground', 900, 45), target = add('constant', 40, 330, { value: 40 }, 'Flow target · °C');
   const pump = add('circulator', 330, 650, { headSetpoint: 3 }, 'ALPHA2 25-60 · CP 3 m');
   const supply = add('pipe', 640, 330, { diameter: 0.022, length: 6, thermalUA: 1, segments: 2 }, 'Insulated flow · 6 m');
   const back = add('pipe', 640, 650, { diameter: 0.022, length: 6, thermalUA: 1, segments: 2 }, 'Insulated return · 6 m');
@@ -62,7 +64,7 @@ export function manifoldStarter(): Project {
   const loops: { r: ThermalSpace; x: number; props: Record<string, number>; name: string; setpoint: number }[] = [
     { r: living, x: 930, props: { heatedArea: 18, pipeSpacing: 0.15, initialTemperature: 22 }, name: 'Living room floor · 120 m', setpoint: 21 },
     { r: bedroom, x: 1430, props: { heatedArea: 12, pipeSpacing: 0.15, initialTemperature: 20 }, name: 'Bedroom floor · 80 m', setpoint: 18 },
-    { r: bath, x: 1838, props: { heatedArea: 6, pipeSpacing: 0.1, coveringResistance: 0, initialTemperature: 24 }, name: 'Bathroom floor (tiles) · 60 m', setpoint: 24 },
+    { r: bath, x: 1838, props: { heatedArea: 6, pipeSpacing: 0.1, coveringResistance: 0, initialTemperature: 24, maxSurfaceTemperature: 33 }, name: 'Bathroom floor (tiles) · 60 m', setpoint: 24 },
   ];
   loops.forEach(({ r, x, props, name, setpoint }, i) => {
     const floor = add('underfloorHeating', x, 890, { ...props, length: (props.heatedArea as number) / (props.pipeSpacing as number) }, name);

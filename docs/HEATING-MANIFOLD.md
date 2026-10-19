@@ -66,7 +66,8 @@ The differential pressure changes once the pump meets a new total flow, so balan
   - living room: 120 m, 150 mm spacing;
   - bedroom: 80 m, 150 mm spacing;
   - bathroom: 60 m, 100 mm spacing, tiles.
-- **Heat source:** a Bosch electric boiler at 35 °C flow, with an ALPHA2 at 3 m constant pressure.
+- **Heat source:** a Bosch electric boiler at 40 °C flow, limited to two of its three stages (6 kW) with the smallest hysteresis Bosch allows (3 K), and an ALPHA2 at 3 m constant pressure. With all three stages and the default 7 K, the boiler short-cycled every 84 s on the ~1.5 kW floor load, and the flow swung between 28 and 35 °C: too cold on average for the rooms to reach their setpoints.
+- **Bathroom floor:** surface limit 33 °C, the EN 1264 value for bathrooms (29 °C in the other rooms).
 - **Controls:** room thermostats (21, 18 and 24 °C) drive the actuators. A minimum-flow bypass keeps the boiler flowing when all circuits close.
 
 The inserts start fully open. The short bathroom loop then takes 2.7 l/min and the long living-room loop 2.0 l/min, against planned flows of 1.8 / 1.3 / 0.7 l/min. Three balancing rounds give 1.80 / 1.30 / 0.70 l/min, with inserts at about 43 / 19 / 9 %.
