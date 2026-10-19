@@ -647,14 +647,16 @@ function face(c: Component): Face {
     }
     case "heatPump": {
       const st = s.multiphysics.heatPumps[c.id], view = s.multiphysics.heatPumpView[c.id], water = s.fluidTemperatureMeasurement(c.id) ?? prop(c, "initialTemperature");
-      const running = started && (st?.mode === "heating" || st?.mode === "defrost"), defrost = started && st?.mode === "defrost";
+      const defrost = started && st?.mode === "defrost";
       const frost = started ? Math.min(1, (st?.frost ?? 0) / Math.max(1e-6, prop(c, "frostTrigger"))) : 0;
+      // Outdoor fan: turns with simulated time at its airflow fraction; stopped in defrost, drip, standby and on a fan failure.
+      const airflow = started && (view?.plan.fan ?? 0) > 0 ? view!.plan.point.fanFraction : 0;
       return {
         symbol: <g>
           <path d="M0 66H44M130 66H174" fill="none" stroke={T.hydraulic} strokeWidth="3" />
           <rect x="44" y="42" width="86" height="44" rx="4" fill={T.n4} stroke={st?.fault || st?.backupFault ? T.faultText : INK} strokeWidth={SW} />
           <circle cx="68" cy="64" r="15" fill="none" stroke={defrost ? T.hydraulic : INK} strokeWidth="1.5" />
-          {[0, 120, 240].map((a) => <path key={a} d="M68 64l0 -12" stroke={running ? T.thermalText : FAINT} strokeWidth="2" transform={`rotate(${a + (running ? (st?.speed ?? 0) * 40 : 0)} 68 64)`} />)}
+          <g data-testid="heat-pump-fan" data-airflow={airflow.toFixed(2)}>{[0, 120, 240].map((a) => <path key={a} d="M68 64l0 -12" stroke={airflow > 0 ? T.thermalText : FAINT} strokeWidth="2" transform={`rotate(${a + (simulation.time * 540 * airflow) % 360} 68 64)`} />)}</g>
           {/* Frost on the coil: the hatched bar fills toward the defrost trigger. */}
           <rect x="94" y="48" width="28" height="32" rx="2" fill="none" stroke={FAINT} strokeWidth="1" />
           <rect x="94" y={80 - 32 * frost} width="28" height={32 * frost} fill={T.hydraulic} opacity="0.35" />
