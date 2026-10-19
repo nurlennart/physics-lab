@@ -66,6 +66,7 @@ The shaft midpoint solve uses a finite-difference chord Newton iteration with a 
 - a twentieth of any running timer delay, the sensor sampling interval, twice a sensor lag, 0.5 s with a PI controller;
 - τ/200 for a breaker, motor protector or fuse above 0.8 of its trip level, and a tenth of a fuse's remaining melting time;
 - tank level, valve travel, motor acceleration and the weir time constant (hydraulic and motor networks);
+- for an electric boiler, 0.05 K of water change, ending 0.05 s after a predicted crossing of the next controller threshold, and the flow-interlock deadline ([ELECTRIC-BOILER.md](ELECTRIC-BOILER.md));
 - 0.2 % change in a battery's state of charge; 1 % of a capacitor's voltage (at least 1 V) or of an inductor's current (at least 1 % of its rating) per step; 1 s while a contactor coil is within 5 % of rated voltage of its pickup or dropout threshold.
 
 Any discrete change (contacts, failures, Boolean signals, CV/CC regulation) restarts at 1/60 s. Each advance is recorded as `{ at, adaptive: { duration, steps, tolerance, maxStep } }` and replays bit-identically. Rigid-body scenes and scored challenges use fixed steps.

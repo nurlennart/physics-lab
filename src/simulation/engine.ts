@@ -2,7 +2,7 @@ import { circuitIndices, circuitKey } from "./heating-manifold";
 import { type SpaceReading } from "./thermal-spaces";
 import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
 import { belowBoundary, screedKey, surfaceTemperature } from "./underfloor-heating";
-import { resetBoiler } from './boiler';
+import { boilerStepLimit, resetBoiler } from './boiler';
 import { resetHeatPump } from './heat-pump';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
@@ -456,7 +456,7 @@ export class Simulation {
       if (c.kind === "heatingManifold" && circuitIndices(c).some(k => this.multiphysics.valveTravel[circuitKey(c.id, k)])) limit = Math.min(limit, prop(c, "actuatorTime") / 50);
       if (c.kind === "thermostaticValve") limit = Math.min(limit, 5, prop(c, "sensorTimeConstant") / 20);
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
-      if (c.kind === "electricBoiler") limit = Math.min(limit, 0.1);
+      if (c.kind === "electricBoiler") limit = Math.min(limit, boilerStepLimit(this, c, tolerance));
       // Heat pumps: quasi-steady cycle per substep (≤ 0.5 s, split at controller deadlines inside the coupled step).
       if (c.kind === "heatPump") limit = Math.min(limit, 0.5);
       // Panel radiators: water and steel cells change by at most the thermal tolerance per step (as lumped masses).

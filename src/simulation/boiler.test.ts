@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { Builder } from './scaling-validation';
-import { Simulation } from './engine';
+import { AdaptiveRun, Simulation } from './engine';
 import { solveElectrical } from './electrical';
 import { boilerWaterCapacity } from './boiler';
 import { WATER_CP } from './units';
@@ -214,6 +214,69 @@ describe('boiler system integration regressions', () => {
     expect(Math.abs(s.suppliedEnergy - reference.suppliedEnergy) / reference.suppliedEnergy).toBeLessThan(0.005);
     expect(Math.abs(s.energyResidual)).toBeLessThan(0.001);
     for (const probe of p.probes!) expect(readProbe(probe, s), probe.name).not.toBeNull();
+  });
+  it('lands adaptive steps on the hysteresis thresholds and keeps the fixed-step cycle timing', () => {
+    // Fixed 0.1 s steps reproduce a 0.01 s reference cycle period within 0.2 %; adaptive steps grow with the water's
+    // rate of change and end just after each predicted threshold crossing.
+    const p = starter('boiler'), id = p.components.find(c => c.kind === 'electricBoiler')!.id;
+    const cycles = (adaptive: boolean) => {
+      const s = new Simulation(p), run = new AdaptiveRun(s, 1200), starts: number[] = [];
+      let on = false, peak = -Infinity, trough = Infinity, steps = 0;
+      while (s.time < 1200 - 1e-9) {
+        if (adaptive) { run.run(0); if (run.done) break; } else expect(s.step(0.1)).toBe(true);
+        steps++;
+        const b = s.multiphysics.boilers[id], t = water(s, id), restart = b.setpoint - 7;
+        if (starts.length) { peak = Math.max(peak, t - b.setpoint); if (!b.stages) trough = Math.min(trough, t - restart); }
+        if (!on && b.stages) starts.push(s.time);
+        on = b.stages > 0;
+      }
+      const period = (starts.at(-1)! - starts[1]) / (starts.length - 2);
+      return { starts: starts.length, period, peak, trough, steps, residual: s.energyResidual };
+    };
+    const fixed = cycles(false), adaptive = cycles(true);
+    expect(fixed.starts).toBeGreaterThan(6);
+    expect(adaptive.starts).toBe(fixed.starts);
+    expect(Math.abs(adaptive.period / fixed.period - 1)).toBeLessThan(0.005);
+    expect(adaptive.peak).toBeLessThan(fixed.peak + 0.05);
+    expect(adaptive.trough).toBeGreaterThan(fixed.trough - 0.05);
+    expect(adaptive.steps).toBeLessThan(fixed.steps / 3);
+    expect(Math.abs(adaptive.residual)).toBeLessThan(0.001);
+  });
+  it('trips the flow interlock on time during adaptive advance', () => {
+    const tripTime = (adaptive: boolean) => {
+      const { b, boiler, pump } = boilerRig({ flowInterlock: true }, false, true), s = new Simulation(b.p);
+      run(s, 30); s.injectFault(pump!.id, 'motorFailure');
+      const r = new AdaptiveRun(s, 20);
+      while (!s.multiphysics.boilers[boiler.id].fault && s.time < 50) { if (adaptive) r.run(0); else expect(s.step(1 / 60)).toBe(true); }
+      return s.time;
+    };
+    expect(Math.abs(tripTime(true) - tripTime(false))).toBeLessThan(0.05);
+  });
+  it('trips the limiter on time during adaptive advance', () => {
+    const trip = (adaptive: boolean) => {
+      const { b, boiler } = boilerRig({ loss: 0 }), s = new Simulation(b.p), r = new AdaptiveRun(s, 300);
+      s.injectFault(boiler.id, 'stuckClosed');
+      while (!s.multiphysics.boilers[boiler.id].fault && s.time < 300) { if (adaptive) r.run(0); else expect(s.step(1 / 60)).toBe(true); }
+      return { time: s.time, water: water(s, boiler.id) };
+    };
+    const fixed = trip(false), adaptive = trip(true);
+    expect(fixed.time).toBeLessThan(300);
+    expect(Math.abs(adaptive.time - fixed.time)).toBeLessThan(0.1);
+    expect(Math.abs(adaptive.water - fixed.water)).toBeLessThan(0.05);
+  });
+  it('restarts on time after undervoltage during adaptive advance', () => {
+    const restart = (adaptive: boolean) => {
+      const { b, boiler, sources } = boilerRig(), s = new Simulation(b.p); run(s, 5);
+      const advance = (until: (t: number) => boolean) => { const r = new AdaptiveRun(s, 60); while (!until(s.time)) { if (adaptive) r.run(0); else expect(s.step(1 / 60)).toBe(true); } };
+      edit(s, sources[1].id, { voltage: 170 }); advance(t => t >= 6);
+      expect(s.multiphysics.boilers[boiler.id].stages).toBe(0);
+      edit(s, sources[1].id, { voltage: 230 }); const healthy = s.time;
+      advance(() => s.multiphysics.boilers[boiler.id].stages === 3 || s.time > 60);
+      return s.time - healthy;
+    };
+    const fixed = restart(false);
+    expect(fixed).toBeGreaterThan(2); expect(fixed).toBeLessThan(30);
+    expect(Math.abs(restart(true) - fixed)).toBeLessThan(0.05);
   });
 });
 

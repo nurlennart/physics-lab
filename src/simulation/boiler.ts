@@ -15,6 +15,24 @@ export function boilerExchange(c: Component, state: { elementTemperature: number
   return { sink: g * ce / den, source: g * (ce * state.elementTemperature + h * power) / den,
     element: (water: number) => h === 0 ? state.elementTemperature : (ce * state.elementTemperature + h * g * water + h * power) / den };
 }
+/** A step that reaches a controller threshold ends this long after the crossing (s). */
+export const BOILER_LANDING = 0.05;
+/**
+ * Adaptive step bound: at most `tolerance` K of water temperature change per step, and a step that would carry the
+ * water past the next controller threshold (target, restart point, limiter) ends BOILER_LANDING after the predicted
+ * crossing, so cycles start and stop on time. A pending flow-interlock delay ends a step at its deadline.
+ */
+export function boilerStepLimit(s: Simulation, c: Component, tolerance: number) {
+  const b = s.multiphysics.boilers[c.id], rate = s.multiphysics.boilerRates[c.id] ?? 0;
+  if (!b) return Infinity;
+  let limit = Infinity;
+  if (c.props.flowInterlock && b.demand && !b.fault && Math.abs(s.multiphysics.hydraulic.readings[c.id]?.flow ?? 0) < prop(c, 'minFlow')) limit = prop(c, 'flowDelay') - b.lowFlowTime;
+  if (!(Math.abs(rate) > 1e-12)) return limit;
+  const temperature = (s.multiphysics.pipeCells[c.id]?.[0] ?? 293.15) - 273.15, trip = prop(c, 'tripTemperature');
+  const threshold = rate > 0 ? Math.min(trip, b.demand ? b.setpoint : Infinity) : b.demand ? -Infinity : b.setpoint - prop(c, 'hysteresis');
+  const crossing = (threshold - temperature) / rate;
+  return Math.min(limit, tolerance / Math.abs(rate), crossing > 0 ? crossing + BOILER_LANDING : Infinity);
+}
 export function resetBoiler(s: Simulation, c: Component, state: BoilerState): string | null {
   const temperature = s.multiphysics.pipeCells[c.id]?.[0] ?? 293.15;
   if (temperature - 273.15 > prop(c, 'resetTemperature')) return `Cool below ${prop(c, 'resetTemperature')} °C before resetting the limiter.`;

@@ -75,6 +75,8 @@ export class Multiphysics {
   dryLoss = 0;
   /** Largest |dT/dt| (K/s) of any panel-radiator cell over the last advance; bounds adaptive steps. */
   panelRate = 0;
+  /** Boiler water dT/dt (K/s, signed) over the last advance; bounds adaptive steps and lands them on control thresholds. */
+  boilerRates: Record<string, number> = {};
   /** Largest |dT/dt| (K/s) of any storage-tank layer over the last advance (a moving thermocline, inversion mixing). */
   storageRate = 0;
   /** Diverting valves still travelling toward their command (they bound the step only while moving). */
@@ -114,10 +116,11 @@ export class Multiphysics {
       starters: cloneState(this.starters), drives: cloneState(this.drives), shaftElements: cloneState(this.shaftElements),
       drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
       acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
-      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, storageRate: this.storageRate, valveTravel: { ...this.valveTravel },
+      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, boilerRates: { ...this.boilerRates }, storageRate: this.storageRate, valveTravel: { ...this.valveTravel },
     };
   }
   initialize(p: Project) {
+    this.boilerRates = {};
     for (const c of p.components) {
       if (c.kind === 'electricBoiler') this.boilers[c.id] = newBoiler(c);
       if (c.kind === 'heatPump') this.heatPumps[c.id] = newHeatPump(c, effectiveAmbient(p, c));
@@ -748,6 +751,7 @@ export class Multiphysics {
     let heatPumpGain = 0;
     // Emitter inventories (radiator cells; underfloor water and screed cells) bound the adaptive step by their rate of change.
     const panelBefore = s.project.components.filter(c => (c.kind === 'panelRadiator' || c.kind === 'underfloorHeating') && this.pipeCells[c.id]).flatMap(c => [c.id, ...(c.kind === 'underfloorHeating' ? [screedKey(c.id)] : [])].map(key => [key, [...this.pipeCells[key]]] as const));
+    const boilerBefore = Object.keys(this.boilers).map(id => [id, this.pipeCells[id]?.[0]] as const);
     const storageBefore = s.project.components.filter(c => c.kind === 'storageTank' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
@@ -764,7 +768,6 @@ export class Multiphysics {
       this.applyCommands(s, commands);
       let h = Math.min(remaining, s.spatial.hasMovingBodies ? s.spatial.maxStep(s.project) : adaptive ? remaining : this.fixedStepLimit(s), this.electricalStepLimit(s, controls), this.converterEventLimit(s), s.devices.eventLimit(s.project));
       if (Object.keys(this.boilers).length) {
-        h = Math.min(h, 0.1);
         for (const c of s.project.components.filter(c => c.kind === 'electricBoiler')) {
           const b = this.boilers[c.id], now = s.time + dt - remaining;
           for (const event of [b.switchedAt + prop(c, 'stageDelay'), b.offAt + prop(c, 'antiCycleTime'), b.restartAt]) if (event > now + 1e-9) h = Math.min(h, event - now);
@@ -1095,6 +1098,7 @@ export class Multiphysics {
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.panelRate = Math.max(0, ...panelBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
+    this.boilerRates = Object.fromEntries(boilerBefore.map(([id, before]) => [id, before === undefined ? 0 : ((this.pipeCells[id]?.[0] ?? before) - before) / dt]));
     this.storageRate = Math.max(0, ...storageBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
     return { electrical: totalElectrical!, heatPower: Object.fromEntries(Object.entries(heatEnergy).map(([id, e]) => [id, e / dt])), ambient, thermalGain, boilerElementGain: s.project.components.filter(c => elementKinds.has(c.kind)).reduce((sum, c) => sum + prop(c, 'heatCapacity') * (this.elementStates()[c.id].elementTemperature - elementBefore[c.id]), 0), heatPumpGain };
