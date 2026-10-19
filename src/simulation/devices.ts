@@ -13,6 +13,8 @@ const settle = (value: number) => (Math.abs(value) < 1e-30 ? 0 : value);
 /** Charge, polarization and contact mechanics advance only after an accepted physical interval. */
 export class Devices {
   active = false;
+  /** Adaptive advance: settled or curtailed trackers stop forcing their sample deadlines (solar.ts, hybrid.ts). */
+  settle = false;
   hybrid: Record<string, HybridState> = {};
   solar: Record<string, SolarState> = {};
   /** Battery state of charge (0–1) and polarization voltage (V); capacitor dielectric voltage (V); inductor current (A). */
@@ -75,15 +77,15 @@ export class Devices {
       if (remaining > 1e-12) limit = Math.min(limit, remaining);
     }
     for (const c of project.components) {
-      if (c.kind === 'mpptController') limit = Math.min(limit, Math.max(1e-8, prop(c, 'trackingInterval') - this.solar[c.id].elapsed));
+      if (c.kind === 'mpptController' && !(this.settle && (this.solar[c.id].settled || this.solar[c.id].curtailed))) limit = Math.min(limit, Math.max(1e-8, prop(c, 'trackingInterval') - this.solar[c.id].elapsed));
       if (c.kind === 'inverter' && this.solar[c.id].overload > 0 && this.solar[c.id].overload < prop(c, 'surgeTime')) limit = Math.min(limit, prop(c, 'surgeTime') - this.solar[c.id].overload);
     }
-    return Math.min(limit, hybridEventLimit(project, this.hybrid));
+    return Math.min(limit, hybridEventLimit(project, this.hybrid, this.settle));
   }
   advance(project: Project, electrical: ElectricalResult, h: number, temperatures: Record<string, number> = {}) {
     if (!this.active) return;
-    advanceSolar(project, this.solar, electrical, h);
-    advanceHybrid(project, this.hybrid, electrical, h);
+    advanceSolar(project, this.solar, electrical, h, this.settle);
+    advanceHybrid(project, this.hybrid, electrical, h, this.settle);
     for (const c of project.components) {
       const r = electrical.readings[c.id];
       if ((c.kind === 'battery' || c.kind === 'lfpBattery') && r) {

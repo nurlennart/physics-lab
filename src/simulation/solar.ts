@@ -7,6 +7,8 @@ export interface SolarState {
   target: number; direction: number; previousPower: number; elapsed: number;
   mode: string; absorption: number; running: boolean; overload: number;
   generated: number; output: number; lost: number;
+  /** Tracker targets at the last samples; a settled tracker holds the centre of its perturb-and-observe band. */
+  history?: number[]; settled?: { voltage: number; available: number }; curtailed?: boolean;
   /** Converged converter demand of the last accepted step: the next coupling iteration's starting guess. */
   warm?: { demand?: number; inputLimit?: number; voltage?: number };
 }
@@ -61,7 +63,16 @@ export function inverterLoss(c: Component, active: number, apparent = active) {
   // occurs above it at 2 Pidle/(1/η − 1). No negative switching-loss coefficient is used.
   return idle + excess * excess * apparent * apparent / (4 * idle);
 }
-export function advanceSolar(project: Project, states: Record<string, SolarState>, r: ElectricalResult, h: number) {
+/** Samples that must stay within two tracking steps before a tracker counts as settled. */
+export const SETTLE_SAMPLES = 8;
+/** Relative change of the available maximum power that ends a settled hold (irradiance, cell temperature). */
+export const SETTLE_RELEASE = 0.01;
+/**
+ * `settle` (adaptive advances only): a tracker whose last SETTLE_SAMPLES targets lie within two steps holds the centre of
+ * that band and stops sampling until it stops tracking or the available maximum power changes by SETTLE_RELEASE. A
+ * curtailed tracker (tracking held) also stops forcing sample deadlines. Live stepping always samples every interval.
+ */
+export function advanceSolar(project: Project, states: Record<string, SolarState>, r: ElectricalResult, h: number, settle = false) {
   for (const c of project.components.filter(c => solarKinds.includes(c.kind))) {
     const s = states[c.id], x = r.readings[c.id]; if (!s || !x) continue;
     s.generated += (x.solar?.inputPower ?? 0) * h;
@@ -72,14 +83,20 @@ export function advanceSolar(project: Project, states: Record<string, SolarState
       if (x.solar?.targetVoltage !== undefined) s.target = x.solar.targetVoltage;
       if (s.mode === 'absorption') s.absorption += h;
       if ((x.secondaryVoltage ?? 0) < prop(c, 'rebulkVoltage')) s.absorption = 0;
-      s.elapsed = s.running ? s.elapsed + h : 0;
-      if (s.running && s.elapsed + 1e-12 >= prop(c, 'trackingInterval')) {
+      const available = x.solar?.mppPower ?? 0, step = prop(c, 'trackingStep');
+      s.curtailed = settle && s.running && !x.solar?.trackingActive;
+      if (s.settled && (!settle || !s.running || !x.solar?.trackingActive || Math.abs(available - s.settled.available) > SETTLE_RELEASE * s.settled.available)) { s.settled = undefined; s.history = []; s.elapsed = 0; }
+      s.elapsed = s.running && !s.settled ? s.elapsed + h : 0;
+      if (s.running && !s.settled && s.elapsed + 1e-12 >= prop(c, 'trackingInterval')) {
         const power = x.solar?.inputPower ?? 0;
         if (x.solar?.trackingActive) {
           if (power < s.previousPower - 1e-7) s.direction *= -1;
-          s.target = Math.max(1, Math.min(prop(c, 'maxInputVoltage') - 0.1, s.target + s.direction * prop(c, 'trackingStep')));
+          s.target = Math.max(1, Math.min(prop(c, 'maxInputVoltage') - 0.1, s.target + s.direction * step));
           s.previousPower = power;
-        }
+          const history = s.history = [...(s.history ?? []), s.target].slice(-SETTLE_SAMPLES);
+          const low = Math.min(...history), high = Math.max(...history);
+          if (settle && history.length === SETTLE_SAMPLES && high - low <= 2 * step + 1e-9) { s.settled = { voltage: (low + high) / 2, available }; s.target = s.settled.voltage; }
+        } else s.history = [];
         s.elapsed = 0;
       }
     }

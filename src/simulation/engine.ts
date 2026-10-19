@@ -666,6 +666,7 @@ export class Simulation {
       this.error = this.adaptiveUnavailable();
       return false;
     }
+    this.devices.settle = adaptive;
     // Editor/import transitions are checked once at refresh; the engine owns its validated copy.
     if (this.project !== this.ownedProject && !this.refresh(this.project))
       return false;

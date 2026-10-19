@@ -264,3 +264,38 @@ it('resolves fast charging across an LFP OCV knee without artificial battery coo
     expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
   }
 });
+
+describe('settled tracker (adaptive advances)', () => {
+  it('holds the centre of its perturb-and-observe band and harvests what live tracking harvests', () => {
+    const live = rig(true), fast = rig(true), a = new Simulation(live.b.p), f = new Simulation(fast.b.p);
+    run(a, 120); f.advanceAdaptive(120);
+    expect(a.devices.solar[live.mppt.id].settled).toBeUndefined(); // live stepping samples every 0.2 s
+    const held = f.devices.solar[fast.mppt.id];
+    expect(held.settled).toBeDefined();
+    expect(held.target).toBe(held.settled!.voltage);
+    expect(Math.abs(held.target - pvModel(fast.pv).vmp)).toBeLessThan(2 * 0.25);
+    expect(f.electrical.readings[fast.mppt.id].solar!.trackingEfficiency).toBeGreaterThan(0.999);
+    const harvest = (s: Simulation, id: string) => s.devices.solar[id].generated;
+    expect(Math.abs(harvest(f, fast.mppt.id) / harvest(a, live.mppt.id) - 1)).toBeLessThan(0.001);
+    expect(Math.abs(f.devices.batteries[fast.battery.id] - a.devices.batteries[live.battery.id])).toBeLessThan(1e-4);
+    expect(Math.abs(f.energyResidual)).toBeLessThan(1e-3);
+  });
+  it('resumes tracking at once when the sun or the panel temperature changes', () => {
+    const { b, pv, mppt } = rig(true), s = new Simulation(b.p);
+    s.advanceAdaptive(60);
+    expect(s.devices.solar[mppt.id].settled).toBeDefined();
+    edit(s, pv.id, { irradiance: 400, cellTemperature: 60 }); s.advanceAdaptive(0.05);
+    expect(s.devices.solar[mppt.id].settled).toBeUndefined();
+    s.advanceAdaptive(30);
+    expect(s.electrical.readings[mppt.id].solar!.trackingEfficiency).toBeGreaterThan(0.99);
+    expect(s.devices.solar[mppt.id].settled).toBeDefined(); // settled again at the new maximum
+    expect(Math.abs(s.energyResidual)).toBeLessThan(1e-3);
+  });
+  it('returns to sampling every interval when live stepping resumes', () => {
+    const { b, mppt } = rig(true), s = new Simulation(b.p);
+    s.advanceAdaptive(60); expect(s.devices.solar[mppt.id].settled).toBeDefined();
+    const target = s.devices.solar[mppt.id].target; run(s, 1);
+    expect(s.devices.solar[mppt.id].settled).toBeUndefined();
+    expect(s.devices.solar[mppt.id].target).not.toBe(target);
+  });
+});

@@ -1,6 +1,7 @@
 /** Accepted-state memory only. Electrical trial solves never mutate these records. */
 import { prop, type Component, type Project } from './model';
 import type { ElectricalResult } from './electrical-core';
+import { SETTLE_RELEASE, SETTLE_SAMPLES } from './solar';
 export const hybridKinds = ['gridInverter', 'hybridInverter', 'gridMeter'];
 export interface HybridReading {
  targetVoltage?: number;
@@ -18,6 +19,8 @@ export interface HybridState {
  mode: string; connected: boolean; gridValid: boolean; gridStable: number; outageElapsed: number; phase: number; frequency: number;
  overload: number; fault: string; imported: number; exported: number; dcIn: number; dcOut: number; lost: number; converterLossEnergy: number; transferLossEnergy: number;
  target: number; elapsed: number; direction: number; previousPower: number; absorption: number;
+ /** Grid inverter tracker: recent sampled targets; a settled hold of the band centre (power measured there); curtailed. */
+ history?: number[]; settled?: { voltage: number; power?: number }; curtailed?: boolean;
  warm?: HybridWarmStart;
 }
 export function initialHybridState(c: Component): HybridState {
@@ -27,7 +30,12 @@ export const phaseDifference = (a: number,b: number) => ((a-b+540)%360)-180;
 export function hybridRatedPower(c: Component, t: number) {
  const rating=prop(c,'ratedPower'); return rating*(t<=25?1:t<=40?1-(t-25)/15*(1-2200/2400):2200/2400-(Math.min(t,65)-40)/25*(500/2400));
 }
-export function advanceHybrid(p: Project, states: Record<string,HybridState>, r: ElectricalResult,h:number) {
+/**
+ * `settle` (adaptive advances only): the grid inverter's DC tracker settles as the MPPT does (solar.ts), holding the
+ * centre of its perturb-and-observe band; it releases when tracking stops or the DC power at the held voltage changes by
+ * SETTLE_RELEASE (irradiance, cell temperature).
+ */
+export function advanceHybrid(p: Project, states: Record<string,HybridState>, r: ElectricalResult,h:number,settle=false) {
  for(const c of p.components.filter(c=>hybridKinds.includes(c.kind))) {
   const s=states[c.id], x=r.readings[c.id]?.hybrid; if(!s||!x) continue;
   s.mode=x.mode;s.connected=x.connected;s.gridValid=x.gridValid;s.warm=x.warm;
@@ -39,13 +47,19 @@ export function advanceHybrid(p: Project, states: Record<string,HybridState>, r:
   s.dcIn+=Math.max(0,x.dcPower)*h;s.dcOut+=Math.max(0,-x.dcPower)*h;s.lost+=(x.conversionLoss+x.transferLoss)*h;s.converterLossEnergy+=x.conversionLoss*h;s.transferLossEnergy+=x.transferLoss*h;
   if(c.kind==='gridInverter') {
    if(x.targetVoltage!==undefined)s.target=x.targetVoltage;
-   s.elapsed+=h;
-   if(x.connected&&s.elapsed+1e-12>=prop(c,'dcTrackingInterval')) {
-    const power=Math.max(0,x.dcPower);
-    if(power>0 && x.acPower<hybridRatedPower(c,20)-1 && Math.abs((r.readings[c.id]?.voltage??0)-s.target)<1e-6) {
+   const power=Math.max(0,x.dcPower),step=prop(c,'dcTrackingStep');
+   const tracking=x.connected&&power>0&&x.acPower<hybridRatedPower(c,20)-1&&Math.abs((r.readings[c.id]?.voltage??0)-s.target)<1e-6;
+   s.curtailed=settle&&x.connected&&!tracking;
+   if(s.settled&&s.settled.power===undefined&&tracking)s.settled.power=power;
+   if(s.settled&&(!settle||!tracking||Math.abs(power-(s.settled.power??power))>SETTLE_RELEASE*(s.settled.power??power))){s.settled=undefined;s.history=[];s.elapsed=0;}
+   s.elapsed=s.settled?0:s.elapsed+h;
+   if(!s.settled&&x.connected&&s.elapsed+1e-12>=prop(c,'dcTrackingInterval')) {
+    if(tracking) {
      if(power<s.previousPower-1e-7)s.direction*=-1;
-     s.target=Math.max(prop(c,'minVoltage'),Math.min(prop(c,'maxInputVoltage')-.1,s.target+s.direction*prop(c,'dcTrackingStep')));s.previousPower=power;
-    }
+     s.target=Math.max(prop(c,'minVoltage'),Math.min(prop(c,'maxInputVoltage')-.1,s.target+s.direction*step));s.previousPower=power;
+     const history=s.history=[...(s.history??[]),s.target].slice(-SETTLE_SAMPLES),low=Math.min(...history),high=Math.max(...history);
+     if(settle&&history.length===SETTLE_SAMPLES&&high-low<=2*step+1e-9){s.settled={voltage:(low+high)/2};s.target=s.settled.voltage;}
+    } else s.history=[];
     s.elapsed=0;
    }
   }
@@ -57,11 +71,11 @@ export function advanceHybrid(p: Project, states: Record<string,HybridState>, r:
   }
  }
 }
-export function hybridEventLimit(p: Project, states: Record<string,HybridState>) {
+export function hybridEventLimit(p: Project, states: Record<string,HybridState>, settle=false) {
  let limit=Infinity;
  for(const c of p.components.filter(c=>hybridKinds.includes(c.kind)&&c.kind!=='gridMeter')) {
   const s=states[c.id]; if(!s)continue;
-  for(const d of [!s.connected&&s.gridValid?prop(c,'reconnectDelay')-s.gridStable:Infinity,!s.connected?prop(c,'transferTime')-s.outageElapsed:Infinity,s.overload>0?prop(c,'surgeTime')-s.overload:Infinity,c.kind==='gridInverter'&&s.connected?prop(c,'dcTrackingInterval')-s.elapsed:Infinity,!s.connected&&s.gridValid&&s.gridStable>=prop(c,'reconnectDelay')?.05:Infinity])if(d>1e-9)limit=Math.min(limit,d);
+  for(const d of [!s.connected&&s.gridValid?prop(c,'reconnectDelay')-s.gridStable:Infinity,!s.connected?prop(c,'transferTime')-s.outageElapsed:Infinity,s.overload>0?prop(c,'surgeTime')-s.overload:Infinity,c.kind==='gridInverter'&&s.connected&&!(settle&&(s.settled||s.curtailed))?prop(c,'dcTrackingInterval')-s.elapsed:Infinity,!s.connected&&s.gridValid&&s.gridStable>=prop(c,'reconnectDelay')?.05:Infinity])if(d>1e-9)limit=Math.min(limit,d);
  }
  return limit;
 }

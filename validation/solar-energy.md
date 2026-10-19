@@ -17,7 +17,7 @@ Fitted diode ideality voltage **2.854151 V**, series resistance **0.02921673 Ω*
 | Analytical network | 230 V / 264.5 Ω AC load (W) | 200.00000 | 200.00000 | 0.000 | 1.000e-7 | yes |
 | Calibration assumption | Inverter peak at half load (1) | 0.90000000 | 0.90000000 | 5.085e-11 | 1.000e-8 | yes |
 | Conservation | 20 s coupled run at h=0.1 (J) | 0.0000000 | 5.4569682e-10 | 5.457e-10 | 0.001000 | yes |
-| Conservation | 1200 s solar + night global energy residual (J) | 0.0000000 | 5.1222742e-9 | 5.122e-9 | 0.01000 | yes |
+| Conservation | 1200 s solar + night global energy residual (J) | 0.0000000 | 6.9849193e-10 | 6.985e-10 | 0.01000 | yes |
 | Behavior | Sunlight charges battery while serving both loads (boolean) | 1.0000000 | 1.0000000 | 0.000 | 0.000 | yes |
 | Behavior | Night draws down stored chemical charge (boolean) | 1.0000000 | 1.0000000 | 0.000 | 0.000 | yes |
 | Conservation | 20 s coupled run at h=0.05 (J) | 0.0000000 | 2.8740033e-10 | 2.874e-10 | 0.001000 | yes |

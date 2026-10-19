@@ -59,3 +59,20 @@ it('replays grid-loss edits with identical converter state and energy',async()=>
  const replay=replayExperiment(b.p,[{at:.1,project:edited}],.3);
  expect(replay.error).toBeNull();expect(replay.devices.checkpoint()).toEqual(s.devices.checkpoint());expect(replay.suppliedEnergy).toBe(s.suppliedEnergy);expect(replay.energyResidual).toBe(s.energyResidual);
 });
+
+describe('settled grid-inverter tracker (adaptive advances)', () => {
+ it('holds its band centre, converts what live tracking converts, and releases when the sun changes', () => {
+  const live=new Simulation(hybridStarter('gridSolar')),fast=new Simulation(hybridStarter('gridSolar'));
+  const inverter=(s:Simulation)=>s.project.components.find(c=>c.kind==='gridInverter')!, panel=(s:Simulation)=>s.project.components.find(c=>c.kind==='solarPanel')!;
+  run(live,120,.1); fast.advanceAdaptive(120);
+  expect(live.devices.hybrid[inverter(live).id].settled).toBeUndefined();
+  const held=fast.devices.hybrid[inverter(fast).id];
+  expect(held.settled).toBeDefined(); expect(held.target).toBe(held.settled!.voltage);
+  expect(Math.abs(held.dcIn/live.devices.hybrid[inverter(live).id].dcIn-1)).toBeLessThan(0.001);
+  edit(fast,panel(fast),{irradiance:400,cellTemperature:60}); fast.advanceAdaptive(0.05);
+  expect(fast.devices.hybrid[inverter(fast).id].settled).toBeUndefined();
+  fast.advanceAdaptive(60);
+  expect(fast.devices.hybrid[inverter(fast).id].settled).toBeDefined();
+  expect(Math.abs(fast.energyResidual)).toBeLessThan(1e-3);
+ });
+});
