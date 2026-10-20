@@ -17,6 +17,7 @@ import {
   type Assembly,
   type Probe,
   catalog,
+  ENVIRONMENT_TARGET,
 } from "../simulation/model";
 import {
   starter,
@@ -593,13 +594,13 @@ export const actions = {
       toast("Maximum 24 traces.");
       return;
     }
-    const room = state.project.thermalSpaces?.find(r => r.id === component);
-    const c = state.project.components.find((c) => c.id === component) ?? room;
+    const room = state.project.thermalSpaces?.find(r => r.id === component), outdoors = component === ENVIRONMENT_TARGET;
+    const c = state.project.components.find((c) => c.id === component) ?? room ?? (outdoors ? { name: "Outdoors" } : undefined);
     if (!c) return;
     const probe: Probe = {
       id: uid(),
-      name: `${c.name} ${measurement}`,
-      ...(room ? { targetKind: "space" as const } : {}),
+      name: outdoors ? (measurement === "outdoorHumidity" ? "Outdoor humidity" : "Outdoor air") : `${c.name} ${measurement}`,
+      ...(room ? { targetKind: "space" as const } : outdoors ? { targetKind: "environment" as const } : {}),
       component,
       measurement,
       terminal,

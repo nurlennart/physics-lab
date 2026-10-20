@@ -18,7 +18,7 @@ import {
   type Kind,
   type Project,
   type Component,
-  type Measurement, componentPorts } from "./model";
+  type Measurement, componentPorts, ENVIRONMENT_TARGET, environmentMeasurements } from "./model";
 export function starter(
   mode: "thermostaticRoom" | "livingRoom" | "roomCooldown" | "induction" | "starting" | "testbench" | "acRlc" | "heat" | "light" | "blank" | "runaway" | "automated" | "industrial" | "exchanger" | HydraulicMode | MechanicalMode | DeviceMode | SolarMode | HybridMode | HeatPumpMode | "manifoldRooms" = "heat",
   challenge = false,
@@ -443,6 +443,10 @@ export function validateProbes(p: Project) {
     ids.add(probe.id);
     if (probe.targetKind === 'space') {
       if (!p.thermalSpaces?.some(s => s.id === probe.component) || !(roomMeasurements as readonly string[]).includes(probe.measurement) || probe.reference || probe.terminal) throw Error('Invalid Thermal Space probe.');
+      continue;
+    }
+    if (probe.targetKind === 'environment') {
+      if (probe.component !== ENVIRONMENT_TARGET || !(environmentMeasurements as readonly string[]).includes(probe.measurement) || probe.reference || probe.terminal) throw Error('Invalid environment measurement probe.');
       continue;
     }
     if (probe.targetKind !== undefined) throw Error('Invalid probe target kind.');

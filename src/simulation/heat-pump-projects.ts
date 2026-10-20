@@ -1,6 +1,6 @@
 import { defaultDesignDay } from './weather';
 import { applyDerived } from './parameters';
-import { catalog, connect, makeComponent, uid, type Component, type Kind, type Measurement, type Project, type Property } from './model';
+import { catalog, connect, ENVIRONMENT_TARGET, makeComponent, uid, type Component, type Kind, type Measurement, type Project, type Property } from './model';
 import { elementU, makeEnvelope, makeThermalSpace } from './thermal-spaces';
 import { GROUND, defaultSlab } from './ground';
 import { heatedFloorResistance } from './underfloor-heating';
@@ -100,7 +100,9 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
     // Undefined until a charge has run: the cold snap starts with a charged cylinder.
     if (!cold) trace(hp, 'hotWaterCop', 'Hot-water performance factor', '#9BE9A8');
   }
-  if (p.weather) { trace(hp, 'outdoorTemperature', 'Outdoor air', '#9AA6B6'); trace(hp, 'outdoorHumidity', 'Outdoor humidity', '#A5D8FF'); }
+  // Weather: trace the experiment environment itself (outdoors), not a component.
+  if (p.weather) for (const [measurement, name, color] of [['outdoorTemperature', 'Outdoor air', '#9AA6B6'], ['outdoorHumidity', 'Outdoor humidity', '#A5D8FF']] as const)
+    p.probes!.push({ id: uid(), name, component: ENVIRONMENT_TARGET, targetKind: 'environment', measurement, visible: true, color });
   trace(hp, 'energyResidual', 'Energy balance residual', '#94a3b8');
   return p;
 }

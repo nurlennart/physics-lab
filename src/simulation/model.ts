@@ -110,8 +110,12 @@ export type Measurement =
   | "state"
   | "signal"
   | "nodeVoltage";
+/** Probe target id of the experiment environment (outdoors): `targetKind: "environment"`. */
+export const ENVIRONMENT_TARGET = "environment";
+/** Measurements of the experiment environment: the outdoor air (fixed ambient or weather) and, with weather, its humidity. */
+export const environmentMeasurements = ["outdoorTemperature", "outdoorHumidity"] as const;
 export interface Probe {
-  targetKind?: "space";
+  targetKind?: "space" | "environment";
   id: string;
   name: string;
   component: string;

@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { Builder } from './scaling-validation';
 import { AdaptiveRun, Simulation } from './engine';
-import { projectAmbient, projectWeather, type Project } from './model';
+import { ENVIRONMENT_TARGET, projectAmbient, projectWeather, type Probe, type Project } from './model';
+import { readProbe } from './measurements';
 import { parseProject, serializeProject, starter } from './projects';
 import { challengeError } from './integrity';
 import { challengeDefinition } from './challenges';
@@ -97,6 +98,20 @@ describe('weather in the engine', () => {
     expect(s.refresh(local), s.error ?? '').toBe(true);
     expect(inputs().humidity).toBeUndefined();
     expect(inputs().air).toBe(7);
+  });
+  it('traces outdoors directly: the air with or without weather, the humidity only with weather', () => {
+    const probe = (measurement: Probe['measurement']): Probe => ({ id: measurement, name: measurement, component: ENVIRONMENT_TARGET, targetKind: 'environment', measurement, visible: true, color: '#9AA6B6' });
+    const fixed = rig(), s = new Simulation({ ...fixed.p, environment: { ambient: 7 } });
+    expect(readProbe(probe('outdoorTemperature'), s)).toBe(7);
+    expect(readProbe(probe('outdoorHumidity'), s)).toBeNull();
+    const w = day({ startHour: 5 }), outdoor = rig(w), t = new Simulation(outdoor.p);
+    t.advanceAdaptive(3600);
+    expect(readProbe(probe('outdoorTemperature'), t)).toBeCloseTo(weatherAt(w, 3600).temperature, 9);
+    expect(readProbe(probe('outdoorHumidity'), t)).toBeCloseTo(weatherAt(w, 3600).relativeHumidity, 9);
+    const saved = { ...outdoor.p, probes: [probe('outdoorTemperature'), probe('outdoorHumidity')] };
+    expect(parseProject(JSON.parse(serializeProject(saved))).probes).toEqual(saved.probes);
+    expect(() => parseProject(JSON.parse(serializeProject({ ...saved, probes: [{ ...probe('outdoorTemperature'), component: 'x' }] })))).toThrow();
+    expect(() => parseProject(JSON.parse(serializeProject({ ...saved, probes: [{ ...probe('flow') }] })))).toThrow();
   });
   it('round-trips through files, rejects invalid weather and is not available in assignments', () => {
     const { p } = rig(day({ startHour: 7 }));

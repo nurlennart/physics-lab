@@ -2392,11 +2392,11 @@
       },
       {
         "name": "Outdoor air",
-        "value": -3.6398113641982803
+        "value": -3.6400000000000006
       },
       {
         "name": "Outdoor humidity",
-        "value": 90.28682170479817
+        "value": 90.28809385765366
       },
       {
         "name": "Energy balance residual",
@@ -2501,11 +2501,11 @@
       },
       {
         "name": "Outdoor air",
-        "value": -3.6398113641982803
+        "value": -3.6400000000000006
       },
       {
         "name": "Outdoor humidity",
-        "value": 90.28682170479817
+        "value": 90.28809385765366
       },
       {
         "name": "Energy balance residual",

@@ -21,7 +21,7 @@ import {
   readProbe,
   probeUnit,
 } from "../simulation/measurements";
-import { type Measurement, type Probe } from "../simulation/model";
+import { ENVIRONMENT_TARGET, environmentMeasurements, type Measurement, type Probe } from "../simulation/model";
 export function formatTime(t: number) {
   const ticks = Math.round(t * 100);
   return `${String(Math.floor(ticks / 360000)).padStart(2, "0")}:${String(Math.floor(ticks / 6000) % 60).padStart(2, "0")}:${((ticks % 6000) / 100).toFixed(2).padStart(5, "0")}`;
@@ -160,10 +160,12 @@ function Telemetry() {
     [manage, setManage] = useState(false);
   const probes = s.project.probes ?? [],
     room = s.project.thermalSpaces?.find(r => r.id === target),
+    outdoors = target === ENVIRONMENT_TARGET,
     c =
       s.project.components.find((c) => c.id === target) ??
-      (room ? undefined : s.project.components[0]),
-    options = room ? [...roomMeasurements] : c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
+      (room || outdoors ? undefined : s.project.components[0]),
+    // Outdoors: the air always; humidity only exists with weather.
+    options: Measurement[] = outdoors ? environmentMeasurements.filter(m => m !== "outdoorHumidity" || !!s.project.weather) : room ? [...roomMeasurements] : c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
     validMetric = options.some((x) => x === metric) ? metric : options[0];
   const end = Math.max(0.25, simulation.time - offset),
     start = Math.max(simulation.samples[0]?.time ?? 0, end - window),
@@ -337,9 +339,10 @@ function Telemetry() {
                   <div className="probe-add">
                     <select
                       aria-label="Trace component"
-                      value={room?.id ?? c?.id ?? ""}
+                      value={outdoors ? ENVIRONMENT_TARGET : room?.id ?? c?.id ?? ""}
                       onChange={(e) => setTarget(e.target.value)}
                     >
+                      <option value={ENVIRONMENT_TARGET}>Outdoors · experiment environment</option>
                       {(s.project.thermalSpaces ?? []).map(r => <option key={r.id} value={r.id}>{r.name} · Thermal Space</option>)}
                       {s.project.components.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -359,7 +362,7 @@ function Telemetry() {
                       ))}
                     </select>
                     <button
-                      onClick={() => (room || c) && actions.addProbe((room || c)!.id, validMetric)}
+                      onClick={() => outdoors ? actions.addProbe(ENVIRONMENT_TARGET, validMetric) : (room || c) && actions.addProbe((room || c)!.id, validMetric)}
                     >
                       Add trace
                     </button>

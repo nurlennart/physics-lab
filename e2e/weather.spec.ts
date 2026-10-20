@@ -18,6 +18,8 @@ test('weather: a design day drives the clock and outdoor air, and switches back 
   await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled({ timeout: 60000 });
   await expect(clock).toContainText('Day 1 · 00:01');
   await expect(page.getByTestId('weather-now')).toContainText('% RH outdoors');
+  await expect(page.locator('.trace-readouts')).toContainText('Outdoor air');
+  await expect(page.locator('.trace-readouts')).toContainText('Outdoor humidity');
   // A drier day: the humidity readout follows the dew point.
   const before = await page.getByTestId('weather-now').innerText();
   await commit(page, 'Dew point', '-12');
@@ -29,4 +31,18 @@ test('weather: a design day drives the clock and outdoor air, and switches back 
   await expect(clock).toHaveCount(0);
   await expect(page.getByLabel('Laboratory ambient temperature')).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test('outdoors can be traced in any experiment', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'New empty experiment' }).click();
+  await page.getByRole('button', { name: 'Manage traces' }).click();
+  await page.getByLabel('Trace component').selectOption('environment');
+  // Without weather only the air temperature exists.
+  await expect(page.getByLabel('Chart measurement').locator('option')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Add trace' }).click();
+  await expect(page.locator('.trace-readouts')).toContainText('Outdoor air');
+  await page.getByLabel('Outdoor conditions', { exact: true }).selectOption('designDay');
+  await page.getByLabel('Trace component').selectOption('environment');
+  await expect(page.getByLabel('Chart measurement').locator('option')).toHaveCount(2);
 });

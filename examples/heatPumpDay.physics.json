@@ -1012,19 +1012,21 @@
     },
     {
       "id": "heatPumpDay-probe-22",
-      "component": "heatPumpDay-component-3",
-      "measurement": "outdoorTemperature",
       "name": "Outdoor air",
-      "color": "#9AA6B6",
-      "visible": true
+      "component": "environment",
+      "targetKind": "environment",
+      "measurement": "outdoorTemperature",
+      "visible": true,
+      "color": "#9AA6B6"
     },
     {
       "id": "heatPumpDay-probe-23",
-      "component": "heatPumpDay-component-3",
-      "measurement": "outdoorHumidity",
       "name": "Outdoor humidity",
-      "color": "#A5D8FF",
-      "visible": true
+      "component": "environment",
+      "targetKind": "environment",
+      "measurement": "outdoorHumidity",
+      "visible": true,
+      "color": "#A5D8FF"
     },
     {
       "id": "heatPumpDay-probe-24",

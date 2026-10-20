@@ -7,7 +7,7 @@ import {
   prop,
   type Measurement,
   type Probe,
-  type Project, componentPorts } from "./model";
+  type Project, componentPorts, projectAmbient, projectWeather } from "./model";
 import { nodeVoltage } from "./electrical";
 import { sensorTemperature, storageEnthalpy } from "./storage-tank";
 import { screedKey, surfaceTemperature } from "./underfloor-heating";
@@ -42,6 +42,7 @@ export { measurements } from "./capabilities";
 import { measurements } from "./capabilities";
 export function readProbe(p: Probe, s: Simulation): number | null {
   if (p.targetKind === "space") return s.error ? null : roomMeasurement(s.project, s.spaceTemperatures, s.spaceReadings, p.component, p.measurement);
+  if (p.targetKind === "environment") return p.measurement === "outdoorTemperature" ? projectAmbient(s.project) : p.measurement === "outdoorHumidity" ? projectWeather(s.project)?.relativeHumidity ?? null : null;
   const c = s.project.components.find((c) => c.id === p.component);
   if (!c || s.error || !measurements(c).includes(p.measurement)) return null;
   const r = s.electrical.readings[c.id];

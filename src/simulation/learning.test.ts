@@ -95,4 +95,11 @@ describe('example shelf groups', () => {
     expect(examples.map(e => e.group).filter((g, i, all) => g !== all[i - 1])).toEqual([...exampleGroups]);
     expect(examples[0].mode).toBe('light');
   });
+  it('keeps card texts short enough for even rows (details belong in the docs)', () => {
+    for (const e of examples) {
+      expect(e.description.length, `${e.mode} description`).toBeLessThanOrEqual(300);
+      expect(e.experiment.length, `${e.mode} experiment`).toBeLessThanOrEqual(360);
+      expect(e.description.length + e.experiment.length, `${e.mode} card`).toBeLessThanOrEqual(560);
+    }
+  });
 });
