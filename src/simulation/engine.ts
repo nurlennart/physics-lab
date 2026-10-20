@@ -46,6 +46,10 @@ function physicalConfiguration(p: Project) {
 export const DT = 1 / 60;
 /** Largest step the adaptive integrator may take (thermal/electrical/control systems only). */
 export const MAX_ADAPTIVE_STEP = 30;
+/** Electrical devices with integrated state (converters, storage, contactors) that run in the coupled step. */
+const coupledDeviceKinds = new Set(["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor"]);
+/** Kinds that need the coupled (multiphysics) step: the electrical devices above, motors and drives, and water. */
+const coupledKinds = new Set([...coupledDeviceKinds, "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve", "heatingManifold"]);
 /** Reverse dielectric voltage an aluminium electrolytic capacitor withstands (V). */
 export const ELECTROLYTIC_REVERSE_LIMIT = 1;
 export interface AdaptiveOptions {
@@ -153,6 +157,9 @@ function magneticRelease(r: ElectricalReading, current: number, setting: number)
 export class Simulation {
   private ownedProject!: Project;
   private electricalKey = "";
+  /** Discrete key of the last solve, and what an accepted step leaves for the next one to skip its refresh (see solve). */
+  private solveKey = "";
+  private refreshReusable?: { key: string; project: Project };
   private acceptedProject!: Project;
   private lockedChallenge?: ChallengeId;
   private challengeRun?: { id: ChallengeId; state: unknown };
@@ -265,6 +272,7 @@ export class Simulation {
     this.error = null;
     this.automation = new Automation();
     this.electricalKey = "";
+    this.refreshReusable = undefined;
     this.multiphysics = new Multiphysics();
     this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project);
     this.multiphysics.initialize(this.project);
@@ -346,7 +354,14 @@ export class Simulation {
         [...this.disconnected],
       ]);
       if (this.hasFluidsOrMotors()) {
-        this.electrical = this.multiphysics.refresh(this);
+        // The start-of-step refresh re-solves the coupled network after the controls. In a purely electrical project
+        // (converters and storage only: no water, motors, rooms or bodies) its result is overwritten by the coupled step
+        // and feeds nothing else, so while no discrete state and no project changed since the last accepted step it is
+        // skipped: the run stays bit-identical and a live frame of a hybrid system costs about half.
+        const reuse = control && dt > 0 && !this.project.challenge && this.refreshReusable?.key === key && this.refreshReusable.project === this.project && this.electricalOnly();
+        this.refreshReusable = undefined;
+        if (!reuse) this.electrical = this.multiphysics.refresh(this);
+        this.solveKey = key;
         this.electricalKey = "";
       } else if (key !== this.electricalKey || this.temperatureDependent()) {
         this.electrical = solveElectrical(this.project, this.failed, {
@@ -509,8 +524,12 @@ export class Simulation {
     run.run();
     return run;
   }
+  /** Purely electrical coupled project: only electrical devices in the coupled step, no tanks, rooms or moving bodies. */
+  private electricalOnly() {
+    return !this.project.thermalSpaces?.length && !this.spatial.hasMovingBodies && this.project.components.every(c => (!coupledKinds.has(c.kind) || coupledDeviceKinds.has(c.kind)) && c.kind !== "tank" && c.kind !== "fluidJunction");
+  }
   private hasFluidsOrMotors() {
-    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => ["gridInverter", "hybridInverter", "gridMeter", "solarPanel", "lfpBattery", "mpptController", "inverter", "batteryProtection", "battery", "capacitor", "inductor", "contactor", "motor", "inductionMotor", "starDeltaStarter", "softStarter", "vfd", "pump", "circulator", "pipe", "valve", "checkValve", "actuatedValve", "thermostaticValve", "heatExchanger", "radiator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatPump", "pressureReducingValve", "storageTank", "expansionVessel", "safetyValve", "divertingValve", "heatingManifold"].includes(c.kind)
+    return !!this.project.thermalSpaces?.length || this.spatial.hasMovingBodies || this.project.components.some(c => coupledKinds.has(c.kind)
       // A tank whose inventory (e.g. by thermal expansion) rises above its rim needs the coupled step for weir overflow.
       || (c.kind === "tank" && (this.multiphysics.tanks[c.id]?.volume ?? 0) > prop(c, "capacity") / 1000 + 1e-12));
   }
@@ -863,6 +882,7 @@ export class Simulation {
     }
     this.ambientEnergy += p.components.filter(c => c.kind === 'solarPanel').reduce((sum, c) => sum + (this.electrical.readings[c.id]?.heatPower ?? 0) * dt, 0);
     this.time += dt;
+    this.refreshReusable = { key: this.solveKey, project: this.project };
     this.bindWeatherAt(this.time);
     this.energy += this.electrical.dissipatedPower * dt;
     this.suppliedEnergy += this.electrical.sourcePower * dt;

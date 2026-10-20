@@ -76,3 +76,20 @@ describe('settled grid-inverter tracker (adaptive advances)', () => {
   expect(Math.abs(fast.energyResidual)).toBeLessThan(1e-3);
  });
 });
+
+describe('live steps of a purely electrical system', () => {
+ it('skip the redundant start-of-step refresh, bit-identically, and refresh again after an edit', () => {
+  const p=hybridStarter('hybridStorage'),steady=new Simulation(structuredClone(p)),forced=new Simulation(structuredClone(p));
+  const refreshes=(s:Simulation)=>{let n=0;const original=s.multiphysics.refresh.bind(s.multiphysics);s.multiphysics.refresh=(sim:Simulation)=>{n++;return original(sim);};return ()=>n;};
+  const count=refreshes(steady);
+  for(let i=0;i<120;i++){expect(steady.step(1/60)).toBe(true);
+   // The reference refreshes every step: an identical project edit invalidates the reuse.
+   expect(forced.refresh(structuredClone(forced.project)),forced.error??'').toBe(true);expect(forced.step(1/60)).toBe(true);}
+  expect(count()).toBeLessThan(5);
+  const state=(s:Simulation)=>JSON.stringify([s.devices.batteries,s.devices.solar,s.devices.hybrid,s.electrical.readings,s.temperatures,s.energyResidual]);
+  expect(state(steady)).toBe(state(forced));
+  const before=count(); const pv=steady.project.components.find(c=>c.kind==='solarPanel')!;
+  edit(steady,pv,{irradiance:500}); expect(steady.step(1/60)).toBe(true);
+  expect(count()).toBeGreaterThan(before);
+ });
+});
