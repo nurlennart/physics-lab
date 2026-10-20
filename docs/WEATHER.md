@@ -43,11 +43,11 @@ RH = 100 · e_s(T_dew) / e_s(T),   e_s(t) = 611.2 · exp(17.62·t / (243.12 + t)
 The heat-pump house ([HEAT-PUMP.md](HEAT-PUMP.md)) under the default design day from midnight. Measured over 24 simulated hours with weather on:
 
 - The air reaches −5 °C at 05:00 with 100 % relative humidity, and 3 °C at 56 % in the afternoon.
-- Defrosts fall in the cold, humid hours: at about 03:30, 05:00 and 23:50.
+- Six defrosts, all in the cold, humid hours: at about 01:55, 03:30, 05:00, 06:35, 08:30 and 23:50.
 - The COP runs from about 2.5 before dawn to 4.7 at 15:00; the house holds 20–22 °C.
 - No errors or warnings; the energy residual stays at 0.001 J.
 
-A simulated day takes about five minutes in Node: the heat pump limits every step to 0.5 s (its quasi-steady cycle). That limit, not the weather, sets the cost, and it is the next performance candidate.
+A simulated day takes about 40 s in Node (17,000 steps): the heat pump bounds steps by its own rates ([HEAT-PUMP.md](HEAT-PUMP.md)); with the earlier fixed 0.5 s bound it took about five minutes.
 
 ## Validation
 

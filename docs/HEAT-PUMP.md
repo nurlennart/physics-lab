@@ -159,7 +159,16 @@ Faults: `failedOpen` (supply/inverter), `controlLost` and `coolingFailed` (outdo
   - Both appear in one reading: `power` is the total, with `compressorPower` and `backupPower` separately.
 - **Hydraulic:** like the boiler, the component is a branch with one fully mixed water cell (3 L, plus 4 kJ/K wetted metal) and an implicit element node (6 kJ/K, 4 kW/K to the water) that receives Q_c plus the backup heater power. Its affine outlet relation enters the global enthalpy solve, so pipes, radiators, Thermal Spaces, reverse flow and mixing are solved together. Its pressure drop uses an assumed K = 65 (about 15 kPa at 20 l/min). As a filled loop's pressure datum it uses the 1.5 bar cold-fill pressure, unless an expansion vessel is fitted. The starters include the indoor unit's 17 l vessel (0.75 bar precharge, filled to 1.3 bar) and its 3 bar safety valve, so the circuit pressure follows the water temperature.
 - **Air side:** the outdoor air is the component's resolved ambient: experiment environment, local override, or the Thermal Space it is assigned to. A unit assigned to a room draws its evaporator heat from that room's air (an air-source heat pump indoors cools the room).
-- **Time step:** the cycle is evaluated at most every 0.5 s and at every controller deadline (power-on check, minimum run/off, start budget, defrost limits, drip, backup delays, flow delay). Larger adaptive macro steps are split accordingly.
+- **Time step:** the cycle is evaluated per substep and at every controller deadline (power-on check, minimum run/off, start budget, defrost limits, drip, backup delays, flow delay), which end substeps exactly. Adaptive macro steps follow the unit's own rates over the last step: at most 0.05 K of water temperature, 0.5 K of the condenser/heater node, 0.2 K of outdoor coil and 2 % of compressor speed per step, and at most 12 s (a fiftieth of the PI integral time). This replaced a fixed 0.5 s bound. Against 0.5 s steps, over 6–8 simulated hours:
+
+  | Scenario | Steps (0.5 s → rates) | SPF (0.5 s → rates) | Starts, defrosts |
+  | --- | --- | --- | --- |
+  | House, 2 °C | 45,109 → 7,807 | 3.4961 → 3.4957 | identical |
+  | Cold snap, −15 °C | 43,499 → 2,697 | 2.1245 → 2.1243 | identical |
+  | Buffer tank, 2 °C | 45,108 → 7,965 | 3.4720 → 3.4714 | identical |
+  | Mild, 12 °C (cycling) | 58,941 → 6,469 | 5.4613 → 5.4634 | identical |
+
+  A simulated January day ([WEATHER.md](WEATHER.md)) takes 17,213 steps instead of 175,707. Its SPF is 3.142 against 3.150: one bivalent decision there is knife-edge. The backup heater joins only if the 30 min shortfall timer runs out before the water reaches its target, and the two race within a fraction of a kelvin, so even the way an advance is divided into calls at the same step size decides it (about 1 kWh of backup heat, 0.3 % SPF). `heat-pump.test.ts` compares frost, defrost timing, starts and SPF with 0.5 s steps.
 - **Rollback:** all states (speed, PI integral, coil, frost, timers, counters, element temperature) are included in the coupled-step checkpoint and rollback, and in deterministic replay.
 
 ### Energy conservation

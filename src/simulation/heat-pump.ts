@@ -221,6 +221,19 @@ export interface HeatPumpInputs { water: number; air: number; flow: number; volt
 /** Outdoor relative humidity (%) the coil sees. */
 export const airHumidity = (c: Component, x: Pick<HeatPumpInputs, 'humidity'>) => Math.max(0, Math.min(100, x.humidity ?? prop(c, 'relativeHumidity')));
 
+/**
+ * Adaptive step bound (s). The cycle is quasi-steady per substep and its explicit parts (PI integral, speed, coil, frost)
+ * are integrated per substep, so the step follows their rates over the last advance: at most `tolerance` K of water
+ * temperature, 10·`tolerance` K of the condenser/heater node (implicit, τ ≈ 1.5 s), 0.2 K of outdoor coil and 2 % of
+ * compressor speed per step, and a fiftieth of the PI integral time. Controller deadlines end substeps exactly
+ * (multiphysics.heatPumpEvent). This replaced a fixed 0.5 s bound; see docs/HEAT-PUMP.md for the comparison.
+ */
+export function heatPumpStepLimit(s: Simulation, c: Component, tolerance: number) {
+  const r = s.multiphysics.heatPumpRates[c.id], bound = (allowed: number, rate: number) => rate > 1e-12 ? allowed / rate : Infinity;
+  if (!r) return 0.5;
+  return Math.min(prop(c, 'integralTime') / 50, bound(tolerance, r.water), bound(10 * tolerance, r.element), bound(0.2, r.coil), bound(0.02, r.speed));
+}
+
 /** Controller decisions at an accepted substep boundary `now`. Faults never release latched protections. */
 export function controlHeatPump(s: Simulation, c: Component, st: HeatPumpState, now: number, x: HeatPumpInputs) {
   const wired = (port: string) => s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === port);

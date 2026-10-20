@@ -309,6 +309,27 @@ describe('Heat pump in the coupled engine', () => {
     expect(Math.abs(fixed.fluidTemperatureMeasurement(hp.id)! - adaptive.fluidTemperatureMeasurement(hp.id)!)).toBeLessThan(0.05);
     expect(Math.abs(fixed.multiphysics.heatPumps[hp.id].heat / adaptive.multiphysics.heatPumps[hp.id].heat - 1)).toBeLessThan(0.005);
   });
+  it('follows its rates in adaptive steps: frost, defrosts and SPF as with 0.5 s steps, in far fewer steps', () => {
+    // The fixed 0.5 s bound this replaced is the reference (adaptive advance capped at 0.5 s).
+    const run = (maxStep?: number) => {
+      const { b, hp } = heatPumpRig({ relativeHumidity: 95 }, { air: 0, volume: 40 }), s = new Simulation(b.p), defrosts: number[] = [];
+      let steps = 0, was = '';
+      for (let t = 0; t < 3 * 3600; t += 60) {
+        steps += s.advanceAdaptive(60, maxStep ? { maxStep } : {}).steps;
+        const st = s.multiphysics.heatPumps[hp.id]; if (st.mode === 'defrost' && was !== 'defrost') defrosts.push(s.time); was = st.mode;
+      }
+      const st = s.multiphysics.heatPumps[hp.id];
+      return { steps, defrosts, spf: (st.heat - st.defrostHeat) / st.electricity, frost: st.frost + st.defrosts * 2, starts: st.startCount, residual: s.energyResidual };
+    };
+    const reference = run(0.5), adaptive = run();
+    expect(reference.defrosts.length).toBeGreaterThanOrEqual(1);
+    expect(adaptive.defrosts.length).toBe(reference.defrosts.length);
+    adaptive.defrosts.forEach((t, i) => expect(Math.abs(t - reference.defrosts[i]), `defrost ${i + 1}`).toBeLessThanOrEqual(60));
+    expect(adaptive.starts).toBe(reference.starts);
+    expect(Math.abs(adaptive.spf / reference.spf - 1)).toBeLessThan(0.002);
+    expect(adaptive.steps).toBeLessThan(reference.steps / 4);
+    expect(Math.abs(adaptive.residual)).toBeLessThan(1e-3);
+  }, 120000);
   it('runs both starters, imports and exports them unchanged', () => {
     for (const mode of ['heatPumpHouse', 'heatPumpCold'] as const) {
       const p = starter(mode), copy = parseProject(JSON.parse(serializeProject(p)));

@@ -4,7 +4,7 @@ import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
 import { nextBreakpoint, temperatureRate, weatherAt } from "./weather";
 import { belowBoundary, screedKey, surfaceTemperature } from "./underfloor-heating";
 import { boilerStepLimit, resetBoiler } from './boiler';
-import { resetHeatPump } from './heat-pump';
+import { heatPumpStepLimit, resetHeatPump } from './heat-pump';
 import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
@@ -463,7 +463,7 @@ export class Simulation {
       // Circulators: resolve the speed ramp and sampled-control transients, and the restart after a lockout.
       if (c.kind === "electricBoiler") limit = Math.min(limit, boilerStepLimit(this, c, tolerance));
       // Heat pumps: quasi-steady cycle per substep (≤ 0.5 s, split at controller deadlines inside the coupled step).
-      if (c.kind === "heatPump") limit = Math.min(limit, 0.5);
+      if (c.kind === "heatPump") limit = Math.min(limit, heatPumpStepLimit(this, c, tolerance));
       // Panel radiators: water and steel cells change by at most the thermal tolerance per step (as lumped masses).
       if ((c.kind === "panelRadiator" || c.kind === "underfloorHeating") && this.multiphysics.panelRate > 0) limit = Math.min(limit, tolerance / this.multiphysics.panelRate);
       // Storage layers: the implicit upwind front is insensitive to the step (its numerical diffusion is set by the layer

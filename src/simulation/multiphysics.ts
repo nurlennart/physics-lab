@@ -77,6 +77,8 @@ export class Multiphysics {
   panelRate = 0;
   /** Boiler water dT/dt (K/s, signed) over the last advance; bounds adaptive steps and lands them on control thresholds. */
   boilerRates: Record<string, number> = {};
+  /** Heat pumps: |dT/dt| (K/s) of the water cell, condenser/heater node and outdoor coil, and |ds/dt| of the compressor speed (1/s), over the last advance; they bound adaptive steps (heat-pump.ts). */
+  heatPumpRates: Record<string, { water: number; element: number; coil: number; speed: number }> = {};
   /** Largest |dT/dt| (K/s) of any storage-tank layer over the last advance (a moving thermocline, inversion mixing). */
   storageRate = 0;
   /** Diverting valves still travelling toward their command (they bound the step only while moving). */
@@ -116,11 +118,12 @@ export class Multiphysics {
       starters: cloneState(this.starters), drives: cloneState(this.drives), shaftElements: cloneState(this.shaftElements),
       drivetrainLoss: this.drivetrainLoss, switchingLoss: this.switchingLoss, residual: this.residual, couplingIterations: this.couplingIterations,
       acceptedKey: this.acceptedKey, lastElectrical: this.lastElectrical, chord: this.chord, lastProject: this.lastProject,
-      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, boilerRates: { ...this.boilerRates }, storageRate: this.storageRate, valveTravel: { ...this.valveTravel },
+      circulatorCommands: this.circulatorCommands, panelRate: this.panelRate, boilerRates: { ...this.boilerRates }, heatPumpRates: { ...this.heatPumpRates }, storageRate: this.storageRate, valveTravel: { ...this.valveTravel },
     };
   }
   initialize(p: Project) {
     this.boilerRates = {};
+    this.heatPumpRates = {};
     for (const c of p.components) {
       if (c.kind === 'electricBoiler') this.boilers[c.id] = newBoiler(c);
       if (c.kind === 'heatPump') this.heatPumps[c.id] = newHeatPump(c, effectiveAmbient(p, c));
@@ -754,6 +757,7 @@ export class Multiphysics {
     // Emitter inventories (radiator cells; underfloor water and screed cells) bound the adaptive step by their rate of change.
     const panelBefore = s.project.components.filter(c => (c.kind === 'panelRadiator' || c.kind === 'underfloorHeating') && this.pipeCells[c.id]).flatMap(c => [c.id, ...(c.kind === 'underfloorHeating' ? [screedKey(c.id)] : [])].map(key => [key, [...this.pipeCells[key]]] as const));
     const boilerBefore = Object.keys(this.boilers).map(id => [id, this.pipeCells[id]?.[0]] as const);
+    const heatPumpBefore = Object.entries(this.heatPumps).map(([id, st]) => [id, { water: this.pipeCells[id]?.[0], element: st.elementTemperature, coil: st.coilTemperature, speed: st.speed }] as const);
     const storageBefore = s.project.components.filter(c => c.kind === 'storageTank' && this.pipeCells[c.id]).map(c => [c.id, [...this.pipeCells[c.id]]] as const);
     let remaining = dt, ambient = 0, thermalGain = 0, totalElectrical: ElectricalResult | undefined, intervals = 0;
     const adaptive = !s.spatial.hasMovingBodies && dt > 0.1 + 1e-12;
@@ -776,9 +780,10 @@ export class Multiphysics {
         }
       }
       if (Object.keys(this.heatPumps).length) {
-        // Quasi-steady cycle evaluated per substep: at most 0.5 s, ending at controller deadlines.
+        // Quasi-steady cycle evaluated per substep, ending at controller deadlines; adaptive macro steps are bounded by
+        // the heat pump's rates (heatPumpStepLimit), fixed steps are 1/60 s.
         const now = s.time + dt - remaining;
-        h = Math.min(h, 0.5, this.heatPumpEvent(s, now) - now);
+        h = Math.min(h, this.heatPumpEvent(s, now) - now);
         this.planHeatPumps(s, h);
       }
       const old = motors.map(c => this.motors[c.id].omega);
@@ -1100,6 +1105,8 @@ export class Multiphysics {
     }
     for (const [id, t] of Object.entries(this.tanks)) s.temperatures[id] = U.kToCelsius(t.temperature);
     this.panelRate = Math.max(0, ...panelBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
+    this.heatPumpRates = Object.fromEntries(heatPumpBefore.map(([id, b]) => { const st = this.heatPumps[id], water = this.pipeCells[id]?.[0];
+      return [id, { water: b.water === undefined || water === undefined ? 0 : Math.abs(water - b.water) / dt, element: Math.abs(st.elementTemperature - b.element) / dt, coil: Math.abs(st.coilTemperature - b.coil) / dt, speed: Math.abs(st.speed - b.speed) / dt }]; }));
     this.boilerRates = Object.fromEntries(boilerBefore.map(([id, before]) => [id, before === undefined ? 0 : ((this.pipeCells[id]?.[0] ?? before) - before) / dt]));
     this.storageRate = Math.max(0, ...storageBefore.flatMap(([id, before]) => before.map((t, i) => Math.abs((this.pipeCells[id]?.[i] ?? t) - t) / dt)));
     this.overflowRate = Object.fromEntries(Object.keys(this.tanks).map(id => [id, (spilledThisStep[id] ?? 0) / dt]));
