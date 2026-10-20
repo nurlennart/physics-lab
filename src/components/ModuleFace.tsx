@@ -171,7 +171,8 @@ const opening = (c: Component) => {
   const s = simulation, r = s.multiphysics.hydraulic.readings[c.id];
   return s.faults[c.id] === "stuckClosed" ? 0 : s.faults[c.id] === "stuckOpen" ? 100 : c.kind === "checkValve" ? (Math.abs(r?.flow ?? 0) > 1e-12 ? 100 : 0) : s.multiphysics.positions[c.id] ?? prop(c, "opening", 100);
 };
-const targetName = (c: Component) => simulation.project.components.find((x) => x.id === c.props.target)?.name;
+/** Name of what a sensor, controller or actuator targets: a component or, for temperature sensing, a Thermal Space. */
+const targetName = (c: Component) => simulation.project.components.find((x) => x.id === c.props.target)?.name ?? simulation.project.thermalSpaces?.find((r) => r.id === c.props.target)?.name;
 const signalText = (c: Component) => {
   const v = simulation.automation.signals[c.id];
   return !v ? undefined : !v.valid ? "Invalid" : typeof v.value === "boolean" ? (v.value ? "On" : "Off") : Number(v.value).toPrecision(4);

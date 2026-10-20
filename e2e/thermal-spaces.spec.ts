@@ -95,3 +95,13 @@ test('a floor rests on the ground: ISO 13370 U-value, fixed ground temperature a
   await expect(page.locator('.room-reading', { hasText: 'ground Loss' }).locator('b')).toContainText(/^41\.[4-6]/);
   expect(errors).toEqual([]);
 });
+
+test('a temperature sensor on a room names the room on its face', async ({ page }) => {
+  await page.goto('/'); await openExample(page, 'Heated living room');
+  await page.locator('.library-component').filter({ has: page.getByText('Temperature sensor', { exact: true }) }).click();
+  const sensor = page.locator('[data-component="sensor"]').last();
+  await expect(sensor).toContainText('No target');
+  await page.getByLabel('Thermal target', { exact: true }).selectOption({ label: 'Living Room · room air temperature' });
+  await expect(sensor).toContainText('→ Living Room');
+  await expect(sensor).not.toContainText('No target');
+});
