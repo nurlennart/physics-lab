@@ -653,14 +653,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.0270648642674018e-7,
-          "absoluteError": 1.0270648642674018e-7,
-          "tolerance": 2062.28593388854
+          "measured": 4.5418747429692985e-8,
+          "absoluteError": 4.5418747429692985e-8,
+          "tolerance": 2064.3082738177527
         }
       ],
       "pass": true,
       "time": 600,
-      "energyResidual": 1.0270648642674018e-7,
+      "energyResidual": 4.5418747429692985e-8,
       "massResidual": 0,
       "violations": [],
       "failed": {}
@@ -695,14 +695,14 @@
         {
           "label": "energy residual (J)",
           "expected": 0,
-          "measured": 1.0270648642674018e-7,
-          "absoluteError": 1.0270648642674018e-7,
-          "tolerance": 2062.28593388854
+          "measured": 4.5418747429692985e-8,
+          "absoluteError": 4.5418747429692985e-8,
+          "tolerance": 2064.3082738177527
         }
       ],
       "pass": true,
       "time": 600,
-      "energyResidual": 1.0270648642674018e-7,
+      "energyResidual": 4.5418747429692985e-8,
       "massResidual": 0,
       "violations": [],
       "failed": {}
