@@ -160,6 +160,8 @@ export class Simulation {
   /** Discrete key of the last solve, and what an accepted step leaves for the next one to skip its refresh (see solve). */
   private solveKey = "";
   private refreshReusable?: { key: string; project: Project };
+  /** Skip the redundant refresh where allowed (see solve); tests compare against false. */
+  skipRedundantRefresh = true;
   private acceptedProject!: Project;
   private lockedChallenge?: ChallengeId;
   private challengeRun?: { id: ChallengeId; state: unknown };
@@ -358,7 +360,7 @@ export class Simulation {
         // (converters and storage only: no water, motors, rooms or bodies) its result is overwritten by the coupled step
         // and feeds nothing else, so while no discrete state and no project changed since the last accepted step it is
         // skipped: the run stays bit-identical and a live frame of a hybrid system costs about half.
-        const reuse = control && dt > 0 && !this.project.challenge && this.refreshReusable?.key === key && this.refreshReusable.project === this.project && this.electricalOnly();
+        const reuse = this.skipRedundantRefresh && control && dt > 0 && !this.project.challenge && this.refreshReusable?.key === key && this.refreshReusable.project === this.project && this.electricalOnly();
         this.refreshReusable = undefined;
         if (!reuse) this.electrical = this.multiphysics.refresh(this);
         this.solveKey = key;
