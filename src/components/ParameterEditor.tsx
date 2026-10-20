@@ -337,7 +337,7 @@ export function EnvironmentPanel() {
           <EnvironmentField label="Linke turbidity" title="Haze of the clear sky: about 2 very clean, 3 typical winter, 4–5 hazy summer (assumption)." value={site(weather).linkeTurbidity} unit="1" disabled={locked} change={v => set({ linkeTurbidity: v })} />
           <EnvironmentField label="Ground albedo" title="Share of sunlight reflected by the ground: grass about 0.2, fresh snow 0.8." value={site(weather).albedo} unit="1" disabled={locked} change={v => set({ albedo: v })} />
         </details>
-        {now && <p className="field-hint" data-testid="weather-now">{clockLabel(weather, simulation.time)} · {now.temperature.toFixed(1)} °C · {now.relativeHumidity.toFixed(0)} % RH outdoors · sun {now.sun.elevation.toFixed(1)}° · {now.sun.ghi.toFixed(0)} W/m²</p>}
+        {now && <p className="field-hint" data-testid="weather-now">{clockLabel(weather, simulation.time)} · {now.temperature.toFixed(1)} °C · {now.relativeHumidity.toFixed(0)} % RH outdoors · sun {now.sun.elevation.toFixed(1)}° · global horizontal irradiance {now.sun.ghi.toFixed(0)} W/m²</p>}
         <details><summary className="section-label">Model basis · data provenance</summary>
           {weatherBasis.map(b => <p className="field-hint" key={b.kind}><strong>{weatherBasisLabels[b.kind]}:</strong> {b.text}</p>)}
         </details>

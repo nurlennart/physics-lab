@@ -54,6 +54,7 @@ test('a June day: the panel follows the sun', async ({ page }) => {
   await page.getByRole('button', { name: 'Advance 60 s', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled({ timeout: 60000 });
   await expect(page.getByTestId('weather-clock')).toContainText('sun');
+  await expect(page.getByTestId('weather-now')).toContainText('global horizontal irradiance');
   await expect(page.locator('.trace-readouts')).toContainText('Sun elevation');
   await expect(page.locator('.trace-readouts')).toContainText('Sunlight on the module');
   await page.locator('[data-component="solarPanel"]').click();
