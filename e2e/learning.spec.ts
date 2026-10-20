@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { openExample } from './learning-helpers';
+import { examples } from '../src/simulation/learning';
+const examplesIn = (group: string) => examples.filter(e => e.group === group).length;
 test('File example shelf describes experiments and opens a working feedback circuit', async ({ page }) => {
   await page.goto('/');
   await openExample(page, 'A heater that thinks');
@@ -47,7 +49,7 @@ test('example shelf fits a phone, starts with the beginner group, filters and se
   await expect(page.getByTestId('examples-empty')).toBeVisible();
   await page.getByRole('button', { name: 'Solar & storage', exact: true }).click(); // a group clears the search
   await expect(page.getByLabel('Search examples')).toHaveValue('');
-  await expect(page.locator('.example-card')).toHaveCount(9);
+  await expect(page.locator('.example-card')).toHaveCount(examplesIn('Solar & storage'));
   const bounds = await page.getByRole('dialog').boundingBox();
   expect(bounds!.width).toBeLessThanOrEqual(390);
 });
