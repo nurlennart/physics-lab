@@ -1,5 +1,7 @@
 # Physics Lab
 
+**Live at [joulefield.com](https://joulefield.com).**
+
 A browser engineering sandbox. Build circuits, heating systems, pumped water networks, motor drives and physical mechanisms from about 60 component kinds, wire them by their terminals, and run them on one coupled, energy-conserving simulation.
 
 - **Electrical:** DC and AC (phasor) networks, single- and three-phase supplies, batteries, dynamic capacitors and inductors, transformers, filament lamps, cables, fuses, breakers, relays and contactors.
