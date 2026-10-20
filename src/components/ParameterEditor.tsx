@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Lock, RotateCcw, Save, Info, Gauge } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
 import { catalog, componentCost, definitions, isMotor, projectAmbient, projectWeather, prop, type Component, type Kind, type Project, type Property } from "../simulation/model";
-import { clockLabel, defaultDesignDay, weatherBasis, weatherBasisLabels, type WeatherModel } from "../simulation/weather";
+import { clockLabel, defaultDesignDay, site, weatherBasis, weatherBasisLabels, type WeatherModel } from "../simulation/weather";
 import { editPolicy } from "../simulation/integrity";
 import { derivedReadouts, paramSpec, type ParamGroup, type ParamSpec } from "../simulation/parameters";
 import { builtinPresets } from "../simulation/presets";
@@ -325,7 +325,19 @@ export function EnvironmentPanel() {
         <EnvironmentField label="Daily minimum" title="Coldest air of the day, reached at 05:00." value={weather.minTemperature} unit="°C" disabled={locked} change={v => set({ minTemperature: v })} />
         <EnvironmentField label="Daily maximum" title="Warmest air of the day, reached 14:00–15:00." value={weather.maxTemperature} unit="°C" disabled={locked} change={v => set({ maxTemperature: v })} />
         <EnvironmentField label="Dew point" title="Constant through the day; relative humidity follows from it. At or below the daily minimum." value={weather.dewPoint} unit="°C" disabled={locked} change={v => set({ dewPoint: v })} />
-        {now && <p className="field-hint" data-testid="weather-now">{clockLabel(weather, simulation.time)} · {now.temperature.toFixed(1)} °C · {now.relativeHumidity.toFixed(0)} % RH outdoors</p>}
+        <div className="property-row">
+          <span className="property-label" title="Calendar day of the start time; sets the sun's path.">Date</span>
+          <input type="date" aria-label="Weather date" disabled={locked} value={site(weather).date} onChange={(e) => e.target.value && set({ date: e.target.value })} />
+        </div>
+        <EnvironmentField label="Latitude" title="Site latitude, north positive (Munich 48.14°)." value={site(weather).latitude} unit="°" disabled={locked} change={v => set({ latitude: v })} />
+        <EnvironmentField label="Longitude" title="Site longitude, east positive (Munich 11.58°)." value={site(weather).longitude} unit="°" disabled={locked} change={v => set({ longitude: v })} />
+        <EnvironmentField label="UTC offset" title="Offset of local standard time from UTC in hours (central Europe +1). No daylight saving time." value={site(weather).utcOffset} unit="h" disabled={locked} change={v => set({ utcOffset: v })} />
+        <details><summary className="section-label">Sky and site</summary>
+          <EnvironmentField label="Site altitude" title="Altitude above sea level: thinner air, more sunlight." value={site(weather).altitude} unit="m" disabled={locked} change={v => set({ altitude: v })} />
+          <EnvironmentField label="Linke turbidity" title="Haze of the clear sky: about 2 very clean, 3 typical winter, 4–5 hazy summer (assumption)." value={site(weather).linkeTurbidity} unit="1" disabled={locked} change={v => set({ linkeTurbidity: v })} />
+          <EnvironmentField label="Ground albedo" title="Share of sunlight reflected by the ground: grass about 0.2, fresh snow 0.8." value={site(weather).albedo} unit="1" disabled={locked} change={v => set({ albedo: v })} />
+        </details>
+        {now && <p className="field-hint" data-testid="weather-now">{clockLabel(weather, simulation.time)} · {now.temperature.toFixed(1)} °C · {now.relativeHumidity.toFixed(0)} % RH outdoors · sun {now.sun.elevation.toFixed(1)}° · {now.sun.ghi.toFixed(0)} W/m²</p>}
         <details><summary className="section-label">Model basis · data provenance</summary>
           {weatherBasis.map(b => <p className="field-hint" key={b.kind}><strong>{weatherBasisLabels[b.kind]}:</strong> {b.text}</p>)}
         </details>

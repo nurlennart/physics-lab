@@ -599,7 +599,7 @@ export const actions = {
     if (!c) return;
     const probe: Probe = {
       id: uid(),
-      name: outdoors ? (measurement === "outdoorHumidity" ? "Outdoor humidity" : "Outdoor air") : `${c.name} ${measurement}`,
+      name: outdoors ? ({ outdoorHumidity: "Outdoor humidity", sunElevation: "Sun elevation", globalIrradiance: "Global irradiance" } as Partial<Record<string, string>>)[measurement] ?? "Outdoor air" : `${c.name} ${measurement}`,
       ...(room ? { targetKind: "space" as const } : outdoors ? { targetKind: "environment" as const } : {}),
       component,
       measurement,

@@ -164,8 +164,8 @@ function Telemetry() {
     c =
       s.project.components.find((c) => c.id === target) ??
       (room || outdoors ? undefined : s.project.components[0]),
-    // Outdoors: the air always; humidity only exists with weather.
-    options: Measurement[] = outdoors ? environmentMeasurements.filter(m => m !== "outdoorHumidity" || !!s.project.weather) : room ? [...roomMeasurements] : c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
+    // Outdoors: the air always; humidity and the sun only exist with weather.
+    options: Measurement[] = outdoors ? environmentMeasurements.filter(m => m === "outdoorTemperature" || !!s.project.weather) : room ? [...roomMeasurements] : c ? measurements(c).filter((x) => x !== "nodeVoltage") : [],
     validMetric = options.some((x) => x === metric) ? metric : options[0];
   const end = Math.max(0.25, simulation.time - offset),
     start = Math.max(simulation.samples[0]?.time ?? 0, end - window),

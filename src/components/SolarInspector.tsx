@@ -1,12 +1,13 @@
 import { simulation } from '../editor/store';
-import { type Component, prop } from '../simulation/model';
+import { type Component, projectWeather } from '../simulation/model';
+import { panelConditions } from '../simulation/solar';
 import { batteryEnergy } from '../simulation/devices';
 import { panelModel } from '../simulation/solar-circuits';
 import { solarVariantProvenance } from '../simulation/solar-provenance';
 export function SolarInspector({ c }: { c: Component }) {
   const r = simulation.electrical.readings[c.id], s = r?.solar, provenance = solarVariantProvenance(c.kind, c.variant);
   if (!provenance) return null;
-  const m = c.kind === 'solarPanel' ? panelModel(c) : null;
+  const weather = projectWeather(simulation.project), conditions = c.kind === 'solarPanel' ? panelConditions(c, weather) : null, m = c.kind === 'solarPanel' ? panelModel(c, weather) : null;
   const maxV = m ? Math.max(1, m.voc) : 1, maxI = m ? Math.max(1, m.isc) : 1, maxP = m ? Math.max(1, m.pmp) : 1;
   const x = (v: number) => 30 + v / maxV * 240, yi = (i: number) => 135 - i / maxI * 110, yp = (p: number) => 135 - p / maxP * 110;
   const samples = m ? Array.from({ length: 101 }, (_, k) => { const v = maxV * k / 100, i = m.at(v).current; return { v, i, p: v * i }; }) : [];
@@ -27,7 +28,7 @@ export function SolarInspector({ c }: { c: Component }) {
         <text x="35" y="12" fill="#38bdf8" fontSize="10">I: {m.isc.toFixed(2)} A</text><text x="170" y="12" fill="#f59e0b" fontSize="10">P: {m.pmp.toFixed(1)} W</text>
       </svg>
       <p>Blue: current & operating point. Amber: power & MPP. Independent vertical scales.</p>
-      <p>{prop(c, 'irradiance')} W/m² · {prop(c, 'cellTemperature')} °C cell · MPP {m.vmp.toFixed(2)} V × {m.imp.toFixed(2)} A</p>
+      <p>{conditions!.irradiance.toFixed(0)} W/m² · {conditions!.cellTemperature.toFixed(1)} °C cell{conditions!.fromWeather ? ' (from the weather: sun and outdoor air)' : ''} · MPP {m.vmp.toFixed(2)} V × {m.imp.toFixed(2)} A</p>
     </>}
     <details><summary>Model provenance & limitations</summary><p><a href={provenance.url} target="_blank" rel="noreferrer">{provenance.reference}</a></p><p>{provenance.facts}</p><p>{provenance.assumptions}</p></details>
   </section>;

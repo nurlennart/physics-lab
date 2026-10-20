@@ -97,7 +97,7 @@ function StatusFooter() {
           </span>
           <span>{s.project.components.length} components</span>
           <span>{s.project.connections.length} connections</span>
-          {simulation.project.weather && (() => { const w = projectWeather(simulation.project)!; return <span data-testid="weather-clock">{clockLabel(simulation.project.weather, simulation.time)} · {w.temperature.toFixed(1)} °C outdoors</span>; })()}
+          {simulation.project.weather && (() => { const w = projectWeather(simulation.project)!; return <span data-testid="weather-clock">{clockLabel(simulation.project.weather, simulation.time)} · {w.temperature.toFixed(1)} °C · sun {w.sun.elevation > 0 ? `${w.sun.elevation.toFixed(0)}°` : 'down'}</span>; })()}
           <span>€{projectCost(s.project).toFixed(0)} {s.project.challenge ? "total" : "est. total"}</span>
         </div>
         <div>

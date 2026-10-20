@@ -439,6 +439,7 @@ export class Multiphysics {
       const demand = Object.fromEntries(circulators.filter(c => plan[c.id].powered).map(c => [c.id, plan[c.id].running ? circulatorInput(c, this.circulatorMechanical(c, plan[c.id], hydraulic.readings[c.id]?.shaftPower ?? 0, h)) : prop(c, 'standbyPower')]));
       electrical = solveElectrical(s.project, s.failed, {
         ...s.devices.runtime(h),
+        weather: projectWeather(s.project),
         contacts: { ...s.automation.contacts, ...Object.fromEntries(s.project.components.filter(c => c.kind === 'batteryProtection').map(c => { const v = s.automation.input(c, 'enable', s); return [c.id, s.project.connections.some(w => w.domain === 'control' && w.to.component === c.id && w.to.port === 'enable') ? v.valid && v.value === true : c.props.enabled !== false]; })) }, faults: s.faults, disconnected: s.disconnected, temperatures: s.temperatures, filaments: s.filamentRatios(), open: s.openDevices(),
         motors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'motor' ? [[c.id, { enabled: controls[c.id].enabled, duty: this.dcDuty(c, controls[c.id].command, omega[i]), emf: prop(c, 'emfConstant') * omega[i] }]] : [])),
         inductionMotors: Object.fromEntries(motors.flatMap((c, i) => c.kind === 'inductionMotor' ? [[c.id, { omega: omega[i], enabled: controls[c.id].enabled, psiS: this.motors[c.id]?.psiS ?? [0, 0], psiR: this.motors[c.id]?.psiR ?? noRotorFlux(machineParams(c, prop(c, 'ratedFrequency', 50))), h }]] : [])),

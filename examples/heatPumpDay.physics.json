@@ -1046,7 +1046,14 @@
     "startHour": 0,
     "minTemperature": -5,
     "maxTemperature": 3,
-    "dewPoint": -5
+    "dewPoint": -5,
+    "date": "2026-01-15",
+    "latitude": 48.14,
+    "longitude": 11.58,
+    "utcOffset": 1,
+    "altitude": 520,
+    "linkeTurbidity": 3,
+    "albedo": 0.2
   },
   "thermalSpaces": [
     {

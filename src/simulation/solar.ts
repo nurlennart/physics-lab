@@ -1,6 +1,8 @@
 /** Averaged renewable-energy models. All dynamic memory belongs to Devices, including rollback. */
 import { prop, type Component, type Project } from './model';
 import type { ElectricalResult } from './electrical-core';
+import { noctCellTemperature, planeOfArray } from './sun';
+import type { WeatherState } from './weather';
 
 export const solarKinds = ['solarPanel', 'lfpBattery', 'mpptController', 'inverter', 'batteryProtection'];
 export interface SolarState {
@@ -32,10 +34,22 @@ export function pvFit(c: Component) {
   if (fit.rs < 0 || Math.abs(fit.residual) > 1e-7) throw Error(`${c.name}: STC ratings cannot fit a positive-series-resistance single diode.`);
   fitCache.set(key, fit); return fit;
 }
+/** Irradiance on the module (W/m²) and cell temperature (°C) a panel works at. */
+export interface PanelConditions { irradiance: number; cellTemperature: number; fromWeather: boolean }
+/**
+ * Fixed values, or with `conditions: 'weather'` and weather in force: clear-sky sunlight on the module plane (tilt,
+ * azimuth, ground albedo) and the NOCT cell temperature over the outdoor air (the panel's local ambient override if set).
+ */
+export function panelConditions(c: Component, weather?: WeatherState): PanelConditions {
+  if (!weather || c.props.conditions !== 'weather') return { irradiance: prop(c, 'irradiance'), cellTemperature: prop(c, 'cellTemperature'), fromWeather: false };
+  const air = c.props.ambientMode === 'override' && typeof c.props.ambient === 'number' ? c.props.ambient : weather.temperature;
+  const irradiance = planeOfArray(weather.sun, weather.sun.zenith, weather.sun.azimuth, prop(c, 'tilt'), prop(c, 'azimuth'), weather.albedo);
+  return { irradiance, cellTemperature: noctCellTemperature(air, irradiance, prop(c, 'noct')), fromWeather: true };
+}
 /** Environment scaling preserves measured Isc and Voc coefficients; ideality voltage scales with absolute T. */
-export function pvModel(c: Component) {
-  const fit = pvFit(c), t = prop(c, 'cellTemperature') - 25;
-  const g = c.props.enabled === false ? 0 : prop(c, 'irradiance') / 1000 * (1 - prop(c, 'shading') / 100);
+export function pvModel(c: Component, conditions: PanelConditions = panelConditions(c)) {
+  const fit = pvFit(c), t = conditions.cellTemperature - 25;
+  const g = c.props.enabled === false ? 0 : conditions.irradiance / 1000 * (1 - prop(c, 'shading') / 100);
   const a = fit.a * (298.15 + t) / 298.15, photo = prop(c, 'isc') * g * (1 + prop(c, 'currentCoefficient') * t);
   const vocT = prop(c, 'voc') * (1 + prop(c, 'voltageCoefficient') * t);
   const i0 = prop(c, 'isc') * (1 + prop(c, 'currentCoefficient') * t) / Math.expm1(vocT / a);
@@ -50,7 +64,7 @@ export function pvModel(c: Component) {
   let lo = 0, hi = voc;
   for (let k = 0; k < 60; k++) { const v = (lo + hi) / 2, x = at(v); if (x.current + v * x.slope > 0) lo = v; else hi = v; }
   const vmp = (lo + hi) / 2, imp = at(vmp).current;
-  return { at, voc, isc: at(0).current, vmp, imp, pmp: vmp * imp, irradiation: prop(c, 'area') * prop(c, 'irradiance') };
+  return { at, voc, isc: at(0).current, vmp, imp, pmp: vmp * imp, irradiation: prop(c, 'area') * conditions.irradiance };
 }
 /** Idle + load-proportional switching + I² conduction loss. The configured peak is an upper bound. */
 export function inverterLoss(c: Component, active: number, apparent = active) {

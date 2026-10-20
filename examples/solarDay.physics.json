@@ -1,0 +1,459 @@
+{
+  "version": 3,
+  "id": "example-solarDay",
+  "name": "Off-grid solar through a June day",
+  "components": [
+    {
+      "id": "solarDay-component-1",
+      "kind": "solarPanel",
+      "name": "Solar Panel (PV) · 30° south",
+      "x": 70,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voc": 52.9,
+        "isc": 10.74,
+        "vmp": 44.6,
+        "imp": 10.09,
+        "irradiance": 1000,
+        "cellTemperature": 25,
+        "voltageCoefficient": -0.0024,
+        "currentCoefficient": 0.0004,
+        "area": 1.998108,
+        "shading": 0,
+        "enabled": true,
+        "conditions": "weather",
+        "tilt": 30,
+        "azimuth": 180,
+        "noct": 43
+      }
+    },
+    {
+      "id": "solarDay-component-2",
+      "kind": "mpptController",
+      "name": "MPPT Charge Controller",
+      "x": 390,
+      "y": 110,
+      "rotation": 0,
+      "variant": "24V",
+      "props": {
+        "maxInputVoltage": 100,
+        "maxInputCurrent": 20,
+        "maxCurrent": 20,
+        "conversionEfficiency": 98,
+        "absorptionVoltage": 28.4,
+        "floatVoltage": 27,
+        "absorptionTime": 1800,
+        "rebulkVoltage": 26.4,
+        "minVoltage": 16,
+        "startupHeadroom": 5,
+        "runningHeadroom": 1,
+        "trackingStep": 0.25,
+        "trackingInterval": 0.2,
+        "initialTrackingVoltage": 40,
+        "enabled": true,
+        "heatCapacity": 600,
+        "loss": 2,
+        "conductance": 20,
+        "maxTemperature": 60,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarDay-component-3",
+      "kind": "lfpBattery",
+      "name": "LiFePO4 Battery",
+      "x": 710,
+      "y": 110,
+      "rotation": 0,
+      "variant": "eightCell",
+      "props": {
+        "capacityAh": 100,
+        "initialSOC": 50,
+        "cells": 8,
+        "emptyVoltage": 20,
+        "fullVoltage": 27.2,
+        "internalResistance": 0.0016,
+        "chemistry": "lfp",
+        "coulombicEfficiency": 99.5,
+        "selfDischarge": 0,
+        "polarizationResistance": 0,
+        "polarizationTimeConstant": 30,
+        "resistanceActivation": 0,
+        "maxCurrent": 200,
+        "chargeCurrentLimit": 50,
+        "dischargeCurrentLimit": 100,
+        "maxPower": 5120,
+        "enabled": true,
+        "heatCapacity": 28000,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 50,
+        "minChargeTemperature": 5,
+        "minDischargeTemperature": -20,
+        "bmsLowVoltage": 22.4,
+        "bmsHighVoltage": 30,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarDay-component-4",
+      "kind": "batteryProtection",
+      "name": "DC load protection",
+      "x": 710,
+      "y": 400,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "disconnectVoltage": 23.6,
+        "restartVoltage": 25.6,
+        "ratedCurrent": 65,
+        "resistance": 0.002,
+        "enabled": true,
+        "heatCapacity": 200,
+        "loss": 1,
+        "conductance": 10,
+        "maxTemperature": 65,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarDay-component-5",
+      "kind": "inverter",
+      "name": "DC/AC Inverter",
+      "x": 1030,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "ratedPower": 400,
+        "ratedApparentPower": 500,
+        "surgePower": 900,
+        "surgeTime": 2,
+        "peakEfficiency": 90,
+        "idlePower": 6.5,
+        "standbyPower": 1.5,
+        "standby": false,
+        "minVoltage": 18.6,
+        "restartVoltage": 21.8,
+        "maxInputVoltage": 34,
+        "enabled": true,
+        "heatCapacity": 1800,
+        "loss": 3,
+        "conductance": 20,
+        "maxTemperature": 65,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarDay-component-6",
+      "kind": "resistor",
+      "name": "230 V AC load · 100 W",
+      "x": 1350,
+      "y": 110,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 529,
+        "ratedPower": 150,
+        "heatCapacity": 1000,
+        "loss": 3,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "solarDay-component-7",
+      "kind": "resistor",
+      "name": "DC lighting branch · 20 W",
+      "x": 1030,
+      "y": 400,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "resistance": 32.768,
+        "ratedPower": 40,
+        "heatCapacity": 300,
+        "loss": 1,
+        "maxTemperature": 150,
+        "tempCoefficient": 0,
+        "tolerance": 0,
+        "conductance": 2,
+        "ambient": 20,
+        "ambientMode": "inherit"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "solarDay-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarDay-component-2",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarDay-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarDay-component-2",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarDay-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-2",
+        "port": "oa"
+      },
+      "to": {
+        "component": "solarDay-component-3",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarDay-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-2",
+        "port": "ob"
+      },
+      "to": {
+        "component": "solarDay-component-3",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarDay-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-3",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarDay-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarDay-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarDay-component-4",
+        "port": "reference"
+      }
+    },
+    {
+      "id": "solarDay-connection-7",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-3",
+        "port": "a"
+      },
+      "to": {
+        "component": "solarDay-component-5",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarDay-connection-8",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarDay-component-5",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarDay-connection-9",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-5",
+        "port": "oa"
+      },
+      "to": {
+        "component": "solarDay-component-6",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarDay-connection-10",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-5",
+        "port": "ob"
+      },
+      "to": {
+        "component": "solarDay-component-6",
+        "port": "b"
+      }
+    },
+    {
+      "id": "solarDay-connection-11",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-4",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarDay-component-7",
+        "port": "a"
+      }
+    },
+    {
+      "id": "solarDay-connection-12",
+      "domain": "electrical",
+      "from": {
+        "component": "solarDay-component-3",
+        "port": "b"
+      },
+      "to": {
+        "component": "solarDay-component-7",
+        "port": "b"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "solarDay-probe-1",
+      "component": "solarDay-component-1",
+      "measurement": "outputPower",
+      "name": "PV generated power",
+      "color": "#f59e0b",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-2",
+      "component": "solarDay-component-2",
+      "measurement": "outputPower",
+      "name": "Charger output",
+      "color": "#22c55e",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-3",
+      "component": "solarDay-component-3",
+      "measurement": "stateOfCharge",
+      "name": "Battery SOC",
+      "color": "#38bdf8",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-4",
+      "component": "solarDay-component-3",
+      "measurement": "chemicalEnergy",
+      "name": "Stored chemical energy",
+      "color": "#a78bfa",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-5",
+      "component": "solarDay-component-3",
+      "measurement": "current",
+      "name": "Battery current (+ charging)",
+      "color": "#06b6d4",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-6",
+      "component": "solarDay-component-5",
+      "measurement": "inputPower",
+      "name": "Inverter DC input",
+      "color": "#ef4444",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-7",
+      "component": "solarDay-component-6",
+      "measurement": "power",
+      "name": "AC useful load",
+      "color": "#f97316",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-8",
+      "component": "solarDay-component-7",
+      "measurement": "power",
+      "name": "DC useful load",
+      "color": "#eab308",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-9",
+      "component": "solarDay-component-1",
+      "measurement": "planeIrradiance",
+      "name": "Sunlight on the module",
+      "color": "#fde047",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-10",
+      "component": "solarDay-component-1",
+      "measurement": "cellTemperature",
+      "name": "Cell temperature",
+      "color": "#fb7185",
+      "visible": true
+    },
+    {
+      "id": "solarDay-probe-11",
+      "name": "Sun elevation",
+      "component": "environment",
+      "targetKind": "environment",
+      "measurement": "sunElevation",
+      "visible": true,
+      "color": "#facc15"
+    },
+    {
+      "id": "solarDay-probe-12",
+      "name": "Outdoor air",
+      "component": "environment",
+      "targetKind": "environment",
+      "measurement": "outdoorTemperature",
+      "visible": true,
+      "color": "#9AA6B6"
+    }
+  ],
+  "assemblies": [],
+  "weather": {
+    "kind": "designDay",
+    "startHour": 6,
+    "minTemperature": 12,
+    "maxTemperature": 25,
+    "dewPoint": 10,
+    "date": "2026-06-21",
+    "latitude": 48.14,
+    "longitude": 11.58,
+    "utcOffset": 1,
+    "altitude": 520,
+    "linkeTurbidity": 4,
+    "albedo": 0.2
+  }
+}

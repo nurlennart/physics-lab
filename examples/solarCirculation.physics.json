@@ -22,7 +22,11 @@
         "currentCoefficient": 0.0004,
         "area": 1.998108,
         "shading": 0,
-        "enabled": true
+        "enabled": true,
+        "conditions": "fixed",
+        "tilt": 30,
+        "azimuth": 180,
+        "noct": 43
       }
     },
     {

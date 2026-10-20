@@ -1,7 +1,7 @@
 import { circuitIndices, circuitKey } from "./heating-manifold";
 import { type SpaceReading } from "./thermal-spaces";
 import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
-import { nextBreakpoint, temperatureRate, weatherAt } from "./weather";
+import { nextBreakpoint, sunlightStepLimit, temperatureRate, weatherAt } from "./weather";
 import { belowBoundary, screedKey, surfaceTemperature } from "./underfloor-heating";
 import { boilerStepLimit, resetBoiler } from './boiler';
 import { heatPumpStepLimit, resetHeatPump } from './heat-pump';
@@ -9,7 +9,7 @@ import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
 import { challengeDefinition } from "./challenges";
-import { bindWeather, prop, isThermalMass, isSource, isMotor, perPoleKinds, portConductance, type Component, type Project, type ChallengeId } from "./model";
+import { bindWeather, projectWeather, prop, isThermalMass, isSource, isMotor, perPoleKinds, portConductance, type Component, type Project, type ChallengeId } from "./model";
 import {
   solveElectrical,
   solveLinear,
@@ -368,6 +368,7 @@ export class Simulation {
       } else if (key !== this.electricalKey || this.temperatureDependent()) {
         this.electrical = solveElectrical(this.project, this.failed, {
           ...this.devices.runtime(dt),
+          weather: projectWeather(this.project),
           contacts: this.automation.contacts,
           faults: this.faults,
           disconnected: this.disconnected,
@@ -501,6 +502,8 @@ export class Simulation {
       const rate = temperatureRate(weather, this.time);
       if (rate > 0) limit = Math.min(limit, tolerance / rate);
       limit = Math.min(limit, nextBreakpoint(weather, this.time));
+      // Panels in the sun: at most 1 % (at least 5 W/m²) of sunlight change per step.
+      if (this.project.components.some(c => c.kind === "solarPanel" && c.props.conditions === "weather")) limit = Math.min(limit, sunlightStepLimit(weather, this.time));
     }
     if (Number.isFinite(this.thermalRate) && this.thermalRate > 0) limit = Math.min(limit, tolerance / this.thermalRate);
     else if (!Number.isFinite(this.thermalRate)) limit = DT;

@@ -3278,6 +3278,128 @@
     ]
   },
   {
+    "mode": "solarDay",
+    "source": "generated",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 9914.201656898826,
+    "energyResidual": 3.456079866737127e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 33.40943195488781
+      },
+      {
+        "name": "Charger output",
+        "value": 32.74124331349515
+      },
+      {
+        "name": "Battery SOC",
+        "value": 49.93556127758586
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 4514906.724236706
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": -3.8475986558259705
+      },
+      {
+        "name": "Inverter DC input",
+        "value": 112.73611111111234
+      },
+      {
+        "name": "AC useful load",
+        "value": 100
+      },
+      {
+        "name": "DC useful load",
+        "value": 21.042107683595383
+      },
+      {
+        "name": "Sunlight on the module",
+        "value": 83.90061420109984
+      },
+      {
+        "name": "Cell temperature",
+        "value": 14.687309324948288
+      },
+      {
+        "name": "Sun elevation",
+        "value": 14.992423609776495
+      },
+      {
+        "name": "Outdoor air",
+        "value": 12.275166666666667
+      }
+    ]
+  },
+  {
+    "mode": "solarDay",
+    "source": "file",
+    "simulatedSeconds": 60,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 9914.201656898826,
+    "energyResidual": 3.456079866737127e-11,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "PV generated power",
+        "value": 33.40943195488781
+      },
+      {
+        "name": "Charger output",
+        "value": 32.74124331349515
+      },
+      {
+        "name": "Battery SOC",
+        "value": 49.93556127758586
+      },
+      {
+        "name": "Stored chemical energy",
+        "value": 4514906.724236706
+      },
+      {
+        "name": "Battery current (+ charging)",
+        "value": -3.8475986558259705
+      },
+      {
+        "name": "Inverter DC input",
+        "value": 112.73611111111234
+      },
+      {
+        "name": "AC useful load",
+        "value": 100
+      },
+      {
+        "name": "DC useful load",
+        "value": 21.042107683595383
+      },
+      {
+        "name": "Sunlight on the module",
+        "value": 83.90061420109984
+      },
+      {
+        "name": "Cell temperature",
+        "value": 14.687309324948288
+      },
+      {
+        "name": "Sun elevation",
+        "value": 14.992423609776495
+      },
+      {
+        "name": "Outdoor air",
+        "value": 12.275166666666667
+      }
+    ]
+  },
+  {
     "mode": "multipleSolar",
     "source": "generated",
     "simulatedSeconds": 60,

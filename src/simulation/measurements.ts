@@ -1,3 +1,4 @@
+import { panelConditions } from "./solar";
 import { roomMeasurement } from './thermal-spaces';
 import { effectiveAmbient } from "./environment";
 import { batteryEnergy } from "./devices";
@@ -16,6 +17,7 @@ export const units: Record<Measurement, string> = {
   roomTemperature: "°C", envelopeLoss: "W", groundLoss: "W", ventilationLoss: "W", netHeat: "W", storedThermalEnergy: "J", temperatureRate: "K/s", adjacentHeat: "W", effectiveHeatCapacity: "J/K", internalHeat: "W",
   acInputPower: 'W', acOutputPower: 'W', converterLossEnergy: 'J', transferLossEnergy: 'J', batteryHeatEnergy: 'J',
   gridPower: 'W', gridReactivePower: 'var', gridImportPower: 'W', gridExportPower: 'W', gridImportEnergy: 'Wh', gridExportEnergy: 'Wh', gridVoltage: 'V', gridFrequency: 'Hz', synchronized: 'bool', backupAvailable: 'bool', dcPower: 'W', acConversionPower: 'W',
+  planeIrradiance: 'W/m²', cellTemperature: '°C', sunElevation: '°', globalIrradiance: 'W/m²',
   incidentEnergy: 'J', inputPower: 'W', outputPower: 'W', conversionLoss: 'W', mppPower: 'W', mppVoltage: 'V', mppCurrent: 'A', trackingEfficiency: '%', incidentPower: 'W', generatedEnergy: 'J', outputEnergy: 'J', lostEnergy: 'J',
   supplyTemperature: "°C", excessTemperature: "K", heatInput: "W",
   downwardLoss: "W", screedTemperature: "°C", surfaceTemperature: "°C", heatFlux: "W/m²",
@@ -42,7 +44,11 @@ export { measurements } from "./capabilities";
 import { measurements } from "./capabilities";
 export function readProbe(p: Probe, s: Simulation): number | null {
   if (p.targetKind === "space") return s.error ? null : roomMeasurement(s.project, s.spaceTemperatures, s.spaceReadings, p.component, p.measurement);
-  if (p.targetKind === "environment") return p.measurement === "outdoorTemperature" ? projectAmbient(s.project) : p.measurement === "outdoorHumidity" ? projectWeather(s.project)?.relativeHumidity ?? null : null;
+  if (p.targetKind === "environment") {
+    const w = projectWeather(s.project);
+    return p.measurement === "outdoorTemperature" ? projectAmbient(s.project) : p.measurement === "outdoorHumidity" ? w?.relativeHumidity ?? null
+      : p.measurement === "sunElevation" ? w?.sun.elevation ?? null : p.measurement === "globalIrradiance" ? w?.sun.ghi ?? null : null;
+  }
   const c = s.project.components.find((c) => c.id === p.component);
   if (!c || s.error || !measurements(c).includes(p.measurement)) return null;
   const r = s.electrical.readings[c.id];
@@ -73,6 +79,8 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case 'mppVoltage': return r?.solar?.mppVoltage ?? null;
     case 'mppCurrent': return r?.solar?.mppCurrent ?? null;
     case 'incidentPower': return r?.solar?.irradiation ?? null;
+    case 'planeIrradiance': return panelConditions(c, projectWeather(s.project)).irradiance;
+    case 'cellTemperature': return panelConditions(c, projectWeather(s.project)).cellTemperature;
     case 'trackingEfficiency': return r?.solar?.trackingEfficiency === undefined ? null : r.solar.trackingEfficiency * 100;
     case 'generatedEnergy': return c.kind === 'solarPanel' ? s.devices.solar[c.id]?.output ?? 0 : s.devices.solar[c.id]?.generated ?? 0;
     case 'outputEnergy': return s.devices.solar[c.id]?.output ?? 0;

@@ -44,5 +44,20 @@ test('outdoors can be traced in any experiment', async ({ page }) => {
   await expect(page.locator('.trace-readouts')).toContainText('Outdoor air');
   await page.getByLabel('Outdoor conditions', { exact: true }).selectOption('designDay');
   await page.getByLabel('Trace component').selectOption('environment');
-  await expect(page.getByLabel('Chart measurement').locator('option')).toHaveCount(2);
+  await expect(page.getByLabel('Chart measurement').locator('option')).toHaveCount(4); // air, humidity, sun elevation, global irradiance
+});
+
+test('a June day: the panel follows the sun', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+  await page.goto('/'); await openExample(page, 'Off-grid solar through a June day');
+  await expect(page.getByTestId('weather-clock')).toContainText('Day 1 · 06:00');
+  await page.getByRole('button', { name: 'Advance 60 s', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Advance 60 s', exact: true })).toBeEnabled({ timeout: 60000 });
+  await expect(page.getByTestId('weather-clock')).toContainText('sun');
+  await expect(page.locator('.trace-readouts')).toContainText('Sun elevation');
+  await expect(page.locator('.trace-readouts')).toContainText('Sunlight on the module');
+  await page.locator('[data-component="solarPanel"]').click();
+  await expect(page.getByLabel('Sunlight and cell temperature', { exact: true })).toHaveValue('weather');
+  await expect(page.locator('.inspector')).toContainText('from the weather: sun and outdoor air');
+  expect(errors).toEqual([]);
 });

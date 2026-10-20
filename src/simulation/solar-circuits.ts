@@ -1,7 +1,8 @@
 /** Renewable devices expand into normal MNA branches. Iteration couples ports by measured electrical power. */
 import { definitions, prop, type Component, type Project, type Terminal, componentPorts } from './model';
 import { WARM_START_BUDGET, WarmStartUnconverged, type ElectricalResult, type ElectricalRuntime } from './electrical-core';
-import { initialSolarState, inverterLoss, pvModel, solarKinds } from './solar';
+import { initialSolarState, inverterLoss, panelConditions, pvModel, solarKinds } from './solar';
+import type { WeatherState } from './weather';
 
 type Solve = (p: Project, f: Record<string, boolean>, r: ElectricalRuntime) => ElectricalResult;
 type Expansion = { project: Project; ids: Map<string, string[]>; map: (t: Terminal) => Terminal };
@@ -26,8 +27,13 @@ function expand(p: Project): Expansion {
   const e = { project: { ...p, components, connections: p.connections.filter(w => w.domain === 'electrical').map(w => ({ ...w, from: map(w.from), to: map(w.to) })) }, ids, map };
   cache.set(p, e); return e;
 }
-const modelCache = new WeakMap<Component, ReturnType<typeof pvModel>>();
-export function panelModel(c: Component) { let m = modelCache.get(c); if (!m) { m = pvModel(c); modelCache.set(c, m); } return m; }
+const modelCache = new WeakMap<Component, { irradiance: number; cellTemperature: number; model: ReturnType<typeof pvModel> }>();
+/** The panel's PV model at its current conditions (fixed, or from the weather of the solve); cached per conditions. */
+export function panelModel(c: Component, weather?: WeatherState) {
+  const conditions = panelConditions(c, weather), cached = modelCache.get(c);
+  if (cached && cached.irradiance === conditions.irradiance && cached.cellTemperature === conditions.cellTemperature) return cached.model;
+  const model = pvModel(c, conditions); modelCache.set(c, { ...conditions, model }); return model;
+}
 export function solveSolar(p: Project, failed: Record<string, boolean>, runtime: ElectricalRuntime, solve: Solve): ElectricalResult {
   const e = expand(p), units = p.components.filter(c => solarKinds.includes(c.kind));
   const chargingVoltage = (c: Component) => (states(c).absorption >= prop(c, 'absorptionTime') ? prop(c, 'floatVoltage') : prop(c, 'absorptionVoltage'));
@@ -52,7 +58,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
     }
     // Panels start at open circuit for the converter startup check; a panel that was delivering power then
     // resumes from its last accepted operating voltage (below), the warm start of the PV iteration.
-    if (c.kind === 'solarPanel') volts[c.id] = runtime.coldStart || st.warm?.voltage === undefined || units.some(u => u.kind === 'mpptController' || u.kind === 'inverter') ? panelModel(c).voc : st.warm.voltage;
+    if (c.kind === 'solarPanel') volts[c.id] = runtime.coldStart || st.warm?.voltage === undefined || units.some(u => u.kind === 'mpptController' || u.kind === 'inverter') ? panelModel(c, runtime.weather).voc : st.warm.voltage;
     // Warm start: a converter that was running starts from its last accepted converged demand (and input limit).
     // Only the iteration's starting point moves; the fixed point and 1e-10 convergence test are unchanged.
     const warm = !runtime.coldStart && st.running ? st.warm : undefined;
@@ -69,7 +75,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       const parts = e.ids.get(c.id); if (!parts) continue;
       const st = states(c), [a, b] = parts;
       if (c.kind === 'solarPanel') {
-        const m = panelModel(c), x = m.at(volts[c.id]), resistance = 1 / Math.max(1e-12, -x.slope);
+        const m = panelModel(c, runtime.weather), x = m.at(volts[c.id]), resistance = 1 / Math.max(1e-12, -x.slope);
         models[a] = { voltage: volts[c.id] + resistance * x.current, resistance, lower: -Infinity, upper: Infinity };
       }
       if (c.kind === 'mpptController') {
@@ -99,7 +105,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       const [a, b] = parts, st = states(c), va = result.readings[a]?.voltage ?? 0;
       const turnOff = (mode: string) => { if (!off.has(c.id)) { off.set(c.id, mode); parts.forEach(id => failures[id] = true); error = 1; } };
       if (c.kind === 'solarPanel' && !off.has(c.id)) {
-        const m = panelModel(c), real = m.at(va), current = result.readings[a].current;
+        const m = panelModel(c, runtime.weather), real = m.at(va), current = result.readings[a].current;
         error = Math.max(error, Math.abs(current + real.current) / Math.max(1, m.isc));
         volts[c.id] += Math.max(-5, Math.min(5, va - volts[c.id]));
         if (result.readings[a].ac) throw Error(`${c.name}: PV requires a DC network.`);
@@ -177,7 +183,7 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
       for (const c of units.filter(c => c.kind === 'mpptController')) {
         const [input, output] = e.ids.get(c.id)!;
         const island = result.nodeIslands?.[`${input}:a`];
-        const mppPower = units.filter(pv => pv.kind === 'solarPanel' && result!.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv).pmp, 0);
+        const mppPower = units.filter(pv => pv.kind === 'solarPanel' && result!.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv, runtime.weather).pmp, 0);
         result.readings[c.id] = { ...result.readings[input], solar: { inputPower: result.readings[input].power, outputPower: -result.readings[output].power, mode: 'iteration', running: !off.has(c.id), efficiency: prop(c, 'conversionEfficiency') / 100, mppPower, achievablePower: off.has(c.id) ? 0 : demand[c.id] * sense(result, c, 'oa', 'ob') } };
         for (const port of ['oa', 'ob']) if (result.nodeIds) result.nodeIds[`${c.id}:${port}`] = result.nodeIds[`${output}:${port === 'oa' ? 'a' : 'b'}`];
       }
@@ -192,13 +198,13 @@ export function solveSolar(p: Project, failed: Record<string, boolean>, runtime:
   const available = new Map<string, number>();
   for (const c of units.filter(c => c.kind === 'mpptController')) {
     const a = e.ids.get(c.id)![0], island = r.nodeIslands?.[`${a}:a`];
-    available.set(c.id, units.filter(pv => pv.kind === 'solarPanel' && r.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv).pmp, 0));
+    available.set(c.id, units.filter(pv => pv.kind === 'solarPanel' && r.nodeIslands?.[`${e.ids.get(pv.id)![0]}:a`] === island).reduce((sum, pv) => sum + panelModel(pv, runtime.weather).pmp, 0));
   }
   for (const c of units) {
     const parts = e.ids.get(c.id); if (!parts) continue;
     const [a, b] = parts, x = r.readings[a], y = b ? r.readings[b] : undefined, st = states(c);
     if (c.kind === 'solarPanel') {
-      const m = panelModel(c), electrical = Math.max(0, -x.power), waste = m.irradiation + x.power;
+      const m = panelModel(c, runtime.weather), electrical = Math.max(0, -x.power), waste = m.irradiation + x.power;
       if (waste < -1e-6) throw Error(`${c.name}: electrical output exceeds incident sunlight; check panel area and ratings.`);
       r.sourcePower += m.irradiation + x.power;
       r.dissipatedPower += waste;

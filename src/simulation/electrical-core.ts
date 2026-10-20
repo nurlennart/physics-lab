@@ -138,6 +138,8 @@ export interface ElectricalRuntime {
    * and an inductor its winding resistance.
    */
   devices?: { hybrid?: Record<string, import("./hybrid").HybridState>; solar?: Record<string, import("./solar").SolarState>; batteries: Record<string, number>; polarization?: Record<string, number>; contactors: Record<string, { closed: boolean }>; capacitors?: Record<string, number>; inductors?: Record<string, number>; h: number };
+  /** Weather at the solve's time (engine-bound): solar panels with conditions from the weather read their sunlight and cell temperature from it. */
+  weather?: import("./weather").WeatherState;
   /** Controlled AC branch currents into terminal a. These never establish a voltage reference. */
   acInjections?: Record<string, [number, number]>;
   /** Fallback solve: converter iterations start from their cold initial values instead of the last accepted step. */

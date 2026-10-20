@@ -465,7 +465,7 @@ export function validateProbes(p: Project) {
         "energy",
         "acInputPower", "acOutputPower", "converterLossEnergy", "transferLossEnergy", "batteryHeatEnergy",
         "gridPower", "gridReactivePower", "gridImportPower", "gridExportPower", "gridImportEnergy", "gridExportEnergy", "gridVoltage", "gridFrequency", "synchronized", "backupAvailable", "dcPower", "acConversionPower",
-        "incidentEnergy", "inputPower", "outputPower", "conversionLoss", "mppPower", "mppVoltage", "mppCurrent", "trackingEfficiency", "incidentPower", "generatedEnergy", "outputEnergy", "lostEnergy",
+        "planeIrradiance", "cellTemperature", "incidentEnergy", "inputPower", "outputPower", "conversionLoss", "mppPower", "mppVoltage", "mppCurrent", "trackingEfficiency", "incidentPower", "generatedEnergy", "outputEnergy", "lostEnergy",
         "stateOfCharge", "chemicalEnergy", "polarizationVoltage", "chargeVoltage", "fieldEnergy", "coilVoltage", "coilCurrent", "secondaryVoltage", "secondaryCurrent", "fanPower",
         "downwardLoss", "screedTemperature", "surfaceTemperature", "heatFlux",
         "state",

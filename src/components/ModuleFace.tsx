@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { T } from "../theme/tokens";
-import { definitions, prop, textProp, type Component, componentPorts } from "../simulation/model";
+import { definitions, projectWeather, prop, textProp, type Component, componentPorts } from "../simulation/model";
+import { panelConditions } from "../simulation/solar";
 import { simulation } from "../editor/store";
 import { dimensions, portLocal, storageY, MANIFOLD_LEFT, MANIFOLD_PITCH, MANIFOLD_RETURN, STORAGE_BASE, STORAGE_TOP } from "../editor/geometry";
 import { circuitIndices, circuitKey, meterReading } from "../simulation/heating-manifold";
@@ -265,16 +266,16 @@ function face(c: Component): Face {
       };
     }
     case "solarPanel": {
-      const out = r?.solar?.outputPower ?? 0;
+      const out = r?.solar?.outputPower ?? 0, sun = panelConditions(c, projectWeather(simulation.project));
       return {
         symbol: <g>
           <Leads x0={55} x1={119} />
           <rect x="55" y="48" width="64" height="38" rx="2" fill={T.n4} stroke={INK} strokeWidth={SW} />
           <path d="M71 48V86M87 48V86M103 48V86M55 67H119" stroke={FAINT} strokeWidth="1" />
-          <path d="M65 40l5 5M87 36v7M109 40l-5 5" stroke={prop(c, "irradiance") > 0 ? T.electricalText : FAINT} strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M65 40l5 5M87 36v7M109 40l-5 5" stroke={sun.irradiance > 0 ? T.electricalText : FAINT} strokeWidth="1.5" strokeLinecap="round" />
         </g>,
-        hero: started ? watts(out) : `${prop(c, "irradiance").toFixed(0)} W/m²`,
-        detail: started ? `${prop(c, "irradiance").toFixed(0)} W/m² · ${prop(c, "cellTemperature")} °C` : `${prop(c, "cellTemperature")} °C cell`, pins: pm,
+        hero: started ? watts(out) : `${sun.irradiance.toFixed(0)} W/m²`,
+        detail: started ? `${sun.irradiance.toFixed(0)} W/m² · ${sun.cellTemperature.toFixed(1)} °C` : `${sun.cellTemperature.toFixed(1)} °C cell${sun.fromWeather ? " · sun" : ""}`, pins: pm,
       };
     }
     case "mpptController": case "inverter": {
