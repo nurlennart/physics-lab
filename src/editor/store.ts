@@ -2,6 +2,7 @@ import { balance, circuitIndices, circuitKey } from '../simulation/heating-manif
 import { dimensions } from './geometry';
 import { makeThermalSpace, makeEnvelope, THERMAL_PLAN_SCALE, type ThermalSpace, type ThermalElement } from '../simulation/thermal-spaces';
 import { bindSpaceTemperatures } from '../simulation/environment';
+import { weatherError, type WeatherModel } from '../simulation/weather';
 import { useRef, useSyncExternalStore } from "react";
 import {
   connect,
@@ -395,6 +396,13 @@ export const actions = {
   groundTemperature(temperature: number) {
     if (!Number.isFinite(temperature)) return toast("Ground temperature must be a finite number.");
     edit({ ...state.project, ground: { kind: 'fixed', temperature } });
+  },
+  /** Outdoor weather over simulated time; undefined returns to the fixed ambient. */
+  weather(weather: WeatherModel | undefined) {
+    const error = weather ? weatherError(weather) : null;
+    if (error) return toast(error);
+    const { weather: _, ...rest } = state.project;
+    edit(weather ? { ...state.project, weather } : rest);
   },
   /** Experiment environment inherited by all thermal boundaries. */
   environment(ambient: number) {

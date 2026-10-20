@@ -66,6 +66,7 @@ The shaft midpoint solve uses a finite-difference chord Newton iteration with a 
 - a twentieth of any running timer delay, the sensor sampling interval, twice a sensor lag, 0.5 s with a PI controller;
 - τ/200 for a breaker, motor protector or fuse above 0.8 of its trip level, and a tenth of a fuse's remaining melting time;
 - tank level, valve travel, motor acceleration and the weir time constant (hydraulic and motor networks);
+- with weather, 0.05 K of outdoor temperature change, and steps end at every full hour of the design-day profile ([WEATHER.md](WEATHER.md));
 - during adaptive advances, settled or curtailed solar trackers stop forcing their 0.2 s sample deadlines ([SOLAR-ENERGY.md](SOLAR-ENERGY.md));
 - for an electric boiler, 0.05 K of water change, ending 0.05 s after a predicted crossing of the next controller threshold, and the flow-interlock deadline ([ELECTRIC-BOILER.md](ELECTRIC-BOILER.md));
 - 0.2 % change in a battery's state of charge; 1 % of a capacitor's voltage (at least 1 V) or of an inductor's current (at least 1 % of its rating) per step; 1 s while a contactor coil is within 5 % of rated voltage of its pickup or dropout threshold.

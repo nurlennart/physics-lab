@@ -4,7 +4,8 @@ import { compatibleTarget, temperatureLabel } from "../simulation/capabilities";
 import { useEffect, useState } from "react";
 import { Lock, RotateCcw, Save, Info, Gauge } from "lucide-react";
 import { actions, simulation, useLab } from "../editor/store";
-import { catalog, componentCost, definitions, isMotor, projectAmbient, prop, type Component, type Kind, type Project, type Property } from "../simulation/model";
+import { catalog, componentCost, definitions, isMotor, projectAmbient, projectWeather, prop, type Component, type Kind, type Project, type Property } from "../simulation/model";
+import { clockLabel, defaultDesignDay, weatherBasis, weatherBasisLabels, type WeatherModel } from "../simulation/weather";
 import { editPolicy } from "../simulation/integrity";
 import { derivedReadouts, paramSpec, type ParamGroup, type ParamSpec } from "../simulation/parameters";
 import { builtinPresets } from "../simulation/presets";
@@ -290,20 +291,45 @@ export function ModelAndPresets({ c }: { c: Component }) {
     </div>
   );
 }
+/** One numeric field of the environment panel: edits commit on blur or Enter. */
+function EnvironmentField({ label, title, value, unit, disabled, change }: { label: string; title?: string; value: number; unit: string; disabled: boolean; change: (v: number) => void }) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  return (
+    <div className="property-row">
+      <span className="property-label" title={title}>{label}</span>
+      <span className="number-field">
+        <input aria-label={label} inputMode="decimal" disabled={disabled} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => { const v = parseEngineering(draft); if (v !== null && v !== value) change(v); setDraft(String(value)); }} onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()} />
+        <span>{unit}</span>
+      </span>
+    </div>
+  );
+}
 export function EnvironmentPanel() {
-  const s = useLab(), ambient = projectAmbient(s.project);
-  const [draft, setDraft] = useState(String(ambient));
-  useEffect(() => setDraft(String(ambient)), [ambient]);
+  const s = useLab(), ambient = projectAmbient(s.project), weather = s.project.weather, locked = !!s.project.challenge || s.busy;
+  const now = weather ? projectWeather(simulation.project) : undefined;
+  const set = (patch: Partial<WeatherModel>) => weather && actions.weather({ ...weather, ...patch });
   return (
     <div className="inspector-section environment-panel">
       <div className="section-label"><span>Experiment environment</span><span className="live-badge">{s.project.challenge ? "CHALLENGE" : "SANDBOX"}</span></div>
-      <div className="property-row">
-        <span className="property-label" title="Ambient boundary inherited by every component unless a local override is selected. Bodies without an initial-temperature parameter start at their resolved ambient; explicit initial temperatures and setpoints are independent.">Laboratory ambient</span>
-        <span className="number-field">
-          <input aria-label="Laboratory ambient temperature" inputMode="decimal" disabled={!!s.project.challenge || s.busy} value={draft} onChange={(e) => setDraft(e.target.value)} onBlur={() => { const v = parseEngineering(draft); if (v === null || v === ambient) setDraft(String(ambient)); else actions.environment(v); }} onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()} />
-          <span>°C</span>
-        </span>
-      </div>
+      {!s.project.challenge && <div className="property-row">
+        <span className="property-label" title="Fixed: one ambient temperature for the whole run. Design day: outdoor air temperature and humidity follow the simulated clock through the day.">Outdoor conditions</span>
+        <select aria-label="Outdoor conditions" disabled={locked} value={weather ? "designDay" : "fixed"} onChange={(e) => actions.weather(e.target.value === "designDay" ? defaultDesignDay() : undefined)}>
+          <option value="fixed">Fixed</option>
+          <option value="designDay">Design day</option>
+        </select>
+      </div>}
+      {!weather && <EnvironmentField label="Laboratory ambient temperature" title="Ambient boundary inherited by every component unless a local override is selected. Bodies without an initial-temperature parameter start at their resolved ambient; explicit initial temperatures and setpoints are independent." value={ambient} unit="°C" disabled={locked} change={v => actions.environment(v)} />}
+      {weather && <div data-testid="weather-fields">
+        <EnvironmentField label="Start time" title="Clock time at the start of the run (local standard time)." value={weather.startHour} unit="h" disabled={locked} change={v => set({ startHour: v })} />
+        <EnvironmentField label="Daily minimum" title="Coldest air of the day, reached at 05:00." value={weather.minTemperature} unit="°C" disabled={locked} change={v => set({ minTemperature: v })} />
+        <EnvironmentField label="Daily maximum" title="Warmest air of the day, reached 14:00–15:00." value={weather.maxTemperature} unit="°C" disabled={locked} change={v => set({ maxTemperature: v })} />
+        <EnvironmentField label="Dew point" title="Constant through the day; relative humidity follows from it. At or below the daily minimum." value={weather.dewPoint} unit="°C" disabled={locked} change={v => set({ dewPoint: v })} />
+        {now && <p className="field-hint" data-testid="weather-now">{clockLabel(weather, simulation.time)} · {now.temperature.toFixed(1)} °C · {now.relativeHumidity.toFixed(0)} % RH outdoors</p>}
+        <details><summary className="section-label">Model basis · data provenance</summary>
+          {weatherBasis.map(b => <p className="field-hint" key={b.kind}><strong>{weatherBasisLabels[b.kind]}:</strong> {b.text}</p>)}
+        </details>
+      </div>}
       <p className="field-hint">
         {s.project.challenge
           ? "Assignment conditions are fixed by the challenge."

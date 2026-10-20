@@ -41,7 +41,8 @@ import Models from "./components/Models";
 import PhysicalView, { PhysicalTools, PhysicalInspector } from './components/PhysicalView';
 import { actions, simulation, useLab, useLabSelect, toast, getState } from "./editor/store";
 import { evaluateChallenge } from "./simulation/challenges";
-import { projectCost } from "./simulation/model";
+import { projectCost, projectWeather } from "./simulation/model";
+import { clockLabel } from "./simulation/weather";
 import { registerLabTools } from "./editor/webmcp";
 import ErrorBoundary from "./components/ErrorBoundary";
 /** Preset files use a transient picker so the project import remains the only file input. */
@@ -96,6 +97,7 @@ function StatusFooter() {
           </span>
           <span>{s.project.components.length} components</span>
           <span>{s.project.connections.length} connections</span>
+          {simulation.project.weather && (() => { const w = projectWeather(simulation.project)!; return <span data-testid="weather-clock">{clockLabel(simulation.project.weather, simulation.time)} · {w.temperature.toFixed(1)} °C outdoors</span>; })()}
           <span>€{projectCost(s.project).toFixed(0)} {s.project.challenge ? "total" : "est. total"}</span>
         </div>
         <div>

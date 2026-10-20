@@ -1,14 +1,16 @@
+import { defaultDesignDay } from './weather';
 import { applyDerived } from './parameters';
 import { catalog, connect, makeComponent, uid, type Component, type Kind, type Measurement, type Project, type Property } from './model';
 import { elementU, makeEnvelope, makeThermalSpace } from './thermal-spaces';
 import { GROUND, defaultSlab } from './ground';
 import { heatedFloorResistance } from './underfloor-heating';
 
-export type HeatPumpMode = 'heatPumpHouse' | 'heatPumpCold' | 'heatPumpBuffer';
+export type HeatPumpMode = 'heatPumpHouse' | 'heatPumpCold' | 'heatPumpBuffer' | 'heatPumpDay';
 export const heatPumpTitles: Record<HeatPumpMode, string> = {
   heatPumpHouse: 'Heat pump and underfloor heating',
   heatPumpCold: 'Heat pump in a cold snap',
   heatPumpBuffer: 'Heat pump with a buffer tank',
+  heatPumpDay: 'Heat pump through a January day',
 };
 /**
  * A Bosch Compress 6800i AW 7 OR-S heats a 120 m² single-zone house through wet-screed underfloor heating (FLOORTEC
@@ -20,6 +22,8 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
   // Every house has hot water: the indoor unit's 3-way valve VW1 serves a Bosch WH 290 cylinder through its coil.
   const cold = mode === 'heatPumpCold', buffered = mode === 'heatPumpBuffer', dhw = true;
   let p: Project = { version: 5, id: uid(), name: heatPumpTitles[mode], components: [], connections: [], probes: [], assemblies: [], environment: { ambient: cold ? -15 : 2 } };
+  // A January design day (−5/3 °C, dew point −5 °C, from midnight): outdoor air and humidity follow the clock (weather.ts).
+  if (mode === 'heatPumpDay') p.weather = defaultDesignDay();
   const add = (kind: Kind, x: number, y: number, props: Record<string, Property> = {}, name?: string) => {
     const c = makeComponent(kind, x, y, p.components); c.props = applyDerived(kind, { ...c.props, ...props }); if (name) c.name = name; p.components.push(c); return c;
   };
@@ -96,6 +100,7 @@ export function heatPumpStarter(mode: HeatPumpMode): Project {
     // Undefined until a charge has run: the cold snap starts with a charged cylinder.
     if (!cold) trace(hp, 'hotWaterCop', 'Hot-water performance factor', '#9BE9A8');
   }
+  if (p.weather) { trace(hp, 'outdoorTemperature', 'Outdoor air', '#9AA6B6'); trace(hp, 'outdoorHumidity', 'Outdoor humidity', '#A5D8FF'); }
   trace(hp, 'energyResidual', 'Energy balance residual', '#94a3b8');
   return p;
 }

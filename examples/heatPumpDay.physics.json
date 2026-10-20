@@ -1,0 +1,1161 @@
+{
+  "version": 5,
+  "id": "example-heatPumpDay",
+  "name": "Heat pump through a January day",
+  "components": [
+    {
+      "id": "heatPumpDay-component-1",
+      "kind": "sourceAC",
+      "name": "Mains · outdoor unit 16 A",
+      "x": 40,
+      "y": 40,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 16,
+        "maxPower": 3680,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "heatPumpDay-component-2",
+      "kind": "sourceAC",
+      "name": "Mains · backup heater 32 A",
+      "x": 330,
+      "y": 40,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "voltage": 230,
+        "frequency": 50,
+        "phase": 0,
+        "internalResistance": 0,
+        "internalReactance": 0,
+        "ratedVoltage": 400,
+        "maxCurrent": 32,
+        "maxPower": 7360,
+        "enabled": true,
+        "magneticTrip": 10,
+        "thermalTimeConstant": 60
+      }
+    },
+    {
+      "id": "heatPumpDay-component-3",
+      "kind": "heatPump",
+      "name": "Bosch CS6800iAW 7 OR-S",
+      "x": 330,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "enabled": true,
+        "hotWater": true,
+        "dhwStart": 40,
+        "dhwStop": 48,
+        "dhwDelta": 7,
+        "dhwMaxTime": 3600,
+        "targetMode": "curve",
+        "setpoint": 35,
+        "curveDesignOutdoor": -10,
+        "curveDesignFlow": 35,
+        "curveFootFlow": 25,
+        "startDifference": 2,
+        "stopDifference": 3,
+        "minRunTime": 300,
+        "minOffTime": 300,
+        "maxStarts": 6,
+        "proportionalGain": 0.1,
+        "integralTime": 600,
+        "rampTime": 120,
+        "minFlow": 0.0001,
+        "flowDelay": 10,
+        "relativeHumidity": 85,
+        "frostTrigger": 2,
+        "frostReference": 5,
+        "minDefrostInterval": 1200,
+        "maxDefrostTime": 600,
+        "defrostEndTemperature": 10,
+        "dripTime": 60,
+        "defrostSpeed": 40,
+        "coilHeatCapacity": 25000,
+        "residualIceShare": 0.3,
+        "intensiveEvery": 5,
+        "intensiveSpeed": 60,
+        "intensiveEndTemperature": 20,
+        "intensiveMinTime": 540,
+        "intensiveMaxTime": 1200,
+        "crankcaseBelow": 10,
+        "crankcasePower": 75,
+        "backupStages": 2,
+        "backupDelay": 1800,
+        "backupLimit": 88,
+        "powerOnDelay": 120,
+        "ratedVoltage": 230,
+        "minVoltage": 195,
+        "maxCurrent": 13.1,
+        "waterVolume": 3,
+        "vesselHeatCapacity": 4000,
+        "heatCapacity": 6000,
+        "conductance": 4000,
+        "loss": 2,
+        "initialTemperature": 25,
+        "ambient": 20,
+        "fillPressure": 150000,
+        "diameter": 0.025,
+        "lossCoefficient": 65,
+        "laminarK": 1500,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 75,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpDay-component-4",
+      "kind": "circulator",
+      "name": "Circulator · 4 m constant",
+      "x": 330,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "mode": "constantPressure",
+        "headSetpoint": 4,
+        "speedSetting": 100,
+        "minSpeed": 25,
+        "enabled": true,
+        "ratedSpeed": 471.24,
+        "ratedFlow": 0.00055556,
+        "shutoffHead": 6,
+        "efficiency": 0.55,
+        "mechanicalLoss": 2,
+        "curvePoints": "",
+        "npshRequired": 0.5,
+        "ratedVoltage": 230,
+        "minVoltage": 180,
+        "ratedPower": 34,
+        "standbyPower": 2.2,
+        "motorEfficiency": 80,
+        "inertia": 0.00002,
+        "rampTime": 2,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "waterVolume": 0.1,
+        "initialTemperature": 20
+      }
+    },
+    {
+      "id": "heatPumpDay-component-5",
+      "kind": "pipe",
+      "name": "Insulated flow · 10 m",
+      "x": 950,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.028,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 1,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 25,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpDay-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpDay-component-6",
+      "kind": "underfloorHeating",
+      "name": "Underfloor heating · 12 loops",
+      "x": 1300,
+      "y": 560,
+      "rotation": 0,
+      "variant": "spacing100",
+      "props": {
+        "heatedArea": 120,
+        "loops": 12,
+        "pipeSpacing": 0.1,
+        "outerDiameter": 0.016,
+        "wallThickness": 0.002,
+        "diameter": 0.012,
+        "length": 99.99999999999999,
+        "roughness": 0.000007,
+        "screedCover": 0.045,
+        "screedConductivity": 1.2,
+        "screedDensity": 2000,
+        "screedSpecificHeat": 1000,
+        "coveringResistance": 0.1,
+        "downwardResistance": 2.6,
+        "systemConstant": 6.754,
+        "maxSurfaceTemperature": 29,
+        "ambient": 20,
+        "initialTemperature": 27,
+        "maxPressure": 1000000,
+        "maxTemperature": 55,
+        "elevation": 0,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpDay-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpDay-component-7",
+      "kind": "pipe",
+      "name": "Insulated return · 10 m",
+      "x": 640,
+      "y": 650,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 10,
+        "diameter": 0.028,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 1,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 25,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpDay-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpDay-component-8",
+      "kind": "divertingValve",
+      "name": "VW1 · heating / hot water",
+      "x": 640,
+      "y": 330,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "position": 0,
+        "kvs": 6,
+        "responseTime": 15,
+        "diameter": 0.025,
+        "laminarK": 0,
+        "maxPressure": 1000000,
+        "elevation": 0
+      }
+    },
+    {
+      "id": "heatPumpDay-component-9",
+      "kind": "pipe",
+      "name": "Flow to coil · 4 m",
+      "x": 1300,
+      "y": 760,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 4,
+        "diameter": 0.028,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 25,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpDay-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpDay-component-10",
+      "kind": "pipe",
+      "name": "Return from coil · 4 m",
+      "x": 640,
+      "y": 1100,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 4,
+        "diameter": 0.028,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0.5,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 25,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpDay-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpDay-component-11",
+      "kind": "storageTank",
+      "name": "Bosch Stora WH 290 LP1 B",
+      "x": 980,
+      "y": 1060,
+      "rotation": 0,
+      "variant": "wh290",
+      "props": {
+        "storageVolume": 277,
+        "tankHeight": 1.15,
+        "layers": 20,
+        "standbyHeatLoss": 67,
+        "loss": 1.488888888888889,
+        "effectiveConductivity": 1,
+        "vesselHeatCapacity": 52800,
+        "p1Height": 4,
+        "p2Height": 96,
+        "p3Height": 65,
+        "p4Height": 50,
+        "sensorTopHeight": 75,
+        "sensorBottomHeight": 30,
+        "diameter": 0.025,
+        "lossCoefficient": 1.5,
+        "laminarK": 160,
+        "coil": true,
+        "coilVolume": 22,
+        "coilUA": 3418.8,
+        "coilTop": 61,
+        "coilBottom": 17,
+        "coilDiameter": 0.0285,
+        "coilLossCoefficient": 30,
+        "coilLaminarK": 67000,
+        "initialTemperature": 38,
+        "ambient": 20,
+        "elevation": 0,
+        "maxPressure": 1000000,
+        "maxTemperature": 95,
+        "ambientMode": "inherit"
+      },
+      "thermalSpaceId": "heatPumpDay-space-1",
+      "thermalSpacePinned": true
+    },
+    {
+      "id": "heatPumpDay-component-12",
+      "kind": "sensor",
+      "name": "TW1 · cylinder sensor",
+      "x": 330,
+      "y": 1000,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "target": "heatPumpDay-component-11",
+        "quantity": "fluidTemperature",
+        "stream": "hot",
+        "minRange": 0,
+        "maxRange": 120,
+        "resolution": 0.01,
+        "lag": 0,
+        "noise": 0,
+        "sampleInterval": 0
+      }
+    },
+    {
+      "id": "heatPumpDay-component-13",
+      "kind": "tank",
+      "name": "Cold mains (header tank, 10 °C)",
+      "x": 1600,
+      "y": 740,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 6,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 800,
+        "capacity": 1000,
+        "initialTemperature": 10,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpDay-component-14",
+      "kind": "pipe",
+      "name": "Cold feed · 8 m",
+      "x": 1300,
+      "y": 1150,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 8,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 10,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpDay-component-15",
+      "kind": "pipe",
+      "name": "Hot draw-off · 8 m",
+      "x": 1600,
+      "y": 1000,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "length": 8,
+        "diameter": 0.02,
+        "roughness": 0.000045,
+        "maxPressure": 1000000,
+        "material": "steel",
+        "conductivity": 45,
+        "insulation": 0,
+        "thermalUA": 0,
+        "ambient": 20,
+        "elevation": 0,
+        "inventory": true,
+        "segments": 2,
+        "initialTemperature": 38,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpDay-component-16",
+      "kind": "valve",
+      "name": "Hot tap (closed)",
+      "x": 1600,
+      "y": 1250,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "opening": 0,
+        "diameter": 0.015,
+        "lossCoefficient": 5,
+        "laminarK": 500,
+        "maxPressure": 1000000,
+        "elevation": 0,
+        "characteristic": "linear",
+        "rangeability": 50
+      }
+    },
+    {
+      "id": "heatPumpDay-component-17",
+      "kind": "tank",
+      "name": "Bath / drain",
+      "x": 1600,
+      "y": 1480,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "elevation": 0,
+        "surfaceArea": 1,
+        "density": 1000,
+        "maxPressure": 1000000,
+        "vented": true,
+        "volume": 0,
+        "capacity": 2000,
+        "initialTemperature": 20,
+        "loss": 0,
+        "ambient": 20,
+        "vesselHeatCapacity": 0,
+        "weirLength": 0.3,
+        "lossModel": "manual",
+        "insulationThickness": 0.05,
+        "insulationConductivity": 0.04,
+        "ambientMode": "inherit"
+      }
+    },
+    {
+      "id": "heatPumpDay-component-18",
+      "kind": "expansionVessel",
+      "name": "Bosch indoor-unit vessel · 17 L",
+      "x": 640,
+      "y": 850,
+      "rotation": 0,
+      "variant": "bosch17",
+      "props": {
+        "nominalVolume": 17,
+        "precharge": 75000,
+        "fillPressure": 130000,
+        "initialTemperature": 20,
+        "elevation": 0,
+        "maxPressure": 300000,
+        "maxTemperature": 70
+      }
+    },
+    {
+      "id": "heatPumpDay-component-19",
+      "kind": "safetyValve",
+      "name": "Safety valve · 3 bar",
+      "x": 640,
+      "y": 170,
+      "rotation": 0,
+      "variant": "standard",
+      "props": {
+        "setPressure": 300000,
+        "fullLiftOverpressure": 30000,
+        "blowdown": 20000,
+        "kvs": 1,
+        "diameter": 0.015,
+        "laminarK": 0,
+        "elevation": 0,
+        "maxPressure": 1000000
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "heatPumpDay-connection-1",
+      "domain": "electrical",
+      "from": {
+        "component": "heatPumpDay-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "L"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-2",
+      "domain": "electrical",
+      "from": {
+        "component": "heatPumpDay-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "N"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-3",
+      "domain": "electrical",
+      "from": {
+        "component": "heatPumpDay-component-2",
+        "port": "a"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "BL"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-4",
+      "domain": "electrical",
+      "from": {
+        "component": "heatPumpDay-component-2",
+        "port": "b"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "BN"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-5",
+      "domain": "electrical",
+      "from": {
+        "component": "heatPumpDay-component-1",
+        "port": "a"
+      },
+      "to": {
+        "component": "heatPumpDay-component-4",
+        "port": "a"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-6",
+      "domain": "electrical",
+      "from": {
+        "component": "heatPumpDay-component-1",
+        "port": "b"
+      },
+      "to": {
+        "component": "heatPumpDay-component-4",
+        "port": "b"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-7",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-3",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-8",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-8",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-8",
+        "port": "outletA"
+      },
+      "to": {
+        "component": "heatPumpDay-component-5",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-9",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-5",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-6",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-10",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-6",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-7",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-11",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-4",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-12",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-7",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-13",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-8",
+        "port": "outletB"
+      },
+      "to": {
+        "component": "heatPumpDay-component-9",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-14",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-9",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-11",
+        "port": "coilIn"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-15",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-11",
+        "port": "coilOut"
+      },
+      "to": {
+        "component": "heatPumpDay-component-10",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-16",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-10",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-17",
+      "domain": "control",
+      "from": {
+        "component": "heatPumpDay-component-12",
+        "port": "out"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "dhwSensor"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-18",
+      "domain": "control",
+      "from": {
+        "component": "heatPumpDay-component-3",
+        "port": "dhw"
+      },
+      "to": {
+        "component": "heatPumpDay-component-8",
+        "port": "position"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-19",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-13",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "heatPumpDay-component-14",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-20",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-14",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-11",
+        "port": "p1"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-21",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-11",
+        "port": "p2"
+      },
+      "to": {
+        "component": "heatPumpDay-component-15",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-22",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-15",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-16",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-23",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-16",
+        "port": "outlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-17",
+        "port": "fluid"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-24",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-18",
+        "port": "fluid"
+      },
+      "to": {
+        "component": "heatPumpDay-component-4",
+        "port": "inlet"
+      }
+    },
+    {
+      "id": "heatPumpDay-connection-25",
+      "domain": "hydraulic",
+      "from": {
+        "component": "heatPumpDay-component-19",
+        "port": "inlet"
+      },
+      "to": {
+        "component": "heatPumpDay-component-3",
+        "port": "outlet"
+      }
+    }
+  ],
+  "probes": [
+    {
+      "id": "heatPumpDay-probe-1",
+      "component": "heatPumpDay-component-3",
+      "measurement": "fluidTemperature",
+      "name": "Flow temperature",
+      "color": "#F59B85",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-2",
+      "component": "heatPumpDay-component-3",
+      "measurement": "returnTemperature",
+      "name": "Return temperature",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-3",
+      "component": "heatPumpDay-component-3",
+      "measurement": "targetTemperature",
+      "name": "Flow target",
+      "color": "#9AA6B6",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-4",
+      "component": "heatPumpDay-component-3",
+      "measurement": "heatOutput",
+      "name": "Heat output",
+      "color": "#F5A524",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-5",
+      "component": "heatPumpDay-component-3",
+      "measurement": "power",
+      "name": "Electrical input",
+      "color": "#E5C07B",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-6",
+      "component": "heatPumpDay-component-3",
+      "measurement": "cop",
+      "name": "COP",
+      "color": "#7EE0B5",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-7",
+      "component": "heatPumpDay-component-3",
+      "measurement": "compressorSpeed",
+      "name": "Compressor speed",
+      "color": "#C4B0FC",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-8",
+      "component": "heatPumpDay-component-3",
+      "measurement": "frostMass",
+      "name": "Frost on coil",
+      "color": "#A5D8FF",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-9",
+      "component": "heatPumpDay-component-3",
+      "measurement": "defrosting",
+      "name": "Defrost active",
+      "color": "#5EC8E5",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-10",
+      "component": "heatPumpDay-component-3",
+      "measurement": "backupPower",
+      "name": "Backup heater",
+      "color": "#FF7B72",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-11",
+      "component": "heatPumpDay-component-3",
+      "measurement": "environmentHeat",
+      "name": "Heat from outdoor air",
+      "color": "#9BE9A8",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-12",
+      "component": "heatPumpDay-component-3",
+      "measurement": "seasonalCop",
+      "name": "Seasonal performance factor",
+      "color": "#D2A8FF",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-13",
+      "name": "House air",
+      "component": "heatPumpDay-space-1",
+      "targetKind": "space",
+      "measurement": "roomTemperature",
+      "visible": true,
+      "color": "#C4CDD8"
+    },
+    {
+      "id": "heatPumpDay-probe-14",
+      "component": "heatPumpDay-component-6",
+      "measurement": "surfaceTemperature",
+      "name": "Floor surface",
+      "color": "#E6A0C4",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-15",
+      "name": "House heat loss",
+      "component": "heatPumpDay-space-1",
+      "targetKind": "space",
+      "measurement": "envelopeLoss",
+      "visible": true,
+      "color": "#8CC6F8"
+    },
+    {
+      "id": "heatPumpDay-probe-16",
+      "component": "heatPumpDay-component-18",
+      "measurement": "pressure",
+      "name": "System pressure",
+      "color": "#8CC6F8",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-17",
+      "component": "heatPumpDay-component-3",
+      "measurement": "hotWater",
+      "name": "Hot-water mode (VW1 → B)",
+      "color": "#F5A524",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-18",
+      "component": "heatPumpDay-component-11",
+      "measurement": "fluidTemperature",
+      "name": "Cylinder sensor TW1",
+      "color": "#FF7B72",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-19",
+      "component": "heatPumpDay-component-11",
+      "measurement": "topTemperature",
+      "name": "Cylinder top",
+      "color": "#F59B85",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-20",
+      "component": "heatPumpDay-component-11",
+      "measurement": "heatDuty",
+      "name": "Coil heat into the cylinder",
+      "color": "#E5C07B",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-21",
+      "component": "heatPumpDay-component-3",
+      "measurement": "hotWaterCop",
+      "name": "Hot-water performance factor",
+      "color": "#9BE9A8",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-22",
+      "component": "heatPumpDay-component-3",
+      "measurement": "outdoorTemperature",
+      "name": "Outdoor air",
+      "color": "#9AA6B6",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-23",
+      "component": "heatPumpDay-component-3",
+      "measurement": "outdoorHumidity",
+      "name": "Outdoor humidity",
+      "color": "#A5D8FF",
+      "visible": true
+    },
+    {
+      "id": "heatPumpDay-probe-24",
+      "component": "heatPumpDay-component-3",
+      "measurement": "energyResidual",
+      "name": "Energy balance residual",
+      "color": "#94a3b8",
+      "visible": true
+    }
+  ],
+  "assemblies": [],
+  "environment": {
+    "ambient": 2
+  },
+  "weather": {
+    "kind": "designDay",
+    "startHour": 0,
+    "minTemperature": -5,
+    "maxTemperature": 3,
+    "dewPoint": -5
+  },
+  "thermalSpaces": [
+    {
+      "id": "heatPumpDay-space-1",
+      "name": "House (single zone)",
+      "x": 900,
+      "y": 160,
+      "width": 12,
+      "length": 10,
+      "height": 2.5,
+      "initialTemperature": 20,
+      "addedHeatCapacity": 12000000,
+      "airChangesPerHour": 0.6,
+      "internalGain": 0
+    }
+  ],
+  "thermalElements": [
+    {
+      "id": "heatPumpDay-element-1",
+      "name": "North",
+      "kind": "wall",
+      "side": "north",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "uValue": 0.5,
+      "heatCapacity": 0,
+      "preset": "Illustrative 1990s masonry"
+    },
+    {
+      "id": "heatPumpDay-element-2",
+      "name": "South",
+      "kind": "wall",
+      "side": "south",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "uValue": 0.5,
+      "heatCapacity": 0,
+      "preset": "Illustrative 1990s masonry"
+    },
+    {
+      "id": "heatPumpDay-element-3",
+      "name": "East",
+      "kind": "wall",
+      "side": "east",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "uValue": 0.5,
+      "heatCapacity": 0,
+      "preset": "Illustrative 1990s masonry"
+    },
+    {
+      "id": "heatPumpDay-element-4",
+      "name": "West",
+      "kind": "wall",
+      "side": "west",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "uValue": 0.5,
+      "heatCapacity": 0,
+      "preset": "Illustrative 1990s masonry"
+    },
+    {
+      "id": "heatPumpDay-element-5",
+      "name": "Floor",
+      "kind": "floor",
+      "side": "floor",
+      "from": "heatPumpDay-space-1",
+      "to": "ground",
+      "uValue": 0.23,
+      "heatCapacity": 0,
+      "preset": "Slab on ground, EN ISO 13370 from the heated floor layers",
+      "slab": {
+        "wallThickness": 0.3,
+        "soilConductivity": 2,
+        "floorResistance": 2.7375000000000003
+      }
+    },
+    {
+      "id": "heatPumpDay-element-6",
+      "name": "Ceiling",
+      "kind": "ceiling",
+      "side": "ceiling",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "uValue": 0.25,
+      "heatCapacity": 0,
+      "preset": "Illustrative insulated construction"
+    },
+    {
+      "id": "heatPumpDay-element-7",
+      "name": "North windows",
+      "kind": "window",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "area": 5,
+      "parentId": "heatPumpDay-element-1",
+      "uValue": 1.3,
+      "heatCapacity": 0,
+      "preset": "Illustrative double glazing"
+    },
+    {
+      "id": "heatPumpDay-element-8",
+      "name": "South windows",
+      "kind": "window",
+      "from": "heatPumpDay-space-1",
+      "to": "outdoors",
+      "area": 10,
+      "parentId": "heatPumpDay-element-2",
+      "uValue": 1.3,
+      "heatCapacity": 0,
+      "preset": "Illustrative double glazing"
+    }
+  ]
+}

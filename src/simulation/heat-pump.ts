@@ -146,12 +146,12 @@ export const coilSurface = (air: number, evaporatingTemperature: number) => evap
  * Frost deposition rate (kg/s) on a coil surface below 0 °C from moist air (ε-NTU mass transfer, Lewis number 1):
  * ṁ = ṁ_air·ε·max(0, ω_air − ω_sat,ice(T_s)), ε = 1 − exp(−UA_air/(ṁ_air·c_p)), UA_air = UA/(1 − refrigerant share).
  */
-export function frostRate(c: Component, air: number, evaporatingTemperature: number, fanFraction: number, ua: number) {
+export function frostRate(c: Component, air: number, evaporatingTemperature: number, fanFraction: number, ua: number, relativeHumidity = prop(c, 'relativeHumidity')) {
   const surface = coilSurface(air, evaporatingTemperature);
   if (surface >= 0 || fanFraction <= 0) return 0;
   const density = ATMOSPHERE / (287.05 * kelvin(air)), mass = density * bosch.airFlow / 3600 * fanFraction;
   const effectiveness = 1 - Math.exp(-ua / (1 - REFRIGERANT_SHARE) / (mass * AIR_CP));
-  const humidity = Math.max(0, Math.min(100, prop(c, 'relativeHumidity'))) / 100;
+  const humidity = Math.max(0, Math.min(100, relativeHumidity)) / 100;
   const ambient = humidityRatio(humidity * vapourPressureWater(air)), saturated = humidityRatio(vapourPressureIce(surface));
   return mass * effectiveness * Math.max(0, ambient - saturated);
 }
@@ -216,7 +216,10 @@ export function heatPumpTarget(c: Component, air: number, wired?: number) {
   return foot + (design - foot) * x;
 }
 /** Measured inputs of one control evaluation. */
-export interface HeatPumpInputs { water: number; air: number; flow: number; voltage: number; powered: boolean; backupVoltage: number; condensing: number; evaporating: number; fanFailed?: boolean }
+/** `humidity`: outdoor relative humidity (%) from the weather; absent, the component's own Outdoor relative humidity applies. */
+export interface HeatPumpInputs { water: number; air: number; flow: number; voltage: number; powered: boolean; backupVoltage: number; condensing: number; evaporating: number; fanFailed?: boolean; humidity?: number }
+/** Outdoor relative humidity (%) the coil sees. */
+export const airHumidity = (c: Component, x: Pick<HeatPumpInputs, 'humidity'>) => Math.max(0, Math.min(100, x.humidity ?? prop(c, 'relativeHumidity')));
 
 /** Controller decisions at an accepted substep boundary `now`. Faults never release latched protections. */
 export function controlHeatPump(s: Simulation, c: Component, st: HeatPumpState, now: number, x: HeatPumpInputs) {
@@ -404,7 +407,7 @@ export function planHeatPump(c: Component, st: HeatPumpState, x: HeatPumpInputs,
     }
     const ua = cycle.evaporatorUA * Math.max(0.08, point.fanFraction) * frost;
     return { mode: 'heating', speed0, speed1: speedEnd, point, electrical: point.compressor + point.fan + controls, compressor: point.compressor, fan: point.fan, controls, crankcase: 0, backupStages: st.backupStages,
-      condenser: point.condenser, release, air: point.evaporator - release, coilHeat: 0, frostRate: frostRate(c, x.air, point.evaporating, point.fanFraction, ua), ua };
+      condenser: point.condenser, release, air: point.evaporator - release, coilHeat: 0, frostRate: frostRate(c, x.air, point.evaporating, point.fanFraction, ua, airHumidity(c, x)), ua };
   }
   if (st.mode === 'defrost' && speed > 0) {
     // Hot-gas guard: above the hold temperature + 15 K the compressor slows until the coil heat balances its convection.
@@ -448,7 +451,7 @@ export function advanceHeatPump(c: Component, st: HeatPumpState, plan: HeatPumpP
     // A wet coil above 0 °C evaporates its film into the air (Lewis analogy with the convection conductance; vapour and
     // its latent heat leave to the environment). This dries the coil and bounds its temperature while wet.
     if (st.coilTemperature > 0 && st.film > 0) {
-      const humidity = Math.max(0, Math.min(100, prop(c, 'relativeHumidity'))) / 100;
+      const humidity = airHumidity(c, x) / 100;
       const drive = Math.max(0, humidityRatio(vapourPressureWater(st.coilTemperature)) - humidityRatio(humidity * vapourPressureWater(x.air)));
       const evaporated = Math.min(st.film, COIL_STILL_UA / AIR_CP * drive * h);
       st.film -= evaporated; energy -= evaporated * LATENT_EVAPORATION; environment += evaporated * LATENT_EVAPORATION;

@@ -10,7 +10,7 @@ export function bindSpaceTemperatures(project: object, temperatures: Record<stri
  * Temperatures in °C. Membership is explicit; the engine binds accepted or trial
  * zone temperatures without putting runtime state into serialized projects.
  */
-export function resolveAmbient(project: Pick<Project, 'environment'>, component: Component, containingSpaceAmbient?: number): ResolvedAmbient {
+export function resolveAmbient(project: Pick<Project, 'environment' | 'weather'>, component: Component, containingSpaceAmbient?: number): ResolvedAmbient {
   if (component.props.ambientMode === 'override' && typeof component.props.ambient === 'number')
     return { temperature: component.props.ambient, source: 'override' };
   containingSpaceAmbient ??= component.thermalSpaceId ? spaceTemperatures.get(project)?.[component.thermalSpaceId] ?? (project as Project).thermalSpaces?.find(s => s.id === component.thermalSpaceId)?.initialTemperature : undefined;
@@ -23,7 +23,7 @@ export function resolveAmbient(project: Pick<Project, 'environment'>, component:
 export const spaceTemperature = (project: Project, id: string) =>
   spaceTemperatures.get(project)?.[id] ?? project.thermalSpaces?.find(s => s.id === id)?.initialTemperature ?? projectAmbient(project);
 
-export const effectiveAmbient =(project: Pick<Project, 'environment'>, component: Component) =>
+export const effectiveAmbient =(project: Pick<Project, 'environment' | 'weather'>, component: Component) =>
   resolveAmbient(project, component).temperature;
 
 /**

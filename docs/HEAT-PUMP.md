@@ -62,7 +62,7 @@ The fin surface lies between T_e and the air: T_s = T_e + 0.35·(T_air − T_e) 
 ṁ_frost = ṁ_air·ε·max(0, ω_air − ω_sat,ice(T_s)),  ε = 1 − exp(−UA_air/(ṁ_air·c_p)),  UA_air = UA_e,eff/0.65
 ```
 
-ω_air comes from the component's **Outdoor relative humidity** (Magnus over water; ω_sat over ice). Frost lowers the evaporator conductance (halved at m_ref = 5 kg, assumption: −29 % at the defrost trigger). That pulls T_e down, which lowers output and COP physically.
+ω_air comes from the component's **Outdoor relative humidity**, or from the [weather](WEATHER.md) when the unit's air is the experiment environment and weather is on (Magnus over water; ω_sat over ice). Frost lowers the evaporator conductance (halved at m_ref = 5 kg, assumption: −29 % at the defrost trigger). That pulls T_e down, which lowers output and COP physically.
 
 A **reverse-cycle defrost** starts when the frost reaches the trigger (2 kg), at least 20 min after the previous one and 2 min after a start, provided the flow is at least 14 l/min (Bosch). It can also start on a rising edge at the DEF input below 15 °C (Bosch: manual defrost below 15 °C). During defrost:
 
@@ -218,6 +218,7 @@ The Inspector adds:
 
 - All heat-pump examples include the 3-way valve VW1, a Bosch WH 290 cylinder with its TW1 sensor, the indoor unit's 17 l expansion vessel and its 3 bar safety valve. The house and buffer examples start with the cylinder at 38 °C (an immediate hot-water charge); the cold snap starts it charged.
 - **Heat pump and underfloor heating** (`heatPumpHouse`): 120 m² single-zone house (envelope ≈ 200 W/K, about 6 kW at −10 °C), wet-screed [underfloor heating](UNDERFLOOR-HEATING.md) under the whole floor (FLOORTEC tacker 16 × 2, 100 mm spacing, twelve 100 m loops) on a slab on the [ground](GROUND.md) (fixed 10 °C, an assumption; about 0.5 kW down into the ground at 2 °C), heating curve 25 → 35 °C, 2 °C outdoors at 85 % RH. Indoor pipes, cylinder and floor belong to the house. The coil frosts and defrosts about every 3 hours (every 5th an intensive cycle); performance factor over the first 6 h, hot-water charge included, about 3.5. Set the environment to 12 °C and, after Reset, reduce the floor's heated area (15 m² ≈ 60 W/K) to see low-load cycling; drop to −20 °C to meet the envelope.
+- **Heat pump through a January day** (`heatPumpDay`): the same house under a design day (−5/3 °C, dew point −5 °C, from midnight): outdoor air and humidity follow the clock, defrosts fall in the cold, humid hours before dawn and the COP follows the afternoon warmth. See [WEATHER.md](WEATHER.md).
 - **Heat pump in a cold snap** (`heatPumpCold`): the same house at −15 °C. The compressor runs at its current limit (about 5.4 kW, COP about 2.1). The floor starts at 33 °C; the compressor alone holds 20 °C for about 7 h while the screed covers the shortfall, the house then cools slowly and the backup heater first joins after about 11 h (12 h: 1.5 kWh backup heat, house 19.6 °C). Lower the outdoor temperature below −23 °C for the cut-out, or inject an outdoor fan failure.
 
 ## Ground model effect

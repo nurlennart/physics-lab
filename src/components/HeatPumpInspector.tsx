@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { actions, simulation, useLab } from '../editor/store';
-import { prop, type Component } from '../simulation/model';
+import { projectAmbient, prop, type Component } from '../simulation/model';
 import { heatPumpBasis } from '../simulation/heat-pump';
 import { heatPumpSources } from '../simulation/heat-pump-data';
 import { characteristicFlow, characteristicTable, referenceTable } from '../simulation/heat-pump-tables';
@@ -35,13 +35,13 @@ export function HeatPumpInspector({ c }: { c: Component }) {
   const peak = Math.max(1000, ...history.map(s => Math.max(Math.abs(s.heatPumps![c.id].heat), s.heatPumps![c.id].electrical + s.heatPumps![c.id].backup)));
   const yp = (w: number) => 146 - 30 * w / peak;
   const powerCurve = (f: (h: NonNullable<typeof history[number]['heatPumps']>[string]) => number) => history.map(s => `${22 + 214 * (s.time - start) / span},${yp(f(s.heatPumps![c.id]))}`).join(' ');
-  const air = view?.inputs.air ?? simulation.project.environment?.ambient ?? 20;
+  const air = view?.inputs.air ?? projectAmbient(simulation.project), humidity = view?.inputs.humidity ?? prop(c, 'relativeHumidity');
   const target = st?.target ?? prop(c, 'setpoint');
   const spf = st && st.electricity > 0 ? (st.heat - st.defrostHeat) / st.electricity : null;
   const rows: [string, string][] = [
     ['Mode', st?.status ?? 'Ready'],
     ['Flow → target', `${flow.toFixed(1)} → ${target.toFixed(1)} °C${st && st.requested > target + 0.05 ? ` (requested ${st.requested.toFixed(1)} °C; envelope limit)` : ''}`],
-    ['Outdoor air', `${air.toFixed(1)} °C · ${prop(c, 'relativeHumidity').toFixed(0)} % RH`],
+    ['Outdoor air', `${air.toFixed(1)} °C · ${humidity.toFixed(0)} % RH${view?.inputs.humidity !== undefined ? ' (weather)' : ''}`],
     ['Heat output', started && view ? kw(view.heatOutput) : '—'],
     ['Electrical input', started && view ? `${kw(view.electrical)}${view.backup > 0 ? ` + backup ${kw(view.backup)}` : ''}` : '—'],
     ['COP (instantaneous)', view?.cop != null ? view.cop.toFixed(2) : '—'],

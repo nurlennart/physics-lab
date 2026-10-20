@@ -12,6 +12,7 @@ import {
   type ChallengeId, componentPorts } from "./model";
 import { spatialError, spatialSignature } from './spatial-model';
 import { applyDerived, derivedError, domainError, editEffects, paramSpec, type EditPolicy } from "./parameters";
+import { weatherError } from './weather';
 import { challengeDefinition, isChallengeId } from './challenges';
 import { parsePumpPoints } from "./hydraulic";
 import { characteristic, upwardResistance } from "./underfloor-heating";
@@ -107,6 +108,7 @@ export function challengeError(
     return "The running challenge identity is locked until a new experiment is loaded.";
   if (p.environment && p.environment.ambient !== rules.ambient)
     return "Challenge environment is locked at the assignment ambient temperature.";
+  if (p.weather) return "Assignments run at a fixed ambient: weather is available in Free Sandbox only.";
   // Custom ratings are rejected before costing: a scored assignment never prices them.
   for (const c of p.components) {
     if (["battery", "contactor", "transformer", "radiator", "circulator", "electricBoiler", "panelRadiator", "underfloorHeating", "heatingManifold", "heatPump", "storageTank", "expansionVessel", "safetyValve", "divertingValve"].includes(c.kind)) return `${c.name}: this component is available in Free Sandbox only.`;
@@ -266,6 +268,7 @@ export function transitionError(
   if (next.components.length > 100 || next.connections.length > 300) return 'Scene limit: 100 components/bodies and 300 connections.';
   if (next.environment !== undefined && (!next.environment || typeof next.environment.ambient !== "number" || !Number.isFinite(next.environment.ambient) || next.environment.ambient < -100 || next.environment.ambient > 500))
     return "Environment ambient temperature must be between −100 and 500 °C.";
+  if (next.weather !== undefined) { const error = weatherError(next.weather); if (error) return error; }
   // A manifold's circuits beyond its circuit count are not fitted: their ports must be free first.
   for (const c of next.components.filter(c => c.kind === "heatingManifold")) {
     const fitted = new Set(componentPorts(c).map(p => p.id));

@@ -8,7 +8,7 @@ Resolution order is **explicit override → containing Thermal Space → experim
 
 | Parameter/state | Meaning |
 | --- | --- |
-| Experiment ambient | Default ideal surroundings for heat exchange |
+| Experiment ambient | Default ideal surroundings for heat exchange; with [weather](WEATHER.md), the outdoor air at the current simulated time |
 | Local ambient override | Explicit boundary replacing inherited surroundings; used only with `ambientMode: "override"` |
 | Initial temperature | Stored water/solid temperature at reset; independent of ambient |
 | Operating temperature | Runtime temperature resulting from storage, power and heat transfer |

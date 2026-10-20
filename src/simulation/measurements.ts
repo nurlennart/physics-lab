@@ -21,7 +21,7 @@ export const units: Record<Measurement, string> = {
   downwardLoss: "W", screedTemperature: "°C", surfaceTemperature: "°C", heatFlux: "W/m²",
   topTemperature: "°C", bottomTemperature: "°C", storedHeat: "kWh", vesselWater: "L", expansionVolume: "L", dischargedVolume: "L", hotWater: "bool", hotWaterCop: "1",
   returnTemperature: "°C", elementTemperature: "°C", heatingStages: "1", heatingPower: "W", heatLoss: "W",
-  heatOutput: "W", backupPower: "W", environmentHeat: "W", cop: "1", compressorSpeed: "%", evaporatingTemperature: "°C", condensingTemperature: "°C", frostMass: "kg", defrosting: "bool", targetTemperature: "°C", seasonalCop: "1", heatEnergy: "J", compressorStarts: "1",
+  heatOutput: "W", backupPower: "W", environmentHeat: "W", cop: "1", compressorSpeed: "%", outdoorTemperature: "°C", outdoorHumidity: "%", evaporatingTemperature: "°C", condensingTemperature: "°C", frostMass: "kg", defrosting: "bool", targetTemperature: "°C", seasonalCop: "1", heatEnergy: "J", compressorStarts: "1",
   stateOfCharge: "%", chemicalEnergy: "J", polarizationVoltage: "V", chargeVoltage: "V", fieldEnergy: "J", coilVoltage: "V", coilCurrent: "A", secondaryVoltage: "V", secondaryCurrent: "A", fanPower: "W",
   positionX: 'm', positionY: 'm', displacement: 'm', linearSpeed: 'm/s', velocityX: 'm/s', velocityY: 'm/s', angularVelocity: 'rad/s', acceleration: 'm/s²', appliedForce: 'N', appliedTorque: 'N·m', kineticEnergy: 'J', potentialEnergy: 'J', mechanicalResidual: 'J', contactImpulse: 'N·s', jointForce: 'N',
   inletPressure: "bar", pressure: "bar", differentialPressure: "bar", flow: "L/min", level: "%", fluidTemperature: "°C",
@@ -90,6 +90,8 @@ export function readProbe(p: Probe, s: Simulation): number | null {
     case "environmentHeat": { const v = s.multiphysics.heatPumpView[c.id]; return v ? v.plan.air : 0; }
     case "cop": return s.multiphysics.heatPumpView[c.id]?.cop ?? null;
     case "compressorSpeed": return (s.multiphysics.heatPumps[c.id]?.speed ?? 0) * 100;
+    case "outdoorTemperature": return s.multiphysics.heatPumpView[c.id]?.inputs.air ?? effectiveAmbient(s.project, c);
+    case "outdoorHumidity": return s.multiphysics.heatPumpView[c.id]?.inputs.humidity ?? prop(c, "relativeHumidity");
     case "evaporatingTemperature": { const v = s.multiphysics.heatPumpView[c.id]; return v && v.plan.mode !== 'off' && v.plan.mode !== 'drip' ? v.plan.point.evaporating : null; }
     case "condensingTemperature": { const v = s.multiphysics.heatPumpView[c.id]; return v && v.plan.mode !== 'off' && v.plan.mode !== 'drip' ? v.plan.point.condensing : null; }
     case "frostMass": return s.multiphysics.heatPumps[c.id]?.frost ?? 0;

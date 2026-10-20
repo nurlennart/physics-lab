@@ -55,6 +55,7 @@ export default function Inspector() {
           <h2>Inspector</h2>
           <SlidersHorizontal size={15} />
         </div>
+        <div className="inspector-scroll">
         <div className="inspector-empty">
           <MousePointer2 size={25} />
           <h3>
@@ -73,6 +74,7 @@ export default function Inspector() {
         </div>
         {!s.selectedWire && <EnvironmentPanel />}
         {s.selectedWire && <p className="field-hint wire-hint">Wires are ideal zero-resistance connections. Insert a Power cable component to model conductor resistance, voltage drop and heating.</p>}
+        </div>
       </aside>
     );
   const d = definitions[c.kind],

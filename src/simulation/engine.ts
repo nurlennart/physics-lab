@@ -1,6 +1,7 @@
 import { circuitIndices, circuitKey } from "./heating-manifold";
 import { type SpaceReading } from "./thermal-spaces";
 import { bindSpaceTemperatures, effectiveAmbient } from "./environment";
+import { nextBreakpoint, temperatureRate, weatherAt } from "./weather";
 import { belowBoundary, screedKey, surfaceTemperature } from "./underfloor-heating";
 import { boilerStepLimit, resetBoiler } from './boiler';
 import { resetHeatPump } from './heat-pump';
@@ -8,7 +9,7 @@ import { Devices } from "./devices";
 import { Multiphysics } from "./multiphysics";
 import { unitsSI as U, WATER_CP, WATER_RHO } from "./units";
 import { challengeDefinition } from "./challenges";
-import { prop, isThermalMass, isSource, isMotor, perPoleKinds, portConductance, type Component, type Project, type ChallengeId } from "./model";
+import { bindWeather, prop, isThermalMass, isSource, isMotor, perPoleKinds, portConductance, type Component, type Project, type ChallengeId } from "./model";
 import {
   solveElectrical,
   solveLinear,
@@ -242,6 +243,7 @@ export class Simulation {
       this.peakVoltage =
       this.lightHold =
         0;
+    this.bindWeatherAt(0);
     this.failed = {};
     this.tripped = {};
     this.breakers = {};
@@ -276,6 +278,8 @@ export class Simulation {
     this.log("Experiment initialized. Fixed timestep: 1/60 s.");
     this.sample();
   }
+  /** Bind the weather at simulated time t to the engine-owned project (outdoor boundaries read it through projectAmbient). */
+  bindWeatherAt(t: number) { bindWeather(this.project, this.project.weather ? weatherAt(this.project.weather, t) : undefined); }
   refresh(project: Project): boolean {
     if (!this.lockedChallenge && project.challenge && this.time > 1e-10) {
       this.error = "Reset before entering a scored challenge.";
@@ -301,9 +305,10 @@ export class Simulation {
     this.acceptedProject = structuredClone(project);
     this.project = freeze(structuredClone(project));
     this.ownedProject = this.project;
-    if (layoutOnly) { bindSpaceTemperatures(this.project, this.spaceTemperatures); return true; }
+    if (layoutOnly) { bindSpaceTemperatures(this.project, this.spaceTemperatures); this.bindWeatherAt(this.time); return true; }
     if (this.time === 0) { this.spaceTemperatures = Object.fromEntries((this.project.thermalSpaces ?? []).map(r => [r.id, r.initialTemperature])); this.spaceReadings = {}; this.roomStored = 0; }
     bindSpaceTemperatures(this.project, this.spaceTemperatures);
+    this.bindWeatherAt(this.time);
     this.electricalKey = "";
     if (this.time === 0) {
       this.spatial = new SpatialDynamics(); this.spatial.initialize(this.project); this.multiphysics = new Multiphysics(); this.multiphysics.initialize(this.project);
@@ -472,6 +477,13 @@ export class Simulation {
       }
       const motor = isMotor(c) ? this.multiphysics.motors[c.id] : undefined;
       if (motor && Math.abs(motor.acceleration) > 1e-9) limit = Math.min(limit, (0.002 * Math.abs(motor.omega) + 0.5) / Math.abs(motor.acceleration));
+    }
+    // Weather: at most `tolerance` K of outdoor temperature change per step, and steps end at the profile's hourly breakpoints.
+    const weather = this.project.weather;
+    if (weather) {
+      const rate = temperatureRate(weather, this.time);
+      if (rate > 0) limit = Math.min(limit, tolerance / rate);
+      limit = Math.min(limit, nextBreakpoint(weather, this.time));
     }
     if (Number.isFinite(this.thermalRate) && this.thermalRate > 0) limit = Math.min(limit, tolerance / this.thermalRate);
     else if (!Number.isFinite(this.thermalRate)) limit = DT;
@@ -681,7 +693,9 @@ export class Simulation {
       memory: Object.fromEntries(Object.entries(this.automation.memory).map(([id, memory]) => [id, { ...memory }])), signals: { ...this.automation.signals }, sensors: { ...this.automation.sensors },
       contacts: { ...this.automation.contacts }, status: { ...this.automation.status }, pulses: new Set(this.automation.pulses), rngState: this.automation.rngState,
     } : undefined;
-    if (!this.solve(true, dt)) { Object.assign(this.automation, automationBefore); return false; }
+    // Weather boundaries at the step midpoint (second order in the step; the step limit bounds the change, see weather.ts).
+    this.bindWeatherAt(this.time + dt / 2);
+    if (!this.solve(true, dt)) { Object.assign(this.automation, automationBefore); this.bindWeatherAt(this.time); return false; }
     const deviceStorageBefore = this.devices.storedChange;
     const devicesBefore = this.devices.active ? this.devices.checkpoint() : undefined;
     challenge?.afterSolve?.(this, this.challengeState, oldContacts, oldHeaterPower);
@@ -714,7 +728,7 @@ export class Simulation {
         this.waterStored += coupled.thermalGain - coupled.boilerElementGain;
         this.heaterStored += coupled.boilerElementGain;
       } catch (e) {
-        rollbackCoupled(); this.error = (e as Error).message; this.log(this.error, "error"); return false;
+        rollbackCoupled(); this.bindWeatherAt(this.time); this.error = (e as Error).message; this.log(this.error, "error"); return false;
       }
     }
     const p = this.project,
@@ -797,6 +811,7 @@ export class Simulation {
       temperatures = n ? solveLinear(a, b) : [];
     } catch (e) {
       rollbackCoupled?.();
+      this.bindWeatherAt(this.time);
       this.error = `Thermal solver: ${(e as Error).message}`;
       return false;
     }
@@ -848,6 +863,7 @@ export class Simulation {
     }
     this.ambientEnergy += p.components.filter(c => c.kind === 'solarPanel').reduce((sum, c) => sum + (this.electrical.readings[c.id]?.heatPower ?? 0) * dt, 0);
     this.time += dt;
+    this.bindWeatherAt(this.time);
     this.energy += this.electrical.dissipatedPower * dt;
     this.suppliedEnergy += this.electrical.sourcePower * dt;
     this.peakPower = Math.max(this.peakPower, this.electrical.sourcePower);

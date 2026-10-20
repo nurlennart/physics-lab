@@ -49,6 +49,7 @@ export type Kind =
 export type Domain = "electrical" | "thermal" | "control" | "hydraulic" | "mechanical";
 export type Property = number | boolean | string;
 export type { ChallengeId } from './challenges/ids';
+import { weatherAt, type WeatherModel, type WeatherState } from './weather';
 import type { ChallengeId } from './challenges/ids';
 import type { SpatialBody, SpatialWorld, MechanicalJoint } from './spatial-model';
 import { makeSpatial } from './spatial-model';
@@ -93,7 +94,7 @@ export type Measurement =
   | "positionX" | "positionY" | "displacement" | "linearSpeed" | "velocityX" | "velocityY" | "angularVelocity" | "acceleration" | "appliedForce" | "appliedTorque" | "kineticEnergy" | "potentialEnergy" | "mechanicalResidual" | "contactImpulse" | "jointForce"
   | "pressure" | "inletPressure" | "differentialPressure" | "flow" | "level" | "fluidTemperature"
   | "returnTemperature" | "elementTemperature" | "heatingStages" | "heatingPower" | "heatLoss"
-  | "heatOutput" | "backupPower" | "environmentHeat" | "cop" | "compressorSpeed" | "evaporatingTemperature" | "condensingTemperature" | "frostMass" | "defrosting" | "targetTemperature" | "seasonalCop" | "heatEnergy" | "compressorStarts"
+  | "heatOutput" | "backupPower" | "environmentHeat" | "cop" | "compressorSpeed" | "evaporatingTemperature" | "condensingTemperature" | "outdoorTemperature" | "outdoorHumidity" | "frostMass" | "defrosting" | "targetTemperature" | "seasonalCop" | "heatEnergy" | "compressorStarts"
   | "supplyTemperature" | "excessTemperature" | "heatInput"
   | "topTemperature" | "bottomTemperature" | "storedHeat" | "vesselWater" | "expansionVolume" | "dischargedVolume" | "hotWater" | "hotWaterCop"
   | "heatDuty" | "npsh" | "reactivePower" | "powerFactor" | "impellerPower" | "mechanicalLoss" | "hydraulicEfficiency" | "overflow" | "overflowVolume"
@@ -144,6 +145,8 @@ export interface Project {
   thermalElements?: import("./thermal-spaces").ThermalElement[];
   /** Boundary behind floor elements on the ground. Absent = fixed at the assumed default (see ground.ts). */
   ground?: import("./ground").GroundModel;
+  /** Outdoor weather over simulated time; replaces `environment.ambient` while set. Absent = fixed (see weather.ts). */
+  weather?: WeatherModel;
 }
 export const DEFAULT_AMBIENT = 20;
 /**
@@ -151,7 +154,13 @@ export const DEFAULT_AMBIENT = 20;
  * 1.2e-5 (industrial), i.e. 81 W and 324 W at 300 rad/s — more than the rated hydraulic output.
  * Saved challenge files carrying the old catalog values are mapped to the current catalog.
  */
-export const projectAmbient = (p: Pick<Project, "environment">) => p.environment?.ambient ?? DEFAULT_AMBIENT;
+const outdoorNow = new WeakMap<object, WeatherState>();
+/** Runtime weather of one engine-owned project at the current step (never serialized); see weather.ts. */
+export function bindWeather(project: object, state: WeatherState | undefined) { if (state) outdoorNow.set(project, state); else outdoorNow.delete(project); }
+/** Weather the engine bound for this project, else the weather at simulated time 0; undefined without weather. */
+export const projectWeather = (p: Pick<Project, "weather">): WeatherState | undefined => p.weather ? outdoorNow.get(p) ?? weatherAt(p.weather, 0) : undefined;
+/** Experiment environment (°C): the weather's air temperature while weather is set, else the fixed ambient. */
+export const projectAmbient = (p: Pick<Project, "environment" | "weather">) => projectWeather(p)?.temperature ?? p.environment?.ambient ?? DEFAULT_AMBIENT;
 export interface Port {
   unit?: string;
   id: string;

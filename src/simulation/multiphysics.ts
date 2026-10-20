@@ -1,11 +1,11 @@
 import { circuitIndices, circuitKey } from './heating-manifold';
 import { advanceSpaceThermal } from './thermal-coupling';
-import { effectiveAmbient } from './environment';
+import { effectiveAmbient, resolveAmbient } from './environment';
 import { trvPosition, trvSensorStep } from './thermostatic-valve';
 import { controlBoiler, newBoiler, type BoilerState } from './boiler';
 import { advanceHeatPump, controlHeatPump, newHeatPump, planHeatPump, type HeatPumpInputs, type HeatPumpPlan, type HeatPumpState } from './heat-pump';
 import { radiatorUA } from './devices';
-import { cloneState, prop, isMotor, type Component, type Project } from './model';
+import { cloneState, projectWeather, prop, isMotor, type Component, type Project } from './model';
 import { inductionCircuit, isStarter, peakOverInterval, solveElectrical, solveLinear, type ElectricalResult, type ElectricalReading } from './electrical';
 import { advanceDrive, advanceStarter, driveCommand, driveLineVoltage, newDrive, newStarter, starterCommand, starterEvent, type DriveLimiter, type DriveState, type StarterState } from './converters';
 import { machineParams, magneticEnergy, noRotorFlux, openStatorFlux, openStatorStep, cabs, type Cx } from './induction';
@@ -690,7 +690,9 @@ export class Multiphysics {
     const voltage = r && r.voltageValid !== false ? Math.abs(r.voltage) : 0;
     return { water: (this.pipeCells[c.id]?.[0] ?? 293.15) - 273.15, air: effectiveAmbient(s.project, c), flow: Math.abs(this.hydraulic.readings[c.id]?.flow ?? 0),
       voltage: voltage || (s.time === 0 && !r ? prop(c, 'ratedVoltage') : 0), powered: !s.failed[c.id] && !r?.undervoltage && (voltage >= prop(c, 'minVoltage') || s.time === 0 && !r),
-      backupVoltage: r?.backupVoltage ?? 0, condensing: view?.plan.point.condensing ?? -Infinity, evaporating: view?.plan.point.evaporating ?? Infinity, fanFailed: s.faults[c.id] === 'coolingFailed' };
+      backupVoltage: r?.backupVoltage ?? 0, condensing: view?.plan.point.condensing ?? -Infinity, evaporating: view?.plan.point.evaporating ?? Infinity, fanFailed: s.faults[c.id] === 'coolingFailed',
+      // Outdoor air from the weather carries its humidity; a room or a local override keeps the component's own.
+      humidity: s.project.weather && resolveAmbient(s.project, c).source === 'experiment' ? projectWeather(s.project)?.relativeHumidity : undefined };
   }
   /** Plan every heat pump's substep of length h from its current state. */
   private planHeatPumps(s: Simulation, h: number) {

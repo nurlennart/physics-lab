@@ -2296,6 +2296,224 @@
     ]
   },
   {
+    "mode": "heatPumpDay",
+    "source": "generated",
+    "simulatedSeconds": 600,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 926623.7779546853,
+    "energyResidual": 0.000014209794553687871,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Flow temperature",
+        "value": 43.31629362656997
+      },
+      {
+        "name": "Return temperature",
+        "value": 39.55278786083272
+      },
+      {
+        "name": "Flow target",
+        "value": 46.54
+      },
+      {
+        "name": "Heat output",
+        "value": 6453.437033619878
+      },
+      {
+        "name": "Electrical input",
+        "value": 2656.9995809897555
+      },
+      {
+        "name": "COP",
+        "value": 2.428843828125828
+      },
+      {
+        "name": "Compressor speed",
+        "value": 90.4636928651322
+      },
+      {
+        "name": "Frost on coil",
+        "value": 0.09606402521200488
+      },
+      {
+        "name": "Defrost active",
+        "value": 0
+      },
+      {
+        "name": "Backup heater",
+        "value": 0
+      },
+      {
+        "name": "Heat from outdoor air",
+        "value": 3761.6227776755504
+      },
+      {
+        "name": "Seasonal performance factor",
+        "value": 2.7012566745770745
+      },
+      {
+        "name": "House air",
+        "value": 19.99765624292983
+      },
+      {
+        "name": "Floor surface",
+        "value": 22.983731547048237
+      },
+      {
+        "name": "House heat loss",
+        "value": 2292.8511897864155
+      },
+      {
+        "name": "System pressure",
+        "value": 1.311783063048442
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 1
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 39.54480315048079
+      },
+      {
+        "name": "Cylinder top",
+        "value": 39.54480315048079
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 5481.070579440714
+      },
+      {
+        "name": "Hot-water performance factor",
+        "value": 2.7012566745770745
+      },
+      {
+        "name": "Outdoor air",
+        "value": -3.639984888888889
+      },
+      {
+        "name": "Outdoor humidity",
+        "value": 90.2879919481461
+      },
+      {
+        "name": "Energy balance residual",
+        "value": 0.000014209794553687871
+      }
+    ]
+  },
+  {
+    "mode": "heatPumpDay",
+    "source": "file",
+    "simulatedSeconds": 600,
+    "error": null,
+    "violations": [],
+    "failed": {},
+    "suppliedEnergy": 926623.7779546853,
+    "energyResidual": 0.000014209794553687871,
+    "massResidual": 0,
+    "probes": [
+      {
+        "name": "Flow temperature",
+        "value": 43.31629362656997
+      },
+      {
+        "name": "Return temperature",
+        "value": 39.55278786083272
+      },
+      {
+        "name": "Flow target",
+        "value": 46.54
+      },
+      {
+        "name": "Heat output",
+        "value": 6453.437033619878
+      },
+      {
+        "name": "Electrical input",
+        "value": 2656.9995809897555
+      },
+      {
+        "name": "COP",
+        "value": 2.428843828125828
+      },
+      {
+        "name": "Compressor speed",
+        "value": 90.4636928651322
+      },
+      {
+        "name": "Frost on coil",
+        "value": 0.09606402521200488
+      },
+      {
+        "name": "Defrost active",
+        "value": 0
+      },
+      {
+        "name": "Backup heater",
+        "value": 0
+      },
+      {
+        "name": "Heat from outdoor air",
+        "value": 3761.6227776755504
+      },
+      {
+        "name": "Seasonal performance factor",
+        "value": 2.7012566745770745
+      },
+      {
+        "name": "House air",
+        "value": 19.99765624292983
+      },
+      {
+        "name": "Floor surface",
+        "value": 22.983731547048237
+      },
+      {
+        "name": "House heat loss",
+        "value": 2292.8511897864155
+      },
+      {
+        "name": "System pressure",
+        "value": 1.311783063048442
+      },
+      {
+        "name": "Hot-water mode (VW1 → B)",
+        "value": 1
+      },
+      {
+        "name": "Cylinder sensor TW1",
+        "value": 39.54480315048079
+      },
+      {
+        "name": "Cylinder top",
+        "value": 39.54480315048079
+      },
+      {
+        "name": "Coil heat into the cylinder",
+        "value": 5481.070579440714
+      },
+      {
+        "name": "Hot-water performance factor",
+        "value": 2.7012566745770745
+      },
+      {
+        "name": "Outdoor air",
+        "value": -3.639984888888889
+      },
+      {
+        "name": "Outdoor humidity",
+        "value": 90.2879919481461
+      },
+      {
+        "name": "Energy balance residual",
+        "value": 0.000014209794553687871
+      }
+    ]
+  },
+  {
     "mode": "heatPumpCold",
     "source": "generated",
     "simulatedSeconds": 600,

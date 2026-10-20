@@ -63,6 +63,7 @@ The image builds the app and serves the static bundle with nginx on port 8080. N
 | [STORAGE-AND-PRESSURE.md](docs/STORAGE-AND-PRESSURE.md) | Stratified buffer and hot-water cylinder, expansion vessel and safety valve: data, equations, ledger, validation and limitations |
 | [HEATING-MANIFOLD.md](docs/HEATING-MANIFOLD.md) | Underfloor heating circuit manifold (Oventrop Multidis SF): data and provenance, circuit hydraulics, thermal actuators, hydraulic balancing, three-room example, validation and limitations |
 | [GROUND.md](docs/GROUND.md) | Floors on the ground: fixed ground boundary (an explicit assumption), EN ISO 13370 slab-on-ground U-value, soil resistance under underfloor heating, scope and extension points |
+| [WEATHER.md](docs/WEATHER.md) | Weather over a simulated clock: design-day outdoor air temperature (ASHRAE profile) and humidity (constant dew point), opt-in; what follows it, step limits, validation |
 | [UNDERFLOOR-HEATING.md](docs/UNDERFLOOR-HEATING.md) | Wet-screed underfloor heating: EN 1264 characteristic, FLOORTEC calibration, screed storage, room and room-below coupling, validation and limitations |
 | [PANEL-RADIATOR.md](docs/PANEL-RADIATOR.md) | Kermi therm-x2 radiator data and provenance, EN 442 equations, calibration accuracy, example and limitations |
 | [ENVIRONMENT.md](docs/ENVIRONMENT.md) | Ambient inheritance, local overrides, temperature meanings, migration and component audit |
